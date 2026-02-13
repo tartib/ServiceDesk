@@ -1,0 +1,93 @@
+{
+  "inventory": {
+    "title": "إدارة المخزون",
+    "subtitle": "تتبع وإدارة مستويات المخزون",
+    "addItem": "إضافة عنصر",
+    "adjustStock": "تعديل المخزون",
+    "search": "البحث في المخزون...",
+    "stats": {
+      "totalItems": "إجمالي العناصر",
+      "inStock": "متوفر",
+      "lowStock": "منخفض",
+      "outOfStock": "نفذ"
+    },
+    "table": {
+      "item": "العنصر",
+      "category": "الفئة",
+      "currentStock": "المخزون الحالي",
+      "minMax": "الحد الأدنى/الأقصى",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "status": {
+      "inStock": "متوفر",
+      "lowStock": "منخفض",
+      "outOfStock": "نفذ"
+    },
+    "addModal": {
+      "title": "إضافة عنصر جديد للمخزون",
+      "nameEn": "الاسم (بالإنجليزية)",
+      "nameAr": "الاسم (بالعربية)",
+      "category": "الفئة",
+      "selectCategory": "اختر فئة",
+      "loadingCategories": "جاري تحميل الفئات...",
+      "noCategories": "لا توجد فئات متاحة. يرجى إنشاء الفئات أولاً.",
+      "unit": "الوحدة",
+      "initialQuantity": "الكمية الأولية",
+      "minThreshold": "الحد الأدنى",
+      "maxThreshold": "الحد الأقصى",
+      "supplier": "المورد",
+      "costPerUnit": "التكلفة لكل وحدة",
+      "itemImage": "صورة العنصر (اختياري)",
+      "uploadImage": "رفع صورة",
+      "cancel": "إلغاء",
+      "addButton": "إضافة عنصر",
+      "adding": "جاري الإضافة..."
+    },
+    "adjustModal": {
+      "title": "تعديل المخزون",
+      "addStock": "إضافة مخزون",
+      "removeStock": "إزالة مخزون",
+      "quantity": "الكمية",
+      "reason": "السبب",
+      "selectReason": "اختر السبب",
+      "reasons": {
+        "restock": "إعادة التخزين من المورد",
+        "adjustment": "تعديل المخزون",
+        "usage": "استخدام في العمليات",
+        "damaged": "عناصر تالفة",
+        "expired": "عناصر منتهية الصلاحية",
+        "returned": "مرتجع من العميل"
+      },
+      "notes": "ملاحظات (اختياري)",
+      "currentLevel": "المستوى الحالي",
+      "newLevel": "المستوى الجديد",
+      "warning": "تحذير: سيؤدي هذا إلى مخزون سالب!",
+      "cancel": "إلغاء",
+      "addButton": "إضافة مخزون",
+      "removeButton": "إزالة مخزون",
+      "adjusting": "جاري التعديل..."
+    },
+    "messages": {
+      "itemAdded": "تمت إضافة العنصر بنجاح",
+      "itemAddFailed": "فشل في إضافة العنصر",
+      "stockAdjusted": "تم تعديل المخزون بنجاح",
+      "stockAdjustFailed": "فشل في تعديل المخزون",
+      "loading": "جاري تحميل المخزون...",
+      "noItems": "لا توجد عناصر في المخزون بعد",
+      "noItemsDesc": "ابدأ بإضافة أول عنصر للمخزون",
+      "noResults": "لم يتم العثور على عناصر",
+      "noResultsDesc": "حاول تعديل كلمات البحث"
+    },
+    "units": {
+      "kg": "كيلوجرام",
+      "g": "جرام",
+      "l": "لتر",
+      "ml": "ملليلتر",
+      "pcs": "قطعة",
+      "cup": "كوب",
+      "tbsp": "ملعقة كبيرة",
+      "tsp": "ملعقة صغيرة"
+    }
+  }
+}

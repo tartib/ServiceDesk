@@ -1,0 +1,27 @@
+{
+  "reports": {
+    "title": "التقارير",
+    "subtitle": "عرض التحليلات والتقارير التفصيلية للمهام",
+    "totalTasks": "إجمالي المهام",
+    "completionRate": "نسبة الإنجاز",
+    "avgPrepTime": "متوسط وقت التحضير",
+    "onTimeTasks": "المهام في الوقت",
+    "fromLastWeek": "من الأسبوع الماضي",
+    "detailedReports": "التقارير التفصيلية",
+    "daily": "يومي",
+    "weekly": "أسبوعي",
+    "monthly": "شهري",
+    "completed": "مكتمل",
+    "pending": "قيد الانتظار",
+    "overdue": "متأخر",
+    "tasks": "مهام",
+    "tasksByUser": "المهام حسب المستخدم",
+    "dailyBreakdown": "التفصيل اليومي",
+    "weeklyBreakdown": "التفصيل الأسبوعي",
+    "week": "الأسبوع",
+    "noData": "لا توجد بيانات للفترة المحددة",
+    "comingSoon": "قريباً",
+    "advancedAnalytics": "تحليلات متقدمة",
+    "comingSoonDescription": "الرسوم البيانية والتحليلات المفصلة ستكون متاحة قريباً."
+  }
+}

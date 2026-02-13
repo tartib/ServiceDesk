@@ -1,0 +1,56 @@
+{
+  "vacations": {
+    "title": "متتبع الإجازات",
+    "subtitle": "تقويم الفريق وإدارة الإجازات",
+    "requestLeave": "طلب إجازة",
+    "myRequests": "طلباتي",
+    "teamCalendar": "تقويم الفريق",
+    "pendingRequests": "الطلبات المعلقة",
+    "allRequests": "جميع الطلبات",
+    "selectTeam": "اختر الفريق",
+    "noTeamSelected": "اختر فريقاً لعرض التقويم",
+    "noRequests": "لا توجد طلبات إجازة بعد",
+    "noRequestsDesc": "قدم طلب إجازة للبدء",
+    "noPending": "لا توجد طلبات معلقة",
+    "types": {
+      "vacation": "إجازة",
+      "wfh": "عمل من المنزل",
+      "sick": "إجازة مرضية",
+      "holiday": "عطلة رسمية",
+      "blackout": "فترة محظورة"
+    },
+    "statuses": {
+      "pending": "معلق",
+      "approved": "موافق عليه",
+      "rejected": "مرفوض"
+    },
+    "form": {
+      "leaveType": "نوع الإجازة",
+      "startDate": "تاريخ البدء",
+      "endDate": "تاريخ الانتهاء",
+      "reason": "السبب (اختياري)",
+      "reasonPlaceholder": "أدخل سبب الإجازة...",
+      "submit": "تقديم الطلب",
+      "creating": "جاري التقديم...",
+      "selectType": "اختر نوع الإجازة",
+      "teamWideNote": "سيتم تطبيق هذا على الفريق بأكمله"
+    },
+    "actions": {
+      "approve": "موافقة",
+      "reject": "رفض",
+      "delete": "إلغاء الطلب",
+      "edit": "تعديل",
+      "approving": "جاري الموافقة...",
+      "rejecting": "جاري الرفض...",
+      "rejectReason": "سبب الرفض:"
+    },
+    "calendar": {
+      "today": "اليوم",
+      "prevMonth": "الشهر السابق",
+      "nextMonth": "الشهر التالي",
+      "legend": "دليل الألوان",
+      "dayOff": "إجازة"
+    },
+    "confirmDelete": "هل أنت متأكد من إلغاء طلب الإجازة هذا؟"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "reports": {
+    "title": "Reports",
+    "subtitle": "View analytics and detailed reports for your tasks",
+    "totalTasks": "Total Tasks",
+    "completionRate": "Completion Rate",
+    "avgPrepTime": "Avg Prep Time",
+    "onTimeTasks": "On-Time Tasks",
+    "fromLastWeek": "from last week",
+    "detailedReports": "Detailed Reports",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "completed": "Completed",
+    "pending": "Pending",
+    "overdue": "Overdue",
+    "tasks": "tasks",
+    "tasksByUser": "Tasks by User",
+    "dailyBreakdown": "Daily Breakdown",
+    "weeklyBreakdown": "Weekly Breakdown",
+    "week": "Week",
+    "noData": "No data available for the selected period",
+    "comingSoon": "Coming Soon",
+    "advancedAnalytics": "Advanced Analytics",
+    "comingSoonDescription": "Detailed charts and analytics will be available soon."
+  }
+}

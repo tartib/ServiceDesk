@@ -1,0 +1,56 @@
+{
+  "vacations": {
+    "title": "Vacation Tracker",
+    "subtitle": "Team calendar and leave management",
+    "requestLeave": "Request Leave",
+    "myRequests": "My Requests",
+    "teamCalendar": "Team Calendar",
+    "pendingRequests": "Pending Requests",
+    "allRequests": "All Requests",
+    "selectTeam": "Select Team",
+    "noTeamSelected": "Select a team to view the calendar",
+    "noRequests": "No leave requests yet",
+    "noRequestsDesc": "Submit a leave request to get started",
+    "noPending": "No pending requests",
+    "types": {
+      "vacation": "Vacation",
+      "wfh": "Work from Home",
+      "sick": "Sick Day",
+      "holiday": "Holiday",
+      "blackout": "Blackout"
+    },
+    "statuses": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "form": {
+      "leaveType": "Leave Type",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "reason": "Reason (optional)",
+      "reasonPlaceholder": "Enter reason for leave...",
+      "submit": "Submit Request",
+      "creating": "Submitting...",
+      "selectType": "Select leave type",
+      "teamWideNote": "This will apply to the entire team"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "delete": "Cancel Request",
+      "edit": "Edit",
+      "approving": "Approving...",
+      "rejecting": "Rejecting...",
+      "rejectReason": "Rejection reason:"
+    },
+    "calendar": {
+      "today": "Today",
+      "prevMonth": "Previous Month",
+      "nextMonth": "Next Month",
+      "legend": "Legend",
+      "dayOff": "off"
+    },
+    "confirmDelete": "Are you sure you want to cancel this leave request?"
+  }
+}

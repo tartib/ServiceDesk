@@ -1,0 +1,36 @@
+{
+  "categories": {
+    "title": "Categories",
+    "subtitle": "Manage product categories",
+    "newCategory": "New Category",
+    "search": "Search categories...",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "noCategories": "No categories yet",
+    "noCategoriesDesc": "Get started by creating your first category",
+    "noResults": "No categories found",
+    "noResultsDesc": "Try adjusting your search query",
+    "createCategory": "Create Category",
+    "addModal": {
+      "title": "Add New Category",
+      "nameEn": "Name (English)",
+      "nameAr": "Name (Arabic)",
+      "description": "Description (Optional)",
+      "descriptionPlaceholder": "Brief description of the category",
+      "charactersRemaining": "characters remaining",
+      "cancel": "Cancel",
+      "addButton": "Add Category",
+      "adding": "Adding..."
+    },
+    "messages": {
+      "categoryAdded": "Category added successfully",
+      "categoryAddFailed": "Failed to add category",
+      "categoryDeleted": "Category deleted successfully",
+      "categoryDeleteFailed": "Failed to delete category",
+      "confirmDelete": "Are you sure you want to delete this category?",
+      "deleteWarning": "This action cannot be undone.",
+      "loading": "Loading categories..."
+    }
+  }
+}

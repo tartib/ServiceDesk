@@ -1,0 +1,59 @@
+{
+  "roadmap": {
+    "title": "Roadmap",
+    "zoom": {
+      "in": "Zoom in",
+      "out": "Zoom out",
+      "days": "Days",
+      "weeks": "Weeks",
+      "months": "Months",
+      "quarters": "Quarters"
+    },
+    "filters": {
+      "search": "Search timeline...",
+      "assignee": "Assignee",
+      "type": "Type",
+      "status": "Status",
+      "clearAll": "Clear all filters"
+    },
+    "types": {
+      "epic": "Epic",
+      "story": "Story",
+      "task": "Task",
+      "bug": "Bug"
+    },
+    "status": {
+      "todo": "To Do",
+      "inProgress": "In Progress",
+      "done": "Done"
+    },
+    "create": {
+      "button": "Create Epic",
+      "placeholder": "What needs to be done?",
+      "creating": "Creating...",
+      "success": "Created successfully!",
+      "error": "Failed to create. Please try again."
+    },
+    "columns": {
+      "workItems": "Work Items",
+      "timeline": "Timeline"
+    },
+    "progress": {
+      "label": "Progress",
+      "completed": "completed"
+    },
+    "dates": {
+      "noStart": "No start",
+      "noEnd": "No end",
+      "startDate": "Start Date",
+      "dueDate": "Due Date"
+    },
+    "warnings": {
+      "missingDates": "Missing or invalid dates",
+      "noTasks": "No tasks found",
+      "unauthorized": "Unauthorized - redirecting to login"
+    },
+    "loading": "Loading roadmap...",
+    "today": "Today"
+  }
+}

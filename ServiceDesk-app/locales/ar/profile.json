@@ -1,0 +1,23 @@
+{
+  "profile": {
+    "title": "إعدادات الملف الشخصي",
+    "subtitle": "إدارة معلومات حسابك وتفضيلاتك",
+    "profileInfo": "معلومات الملف الشخصي",
+    "fullName": "الاسم الكامل",
+    "email": "البريد الإلكتروني",
+    "role": "الدور",
+    "updateProfile": "تحديث الملف الشخصي",
+    "updating": "جاري التحديث...",
+    "profileUpdated": "تم تحديث الملف الشخصي بنجاح!",
+    "changePassword": "تغيير كلمة المرور",
+    "currentPassword": "كلمة المرور الحالية",
+    "newPassword": "كلمة المرور الجديدة",
+    "confirmNewPassword": "تأكيد كلمة المرور الجديدة",
+    "changing": "جاري التغيير...",
+    "passwordChanged": "تم تغيير كلمة المرور بنجاح!",
+    "nameMinLength": "يجب أن يكون الاسم حرفين على الأقل",
+    "invalidEmail": "عنوان بريد إلكتروني غير صحيح",
+    "passwordMinLength": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+    "passwordMismatch": "كلمات المرور غير متطابقة"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your application preferences and notifications",
+    "language": "Language",
+    "languageDescription": "Choose the application interface language",
+    "appearance": "Appearance",
+    "appearanceDescription": "Choose your preferred application theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "notifications": "Notifications",
+    "notificationsDescription": "Control your notification preferences",
+    "emailNotifications": "Email Notifications",
+    "emailNotificationsDesc": "Receive notifications via email",
+    "browserNotifications": "Browser Notifications",
+    "browserNotificationsDesc": "Real-time browser push notifications",
+    "notificationTypes": "Notification Types",
+    "incidents": "Incidents",
+    "incidentsDesc": "New incidents and status updates",
+    "tasks": "Tasks",
+    "tasksDesc": "Task assignments and updates",
+    "mentions": "Mentions",
+    "mentionsDesc": "When someone mentions you in a comment"
+  }
+}

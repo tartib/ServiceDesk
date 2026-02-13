@@ -1,0 +1,93 @@
+{
+  "inventory": {
+    "title": "Inventory Management",
+    "subtitle": "Track and manage inventory stock levels",
+    "addItem": "Add Item",
+    "adjustStock": "Adjust Stock",
+    "search": "Search inventory...",
+    "stats": {
+      "totalItems": "Total Items",
+      "inStock": "In Stock",
+      "lowStock": "Low Stock",
+      "outOfStock": "Out of Stock"
+    },
+    "table": {
+      "item": "Item",
+      "category": "Category",
+      "currentStock": "Current Stock",
+      "minMax": "Min/Max",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "inStock": "In Stock",
+      "lowStock": "Low Stock",
+      "outOfStock": "Out of Stock"
+    },
+    "addModal": {
+      "title": "Add New Inventory Item",
+      "nameEn": "Name (English)",
+      "nameAr": "Name (Arabic)",
+      "category": "Category",
+      "selectCategory": "Select a category",
+      "loadingCategories": "Loading categories...",
+      "noCategories": "No categories available. Please create categories first.",
+      "unit": "Unit",
+      "initialQuantity": "Initial Quantity",
+      "minThreshold": "Min Threshold",
+      "maxThreshold": "Max Threshold",
+      "supplier": "Supplier",
+      "costPerUnit": "Cost per Unit",
+      "itemImage": "Item Image (Optional)",
+      "uploadImage": "Upload Image",
+      "cancel": "Cancel",
+      "addButton": "Add Item",
+      "adding": "Adding..."
+    },
+    "adjustModal": {
+      "title": "Adjust Stock",
+      "addStock": "Add Stock",
+      "removeStock": "Remove Stock",
+      "quantity": "Quantity",
+      "reason": "Reason",
+      "selectReason": "Select a reason",
+      "reasons": {
+        "restock": "Restock from supplier",
+        "adjustment": "Inventory adjustment",
+        "usage": "Used in operations",
+        "damaged": "Damaged items",
+        "expired": "Expired items",
+        "returned": "Customer return"
+      },
+      "notes": "Notes (Optional)",
+      "currentLevel": "Current Level",
+      "newLevel": "New Level",
+      "warning": "Warning: This will result in negative stock!",
+      "cancel": "Cancel",
+      "addButton": "Add Stock",
+      "removeButton": "Remove Stock",
+      "adjusting": "Adjusting..."
+    },
+    "messages": {
+      "itemAdded": "Inventory item added successfully",
+      "itemAddFailed": "Failed to add item",
+      "stockAdjusted": "Stock adjusted successfully",
+      "stockAdjustFailed": "Failed to adjust stock",
+      "loading": "Loading inventory...",
+      "noItems": "No inventory items yet",
+      "noItemsDesc": "Get started by adding your first inventory item",
+      "noResults": "No items found",
+      "noResultsDesc": "Try adjusting your search query"
+    },
+    "units": {
+      "kg": "Kilograms (kg)",
+      "g": "Grams (g)",
+      "l": "Liters (l)",
+      "ml": "Milliliters (ml)",
+      "pcs": "Pieces (pcs)",
+      "cup": "Cups",
+      "tbsp": "Tablespoons (tbsp)",
+      "tsp": "Teaspoons (tsp)"
+    }
+  }
+}

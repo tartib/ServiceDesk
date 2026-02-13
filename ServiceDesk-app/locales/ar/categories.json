@@ -1,0 +1,36 @@
+{
+  "categories": {
+    "title": "الفئات",
+    "subtitle": "إدارة فئات المنتجات",
+    "newCategory": "فئة جديدة",
+    "search": "البحث في الفئات...",
+    "status": "الحالة",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "noCategories": "لا توجد فئات بعد",
+    "noCategoriesDesc": "ابدأ بإنشاء أول فئة",
+    "noResults": "لم يتم العثور على فئات",
+    "noResultsDesc": "حاول تعديل كلمات البحث",
+    "createCategory": "إنشاء فئة",
+    "addModal": {
+      "title": "إضافة فئة جديدة",
+      "nameEn": "الاسم (بالإنجليزية)",
+      "nameAr": "الاسم (بالعربية)",
+      "description": "الوصف (اختياري)",
+      "descriptionPlaceholder": "وصف مختصر للفئة",
+      "charactersRemaining": "حرف متبقي",
+      "cancel": "إلغاء",
+      "addButton": "إضافة فئة",
+      "adding": "جاري الإضافة..."
+    },
+    "messages": {
+      "categoryAdded": "تمت إضافة الفئة بنجاح",
+      "categoryAddFailed": "فشل في إضافة الفئة",
+      "categoryDeleted": "تم حذف الفئة بنجاح",
+      "categoryDeleteFailed": "فشل في حذف الفئة",
+      "confirmDelete": "هل أنت متأكد من حذف هذه الفئة؟",
+      "deleteWarning": "لا يمكن التراجع عن هذا الإجراء.",
+      "loading": "جاري تحميل الفئات..."
+    }
+  }
+}

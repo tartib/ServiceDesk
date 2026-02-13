@@ -1,0 +1,26 @@
+{
+  "settings": {
+    "title": "الإعدادات",
+    "subtitle": "إدارة تفضيلات التطبيق والإشعارات",
+    "language": "اللغة",
+    "languageDescription": "اختر لغة واجهة التطبيق",
+    "appearance": "المظهر",
+    "appearanceDescription": "اختر مظهر التطبيق المفضل",
+    "themeLight": "فاتح",
+    "themeDark": "داكن",
+    "themeSystem": "النظام",
+    "notifications": "الإشعارات",
+    "notificationsDescription": "تحكم في إشعارات التطبيق",
+    "emailNotifications": "إشعارات البريد الإلكتروني",
+    "emailNotificationsDesc": "استلام الإشعارات عبر البريد الإلكتروني",
+    "browserNotifications": "إشعارات المتصفح",
+    "browserNotificationsDesc": "إشعارات فورية في المتصفح",
+    "notificationTypes": "أنواع الإشعارات",
+    "incidents": "الحوادث",
+    "incidentsDesc": "إشعارات الحوادث الجديدة والتحديثات",
+    "tasks": "المهام",
+    "tasksDesc": "إشعارات المهام المسندة والتحديثات",
+    "mentions": "الإشارات",
+    "mentionsDesc": "عندما يتم الإشارة إليك في تعليق"
+  }
+}

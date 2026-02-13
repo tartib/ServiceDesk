@@ -1,0 +1,23 @@
+{
+  "profile": {
+    "title": "Profile Settings",
+    "subtitle": "Manage your account information and preferences",
+    "profileInfo": "Profile Information",
+    "fullName": "Full Name",
+    "email": "Email",
+    "role": "Role",
+    "updateProfile": "Update Profile",
+    "updating": "Updating...",
+    "profileUpdated": "Profile updated successfully!",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "changing": "Changing...",
+    "passwordChanged": "Password changed successfully!",
+    "nameMinLength": "Name must be at least 2 characters",
+    "invalidEmail": "Invalid email address",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "passwordMismatch": "Passwords don't match"
+  }
+}
