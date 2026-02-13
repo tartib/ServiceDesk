@@ -2,6 +2,8 @@
 
 A full-stack **IT Service Management (ITSM)** and **Project Management** platform built with Next.js and Express.js.
 
+![Home Page](screen-homePage.png)
+
 ## Features
 
 ### ITSM Module
