@@ -19,25 +19,8 @@ import {
   ProjectToolbar,
   LoadingState,
 } from '@/components/projects';
-import { useMethodology } from '@/hooks/useMethodology';
-
-interface CheckIn {
-  id: string;
-  date: string;
-  author: string;
-  authorAvatar?: string;
-  keyResultId: string;
-  keyResultTitle: string;
-  objectiveTitle: string;
-  previousValue: number;
-  currentValue: number;
-  targetValue: number;
-  unit: string;
-  confidence: 'high' | 'medium' | 'low';
-  status: 'on_track' | 'at_risk' | 'behind';
-  note?: string;
-  blockers?: string[];
-}
+import { useMethodology, OkrCheckIn } from '@/hooks/useMethodology';
+import { useMemo } from 'react';
 
 interface Project {
   _id: string;
@@ -45,85 +28,15 @@ interface Project {
   key: string;
 }
 
-const defaultCheckIns: CheckIn[] = [
-  {
-    id: 'ci1',
-    date: '2024-01-15T10:00:00Z',
-    author: 'Sarah Johnson',
-    keyResultId: 'kr1',
-    keyResultTitle: 'Achieve NPS score of 50+',
-    objectiveTitle: 'Increase customer satisfaction',
-    previousValue: 42,
-    currentValue: 45,
-    targetValue: 50,
-    unit: 'points',
-    confidence: 'medium',
-    status: 'at_risk',
-    note: 'Good progress this week. Customer feedback sessions helped identify key pain points.',
-    blockers: ['Waiting for engineering resources to fix top complaints'],
-  },
-  {
-    id: 'ci2',
-    date: '2024-01-15T09:30:00Z',
-    author: 'Mike Chen',
-    keyResultId: 'kr2',
-    keyResultTitle: 'Reduce support ticket response time to 2 hours',
-    objectiveTitle: 'Increase customer satisfaction',
-    previousValue: 2.0,
-    currentValue: 1.5,
-    targetValue: 2,
-    unit: 'hours',
-    confidence: 'high',
-    status: 'on_track',
-    note: 'Exceeded target! New triage system is working well.',
-  },
-  {
-    id: 'ci3',
-    date: '2024-01-14T14:00:00Z',
-    author: 'John Doe',
-    keyResultId: 'kr4',
-    keyResultTitle: 'Release mobile app v2.0',
-    objectiveTitle: 'Launch new product features',
-    previousValue: 50,
-    currentValue: 60,
-    targetValue: 100,
-    unit: '%',
-    confidence: 'high',
-    status: 'on_track',
-    note: 'Completed user authentication module. Starting on dashboard features.',
-  },
-  {
-    id: 'ci4',
-    date: '2024-01-14T11:00:00Z',
-    author: 'Tech Lead',
-    keyResultId: 'kr5',
-    keyResultTitle: 'Implement AI-powered search',
-    objectiveTitle: 'Launch new product features',
-    previousValue: 25,
-    currentValue: 30,
-    targetValue: 100,
-    unit: '%',
-    confidence: 'low',
-    status: 'behind',
-    note: 'Facing technical challenges with the ML model accuracy.',
-    blockers: ['Need ML engineer support', 'Training data quality issues'],
-  },
-  {
-    id: 'ci5',
-    date: '2024-01-12T16:00:00Z',
-    author: 'Emily Davis',
-    keyResultId: 'kr3',
-    keyResultTitle: 'Increase customer retention rate to 95%',
-    objectiveTitle: 'Increase customer satisfaction',
-    previousValue: 90,
-    currentValue: 92,
-    targetValue: 95,
-    unit: '%',
-    confidence: 'high',
-    status: 'on_track',
-    note: 'New onboarding flow showing positive results. Churn rate decreased.',
-  },
-];
+interface FlatKR {
+  id: string;
+  title: string;
+  objectiveId: string;
+  objectiveTitle: string;
+  targetValue: number;
+  currentValue: number;
+  unit: string;
+}
 
 const confidenceConfig = {
   high: { label: 'High', color: 'bg-green-100 text-green-700' },
@@ -141,14 +54,39 @@ export default function CheckInsPage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params?.projectId as string;
-  
-  const { methodology } = useMethodology(projectId);
+  const { methodology, config, isLoading: methodLoading, addCheckIn } = useMethodology(projectId);
+
+  const checkIns: OkrCheckIn[] = config?.okr?.checkIns || [];
+
+  const flatKRs: FlatKR[] = useMemo(() => {
+    const objectives = config?.okr?.objectives || [];
+    const result: FlatKR[] = [];
+    objectives.forEach(obj => {
+      (obj.keyResults || []).forEach(kr => {
+        result.push({
+          id: kr.id,
+          title: kr.title,
+          objectiveId: obj.id,
+          objectiveTitle: obj.title,
+          targetValue: kr.targetValue,
+          currentValue: kr.currentValue,
+          unit: kr.unit,
+        });
+      });
+    });
+    return result;
+  }, [config]);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [checkIns] = useState<CheckIn[]>(defaultCheckIns);
   const [isLoading, setIsLoading] = useState(true);
   const [showNewCheckInModal, setShowNewCheckInModal] = useState(false);
-  const [filterWeek, setFilterWeek] = useState<string>('current');
+  const [filterWeek, setFilterWeek] = useState<string>('all');
+  const [submitting, setSubmitting] = useState(false);
+  const [selectedKRId, setSelectedKRId] = useState('');
+  const [ciValue, setCiValue] = useState('');
+  const [ciConfidence, setCiConfidence] = useState<'high' | 'medium' | 'low'>('medium');
+  const [ciNote, setCiNote] = useState('');
+  const [ciBlockers, setCiBlockers] = useState('');
 
   const fetchProject = useCallback(async (token: string) => {
     try {
@@ -172,6 +110,45 @@ export default function CheckInsPage() {
     }
     fetchProject(token);
   }, [projectId, router, fetchProject]);
+
+  const handleSubmitCheckIn = async () => {
+    if (!selectedKRId || !ciValue) return;
+    setSubmitting(true);
+    try {
+      const kr = flatKRs.find(k => k.id === selectedKRId);
+      if (!kr) return;
+
+      const newValue = Number(ciValue);
+      const progress = kr.targetValue > 0 ? (newValue / kr.targetValue) * 100 : 0;
+      let status: 'on_track' | 'at_risk' | 'behind' = 'on_track';
+      if (progress < 40) status = 'behind';
+      else if (progress < 70) status = 'at_risk';
+
+      const blockersList = ciBlockers.trim() ? ciBlockers.split('\n').filter(b => b.trim()) : [];
+
+      await addCheckIn({
+        keyResultId: kr.id,
+        objectiveId: kr.objectiveId,
+        previousValue: kr.currentValue,
+        currentValue: newValue,
+        confidence: ciConfidence,
+        status,
+        note: ciNote.trim() || undefined,
+        blockers: blockersList.length > 0 ? blockersList : undefined,
+      });
+
+      setShowNewCheckInModal(false);
+      setSelectedKRId('');
+      setCiValue('');
+      setCiConfidence('medium');
+      setCiNote('');
+      setCiBlockers('');
+    } catch (err) {
+      console.error('Failed to submit check-in:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -199,8 +176,8 @@ export default function CheckInsPage() {
     };
   };
 
-  const groupByDate = (items: CheckIn[]) => {
-    const groups: Record<string, CheckIn[]> = {};
+  const groupByDate = (items: OkrCheckIn[]) => {
+    const groups: Record<string, OkrCheckIn[]> = {};
     items.forEach(item => {
       const date = new Date(item.date).toLocaleDateString('en-US', {
         weekday: 'long',
@@ -213,10 +190,24 @@ export default function CheckInsPage() {
     return groups;
   };
 
+  const getKRTitle = (krId: string) => {
+    return flatKRs.find(k => k.id === krId)?.title || krId;
+  };
+
+  const getObjTitle = (objId: string) => {
+    const obj = (config?.okr?.objectives || []).find(o => o.id === objId);
+    return obj?.title || objId;
+  };
+
+  const getKRTarget = (krId: string) => {
+    const kr = flatKRs.find(k => k.id === krId);
+    return kr ? `${kr.targetValue} ${kr.unit}` : '';
+  };
+
   const stats = getStats();
   const groupedCheckIns = groupByDate(checkIns);
 
-  if (isLoading) {
+  if (isLoading || methodLoading) {
     return <LoadingState />;
   }
 
@@ -290,7 +281,8 @@ export default function CheckInsPage() {
               <div className="space-y-4 ml-8">
                 {items.map((checkIn) => {
                   const StatusIcon = statusConfig[checkIn.status].icon;
-                  const progress = getProgress(checkIn.currentValue, checkIn.targetValue);
+                  const krForCheckIn = flatKRs.find(k => k.id === checkIn.keyResultId);
+                  const progress = getProgress(checkIn.currentValue, krForCheckIn?.targetValue || 100);
 
                   return (
                     <div
@@ -301,10 +293,10 @@ export default function CheckInsPage() {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-sm font-medium text-purple-700">
-                            {checkIn.author.split(' ').map(n => n[0]).join('')}
+                            {(checkIn.authorName || 'U').split(' ').map(n => n[0]).join('')}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">{checkIn.author}</p>
+                            <p className="font-medium text-gray-900">{checkIn.authorName}</p>
                             <p className="text-xs text-gray-500">{formatDate(checkIn.date)}</p>
                           </div>
                         </div>
@@ -323,9 +315,9 @@ export default function CheckInsPage() {
                       <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
                           <Target className="h-3.5 w-3.5" />
-                          <span>{checkIn.objectiveTitle}</span>
+                          <span>{getObjTitle(checkIn.objectiveId)}</span>
                           <ChevronRight className="h-3 w-3" />
-                          <span className="font-medium text-gray-700">{checkIn.keyResultTitle}</span>
+                          <span className="font-medium text-gray-700">{getKRTitle(checkIn.keyResultId)}</span>
                         </div>
                         
                         {/* Progress */}
@@ -333,9 +325,9 @@ export default function CheckInsPage() {
                           <div className="flex-1">
                             <div className="flex items-center justify-between text-sm mb-1">
                               <span className="text-gray-600">
-                                {checkIn.previousValue} → <span className="font-semibold text-gray-900">{checkIn.currentValue}</span> {checkIn.unit}
+                                {checkIn.previousValue} → <span className="font-semibold text-gray-900">{checkIn.currentValue}</span> {krForCheckIn?.unit || ''}
                               </span>
-                              <span className="text-gray-500">Target: {checkIn.targetValue} {checkIn.unit}</span>
+                              <span className="text-gray-500">Target: {getKRTarget(checkIn.keyResultId)}</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
@@ -402,12 +394,17 @@ export default function CheckInsPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Key Result</label>
-                <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select
+                  value={selectedKRId}
+                  onChange={(e) => setSelectedKRId(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                   <option value="">Select a key result...</option>
-                  <option value="kr1">Achieve NPS score of 50+</option>
-                  <option value="kr2">Reduce support ticket response time</option>
-                  <option value="kr3">Increase customer retention rate</option>
-                  <option value="kr4">Release mobile app v2.0</option>
+                  {flatKRs.map(kr => (
+                    <option key={kr.id} value={kr.id}>
+                      {kr.objectiveTitle} → {kr.title}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -415,13 +412,19 @@ export default function CheckInsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Current Value</label>
                   <input
                     type="number"
+                    value={ciValue}
+                    onChange={(e) => setCiValue(e.target.value)}
                     placeholder="0"
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Confidence</label>
-                  <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <select
+                    value={ciConfidence}
+                    onChange={(e) => setCiConfidence(e.target.value as 'high' | 'medium' | 'low')}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
                     <option value="high">High - Will achieve</option>
                     <option value="medium">Medium - Might achieve</option>
                     <option value="low">Low - Unlikely to achieve</option>
@@ -431,6 +434,8 @@ export default function CheckInsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Progress Update</label>
                 <textarea
+                  value={ciNote}
+                  onChange={(e) => setCiNote(e.target.value)}
                   placeholder="What progress did you make this week?"
                   rows={3}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -439,6 +444,8 @@ export default function CheckInsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Blockers (optional)</label>
                 <textarea
+                  value={ciBlockers}
+                  onChange={(e) => setCiBlockers(e.target.value)}
                   placeholder="Any blockers or challenges? (one per line)"
                   rows={2}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -451,13 +458,33 @@ export default function CheckInsPage() {
                 >
                   Cancel
                 </button>
-                <button className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                <button
+                  onClick={handleSubmitCheckIn}
+                  disabled={submitting || !selectedKRId || !ciValue}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                >
                   <Send className="h-4 w-4" />
-                  Submit Check-in
+                  {submitting ? 'Submitting...' : 'Submit Check-in'}
                 </button>
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {checkIns.length === 0 && (
+        <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
+          <MessageSquare className="h-12 w-12 text-gray-300 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No check-ins yet</h3>
+          <p className="text-sm text-gray-500 mb-6">Submit your first check-in to track progress</p>
+          <button
+            onClick={() => setShowNewCheckInModal(true)}
+            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <Send className="h-4 w-4" />
+            New Check-in
+          </button>
         </div>
       )}
     </div>

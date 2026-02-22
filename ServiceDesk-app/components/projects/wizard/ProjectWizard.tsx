@@ -7,6 +7,7 @@ import StepProjectInfo from './StepProjectInfo';
 import StepMethodology from './StepMethodology';
 import StepMethodologyConfig from './StepMethodologyConfig';
 import StepReview from './StepReview';
+import { getDefaultLandingPage } from '@/hooks/useMethodology';
 
 export type MethodologyType = 'scrum' | 'kanban' | 'waterfall' | 'itil' | 'lean' | 'okr';
 
@@ -144,7 +145,8 @@ export default function ProjectWizard({ onClose, onSuccess }: ProjectWizardProps
       if (onSuccess) {
         onSuccess(projectId);
       } else {
-        router.push(`/projects/${projectId}/board`);
+        const landing = getDefaultLandingPage(formData.methodology as MethodologyType);
+        router.push(`/projects/${projectId}${landing}`);
       }
 
       onClose();

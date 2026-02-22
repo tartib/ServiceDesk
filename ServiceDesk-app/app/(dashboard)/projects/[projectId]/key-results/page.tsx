@@ -7,10 +7,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  Plus,
   ChevronRight,
   MoreHorizontal,
-  Calendar,
 } from 'lucide-react';
 import {
   ProjectHeader,
@@ -19,25 +17,18 @@ import {
   LoadingState,
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
+import { useMemo } from 'react';
 
-interface KeyResult {
+interface FlatKeyResult {
   id: string;
   title: string;
   objectiveId: string;
   objectiveTitle: string;
   targetValue: number;
   currentValue: number;
-  startValue: number;
   unit: string;
-  owner: string;
-  status: 'on_track' | 'at_risk' | 'behind' | 'achieved';
-  dueDate: string;
-  lastUpdated: string;
-  updates: Array<{
-    date: string;
-    value: number;
-    note?: string;
-  }>;
+  owner?: string;
+  status: 'on_track' | 'at_risk' | 'behind';
 }
 
 interface Project {
@@ -46,109 +37,10 @@ interface Project {
   key: string;
 }
 
-const defaultKeyResults: KeyResult[] = [
-  {
-    id: 'kr1',
-    title: 'Achieve NPS score of 50+',
-    objectiveId: 'obj1',
-    objectiveTitle: 'Increase customer satisfaction',
-    targetValue: 50,
-    currentValue: 45,
-    startValue: 35,
-    unit: 'points',
-    owner: 'Sarah Johnson',
-    status: 'at_risk',
-    dueDate: '2024-03-31',
-    lastUpdated: '2024-01-15',
-    updates: [
-      { date: '2024-01-01', value: 35 },
-      { date: '2024-01-08', value: 40 },
-      { date: '2024-01-15', value: 45 },
-    ],
-  },
-  {
-    id: 'kr2',
-    title: 'Reduce support ticket response time to 2 hours',
-    objectiveId: 'obj1',
-    objectiveTitle: 'Increase customer satisfaction',
-    targetValue: 2,
-    currentValue: 1.5,
-    startValue: 4,
-    unit: 'hours',
-    owner: 'Mike Chen',
-    status: 'achieved',
-    dueDate: '2024-03-31',
-    lastUpdated: '2024-01-14',
-    updates: [
-      { date: '2024-01-01', value: 4 },
-      { date: '2024-01-08', value: 2.5 },
-      { date: '2024-01-14', value: 1.5 },
-    ],
-  },
-  {
-    id: 'kr3',
-    title: 'Increase customer retention rate to 95%',
-    objectiveId: 'obj1',
-    objectiveTitle: 'Increase customer satisfaction',
-    targetValue: 95,
-    currentValue: 92,
-    startValue: 88,
-    unit: '%',
-    owner: 'Emily Davis',
-    status: 'on_track',
-    dueDate: '2024-03-31',
-    lastUpdated: '2024-01-15',
-    updates: [
-      { date: '2024-01-01', value: 88 },
-      { date: '2024-01-08', value: 90 },
-      { date: '2024-01-15', value: 92 },
-    ],
-  },
-  {
-    id: 'kr4',
-    title: 'Release mobile app v2.0',
-    objectiveId: 'obj2',
-    objectiveTitle: 'Launch new product features',
-    targetValue: 100,
-    currentValue: 60,
-    startValue: 0,
-    unit: '%',
-    owner: 'John Doe',
-    status: 'on_track',
-    dueDate: '2024-03-31',
-    lastUpdated: '2024-01-15',
-    updates: [
-      { date: '2024-01-01', value: 20 },
-      { date: '2024-01-08', value: 40 },
-      { date: '2024-01-15', value: 60 },
-    ],
-  },
-  {
-    id: 'kr5',
-    title: 'Implement AI-powered search',
-    objectiveId: 'obj2',
-    objectiveTitle: 'Launch new product features',
-    targetValue: 100,
-    currentValue: 30,
-    startValue: 0,
-    unit: '%',
-    owner: 'Tech Lead',
-    status: 'behind',
-    dueDate: '2024-03-31',
-    lastUpdated: '2024-01-12',
-    updates: [
-      { date: '2024-01-01', value: 10 },
-      { date: '2024-01-08', value: 20 },
-      { date: '2024-01-12', value: 30 },
-    ],
-  },
-];
-
 const statusConfig = {
   on_track: { label: 'On Track', color: 'bg-green-100 text-green-700', icon: TrendingUp, iconColor: 'text-green-500' },
   at_risk: { label: 'At Risk', color: 'bg-yellow-100 text-yellow-700', icon: Minus, iconColor: 'text-yellow-500' },
   behind: { label: 'Behind', color: 'bg-red-100 text-red-700', icon: TrendingDown, iconColor: 'text-red-500' },
-  achieved: { label: 'Achieved', color: 'bg-blue-100 text-blue-700', icon: Target, iconColor: 'text-blue-500' },
 };
 
 export default function KeyResultsPage() {
@@ -156,14 +48,36 @@ export default function KeyResultsPage() {
   const router = useRouter();
   const projectId = params?.projectId as string;
   
-  const { methodology } = useMethodology(projectId);
+  const { methodology, config, isLoading: methodLoading, updateKeyResult } = useMethodology(projectId);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [keyResults] = useState<KeyResult[]>(defaultKeyResults);
   const [isLoading, setIsLoading] = useState(true);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [selectedKR, setSelectedKR] = useState<KeyResult | null>(null);
+  const [selectedKR, setSelectedKR] = useState<FlatKeyResult | null>(null);
   const [filterObjective, setFilterObjective] = useState<string>('all');
+  const [updateValue, setUpdateValue] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const keyResults: FlatKeyResult[] = useMemo(() => {
+    const objectives = config?.okr?.objectives || [];
+    const flat: FlatKeyResult[] = [];
+    objectives.forEach(obj => {
+      (obj.keyResults || []).forEach(kr => {
+        flat.push({
+          id: kr.id,
+          title: kr.title,
+          objectiveId: obj.id,
+          objectiveTitle: obj.title,
+          targetValue: kr.targetValue,
+          currentValue: kr.currentValue,
+          unit: kr.unit,
+          owner: kr.owner || obj.owner,
+          status: kr.status || 'on_track',
+        });
+      });
+    });
+    return flat;
+  }, [config]);
 
   const fetchProject = useCallback(async (token: string) => {
     try {
@@ -188,10 +102,9 @@ export default function KeyResultsPage() {
     fetchProject(token);
   }, [projectId, router, fetchProject]);
 
-  const getProgress = (kr: KeyResult) => {
-    const range = kr.targetValue - kr.startValue;
-    if (range === 0) return 100;
-    const progress = ((kr.currentValue - kr.startValue) / range) * 100;
+  const getProgress = (kr: FlatKeyResult) => {
+    if (kr.targetValue === 0) return 100;
+    const progress = (kr.currentValue / kr.targetValue) * 100;
     return Math.min(Math.max(progress, 0), 100);
   };
 
@@ -214,13 +127,36 @@ export default function KeyResultsPage() {
       onTrack: keyResults.filter(kr => kr.status === 'on_track').length,
       atRisk: keyResults.filter(kr => kr.status === 'at_risk').length,
       behind: keyResults.filter(kr => kr.status === 'behind').length,
-      achieved: keyResults.filter(kr => kr.status === 'achieved').length,
     };
+  };
+
+  const handleUpdateProgress = async () => {
+    if (!selectedKR || !updateValue) return;
+    setSubmitting(true);
+    try {
+      const newValue = Number(updateValue);
+      const progress = selectedKR.targetValue > 0 ? (newValue / selectedKR.targetValue) * 100 : 0;
+      let status: 'on_track' | 'at_risk' | 'behind' = 'on_track';
+      if (progress < 40) status = 'behind';
+      else if (progress < 70) status = 'at_risk';
+
+      await updateKeyResult(selectedKR.objectiveId, selectedKR.id, {
+        currentValue: newValue,
+        status,
+      });
+      setShowUpdateModal(false);
+      setSelectedKR(null);
+      setUpdateValue('');
+    } catch (err) {
+      console.error('Failed to update key result:', err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const stats = getStats();
 
-  if (isLoading) {
+  if (isLoading || methodLoading) {
     return <LoadingState />;
   }
 
@@ -276,10 +212,6 @@ export default function KeyResultsPage() {
             <TrendingDown className="h-4 w-4 text-red-500" />
             <span className="text-sm text-red-600">{stats.behind} Behind</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-blue-500" />
-            <span className="text-sm text-blue-600">{stats.achieved} Achieved</span>
-          </div>
         </div>
       </div>
 
@@ -333,7 +265,6 @@ export default function KeyResultsPage() {
                   <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div
                       className={`h-2.5 rounded-full transition-all duration-300 ${
-                        kr.status === 'achieved' ? 'bg-blue-500' :
                         kr.status === 'on_track' ? 'bg-green-500' :
                         kr.status === 'at_risk' ? 'bg-yellow-500' : 'bg-red-500'
                       }`}
@@ -345,16 +276,14 @@ export default function KeyResultsPage() {
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                   <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-xs font-medium text-purple-700">
-                        {kr.owner.split(' ').map(n => n[0]).join('')}
+                    {kr.owner && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-xs font-medium text-purple-700">
+                          {kr.owner.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <span>{kr.owner}</span>
                       </div>
-                      <span>{kr.owner}</span>
-                    </div>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      Due {new Date(kr.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
+                    )}
                   </div>
                   <button
                     onClick={() => {
@@ -373,101 +302,60 @@ export default function KeyResultsPage() {
       </div>
 
       {/* Update Modal */}
-      {showUpdateModal && (
+      {showUpdateModal && selectedKR && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              {selectedKR ? 'Update Progress' : 'Add Key Result'}
-            </h2>
-            {selectedKR ? (
-              <div className="space-y-4">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500">Key Result</p>
-                  <p className="font-medium text-gray-900">{selectedKR.title}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Value ({selectedKR.unit})
-                  </label>
-                  <input
-                    type="number"
-                    defaultValue={selectedKR.currentValue}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Target: {selectedKR.targetValue} {selectedKR.unit}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
-                  <textarea
-                    placeholder="Add a note about this update..."
-                    rows={2}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  />
-                </div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Update Progress</h2>
+            <div className="space-y-4">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">Key Result</p>
+                <p className="font-medium text-gray-900">{selectedKR.title}</p>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Increase revenue by 20%"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
-                    <input
-                      type="number"
-                      placeholder="0"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Target</label>
-                    <input
-                      type="number"
-                      placeholder="100"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                    <input
-                      type="text"
-                      placeholder="%"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Objective</label>
-                  <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {getUniqueObjectives().map(([id, title]) => (
-                      <option key={id} value={id}>{title}</option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Current Value ({selectedKR.unit})
+                </label>
+                <input
+                  type="number"
+                  value={updateValue}
+                  onChange={(e) => setUpdateValue(e.target.value)}
+                  placeholder={String(selectedKR.currentValue)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Target: {selectedKR.targetValue} {selectedKR.unit}
+                </p>
               </div>
-            )}
+            </div>
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => {
                   setShowUpdateModal(false);
                   setSelectedKR(null);
+                  setUpdateValue('');
                 }}
                 className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
-              <button className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                {selectedKR ? 'Save Update' : 'Create'}
+              <button
+                onClick={handleUpdateProgress}
+                disabled={submitting || !updateValue}
+                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {submitting ? 'Saving...' : 'Save Update'}
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {keyResults.length === 0 && (
+        <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
+          <Target className="h-12 w-12 text-gray-300 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No key results yet</h3>
+          <p className="text-sm text-gray-500">Add key results to your objectives first</p>
         </div>
       )}
     </div>

@@ -132,4 +132,13 @@ router.put('/:projectId/methodology/itil/sla', methodologyController.updateSlaDe
 router.post('/:projectId/methodology/okr/objectives', methodologyController.addObjective.bind(methodologyController));
 router.put('/:projectId/methodology/okr/objectives/:objectiveId', methodologyController.updateObjective.bind(methodologyController));
 
+// Key Result routes
+router.post('/:projectId/methodology/okr/objectives/:objectiveId/key-results', methodologyController.addKeyResult.bind(methodologyController));
+router.put('/:projectId/methodology/okr/objectives/:objectiveId/key-results/:krId', methodologyController.updateKeyResult.bind(methodologyController));
+router.delete('/:projectId/methodology/okr/objectives/:objectiveId/key-results/:krId', methodologyController.deleteKeyResult.bind(methodologyController));
+
+// Check-in routes
+router.post('/:projectId/methodology/okr/check-ins', methodologyController.addCheckIn.bind(methodologyController));
+router.get('/:projectId/methodology/okr/check-ins', methodologyController.getCheckIns.bind(methodologyController));
+
 export default router;

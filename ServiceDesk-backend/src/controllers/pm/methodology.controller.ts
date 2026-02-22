@@ -521,6 +521,160 @@ export class MethodologyController {
       });
     }
   }
+
+  // ============================================
+  // Key Result endpoints
+  // ============================================
+
+  async addKeyResult(req: Request, res: Response): Promise<void> {
+    try {
+      const { projectId, objectiveId } = req.params;
+      const keyResult = req.body;
+
+      if (!keyResult.title || keyResult.targetValue === undefined) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'title and targetValue are required' },
+        });
+        return;
+      }
+
+      const config = await methodologyService.addKeyResult(projectId, objectiveId, {
+        ...keyResult,
+        id: keyResult.id || `kr_${Date.now()}`,
+        currentValue: keyResult.currentValue || 0,
+        unit: keyResult.unit || '%',
+        status: keyResult.status || 'on_track',
+      });
+
+      if (!config) {
+        res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Objective not found' },
+        });
+        return;
+      }
+
+      res.json({ success: true, data: config });
+    } catch (error) {
+      logger.error('Error adding key result:', error);
+      res.status(500).json({
+        success: false,
+        error: { code: 'SERVER_ERROR', message: 'Failed to add key result' },
+      });
+    }
+  }
+
+  async updateKeyResult(req: Request, res: Response): Promise<void> {
+    try {
+      const { projectId, objectiveId, krId } = req.params;
+      const updates = req.body;
+
+      const config = await methodologyService.updateKeyResult(projectId, objectiveId, krId, updates);
+      if (!config) {
+        res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Key result not found' },
+        });
+        return;
+      }
+
+      res.json({ success: true, data: config });
+    } catch (error) {
+      logger.error('Error updating key result:', error);
+      res.status(500).json({
+        success: false,
+        error: { code: 'SERVER_ERROR', message: 'Failed to update key result' },
+      });
+    }
+  }
+
+  async deleteKeyResult(req: Request, res: Response): Promise<void> {
+    try {
+      const { projectId, objectiveId, krId } = req.params;
+
+      const config = await methodologyService.deleteKeyResult(projectId, objectiveId, krId);
+      if (!config) {
+        res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Key result not found' },
+        });
+        return;
+      }
+
+      res.json({ success: true, data: config });
+    } catch (error) {
+      logger.error('Error deleting key result:', error);
+      res.status(500).json({
+        success: false,
+        error: { code: 'SERVER_ERROR', message: 'Failed to delete key result' },
+      });
+    }
+  }
+
+  // ============================================
+  // Check-in endpoints
+  // ============================================
+
+  async addCheckIn(req: Request, res: Response): Promise<void> {
+    try {
+      const { projectId } = req.params;
+      const checkIn = req.body;
+
+      if (!checkIn.keyResultId || !checkIn.objectiveId || checkIn.currentValue === undefined) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'keyResultId, objectiveId, and currentValue are required' },
+        });
+        return;
+      }
+
+      const user = (req as any).user;
+
+      const config = await methodologyService.addCheckIn(projectId, {
+        ...checkIn,
+        id: checkIn.id || `ci_${Date.now()}`,
+        date: new Date(),
+        author: user?.id || checkIn.author,
+        authorName: user?.name || checkIn.authorName || 'Unknown',
+        confidence: checkIn.confidence || 'medium',
+        status: checkIn.status || 'on_track',
+        blockers: checkIn.blockers || [],
+      });
+
+      if (!config) {
+        res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'OKR config not found' },
+        });
+        return;
+      }
+
+      res.json({ success: true, data: config });
+    } catch (error) {
+      logger.error('Error adding check-in:', error);
+      res.status(500).json({
+        success: false,
+        error: { code: 'SERVER_ERROR', message: 'Failed to add check-in' },
+      });
+    }
+  }
+
+  async getCheckIns(req: Request, res: Response): Promise<void> {
+    try {
+      const { projectId } = req.params;
+
+      const checkIns = await methodologyService.getCheckIns(projectId);
+
+      res.json({ success: true, data: checkIns });
+    } catch (error) {
+      logger.error('Error getting check-ins:', error);
+      res.status(500).json({
+        success: false,
+        error: { code: 'SERVER_ERROR', message: 'Failed to get check-ins' },
+      });
+    }
+  }
 }
 
 export const methodologyController = new MethodologyController();

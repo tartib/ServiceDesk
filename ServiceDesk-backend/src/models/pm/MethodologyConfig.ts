@@ -244,10 +244,26 @@ export interface IOkrCycle {
   status: 'planning' | 'active' | 'review' | 'closed';
 }
 
+export interface ICheckIn {
+  id: string;
+  date: Date;
+  author: mongoose.Types.ObjectId;
+  authorName: string;
+  keyResultId: string;
+  objectiveId: string;
+  previousValue: number;
+  currentValue: number;
+  confidence: 'high' | 'medium' | 'low';
+  status: 'on_track' | 'at_risk' | 'behind';
+  note?: string;
+  blockers?: string[];
+}
+
 export interface IOkrConfig {
   cycleType: 'monthly' | 'quarterly' | 'yearly';
   cycles: IOkrCycle[];
   objectives: IObjective[];
+  checkIns: ICheckIn[];
   checkInFrequency: 'daily' | 'weekly' | 'biweekly';
   scoringMethod: 'percentage' | 'scale_1_10' | 'binary';
   settings: {
@@ -414,6 +430,7 @@ export const defaultOkrConfig: Partial<IOkrConfig> = {
   cycleType: 'quarterly',
   cycles: [],
   objectives: [],
+  checkIns: [],
   checkInFrequency: 'weekly',
   scoringMethod: 'percentage',
   settings: {

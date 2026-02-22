@@ -20,7 +20,7 @@ import {
   ProjectNavTabs,
   LoadingState,
 } from '@/components/projects';
-import { useMethodology } from '@/hooks/useMethodology';
+import { useMethodology, OkrObjective, OkrKeyResult, OkrCheckIn } from '@/hooks/useMethodology';
 
 const API = 'http://localhost:5000/api/v1';
 
@@ -70,6 +70,318 @@ interface MemberData {
   role: string;
 }
 
+// ─── OKR Analytics Sub-component ───────────────────────────────────────────
+function OkrAnalyticsDashboard({ projectId, project }: { projectId: string; project: Project | null }) {
+  const { methodology, config, isLoading } = useMethodology(projectId);
+
+  const objectives: OkrObjective[] = useMemo(() => config?.okr?.objectives || [], [config]);
+  const checkIns: OkrCheckIn[] = useMemo(() => config?.okr?.checkIns || [], [config]);
+
+  // Flatten all KRs
+  const allKRs: (OkrKeyResult & { objectiveTitle: string })[] = useMemo(() => {
+    const flat: (OkrKeyResult & { objectiveTitle: string })[] = [];
+    objectives.forEach(obj => {
+      (obj.keyResults || []).forEach(kr => {
+        flat.push({ ...kr, objectiveTitle: obj.title });
+      });
+    });
+    return flat;
+  }, [objectives]);
+
+  // Overall stats
+  const stats = useMemo(() => {
+    const totalObjectives = objectives.length;
+    const activeObjectives = objectives.filter(o => o.status === 'active').length;
+    const completedObjectives = objectives.filter(o => o.status === 'completed').length;
+    const totalKRs = allKRs.length;
+    const onTrack = allKRs.filter(kr => kr.status === 'on_track').length;
+    const atRisk = allKRs.filter(kr => kr.status === 'at_risk').length;
+    const behind = allKRs.filter(kr => kr.status === 'behind').length;
+
+    // Overall progress: average of all KR progress percentages
+    const avgProgress = totalKRs > 0
+      ? Math.round(allKRs.reduce((sum, kr) => {
+          const p = kr.targetValue > 0 ? (kr.currentValue / kr.targetValue) * 100 : 0;
+          return sum + Math.min(p, 100);
+        }, 0) / totalKRs)
+      : 0;
+
+    // Confidence from latest check-ins
+    const highConf = checkIns.filter(c => c.confidence === 'high').length;
+    const medConf = checkIns.filter(c => c.confidence === 'medium').length;
+    const lowConf = checkIns.filter(c => c.confidence === 'low').length;
+
+    return {
+      totalObjectives, activeObjectives, completedObjectives,
+      totalKRs, onTrack, atRisk, behind, avgProgress,
+      totalCheckIns: checkIns.length, highConf, medConf, lowConf,
+    };
+  }, [objectives, allKRs, checkIns]);
+
+  // Per-objective progress
+  const objectiveProgress = useMemo(() => {
+    return objectives.map(obj => {
+      const krs = obj.keyResults || [];
+      const progress = krs.length > 0
+        ? Math.round(krs.reduce((sum, kr) => {
+            const p = kr.targetValue > 0 ? (kr.currentValue / kr.targetValue) * 100 : 0;
+            return sum + Math.min(p, 100);
+          }, 0) / krs.length)
+        : 0;
+      return { ...obj, computedProgress: progress };
+    });
+  }, [objectives]);
+
+  // Recent check-ins (last 10)
+  const recentCheckIns = useMemo(() => {
+    return [...checkIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+  }, [checkIns]);
+
+  // KR status donut
+  const krDonut = useMemo(() => {
+    const total = stats.totalKRs || 1;
+    const circumference = 2 * Math.PI * 40;
+    const segments = [
+      { label: 'On Track', count: stats.onTrack, color: '#22c55e', pct: Math.round((stats.onTrack / total) * 100) },
+      { label: 'At Risk', count: stats.atRisk, color: '#eab308', pct: Math.round((stats.atRisk / total) * 100) },
+      { label: 'Behind', count: stats.behind, color: '#ef4444', pct: Math.round((stats.behind / total) * 100) },
+    ];
+    let offset = 0;
+    return segments.map(seg => {
+      const dash = (seg.count / total) * circumference;
+      const result = { ...seg, dasharray: `${dash} ${circumference}`, dashoffset: -offset };
+      offset += dash;
+      return result;
+    });
+  }, [stats]);
+
+  const getKRTitle = (krId: string) => allKRs.find(k => k.id === krId)?.title || krId;
+
+  if (isLoading) return <LoadingState />;
+
+  return (
+    <div className="flex flex-col h-full bg-gray-50">
+      <ProjectHeader projectKey={project?.key} projectName={project?.name} projectId={projectId} />
+      <ProjectNavTabs projectId={projectId} methodology={methodology || 'okr'} />
+
+      {/* Toolbar */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-gray-600" />
+          <h2 className="text-lg font-semibold text-gray-900">OKR Progress Dashboard</h2>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {/* Top Metrics */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          {[
+            { label: 'Objectives', value: stats.totalObjectives, icon: Target, color: 'bg-blue-500' },
+            { label: 'Active', value: stats.activeObjectives, icon: Zap, color: 'bg-green-500' },
+            { label: 'Key Results', value: stats.totalKRs, icon: CheckCircle, color: 'bg-purple-500' },
+            { label: 'On Track', value: stats.onTrack, icon: TrendingUp, color: 'bg-emerald-500' },
+            { label: 'At Risk', value: stats.atRisk, icon: AlertTriangle, color: 'bg-yellow-500' },
+            { label: 'Check-ins', value: stats.totalCheckIns, icon: Clock, color: 'bg-indigo-500' },
+          ].map((metric, i) => {
+            const Icon = metric.icon;
+            return (
+              <div key={i} className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`p-2 rounded-lg ${metric.color}`}>
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
+                <p className="text-sm text-gray-500">{metric.label}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Overall Progress Bar */}
+        <div className="bg-white rounded-xl p-6 border border-gray-200 mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-gray-900">Overall OKR Progress</h3>
+            <span className="text-2xl font-bold text-blue-600">{stats.avgProgress}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-4">
+            <div
+              className={`h-4 rounded-full transition-all ${
+                stats.avgProgress >= 70 ? 'bg-green-500' : stats.avgProgress >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${stats.avgProgress}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-2 text-sm text-gray-500">
+            <span>{stats.completedObjectives} of {stats.totalObjectives} objectives completed</span>
+            <span>{stats.onTrack} of {stats.totalKRs} key results on track</span>
+          </div>
+        </div>
+
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* KR Status Donut */}
+          <div className="bg-white rounded-xl p-6 border border-gray-200">
+            <h3 className="font-semibold text-gray-900 mb-4">Key Result Status</h3>
+            <div className="flex items-center justify-center h-64">
+              <div className="relative w-48 h-48">
+                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" strokeWidth="20" />
+                  {krDonut.map((seg, i) => (
+                    <circle
+                      key={i}
+                      cx="50" cy="50" r="40" fill="none" stroke={seg.color} strokeWidth="20"
+                      strokeDasharray={seg.dasharray} strokeDashoffset={seg.dashoffset}
+                    />
+                  ))}
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalKRs}</p>
+                    <p className="text-xs text-gray-500">Key Results</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-6 mt-4">
+              {krDonut.map((seg, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: seg.color }} />
+                  <span className="text-sm text-gray-600">{seg.label} ({seg.pct}%)</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Confidence Distribution */}
+          <div className="bg-white rounded-xl p-6 border border-gray-200">
+            <h3 className="font-semibold text-gray-900 mb-4">Check-in Confidence</h3>
+            {stats.totalCheckIns > 0 ? (
+              <div className="space-y-6 mt-8">
+                {[
+                  { label: 'High Confidence', count: stats.highConf, color: 'bg-green-500', total: stats.totalCheckIns },
+                  { label: 'Medium Confidence', count: stats.medConf, color: 'bg-yellow-500', total: stats.totalCheckIns },
+                  { label: 'Low Confidence', count: stats.lowConf, color: 'bg-red-500', total: stats.totalCheckIns },
+                ].map((item, i) => (
+                  <div key={i}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                      <span className="text-sm text-gray-500">{item.count} ({Math.round((item.count / item.total) * 100)}%)</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div className={`h-3 rounded-full ${item.color}`} style={{ width: `${(item.count / item.total) * 100}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-64 text-gray-400">
+                <p>No check-ins yet</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Objective Progress Cards */}
+        <div className="bg-white rounded-xl p-6 border border-gray-200 mb-8">
+          <h3 className="font-semibold text-gray-900 mb-6">Objective Progress</h3>
+          {objectiveProgress.length > 0 ? (
+            <div className="space-y-6">
+              {objectiveProgress.map((obj) => {
+                const statusColor = obj.status === 'completed' ? 'bg-green-100 text-green-700'
+                  : obj.status === 'active' ? 'bg-blue-100 text-blue-700'
+                  : obj.status === 'cancelled' ? 'bg-red-100 text-red-700'
+                  : 'bg-gray-100 text-gray-700';
+                const barColor = obj.computedProgress >= 70 ? 'bg-green-500'
+                  : obj.computedProgress >= 40 ? 'bg-yellow-500' : 'bg-red-500';
+
+                return (
+                  <div key={obj.id} className="border border-gray-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <h4 className="font-medium text-gray-900">{obj.title}</h4>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor}`}>{obj.status}</span>
+                      </div>
+                      <span className="text-lg font-bold text-gray-900">{obj.computedProgress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
+                      <div className={`h-2.5 rounded-full ${barColor} transition-all`} style={{ width: `${obj.computedProgress}%` }} />
+                    </div>
+                    {/* KR list */}
+                    <div className="space-y-2">
+                      {(obj.keyResults || []).map(kr => {
+                        const krProgress = kr.targetValue > 0 ? Math.min(Math.round((kr.currentValue / kr.targetValue) * 100), 100) : 0;
+                        const krStatusColor = kr.status === 'on_track' ? 'text-green-600' : kr.status === 'at_risk' ? 'text-yellow-600' : 'text-red-600';
+                        return (
+                          <div key={kr.id} className="flex items-center gap-3 text-sm">
+                            <span className={`font-medium ${krStatusColor}`}>●</span>
+                            <span className="flex-1 text-gray-700 truncate">{kr.title}</span>
+                            <span className="text-gray-500">{kr.currentValue}/{kr.targetValue} {kr.unit}</span>
+                            <span className="font-medium text-gray-900 w-12 text-right">{krProgress}%</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {obj.owner && (
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                        <Users className="h-3.5 w-3.5 text-gray-400" />
+                        <span className="text-xs text-gray-500">Owner: {obj.owner}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-400">
+              <Target className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <p>No objectives created yet</p>
+            </div>
+          )}
+        </div>
+
+        {/* Recent Check-ins */}
+        {recentCheckIns.length > 0 && (
+          <div className="bg-white rounded-xl p-6 border border-gray-200">
+            <h3 className="font-semibold text-gray-900 mb-4">Recent Check-ins</h3>
+            <div className="space-y-3">
+              {recentCheckIns.map((ci) => {
+                const confColor = ci.confidence === 'high' ? 'bg-green-100 text-green-700'
+                  : ci.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700';
+                const statusColor = ci.status === 'on_track' ? 'text-green-600'
+                  : ci.status === 'at_risk' ? 'text-yellow-600' : 'text-red-600';
+                return (
+                  <div key={ci.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-xs font-medium text-purple-700 shrink-0">
+                      {(ci.authorName || 'U').split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{getKRTitle(ci.keyResultId)}</p>
+                      <p className="text-xs text-gray-500">
+                        {ci.authorName} • {new Date(ci.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className={`text-sm font-medium ${statusColor}`}>
+                        {ci.previousValue} → {ci.currentValue}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${confColor}`}>
+                        {ci.confidence}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Analytics Page ──────────────────────────────────────────────────────
 export default function AnalyticsPage() {
   const params = useParams();
   const router = useRouter();
@@ -302,6 +614,11 @@ export default function AnalyticsPage() {
   }, [stats]);
 
   if (isLoading) return <LoadingState />;
+
+  // OKR projects get their own dedicated analytics dashboard
+  if (methodology === 'okr') {
+    return <OkrAnalyticsDashboard projectId={projectId} project={project} />;
+  }
 
   return (
     <div className="flex flex-col h-full bg-gray-50">

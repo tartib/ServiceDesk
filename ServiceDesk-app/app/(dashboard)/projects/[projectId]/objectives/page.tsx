@@ -10,8 +10,6 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  User,
-  Calendar,
   MoreHorizontal,
 } from 'lucide-react';
 import {
@@ -20,81 +18,15 @@ import {
   ProjectToolbar,
   LoadingState,
 } from '@/components/projects';
-import { useMethodology } from '@/hooks/useMethodology';
-
-interface KeyResult {
-  id: string;
-  title: string;
-  targetValue: number;
-  currentValue: number;
-  unit: string;
-  owner?: string;
-  status: 'on_track' | 'at_risk' | 'behind';
-}
-
-interface Objective {
-  id: string;
-  title: string;
-  description?: string;
-  owner: string;
-  ownerAvatar?: string;
-  keyResults: KeyResult[];
-  status: 'draft' | 'active' | 'completed' | 'cancelled';
-  progress: number;
-  quarter: string;
-  dueDate?: string;
-}
+import { useMethodology, OkrObjective } from '@/hooks/useMethodology';
+import { useAuthStore } from '@/store/authStore';
 
 interface Project {
   _id: string;
   name: string;
   key: string;
+  members?: Array<{ userId?: { _id: string; name?: string }; role: string }>;
 }
-
-const defaultObjectives: Objective[] = [
-  {
-    id: 'obj1',
-    title: 'Increase customer satisfaction',
-    description: 'Improve overall customer experience and satisfaction scores',
-    owner: 'Sarah Johnson',
-    status: 'active',
-    progress: 72,
-    quarter: 'Q1 2024',
-    keyResults: [
-      { id: 'kr1', title: 'Achieve NPS score of 50+', targetValue: 50, currentValue: 45, unit: 'points', status: 'at_risk' },
-      { id: 'kr2', title: 'Reduce support ticket response time', targetValue: 2, currentValue: 1.5, unit: 'hours', status: 'on_track' },
-      { id: 'kr3', title: 'Increase customer retention rate', targetValue: 95, currentValue: 92, unit: '%', status: 'on_track' },
-    ],
-  },
-  {
-    id: 'obj2',
-    title: 'Launch new product features',
-    description: 'Deliver key features to improve product competitiveness',
-    owner: 'Mike Chen',
-    status: 'active',
-    progress: 45,
-    quarter: 'Q1 2024',
-    keyResults: [
-      { id: 'kr4', title: 'Release mobile app v2.0', targetValue: 100, currentValue: 60, unit: '%', status: 'on_track' },
-      { id: 'kr5', title: 'Implement AI-powered search', targetValue: 100, currentValue: 30, unit: '%', status: 'behind' },
-      { id: 'kr6', title: 'Add 5 new integrations', targetValue: 5, currentValue: 2, unit: 'integrations', status: 'at_risk' },
-    ],
-  },
-  {
-    id: 'obj3',
-    title: 'Expand market presence',
-    description: 'Grow our presence in new markets and segments',
-    owner: 'Emily Davis',
-    status: 'active',
-    progress: 85,
-    quarter: 'Q1 2024',
-    keyResults: [
-      { id: 'kr7', title: 'Enter 3 new geographic markets', targetValue: 3, currentValue: 3, unit: 'markets', status: 'on_track' },
-      { id: 'kr8', title: 'Increase brand awareness by 25%', targetValue: 25, currentValue: 20, unit: '%', status: 'on_track' },
-      { id: 'kr9', title: 'Generate 1000 qualified leads', targetValue: 1000, currentValue: 850, unit: 'leads', status: 'on_track' },
-    ],
-  },
-];
 
 const statusColors = {
   on_track: { bg: 'bg-green-100', text: 'text-green-700', label: 'On Track' },
@@ -113,15 +45,25 @@ export default function ObjectivesPage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params?.projectId as string;
+  const { user } = useAuthStore();
   
-  const { methodology } = useMethodology(projectId);
+  const { methodology, config, isLoading: methodLoading, addObjective, addKeyResult } = useMethodology(projectId);
+
+  const objectives: OkrObjective[] = config?.okr?.objectives || [];
 
   const [project, setProject] = useState<Project | null>(null);
-  const [objectives, setObjectives] = useState<Objective[]>(defaultObjectives);
-  const [expandedObjectives, setExpandedObjectives] = useState<Set<string>>(new Set(['obj1', 'obj2']));
+  const [expandedObjectives, setExpandedObjectives] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [showNewObjectiveModal, setShowNewObjectiveModal] = useState(false);
+  const [showAddKRModal, setShowAddKRModal] = useState<string | null>(null);
   const [selectedQuarter, setSelectedQuarter] = useState('Q1 2024');
+  const [submitting, setSubmitting] = useState(false);
+  const [newObjTitle, setNewObjTitle] = useState('');
+  const [newObjDesc, setNewObjDesc] = useState('');
+  const [newObjStatus, setNewObjStatus] = useState<'draft' | 'active'>('active');
+  const [newKRTitle, setNewKRTitle] = useState('');
+  const [newKRTarget, setNewKRTarget] = useState('');
+  const [newKRUnit, setNewKRUnit] = useState('%');
 
   const fetchProject = useCallback(async (token: string) => {
     try {
@@ -145,6 +87,51 @@ export default function ObjectivesPage() {
     }
     fetchProject(token);
   }, [projectId, router, fetchProject]);
+
+  const handleCreateObjective = async () => {
+    if (!newObjTitle.trim()) return;
+    setSubmitting(true);
+    try {
+      await addObjective({
+        title: newObjTitle.trim(),
+        description: newObjDesc.trim() || undefined,
+        owner: user?.name || user?.id || 'Unknown',
+        status: newObjStatus,
+        keyResults: [],
+        progress: 0,
+      });
+      setShowNewObjectiveModal(false);
+      setNewObjTitle('');
+      setNewObjDesc('');
+      setNewObjStatus('active');
+    } catch (err) {
+      console.error('Failed to create objective:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAddKeyResult = async (objectiveId: string) => {
+    if (!newKRTitle.trim() || !newKRTarget) return;
+    setSubmitting(true);
+    try {
+      await addKeyResult(objectiveId, {
+        title: newKRTitle.trim(),
+        targetValue: Number(newKRTarget),
+        currentValue: 0,
+        unit: newKRUnit || '%',
+        status: 'on_track',
+      });
+      setShowAddKRModal(null);
+      setNewKRTitle('');
+      setNewKRTarget('');
+      setNewKRUnit('%');
+    } catch (err) {
+      console.error('Failed to add key result:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const toggleObjective = (objectiveId: string) => {
     setExpandedObjectives((prev) => {
@@ -177,7 +164,7 @@ export default function ObjectivesPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || methodLoading) {
     return <LoadingState />;
   }
 
@@ -378,7 +365,10 @@ export default function ObjectivesPage() {
                   })}
 
                   {/* Add Key Result */}
-                  <button className="flex items-center gap-2 px-4 py-3 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 w-full transition-colors">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowAddKRModal(objective.id); }}
+                    className="flex items-center gap-2 px-4 py-3 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 w-full transition-colors"
+                  >
                     <Plus className="h-4 w-4" />
                     Add Key Result
                   </button>
@@ -399,6 +389,8 @@ export default function ObjectivesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Objective Title</label>
                 <input
                   type="text"
+                  value={newObjTitle}
+                  onChange={(e) => setNewObjTitle(e.target.value)}
                   placeholder="e.g., Increase customer satisfaction"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -406,30 +398,23 @@ export default function ObjectivesPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
+                  value={newObjDesc}
+                  onChange={(e) => setNewObjDesc(e.target.value)}
                   placeholder="Describe the objective..."
                   rows={2}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Quarter</label>
-                  <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="Q1 2024">Q1 2024</option>
-                    <option value="Q2 2024">Q2 2024</option>
-                    <option value="Q3 2024">Q3 2024</option>
-                    <option value="Q4 2024">Q4 2024</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Owner</label>
-                  <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Select owner...</option>
-                    <option value="sarah">Sarah Johnson</option>
-                    <option value="mike">Mike Chen</option>
-                    <option value="emily">Emily Davis</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={newObjStatus}
+                  onChange={(e) => setNewObjStatus(e.target.value as 'draft' | 'active')}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="active">Active</option>
+                </select>
               </div>
               <div className="flex gap-3 pt-2">
                 <button
@@ -438,12 +423,90 @@ export default function ObjectivesPage() {
                 >
                   Cancel
                 </button>
-                <button className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  Create Objective
+                <button
+                  onClick={handleCreateObjective}
+                  disabled={submitting || !newObjTitle.trim()}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {submitting ? 'Creating...' : 'Create Objective'}
                 </button>
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Add Key Result Modal */}
+      {showAddKRModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Add Key Result</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  value={newKRTitle}
+                  onChange={(e) => setNewKRTitle(e.target.value)}
+                  placeholder="e.g., Increase revenue by 20%"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Value</label>
+                  <input
+                    type="number"
+                    value={newKRTarget}
+                    onChange={(e) => setNewKRTarget(e.target.value)}
+                    placeholder="100"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                  <input
+                    type="text"
+                    value={newKRUnit}
+                    onChange={(e) => setNewKRUnit(e.target.value)}
+                    placeholder="%"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowAddKRModal(null)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleAddKeyResult(showAddKRModal)}
+                  disabled={submitting || !newKRTitle.trim() || !newKRTarget}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {submitting ? 'Adding...' : 'Add Key Result'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {objectives.length === 0 && (
+        <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
+          <Target className="h-12 w-12 text-gray-300 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No objectives yet</h3>
+          <p className="text-sm text-gray-500 mb-6">Create your first objective to start tracking OKRs</p>
+          <button
+            onClick={() => setShowNewObjectiveModal(true)}
+            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Objective
+          </button>
         </div>
       )}
     </div>

@@ -7,6 +7,7 @@ import MethodologyConfig, {
   IItilConfig,
   ILeanConfig,
   IOkrConfig,
+  ICheckIn,
   defaultScrumConfig,
   defaultKanbanConfig,
   defaultWaterfallConfig,
@@ -294,6 +295,126 @@ export class MethodologyService {
       { $push: { 'okr.cycles': cycle } },
       { new: true }
     );
+  }
+
+  // ============================================
+  // Key Result methods
+  // ============================================
+
+  async addKeyResult(
+    projectId: string,
+    objectiveId: string,
+    keyResult: IOkrConfig['objectives'][0]['keyResults'][0]
+  ): Promise<IMethodologyConfig | null> {
+    return MethodologyConfig.findOneAndUpdate(
+      {
+        projectId: new mongoose.Types.ObjectId(projectId),
+        methodologyCode: 'okr',
+        'okr.objectives.id': objectiveId,
+      },
+      { $push: { 'okr.objectives.$.keyResults': keyResult } },
+      { new: true }
+    );
+  }
+
+  async updateKeyResult(
+    projectId: string,
+    objectiveId: string,
+    keyResultId: string,
+    updates: Partial<IOkrConfig['objectives'][0]['keyResults'][0]>
+  ): Promise<IMethodologyConfig | null> {
+    const config = await this.getMethodologyConfig(projectId);
+    if (!config || !config.okr) return null;
+
+    const objective = config.okr.objectives.find((o) => o.id === objectiveId);
+    if (!objective) return null;
+
+    const krIndex = objective.keyResults.findIndex((kr) => kr.id === keyResultId);
+    if (krIndex === -1) return null;
+
+    const updatedKR = { ...objective.keyResults[krIndex], ...updates, id: keyResultId };
+    objective.keyResults[krIndex] = updatedKR as any;
+
+    // Recalculate objective progress
+    if (objective.keyResults.length > 0) {
+      const totalProgress = objective.keyResults.reduce((sum, kr) => {
+        const progress = kr.targetValue > 0 ? (kr.currentValue / kr.targetValue) * 100 : 0;
+        return sum + Math.min(progress, 100);
+      }, 0);
+      objective.progress = Math.round(totalProgress / objective.keyResults.length);
+    }
+
+    return MethodologyConfig.findOneAndUpdate(
+      { projectId: new mongoose.Types.ObjectId(projectId), methodologyCode: 'okr' },
+      { 'okr.objectives': config.okr.objectives },
+      { new: true }
+    );
+  }
+
+  async deleteKeyResult(
+    projectId: string,
+    objectiveId: string,
+    keyResultId: string
+  ): Promise<IMethodologyConfig | null> {
+    return MethodologyConfig.findOneAndUpdate(
+      {
+        projectId: new mongoose.Types.ObjectId(projectId),
+        methodologyCode: 'okr',
+        'okr.objectives.id': objectiveId,
+      },
+      { $pull: { 'okr.objectives.$.keyResults': { id: keyResultId } } },
+      { new: true }
+    );
+  }
+
+  // ============================================
+  // Check-in methods
+  // ============================================
+
+  async addCheckIn(
+    projectId: string,
+    checkIn: ICheckIn
+  ): Promise<IMethodologyConfig | null> {
+    // Also update the key result's currentValue
+    const config = await this.getMethodologyConfig(projectId);
+    if (!config || !config.okr) return null;
+
+    const objective = config.okr.objectives.find((o) => o.id === checkIn.objectiveId);
+    if (objective) {
+      const kr = objective.keyResults.find((k) => k.id === checkIn.keyResultId);
+      if (kr) {
+        kr.currentValue = checkIn.currentValue;
+        kr.status = checkIn.status;
+      }
+      // Recalculate objective progress
+      if (objective.keyResults.length > 0) {
+        const totalProgress = objective.keyResults.reduce((sum, k) => {
+          const progress = k.targetValue > 0 ? (k.currentValue / k.targetValue) * 100 : 0;
+          return sum + Math.min(progress, 100);
+        }, 0);
+        objective.progress = Math.round(totalProgress / objective.keyResults.length);
+      }
+    }
+
+    // Initialize checkIns array if it doesn't exist
+    if (!config.okr.checkIns) {
+      config.okr.checkIns = [] as any;
+    }
+
+    return MethodologyConfig.findOneAndUpdate(
+      { projectId: new mongoose.Types.ObjectId(projectId), methodologyCode: 'okr' },
+      {
+        'okr.objectives': config.okr.objectives,
+        $push: { 'okr.checkIns': { $each: [checkIn], $position: 0 } },
+      },
+      { new: true }
+    );
+  }
+
+  async getCheckIns(projectId: string): Promise<ICheckIn[]> {
+    const config = await this.getMethodologyConfig(projectId);
+    if (!config || !config.okr) return [];
+    return (config.okr.checkIns || []) as ICheckIn[];
   }
 
   // ============================================

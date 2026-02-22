@@ -32,7 +32,6 @@ import {
   ChevronRight,
   Plus,
   List,
-  MapIcon,
   HardDrive,
   Workflow,
   CalendarDays,
@@ -40,6 +39,12 @@ import {
   Timer,
   Rocket,
   ShieldCheck,
+  Target,
+  LayoutGrid,
+  GitBranch,
+  Flag,
+  TrendingUp,
+  CheckCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -49,6 +54,46 @@ interface Project {
   key: string;
   methodology: { code: string };
 }
+
+const getMethodologySubLinks = (code: string) => {
+  switch (code) {
+    case 'scrum':
+      return [
+        { href: 'board', label: 'projects.board.title', fallback: 'Board', Icon: LayoutGrid },
+        { href: 'backlog', label: 'projects.backlog.title', fallback: 'Backlog', Icon: List },
+      ];
+    case 'kanban':
+      return [
+        { href: 'board', label: 'projects.board.title', fallback: 'Board', Icon: LayoutGrid },
+        { href: 'backlog', label: 'projects.backlog.title', fallback: 'Backlog', Icon: List },
+      ];
+    case 'waterfall':
+      return [
+        { href: 'phases', label: 'projects.phases.title', fallback: 'Phases', Icon: GitBranch },
+        { href: 'milestones', label: 'projects.milestones.title', fallback: 'Milestones', Icon: Flag },
+      ];
+    case 'itil':
+      return [
+        { href: 'service-catalog', label: 'projects.serviceCatalog.title', fallback: 'Services', Icon: Package },
+        { href: 'incidents', label: 'projects.incidents.title', fallback: 'Incidents', Icon: AlertTriangle },
+      ];
+    case 'lean':
+      return [
+        { href: 'value-stream', label: 'projects.valueStream.title', fallback: 'Value Stream', Icon: TrendingUp },
+        { href: 'board', label: 'projects.board.title', fallback: 'Board', Icon: LayoutGrid },
+      ];
+    case 'okr':
+      return [
+        { href: 'objectives', label: 'projects.objectives.title', fallback: 'Objectives', Icon: Target },
+        { href: 'key-results', label: 'projects.keyResults.title', fallback: 'Key Results', Icon: CheckCircle },
+      ];
+    default:
+      return [
+        { href: 'board', label: 'projects.board.title', fallback: 'Board', Icon: LayoutGrid },
+        { href: 'backlog', label: 'projects.backlog.title', fallback: 'Backlog', Icon: List },
+      ];
+  }
+};
 
 const ADMIN_ROLES = ['manager', 'product_owner', 'project_manager'];
 const LEAD_ROLES = ['supervisor', 'manager', 'product_owner', 'project_manager'];
@@ -220,32 +265,23 @@ export default function Sidebar() {
                             </span>
                             <span className="truncate">{project.name}</span>
                           </Link>
-                          {/* Project sub-links */}
+                          {/* Project sub-links (methodology-aware) */}
                           <div className="ltr:ml-7 rtl:mr-7 space-y-0.5">
-                            <Link
-                              href={`/projects/${project._id}/backlog`}
-                              className={cn(
-                                'flex items-center gap-2 px-2 py-1 rounded text-xs transition-colors',
-                                pathname === `/projects/${project._id}/backlog`
-                                  ? 'bg-blue-50 text-blue-700'
-                                  : 'text-gray-500 hover:bg-gray-100'
-                              )}
-                            >
-                              <List className="h-3 w-3" />
-                              <span>{t('projects.backlog.title')}</span>
-                            </Link>
-                            <Link
-                              href={`/projects/${project._id}/roadmap`}
-                              className={cn(
-                                'flex items-center gap-2 px-2 py-1 rounded text-xs transition-colors',
-                                pathname === `/projects/${project._id}/roadmap`
-                                  ? 'bg-blue-50 text-blue-700'
-                                  : 'text-gray-500 hover:bg-gray-100'
-                              )}
-                            >
-                              <MapIcon className="h-3 w-3" />
-                              <span>{t('roadmap.title')}</span>
-                            </Link>
+                            {getMethodologySubLinks(project.methodology?.code || 'scrum').map((sub) => (
+                              <Link
+                                key={sub.href}
+                                href={`/projects/${project._id}/${sub.href}`}
+                                className={cn(
+                                  'flex items-center gap-2 px-2 py-1 rounded text-xs transition-colors',
+                                  pathname === `/projects/${project._id}/${sub.href}`
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-500 hover:bg-gray-100'
+                                )}
+                              >
+                                <sub.Icon className="h-3 w-3" />
+                                <span>{t(sub.label) || sub.fallback}</span>
+                              </Link>
+                            ))}
                           </div>
                         </div>
                       ))}

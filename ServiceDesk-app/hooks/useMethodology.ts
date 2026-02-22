@@ -128,6 +128,43 @@ export interface LeanConfig {
   };
 }
 
+export interface OkrKeyResult {
+  id: string;
+  title: string;
+  targetValue: number;
+  currentValue: number;
+  unit: string;
+  owner?: string;
+  dueDate?: string;
+  status: 'on_track' | 'at_risk' | 'behind';
+}
+
+export interface OkrObjective {
+  id: string;
+  title: string;
+  description?: string;
+  owner: string;
+  keyResults: OkrKeyResult[];
+  status: 'draft' | 'active' | 'completed' | 'cancelled';
+  progress: number;
+  cycleId?: string;
+}
+
+export interface OkrCheckIn {
+  id: string;
+  date: string;
+  author: string;
+  authorName: string;
+  keyResultId: string;
+  objectiveId: string;
+  previousValue: number;
+  currentValue: number;
+  confidence: 'high' | 'medium' | 'low';
+  status: 'on_track' | 'at_risk' | 'behind';
+  note?: string;
+  blockers?: string[];
+}
+
 export interface OkrConfig {
   cycleType: 'monthly' | 'quarterly' | 'yearly';
   cycles: Array<{
@@ -137,21 +174,8 @@ export interface OkrConfig {
     endDate: string;
     status: 'planning' | 'active' | 'review' | 'closed';
   }>;
-  objectives: Array<{
-    id: string;
-    title: string;
-    description?: string;
-    owner: string;
-    keyResults: Array<{
-      id: string;
-      title: string;
-      targetValue: number;
-      currentValue: number;
-      unit: string;
-    }>;
-    status: 'draft' | 'active' | 'completed' | 'cancelled';
-    progress: number;
-  }>;
+  objectives: OkrObjective[];
+  checkIns: OkrCheckIn[];
   checkInFrequency: 'daily' | 'weekly' | 'biweekly';
   scoringMethod: 'percentage' | 'scale_1_10' | 'binary';
 }
@@ -164,6 +188,10 @@ interface UseMethodologyReturn {
   refetch: () => void;
   updateConfig: (updates: Partial<MethodologyConfig>) => Promise<void>;
   changeMethodology: (newMethodology: MethodologyType) => Promise<void>;
+  addObjective: (objective: Partial<OkrObjective>) => Promise<void>;
+  addKeyResult: (objectiveId: string, keyResult: Partial<OkrKeyResult>) => Promise<void>;
+  updateKeyResult: (objectiveId: string, krId: string, updates: Partial<OkrKeyResult>) => Promise<void>;
+  addCheckIn: (checkIn: Partial<OkrCheckIn>) => Promise<void>;
 }
 
 export function useMethodology(projectId: string): UseMethodologyReturn {
@@ -300,6 +328,74 @@ export function useMethodology(projectId: string): UseMethodologyReturn {
     }
   };
 
+  const addObjective = async (objective: Partial<OkrObjective>) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(
+      `http://localhost:5000/api/v1/pm/projects/${projectId}/methodology/okr/objectives`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(objective),
+      }
+    );
+    if (!response.ok) throw new Error('Failed to add objective');
+    const data = await response.json();
+    if (data.success) setConfig(data.data);
+  };
+
+  const addKeyResult = async (objectiveId: string, keyResult: Partial<OkrKeyResult>) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(
+      `http://localhost:5000/api/v1/pm/projects/${projectId}/methodology/okr/objectives/${objectiveId}/key-results`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(keyResult),
+      }
+    );
+    if (!response.ok) throw new Error('Failed to add key result');
+    const data = await response.json();
+    if (data.success) setConfig(data.data);
+  };
+
+  const updateKeyResult = async (objectiveId: string, krId: string, updates: Partial<OkrKeyResult>) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(
+      `http://localhost:5000/api/v1/pm/projects/${projectId}/methodology/okr/objectives/${objectiveId}/key-results/${krId}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(updates),
+      }
+    );
+    if (!response.ok) throw new Error('Failed to update key result');
+    const data = await response.json();
+    if (data.success) setConfig(data.data);
+  };
+
+  const addCheckIn = async (checkIn: Partial<OkrCheckIn>) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(
+      `http://localhost:5000/api/v1/pm/projects/${projectId}/methodology/okr/check-ins`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(checkIn),
+      }
+    );
+    if (!response.ok) throw new Error('Failed to add check-in');
+    const data = await response.json();
+    if (data.success) setConfig(data.data);
+  };
+
   return {
     methodology,
     config,
@@ -308,6 +404,10 @@ export function useMethodology(projectId: string): UseMethodologyReturn {
     refetch: fetchMethodology,
     updateConfig,
     changeMethodology,
+    addObjective,
+    addKeyResult,
+    updateKeyResult,
+    addCheckIn,
   };
 }
 

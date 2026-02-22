@@ -12,6 +12,7 @@ import {
 } from '@/components/projects';
 import { ProjectWizard } from '@/components/projects/wizard';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getDefaultLandingPage, MethodologyType } from '@/hooks/useMethodology';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
 interface ApiProject {
@@ -131,7 +132,7 @@ export default function ProjectsPage() {
   }
 
   const handleProjectCreated = (projectId: string) => {
-    router.push(`/projects/${projectId}/board`);
+    router.push(`/projects/${projectId}/summary`);
   };
 
   return (
@@ -155,7 +156,10 @@ export default function ProjectsPage() {
         ) : (
           <ProjectsTable
             projects={projects}
-            onProjectClick={(project) => router.push(`/projects/${project._id}/board`)}
+            onProjectClick={(project) => {
+              const landing = getDefaultLandingPage((project.methodology?.code || 'scrum') as MethodologyType);
+              router.push(`/projects/${project._id}${landing}`);
+            }}
           />
         )}
 
