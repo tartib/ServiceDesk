@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -79,7 +80,7 @@ export default function ProblemsPage() {
 
   const fetchProject = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

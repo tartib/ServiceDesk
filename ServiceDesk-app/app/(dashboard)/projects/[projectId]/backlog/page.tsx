@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { API_URL } from '@/lib/api/config';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Plus, ChevronDown, X, AlertTriangle } from 'lucide-react';
+import { Plus, ChevronDown, X, AlertTriangle, Upload } from 'lucide-react';
 import {
   ProjectHeader,
   ProjectNavTabs,
@@ -12,9 +13,25 @@ import {
   LoadingState,
   TaskDetailPanel,
   QuickCreateTask,
+  CSVImportModal,
+  DraggableBacklogItem,
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
 import { useLanguage } from '@/contexts/LanguageContext';
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  useDroppable,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface Task {
   _id: string;
@@ -70,6 +87,25 @@ interface TeamResponse {
   members?: Array<{ userId: string; role: string }>;
 }
 
+// Backlog droppable zone wrapper
+function BacklogDropZone({ children }: {
+  backlogTasks?: Task[];
+  isDragActive?: boolean;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: 'backlog' });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`bg-white border border-gray-200 rounded-lg overflow-visible transition-colors ${
+        isOver ? 'ring-2 ring-blue-400 bg-blue-50/30' : ''
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function BacklogPage() {
   const params = useParams();
   const router = useRouter();
@@ -120,15 +156,217 @@ export default function BacklogPage() {
   
   // Create Task in Backlog
   const [showCreateBacklogTask, setShowCreateBacklogTask] = useState(false);
+  
+  // CSV Import Modal
+  const [showCSVImport, setShowCSVImport] = useState(false);
+
+  // Drag & Drop state
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  // DnD Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  // Memoize backlog task IDs to prevent infinite re-render loop in @dnd-kit
+  const backlogTaskIds = useMemo(() => backlogTasks.map(t => t._id), [backlogTasks]);
+
+  // Helper: find task anywhere
+  const findTaskById = useCallback((taskId: string): Task | null => {
+    const bt = backlogTasks.find(t => t._id === taskId);
+    if (bt) return bt;
+    for (const tasks of Object.values(sprintTasks)) {
+      const st = tasks.find(t => t._id === taskId);
+      if (st) return st;
+    }
+    return null;
+  }, [backlogTasks, sprintTasks]);
+
+  // Helper: resolve overId to a container
+  const resolveOverContainer = useCallback((overId: string): string | null => {
+    if (overId === 'backlog' || overId.startsWith('sprint-')) return overId;
+    if (backlogTasks.some(t => t._id === overId)) return 'backlog';
+    for (const sid of Object.keys(sprintTasks)) {
+      if (sprintTasks[sid]?.some(t => t._id === overId)) return `sprint-${sid}`;
+    }
+    return null;
+  }, [backlogTasks, sprintTasks]);
+
+  // Persist reorder to backend
+  const persistReorder = useCallback(async (taskList: Task[]) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token || taskList.length === 0) return;
+    const payload = taskList.map((t, i) => ({ taskId: t._id, columnOrder: i }));
+    try {
+      await fetch(`${API_URL}/pm/projects/${projectId}/tasks/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tasks: payload }),
+      });
+    } catch (err) {
+      console.error('[DnD] persistReorder failed:', err);
+    }
+  }, [projectId]);
+
+  // Persist move task to different sprint
+  const persistMove = useCallback(async (taskId: string, sprintId: string | null, order: number) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token) return;
+    try {
+      await fetch(`${API_URL}/pm/tasks/${taskId}/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sprintId, columnOrder: order }),
+      });
+    } catch (err) {
+      console.error('[DnD] persistMove failed:', err);
+    }
+  }, []);
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const taskId = event.active.id as string;
+    setIsDragActive(true);
+    setActiveTask(findTaskById(taskId));
+  }, [findTaskById]);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    const sourceContainer = resolveOverContainer(activeId);
+    const destContainer = resolveOverContainer(overId);
+
+    if (!sourceContainer || !destContainer || sourceContainer === destContainer) return;
+
+    // Don't allow drop into completed sprints
+    if (destContainer.startsWith('sprint-')) {
+      const sid = destContainer.replace('sprint-', '');
+      if (sprints.find(s => s._id === sid)?.status === 'completed') return;
+    }
+
+    // Optimistic cross-container move
+    const task = findTaskById(activeId);
+    if (!task) return;
+
+    // Remove from source
+    if (sourceContainer === 'backlog') {
+      setBacklogTasks(prev => prev.filter(t => t._id !== activeId));
+    } else {
+      const srcSid = sourceContainer.replace('sprint-', '');
+      setSprintTasks(prev => ({
+        ...prev,
+        [srcSid]: (prev[srcSid] || []).filter(t => t._id !== activeId),
+      }));
+    }
+
+    // Add to dest
+    if (destContainer === 'backlog') {
+      setBacklogTasks(prev => {
+        if (prev.some(t => t._id === activeId)) return prev;
+        const idx = prev.findIndex(t => t._id === overId);
+        const arr = [...prev];
+        arr.splice(idx >= 0 ? idx : arr.length, 0, task);
+        return arr;
+      });
+    } else {
+      const dstSid = destContainer.replace('sprint-', '');
+      setSprintTasks(prev => {
+        const existing = prev[dstSid] || [];
+        if (existing.some(t => t._id === activeId)) return prev;
+        const idx = existing.findIndex(t => t._id === overId);
+        const arr = [...existing];
+        arr.splice(idx >= 0 ? idx : arr.length, 0, task);
+        return { ...prev, [dstSid]: arr };
+      });
+      // Auto-expand
+      setExpandedSprints(prev => new Set([...prev, dstSid]));
+    }
+  }, [resolveOverContainer, findTaskById, sprints]);
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTask(null);
+    setIsDragActive(false);
+
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // Where is it now?
+    const currentContainer = resolveOverContainer(activeId);
+    const overContainer = resolveOverContainer(overId);
+
+    if (!currentContainer) return;
+
+    // Same container — reorder
+    if (currentContainer === overContainer || !overContainer) {
+      if (currentContainer === 'backlog') {
+        setBacklogTasks(prev => {
+          const oldIdx = prev.findIndex(t => t._id === activeId);
+          const newIdx = prev.findIndex(t => t._id === overId);
+          if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) {
+            persistReorder(prev);
+            return prev;
+          }
+          const reordered = arrayMove(prev, oldIdx, newIdx);
+          persistReorder(reordered);
+          return reordered;
+        });
+      } else {
+        const sid = currentContainer.replace('sprint-', '');
+        setSprintTasks(prev => {
+          const list = prev[sid] || [];
+          const oldIdx = list.findIndex(t => t._id === activeId);
+          const newIdx = list.findIndex(t => t._id === overId);
+          if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) {
+            persistReorder(list);
+            return prev;
+          }
+          const reordered = arrayMove(list, oldIdx, newIdx);
+          persistReorder(reordered);
+          return { ...prev, [sid]: reordered };
+        });
+      }
+      return;
+    }
+
+    // Cross-container — already moved optimistically in onDragOver, just persist
+    const destSprintId = currentContainer === 'backlog' ? null : currentContainer.replace('sprint-', '');
+
+    if (currentContainer === 'backlog') {
+      setBacklogTasks(prev => {
+        const idx = Math.max(0, prev.findIndex(t => t._id === activeId));
+        persistMove(activeId, null, idx);
+        persistReorder(prev);
+        return prev;
+      });
+    } else if (destSprintId) {
+      setSprintTasks(prev => {
+        const list = prev[destSprintId] || [];
+        const idx = Math.max(0, list.findIndex(t => t._id === activeId));
+        persistMove(activeId, destSprintId, idx);
+        persistReorder(list);
+        return prev;
+      });
+    }
+
+    const name = destSprintId ? sprints.find(s => s._id === destSprintId)?.name || 'Sprint' : 'Backlog';
+    toast.success(`Moved to ${name}`, { duration: 2000 });
+  }, [resolveOverContainer, sprints, persistReorder, persistMove]);
 
   const fetchData = useCallback(async (token: string) => {
     try {
       const [projectRes, sprintsRes, backlogRes, membersRes, teamsRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/sprints`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/backlog`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/members`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/teams`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/sprints`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/backlog`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/members`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/teams`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       const projectData = await projectRes.json();
       const sprintsData = await sprintsRes.json();
@@ -196,7 +434,7 @@ export default function BacklogPage() {
         setSelectedTask(task);
         const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
         if (token) {
-          fetch(`http://localhost:5000/api/v1/pm/tasks/${task._id}`, {
+          fetch(`${API_URL}/pm/tasks/${task._id}`, {
             headers: { Authorization: `Bearer ${token}` },
           })
             .then(res => res.json())
@@ -216,7 +454,7 @@ export default function BacklogPage() {
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/pm/sprints/${sprintId}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API_URL}/pm/sprints/${sprintId}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (data.success) setSprintTasks(prev => ({ ...prev, [sprintId]: data.data.tasks || [] }));
     } catch (error) { console.error('Failed to fetch sprint tasks:', error); }
@@ -240,7 +478,7 @@ export default function BacklogPage() {
     if (orgId) headers['X-Organization-ID'] = orgId;
     try {
       console.log('🚀 Creating sprint:', newSprintData);
-      const res = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/sprints`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/sprints`, {
         method: 'POST',
         headers,
         body: JSON.stringify(newSprintData),
@@ -267,7 +505,7 @@ export default function BacklogPage() {
     const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
     if (project?.organization) headers['X-Organization-ID'] = project.organization;
     try {
-      await fetch(`http://localhost:5000/api/v1/pm/sprints/${sprintId}/start`, { method: 'POST', headers });
+      await fetch(`${API_URL}/pm/sprints/${sprintId}/start`, { method: 'POST', headers });
       fetchData(token);
     } catch (error) { console.error('Failed to start sprint:', error); }
   };
@@ -278,7 +516,7 @@ export default function BacklogPage() {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
     if (project?.organization) headers['X-Organization-ID'] = project.organization;
     try {
-      await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}/move`, {
+      await fetch(`${API_URL}/pm/tasks/${taskId}/move`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ sprintId }),
@@ -296,7 +534,7 @@ export default function BacklogPage() {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
     if (project?.organization) headers['X-Organization-ID'] = project.organization;
     try {
-      await fetch(`http://localhost:5000/api/v1/pm/sprints/${completingSprintId}/complete`, {
+      await fetch(`${API_URL}/pm/sprints/${completingSprintId}/complete`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ moveIncompleteTo: incompleteTasksDestination }),
@@ -314,7 +552,7 @@ export default function BacklogPage() {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
     if (project?.organization) headers['X-Organization-ID'] = project.organization;
     try {
-      await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/tasks`, {
+      await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ title: summary, sprintId, type: 'task' }),
@@ -340,7 +578,7 @@ export default function BacklogPage() {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
     if (project?.organization) headers['X-Organization-ID'] = project.organization;
     try {
-      await fetch(`http://localhost:5000/api/v1/pm/sprints/${sprintId}`, {
+      await fetch(`${API_URL}/pm/sprints/${sprintId}`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ name: newName }),
@@ -357,7 +595,7 @@ export default function BacklogPage() {
     const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
     if (project?.organization) headers['X-Organization-ID'] = project.organization;
     try {
-      await fetch(`http://localhost:5000/api/v1/pm/sprints/${deletingSprintId}`, {
+      await fetch(`${API_URL}/pm/sprints/${deletingSprintId}`, {
         method: 'DELETE',
         headers,
       });
@@ -398,14 +636,45 @@ export default function BacklogPage() {
         members={projectMembers}
         showStats
         showBranch
+        rightActions={
+          <button
+            onClick={() => setShowCSVImport(true)}
+            className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 rounded-lg text-sm transition-colors"
+            title="Import from CSV"
+          >
+            <Upload className="h-4 w-4" />
+            <span className="hidden sm:inline">Import CSV</span>
+          </button>
+        }
       />
+
+      {/* CSV Import Modal */}
+      <CSVImportModal
+        projectId={projectId}
+        isOpen={showCSVImport}
+        onClose={() => setShowCSVImport(false)}
+        onImportComplete={() => {
+          const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+          if (token) fetchData(token);
+        }}
+      />
+
+      {/* Toast notifications */}
+      <Toaster position="bottom-right" />
 
       {/* Backlog + Detail Panel Container */}
       <div className="flex-1 flex min-h-0">
-        {/* Backlog Content */}
+        {/* Backlog Content wrapped in DndContext */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
         <div className="flex-1 px-2 sm:px-4 py-2 space-y-2 overflow-y-auto">
-        {/* Sprints */}
-        {sprints.map((sprint) => (
+        {/* Sprints (hide completed) */}
+        {sprints.filter(s => s.status !== 'completed').map((sprint) => (
           <SprintSection
             key={sprint._id}
             id={sprint._id}
@@ -427,11 +696,12 @@ export default function BacklogPage() {
             onDeleteSprint={() => { setDeletingSprintId(sprint._id); setShowDeleteSprintModal(true); }}
             onMoveWorkItems={() => {}}
             onReorderSprint={() => {}}
+            isDragActive={isDragActive}
           />
         ))}
 
         {/* Backlog Section */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-visible">
+        <BacklogDropZone backlogTasks={backlogTasks} isDragActive={isDragActive}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 py-2.5 gap-2">
             <div className="flex items-center gap-3">
               <input type="checkbox" className="w-4 h-4 rounded border-gray-300 bg-white" />
@@ -447,39 +717,21 @@ export default function BacklogPage() {
             </button>
           </div>
           <div className="border-t border-gray-200">
+            <SortableContext items={backlogTaskIds} strategy={verticalListSortingStrategy}>
             {backlogTasks.length === 0 ? (
               <div className="px-3 py-8 text-gray-400 text-sm text-center">{t('projects.backlog.noItems') || 'No items in backlog'}</div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div>
                 {backlogTasks.map((task) => (
-                  <div key={task._id} className="group">
-                    <TaskCard
-                      taskKey={task.key}
-                      title={task.title}
-                      type={task.type}
-                      priority={task.priority}
-                      status={task.status}
-                      assignee={task.assignee}
-                      onClick={() => router.push(`/projects/${projectId}/backlog?selectedIssue=${task.key}`)}
-                      variant="list"
-                      showStatus
-                    />
-                    {/* Move to Sprint - Mobile friendly */}
-                    <div className="px-3 pb-2 sm:hidden">
-                      <select 
-                        onChange={(e) => { if (e.target.value) handleMoveToSprint(task._id, e.target.value); }} 
-                        className="w-full text-xs bg-gray-50 text-gray-900 rounded-lg px-3 py-2 border border-gray-300"
-                      >
-                        <option value="">{t('projects.backlog.moveToSprint') || 'Move to sprint...'}</option>
-                        {sprints.filter(s => s.status !== 'completed').map(s => (
-                          <option key={s._id} value={s._id}>{s.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                  <DraggableBacklogItem
+                    key={task._id}
+                    task={task}
+                    onClick={() => router.push(`/projects/${projectId}/backlog?selectedIssue=${task.key}`)}
+                  />
                 ))}
               </div>
             )}
+            </SortableContext>
             {/* Create button */}
             <div className="border-t border-gray-100">
               {showCreateBacklogTask ? (
@@ -503,8 +755,26 @@ export default function BacklogPage() {
               )}
             </div>
           </div>
+        </BacklogDropZone>
         </div>
-        </div>
+
+        {/* Drag Overlay — ghost card following cursor */}
+        <DragOverlay>
+          {activeTask ? (
+            <div className="bg-white border-2 border-blue-500 rounded-lg shadow-xl p-2 opacity-90 w-80">
+              <TaskCard
+                taskKey={activeTask.key}
+                title={activeTask.title}
+                type={activeTask.type}
+                priority={activeTask.priority}
+                status={activeTask.status}
+                assignee={activeTask.assignee}
+                variant="compact"
+              />
+            </div>
+          ) : null}
+        </DragOverlay>
+        </DndContext>
 
         {/* Task Detail Panel */}
         {selectedIssue && selectedTask && (
@@ -519,7 +789,7 @@ export default function BacklogPage() {
                 fetchData(token);
                 // Refetch task detail to show updated info (sprint, type, etc.)
                 if (selectedTask) {
-                  fetch(`http://localhost:5000/api/v1/pm/tasks/${selectedTask._id}`, {
+                  fetch(`${API_URL}/pm/tasks/${selectedTask._id}`, {
                     headers: { Authorization: `Bearer ${token}` },
                   })
                     .then(res => res.json())

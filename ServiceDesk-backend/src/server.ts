@@ -5,6 +5,7 @@ import logger from './utils/logger';
 import { createServer, Server } from 'http';
 import { startAllJobs } from './jobs/taskScheduler';
 import { initializeSocket } from './config/socket';
+import { startWorkflowTimerJob, stopWorkflowTimerJob } from './jobs/workflowTimerJob';
 
 // Connect to database
 connectDB();
@@ -23,6 +24,10 @@ httpServer.listen(env.PORT, () => {
   
   // Start background jobs
   startAllJobs();
+
+  // Start workflow timer job (every 60 seconds)
+  startWorkflowTimerJob(60_000);
+  logger.info('⏱️ Workflow timer job started');
 });
 
 const server = httpServer;
@@ -46,6 +51,7 @@ process.on('uncaughtException', (err: Error) => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('👋 SIGTERM RECEIVED. Shutting down gracefully');
+  stopWorkflowTimerJob();
   server.close(() => {
     logger.info('💥 Process terminated!');
   });

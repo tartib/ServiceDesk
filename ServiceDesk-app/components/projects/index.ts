@@ -34,3 +34,5 @@ export { TaskDetailPanel } from './TaskDetailPanel';
 export { QuickCreateTask } from './QuickCreateTask';
 export { StatusManagementModal } from './StatusManagementModal';
 export { AddStatusModal } from './AddStatusModal';
+export { default as CSVImportModal } from './CSVImportModal';
+export { default as DraggableBacklogItem } from './DraggableBacklogItem';

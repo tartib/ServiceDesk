@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { X, ChevronDown, Loader2, User } from 'lucide-react';
@@ -90,7 +91,7 @@ export default function CreateTaskModal({
         if (!token) return;
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${project._id}/members`,
+          `${API_URL}/pm/projects/${project._id}/members`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }

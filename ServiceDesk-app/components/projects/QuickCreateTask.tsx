@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState, useRef, useEffect } from 'react';
 import { Calendar, ChevronDown, User, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -141,7 +142,7 @@ export function QuickCreateTask({
         payload.dueDate = new Date(dueDate).toISOString();
       }
 
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/tasks`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),

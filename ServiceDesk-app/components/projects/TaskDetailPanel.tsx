@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -633,7 +634,7 @@ export function TaskDetailPanel({
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/v1/pm/projects/${projectId}/tasks?search=${encodeURIComponent(query)}`,
+        `${API_URL}/pm/projects/${projectId}/tasks?search=${encodeURIComponent(query)}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -685,7 +686,7 @@ export function TaskDetailPanel({
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/v1/pm/tasks/${activeTask._id}/links`,
+        `${API_URL}/pm/tasks/${activeTask._id}/links`,
         {
           method: 'POST',
           headers: {
@@ -744,7 +745,7 @@ export function TaskDetailPanel({
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/v1/pm/tasks/${activeTask._id}/links/${linkId}`,
+        `${API_URL}/pm/tasks/${activeTask._id}/links/${linkId}`,
         {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
@@ -889,7 +890,7 @@ export function TaskDetailPanel({
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/tasks`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -924,7 +925,7 @@ export function TaskDetailPanel({
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${activeTask._id}/web-links`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}/web-links`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -967,7 +968,7 @@ export function TaskDetailPanel({
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${activeTask._id}/attachments`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}/attachments`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1000,7 +1001,7 @@ export function TaskDetailPanel({
       if (!token) return;
 
       try {
-        const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/tasks?type=epic`, {
+        const response = await fetch(`${API_URL}/pm/projects/${projectId}/tasks?type=epic`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -1022,7 +1023,7 @@ export function TaskDetailPanel({
       if (!token) return;
 
       try {
-        const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${activeTask._id}/watchers`, {
+        const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}/watchers`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -1055,7 +1056,7 @@ export function TaskDetailPanel({
 
     try {
       const method = isWatching ? 'DELETE' : 'POST';
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${activeTask._id}/watchers`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}/watchers`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -1090,7 +1091,7 @@ export function TaskDetailPanel({
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${activeTask._id}`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1119,7 +1120,7 @@ export function TaskDetailPanel({
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${activeTask._id}`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1149,7 +1150,7 @@ export function TaskDetailPanel({
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${activeTask._id}/clone`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}/clone`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1180,7 +1181,7 @@ export function TaskDetailPanel({
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${activeTask._id}`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -1219,7 +1220,7 @@ export function TaskDetailPanel({
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${activeTask._id}/transition`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}/transition`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1320,7 +1321,7 @@ export function TaskDetailPanel({
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${activeTask._id}`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1353,7 +1354,7 @@ export function TaskDetailPanel({
 
     try {
       // Get current user
-      const response = await fetch('http://localhost:5000/api/v1/auth/me', {
+      const response = await fetch('API_URL/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();

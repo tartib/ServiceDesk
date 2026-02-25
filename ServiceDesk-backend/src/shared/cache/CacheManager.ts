@@ -1,4 +1,5 @@
 import logger from '../../utils/logger';
+import env from '../../config/env';
 
 // Redis client type definition
 interface RedisClient {
@@ -36,7 +37,7 @@ export class CacheManager {
       // Dynamically import ioredis to avoid hard dependency
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { default: Redis } = await import('ioredis');
-      this.redis = new Redis(redisUrl || process.env.REDIS_URL || 'redis://localhost:6379');
+      this.redis = new Redis(redisUrl || env.REDIS_URL);
 
       if (this.redis) {
         this.redis.on('connect', () => {

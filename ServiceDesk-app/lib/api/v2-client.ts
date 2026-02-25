@@ -4,7 +4,9 @@
  * Migration utility for frontend to use new v2 endpoints
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from './config';
+
+const API_BASE = API_BASE_URL;
 
 // ============================================================
 // V2 API ENDPOINTS

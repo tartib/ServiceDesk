@@ -17,6 +17,7 @@ import standupRoutes from './standup.routes';
 import retrospectiveRoutes from './retrospective.routes';
 import planningPokerRoutes from './planningPoker.routes';
 import workflowRoutes from './workflow.routes';
+import importRoutes from './import.routes';
 
 const router = Router();
 
@@ -58,6 +59,9 @@ router.use('/pm/search', searchRoutes);
 
 // Export routes
 router.use('/pm/export', exportRoutes);
+
+// Import routes
+router.use('/pm', importRoutes);
 
 // Board routes
 router.use('/pm', boardRoutes);

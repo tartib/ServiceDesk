@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState, useEffect, useCallback } from 'react';
 import { 
   Users, 
@@ -76,7 +77,7 @@ export default function ProjectTeamsPanel({ projectId }: ProjectTeamsPanelProps)
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       if (!token) return;
 
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/teams`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/teams`, {
         headers: { 
           Authorization: `Bearer ${token}`,
         },
@@ -122,7 +123,7 @@ export default function ProjectTeamsPanel({ projectId }: ProjectTeamsPanelProps)
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       if (!token) throw new Error('Not authenticated');
 
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/teams`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/teams`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -165,12 +166,12 @@ export default function ProjectTeamsPanel({ projectId }: ProjectTeamsPanelProps)
 
       // Remove old team and re-add with new name/description
       // since there is no PUT endpoint for teams
-      await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/teams/${editingTeam._id}`, {
+      await fetch(`${API_URL}/pm/projects/${projectId}/teams/${editingTeam._id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/teams`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/teams`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -205,7 +206,7 @@ export default function ProjectTeamsPanel({ projectId }: ProjectTeamsPanelProps)
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       if (!token) throw new Error('Not authenticated');
 
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/teams/${teamId}`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/teams/${teamId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -242,7 +243,7 @@ export default function ProjectTeamsPanel({ projectId }: ProjectTeamsPanelProps)
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       if (!token) return;
 
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/members`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/members`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -307,7 +308,7 @@ export default function ProjectTeamsPanel({ projectId }: ProjectTeamsPanelProps)
       // Add members one by one
       for (const userId of selectedMembers) {
         const response = await fetch(
-          `http://localhost:5000/api/v1/pm/projects/${projectId}/teams/${managingTeam._id}/members`,
+          `${API_URL}/pm/projects/${projectId}/teams/${managingTeam._id}/members`,
           {
             method: 'POST',
             headers: {
@@ -346,7 +347,7 @@ export default function ProjectTeamsPanel({ projectId }: ProjectTeamsPanelProps)
       if (!token) throw new Error('Not authenticated');
 
       const response = await fetch(
-        `http://localhost:5000/api/v1/pm/projects/${projectId}/teams/${teamId}/members/${memberId}`,
+        `${API_URL}/pm/projects/${projectId}/teams/${teamId}/members/${memberId}`,
         {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },

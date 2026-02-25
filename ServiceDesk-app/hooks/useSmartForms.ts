@@ -4,6 +4,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/lib/api/config';
 import {
   FormTemplate,
   FormSubmission,
@@ -21,7 +22,7 @@ import {
 // API BASE URL
 // ============================================
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE = API_BASE_URL;
 const FORMS_API = `${API_BASE}/api/v2/forms`;
 
 // ============================================

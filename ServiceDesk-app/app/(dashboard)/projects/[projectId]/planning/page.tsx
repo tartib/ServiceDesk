@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -136,7 +137,7 @@ export default function SprintPlanningPage() {
 
   const fetchProject = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -154,13 +155,13 @@ export default function SprintPlanningPage() {
   const fetchBacklog = useCallback(async (token: string) => {
     try {
       // Try fetching from backlog endpoint first
-      let res = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/backlog`, {
+      let res = await fetch(`${API_URL}/pm/projects/${projectId}/backlog`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
       // If backlog endpoint doesn't exist, try tasks endpoint
       if (!res.ok) {
-        res = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/tasks`, {
+        res = await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -202,7 +203,7 @@ export default function SprintPlanningPage() {
 
   const fetchSprintTasks = useCallback(async (token: string, sprintId: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/tasks?sprintId=${sprintId}`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/tasks?sprintId=${sprintId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -245,7 +246,7 @@ export default function SprintPlanningPage() {
   const fetchAllSprints = useCallback(async (token: string) => {
     try {
       // Fetch ALL sprints for this project
-      const res = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/sprints`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/sprints`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -290,6 +291,33 @@ export default function SprintPlanningPage() {
     loadData();
   }, [projectId, router, fetchProject, fetchBacklog, fetchAllSprints]);
 
+  const persistMoveTask = useCallback(async (taskId: string, sprintId: string | null) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token) { console.error('[Planning] No auth token'); return; }
+    if (!taskId) { console.error('[Planning] No taskId'); return; }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    const orgId = typeof project?.organization === 'string' ? project.organization : (project?.organization as { _id: string })?._id;
+    if (orgId) headers['X-Organization-ID'] = orgId;
+    const url = `${API_URL}/pm/tasks/${taskId}/move`;
+    const payload = { sprintId };
+    console.log('[Planning] persistMoveTask:', { url, payload });
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('[Planning] Move task API error:', { status: res.status, data });
+      } else {
+        console.log('[Planning] Move task success:', data);
+      }
+    } catch (err) {
+      console.error('[Planning] persistMoveTask network error:', err);
+    }
+  }, [project]);
+
   const handleAddToSprint = (item: BacklogItem) => {
     if (!item.points) {
       alert('⚠️ This item needs to be estimated before adding to sprint. Use Planning Poker to estimate.');
@@ -312,12 +340,18 @@ export default function SprintPlanningPage() {
     setBacklog(prev => prev.filter(b => b.id !== item.id));
     setSprintItems(prev => [...prev, item]);
     setSprint(prev => ({ ...prev, committed: newCommitted }));
+    if (!sprint.id) {
+      console.error('[Planning] Cannot move to sprint: sprint.id is empty');
+      return;
+    }
+    persistMoveTask(item.id, sprint.id);
   };
 
   const handleRemoveFromSprint = (item: BacklogItem) => {
     setSprintItems(prev => prev.filter(s => s.id !== item.id));
     setBacklog(prev => [...prev, item]);
     setSprint(prev => ({ ...prev, committed: prev.committed - (item.points || 0) }));
+    persistMoveTask(item.id, null);
   };
 
   const getCapacityPercentage = () => {

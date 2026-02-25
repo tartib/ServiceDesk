@@ -495,11 +495,11 @@ export const getBacklog = async (req: PMAuthRequest, res: Response): Promise<voi
 
     const tasks = await Task.find({
       projectId,
-      sprintId: { $exists: false },
+      $or: [{ sprintId: { $exists: false } }, { sprintId: null }],
     })
       .populate('assignee', 'name profile.firstName profile.lastName profile.avatar email')
       .populate('reporter', 'name profile.firstName profile.lastName profile.avatar email')
-      .sort({ createdAt: -1 });
+      .sort({ columnOrder: 1, createdAt: -1 });
 
     res.status(200).json({
       success: true,

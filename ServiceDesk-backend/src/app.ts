@@ -212,6 +212,9 @@ import workflowRoutes from './routes/workflow.routes';
 // Leave Request routes
 import leaveRequestRoutes from './routes/leaveRequest.routes';
 
+// Workflow Engine routes (Generic BPMN)
+import workflowEngineRoutes from './routes/workflow-engine';
+
 // v1 routes (with deprecation headers)
 app.use(`/api/${env.API_VERSION}`, globalDeprecationMiddleware);
 app.use(`/api/${env.API_VERSION}/auth`, authRoutes);
@@ -253,6 +256,9 @@ app.use(`/api/${env.API_VERSION}/workflows`, workflowRoutes);
 
 // Leave Request routes (v1)
 app.use(`/api/${env.API_VERSION}/leave-requests`, leaveRequestRoutes);
+
+// Workflow Engine routes (Generic BPMN)
+app.use('/api/v2/workflow-engine', workflowEngineRoutes);
 
 // API Documentation
 setupSwagger(app);

@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -22,7 +23,7 @@ import {
 } from '@/components/projects';
 import { useMethodology, OkrObjective, OkrKeyResult, OkrCheckIn } from '@/hooks/useMethodology';
 
-const API = 'http://localhost:5000/api/v1';
+const API = API_URL;
 
 interface Project {
   _id: string;

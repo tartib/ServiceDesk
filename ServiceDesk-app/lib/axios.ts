@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig } from 'axios';
+import { API_URL } from './api/config';
 
 // Type override for axios instance that returns data directly (due to response interceptor)
 interface ApiInstance {
@@ -10,7 +11,7 @@ interface ApiInstance {
 }
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },

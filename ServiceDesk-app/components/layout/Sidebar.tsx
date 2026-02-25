@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -45,6 +46,7 @@ import {
   Flag,
   TrendingUp,
   CheckCircle,
+  Map,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -61,16 +63,19 @@ const getMethodologySubLinks = (code: string) => {
       return [
         { href: 'board', label: 'projects.board.title', fallback: 'Board', Icon: LayoutGrid },
         { href: 'backlog', label: 'projects.backlog.title', fallback: 'Backlog', Icon: List },
+        { href: 'roadmap', label: 'projects.roadmap.title', fallback: 'Roadmap', Icon: Map },
       ];
     case 'kanban':
       return [
         { href: 'board', label: 'projects.board.title', fallback: 'Board', Icon: LayoutGrid },
         { href: 'backlog', label: 'projects.backlog.title', fallback: 'Backlog', Icon: List },
+        { href: 'roadmap', label: 'projects.roadmap.title', fallback: 'Roadmap', Icon: Map },
       ];
     case 'waterfall':
       return [
         { href: 'phases', label: 'projects.phases.title', fallback: 'Phases', Icon: GitBranch },
         { href: 'milestones', label: 'projects.milestones.title', fallback: 'Milestones', Icon: Flag },
+        { href: 'roadmap', label: 'projects.roadmap.title', fallback: 'Roadmap', Icon: Map },
       ];
     case 'itil':
       return [
@@ -81,6 +86,7 @@ const getMethodologySubLinks = (code: string) => {
       return [
         { href: 'value-stream', label: 'projects.valueStream.title', fallback: 'Value Stream', Icon: TrendingUp },
         { href: 'board', label: 'projects.board.title', fallback: 'Board', Icon: LayoutGrid },
+        { href: 'roadmap', label: 'projects.roadmap.title', fallback: 'Roadmap', Icon: Map },
       ];
     case 'okr':
       return [
@@ -91,6 +97,7 @@ const getMethodologySubLinks = (code: string) => {
       return [
         { href: 'board', label: 'projects.board.title', fallback: 'Board', Icon: LayoutGrid },
         { href: 'backlog', label: 'projects.backlog.title', fallback: 'Backlog', Icon: List },
+        { href: 'roadmap', label: 'projects.roadmap.title', fallback: 'Roadmap', Icon: Map },
       ];
   }
 };
@@ -143,7 +150,7 @@ export default function Sidebar() {
       if (!token) return;
 
       try {
-        const response = await fetch('http://localhost:5000/api/v1/pm/projects?limit=5', {
+        const response = await fetch('API_URL/pm/projects?limit=5', {
           headers: { Authorization: `Bearer ${token}` },
         });
         

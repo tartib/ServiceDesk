@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import User from '../../models/User';
 import Organization from '../../models/pm/Organization';
 import { OrganizationRole, MethodologyCode } from '../../types/pm';
+import env from '../../config/env';
 
 interface RegisterInput {
   email: string;
@@ -36,10 +37,10 @@ class AuthService {
   private readonly jwtRefreshExpiresIn: string;
 
   constructor() {
-    this.jwtSecret = process.env.JWT_SECRET || 'default-secret';
-    this.jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || 'default-refresh-secret';
-    this.jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
-    this.jwtRefreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
+    this.jwtSecret = env.JWT_SECRET;
+    this.jwtRefreshSecret = env.JWT_REFRESH_SECRET || env.JWT_SECRET;
+    this.jwtExpiresIn = env.JWT_EXPIRE;
+    this.jwtRefreshExpiresIn = env.JWT_REFRESH_EXPIRE;
   }
 
   async register(input: RegisterInput): Promise<{ user: any; tokens: AuthTokens; organization?: any }> {

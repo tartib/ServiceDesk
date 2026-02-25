@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -124,7 +125,7 @@ export default function StandupPage() {
 
   const fetchProject = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -136,7 +137,7 @@ export default function StandupPage() {
 
   const fetchMembers = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}/members`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/members`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -173,8 +174,8 @@ export default function StandupPage() {
       const date = getDateForFilter(dateFilter);
       // Use /today endpoint for today's standups, otherwise filter by date
       const endpoint = dateFilter === 'today'
-        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}/standups/today`
-        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}/standups?date=${date}`;
+        ? `${API_URL}/pm/projects/${projectId}/standups/today`
+        : `${API_URL}/pm/projects/${projectId}/standups?date=${date}`;
       
       const res = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
@@ -196,7 +197,7 @@ export default function StandupPage() {
   // Fetch current user's standup using /me endpoint
   const fetchMyStandup = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}/standups/me`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/standups/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -330,8 +331,8 @@ export default function StandupPage() {
       const blockers = formData.blockers.split('\n').filter(b => b.trim());
       
       const url = editingStandup
-        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/standups/${editingStandup._id}`
-        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}/standups`;
+        ? `${API_URL}/pm/standups/${editingStandup._id}`
+        : `${API_URL}/pm/projects/${projectId}/standups`;
       
       const res = await fetch(url, {
         method: editingStandup ? 'PUT' : 'POST',

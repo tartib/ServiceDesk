@@ -85,6 +85,18 @@ router.post(
   (req: Request, res: Response) => taskController.moveTask(req as any, res)
 );
 
+// Reorder tasks (bulk update columnOrder after drag & drop)
+router.post(
+  '/projects/:projectId/tasks/reorder',
+  [
+    param('projectId').isMongoId().withMessage('Invalid project ID'),
+    body('tasks').isArray({ min: 1 }).withMessage('tasks array is required'),
+    body('tasks.*.taskId').isMongoId().withMessage('Invalid task ID'),
+    body('tasks.*.columnOrder').isNumeric().withMessage('columnOrder is required'),
+  ],
+  (req: Request, res: Response) => taskController.reorderTasks(req as any, res)
+);
+
 // Delete task
 router.delete(
   '/tasks/:taskId',

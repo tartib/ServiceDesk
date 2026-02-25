@@ -3,6 +3,8 @@
  * Handles fetching and storing CSRF tokens for API requests
  */
 
+import { API_BASE_URL } from './config';
+
 const CSRF_COOKIE_NAME = 'csrf-token';
 const CSRF_HEADER_NAME = 'x-csrf-token';
 
@@ -19,7 +21,7 @@ export async function fetchCsrfToken(): Promise<string> {
   }
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+    const baseUrl = API_BASE_URL;
     const response = await fetch(`${baseUrl}/health`, {
       method: 'GET',
       credentials: 'include',

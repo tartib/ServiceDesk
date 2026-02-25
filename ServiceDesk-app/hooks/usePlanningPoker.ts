@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import api from '@/lib/axios';
 import { io, Socket } from 'socket.io-client';
+import { SOCKET_URL } from '@/lib/api/config';
 
 interface ApiResponse<T> {
   data: T;
@@ -60,7 +61,7 @@ export const usePlanningPoker = (sprintId?: string) => {
   }, [activeSession]);
 
   useEffect(() => {
-    const socketInstance = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
+    const socketInstance = io(SOCKET_URL, {
       auth: {
         token: localStorage.getItem('token') || localStorage.getItem('accessToken'),
       },

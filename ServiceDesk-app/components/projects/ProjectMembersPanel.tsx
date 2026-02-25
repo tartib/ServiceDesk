@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Users, 
@@ -112,7 +113,7 @@ export default function ProjectMembersPanel({ projectId }: ProjectMembersPanelPr
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}/members`,
+        `${API_URL}/pm/projects/${projectId}/members`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -153,7 +154,7 @@ export default function ProjectMembersPanel({ projectId }: ProjectMembersPanelPr
     setIsLoadingUsers(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/users/search?q=${encodeURIComponent(query.trim())}&limit=10`,
+        `${API_URL}/users/search?q=${encodeURIComponent(query.trim())}&limit=10`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -223,7 +224,7 @@ export default function ProjectMembersPanel({ projectId }: ProjectMembersPanelPr
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}/members/invite`,
+        `${API_URL}/pm/projects/${projectId}/members/invite`,
         {
           method: 'POST',
           headers: {
@@ -260,7 +261,7 @@ export default function ProjectMembersPanel({ projectId }: ProjectMembersPanelPr
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}/members/${memberId}/role`,
+        `${API_URL}/pm/projects/${projectId}/members/${memberId}/role`,
         {
           method: 'PUT',
           headers: {
@@ -295,7 +296,7 @@ export default function ProjectMembersPanel({ projectId }: ProjectMembersPanelPr
       // Add each selected user
       const promises = selectedUsers.map(userId => 
         fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}/members/invite`,
+          `${API_URL}/pm/projects/${projectId}/members/invite`,
           {
             method: 'POST',
             headers: {
@@ -351,7 +352,7 @@ export default function ProjectMembersPanel({ projectId }: ProjectMembersPanelPr
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}/members/${memberId}`,
+        `${API_URL}/pm/projects/${projectId}/members/${memberId}`,
         {
           method: 'DELETE',
           headers: {

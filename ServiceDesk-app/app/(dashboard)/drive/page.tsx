@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState, useEffect, useCallback } from 'react';
 import { useFiles, FileMetadata, Folder, FolderContents } from '@/hooks/useFiles';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -12,13 +13,8 @@ if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 }
 
-// Helper function to get API URL with fallback
-const getApiUrl = () => {
-  if (typeof window !== 'undefined') {
-    return process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:5000/api/v1';
-  }
-  return 'http://localhost:5000/api/v1';
-};
+// Helper function to get API URL
+const getApiUrl = () => API_URL;
 
 // Helper function to get preview URL with token
 const getPreviewUrl = (fileId: string) => {

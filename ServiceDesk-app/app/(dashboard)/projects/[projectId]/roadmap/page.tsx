@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -145,7 +146,7 @@ export default function RoadmapPage() {
 
   const fetchProject = useCallback(async (token: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -160,7 +161,7 @@ export default function RoadmapPage() {
 
   const fetchTasks = useCallback(async (token: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/tasks`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -207,7 +208,7 @@ export default function RoadmapPage() {
     try {
       setCreateStatus(`Creating ${type}...`);
       
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/tasks`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -265,7 +266,7 @@ export default function RoadmapPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

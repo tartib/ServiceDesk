@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, ChevronLeft, ChevronRight, Check } from 'lucide-react';
@@ -97,7 +98,7 @@ export default function ProjectWizard({ onClose, onSuccess }: ProjectWizardProps
       }
 
       // Create project
-      const response = await fetch('http://localhost:5000/api/v1/pm/projects', {
+      const response = await fetch('API_URL/pm/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -130,7 +131,7 @@ export default function ProjectWizard({ onClose, onSuccess }: ProjectWizardProps
       }
 
       // Initialize methodology config
-      await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/methodology`, {
+      await fetch(`${API_URL}/pm/projects/${projectId}/methodology`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

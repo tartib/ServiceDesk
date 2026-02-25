@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { InventoryStatus } from '../types';
+import env from '../config/env';
 
 export interface IInventory extends Document {
   name: string;
@@ -105,7 +106,7 @@ inventorySchema.set('toJSON', {
   transform: (_doc, ret) => {
     if (ret.image && typeof ret.image === 'string') {
       if (!ret.image.startsWith('http')) {
-        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+        const baseUrl = env.BASE_URL;
         (ret as { image: string | null }).image = `${baseUrl}${ret.image}`;
       }
     } else {
@@ -119,7 +120,7 @@ inventorySchema.set('toObject', {
   transform: (_doc, ret) => {
     if (ret.image && typeof ret.image === 'string') {
       if (!ret.image.startsWith('http')) {
-        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+        const baseUrl = env.BASE_URL;
         (ret as { image: string | null }).image = `${baseUrl}${ret.image}`;
       }
     } else {

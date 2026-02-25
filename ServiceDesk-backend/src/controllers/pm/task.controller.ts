@@ -515,9 +515,23 @@ export const getBoardTasks = async (req: PMAuthRequest, res: Response): Promise<
 
 export const moveTask = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({
+        success: false,
+        errors: errors.array().map((e: { type?: string; msg: string; path?: string }) => ({
+          field: e.path || e.type,
+          message: e.msg
+        })),
+      } as ApiResponse);
+      return;
+    }
+
     const { taskId } = req.params;
     const { statusId, columnOrder, sprintId } = req.body;
     const userId = req.user?.id;
+
+    logger.info(`[moveTask] taskId=${taskId}, statusId=${statusId}, sprintId=${sprintId}, columnOrder=${columnOrder}`);
 
     const task = await Task.findById(taskId);
     if (!task) {
@@ -538,7 +552,7 @@ export const moveTask = async (req: PMAuthRequest, res: Response): Promise<void>
           { projectId: task.projectId },
           { organizationId: task.organizationId, isDefault: true },
         ],
-      });
+      }).sort({ projectId: -1 });
 
       if (workflow) {
         // Try exact match first
@@ -562,6 +576,15 @@ export const moveTask = async (req: PMAuthRequest, res: Response): Promise<void>
         }
         if (match) {
           resolvedStatusId = match.id;
+        } else {
+          logger.warn(`[moveTask] Could not resolve statusId "${statusId}" in workflow. Available: ${workflow.statuses.map(s => s.id).join(', ')}`);
+          // Fallback: directly update the task status if the target ID exists in workflow statuses list
+          // This handles cases where the ID format differs between frontend and backend
+          res.status(400).json({
+            success: false,
+            error: `Status "${statusId}" not found in workflow. Available statuses: ${workflow.statuses.map(s => `${s.name} (${s.id})`).join(', ')}`,
+          } as ApiResponse);
+          return;
         }
       }
 
@@ -574,7 +597,13 @@ export const moveTask = async (req: PMAuthRequest, res: Response): Promise<void>
     }
 
     if (sprintId !== undefined) {
-      task.sprintId = sprintId ? new mongoose.Types.ObjectId(sprintId) : undefined;
+      if (sprintId && typeof sprintId === 'string' && sprintId.trim().length > 0) {
+        task.sprintId = new mongoose.Types.ObjectId(sprintId);
+      } else {
+        // Properly unset sprintId so getBacklog query picks it up
+        task.sprintId = null as any;
+      }
+      logger.info(`[moveTask] Updated sprintId to ${sprintId || 'null (backlog)'} for task ${taskId}`);
     }
 
     task.updatedBy = new mongoose.Types.ObjectId(userId);
@@ -593,6 +622,69 @@ export const moveTask = async (req: PMAuthRequest, res: Response): Promise<void>
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to move task',
+    } as ApiResponse);
+  }
+};
+
+// ==================== REORDER (Bulk) ====================
+
+export const reorderTasks = async (req: PMAuthRequest, res: Response): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+    const { tasks: taskOrders } = req.body;
+    const userId = req.user?.id;
+
+    if (!Array.isArray(taskOrders) || taskOrders.length === 0) {
+      res.status(400).json({ success: false, error: 'tasks array is required' } as ApiResponse);
+      return;
+    }
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      res.status(404).json({ success: false, error: 'Project not found' } as ApiResponse);
+      return;
+    }
+
+    const bulkOps = taskOrders.map((item: { taskId: string; columnOrder: number; sprintId?: string | null }) => {
+      const setFields: Record<string, unknown> = {
+        columnOrder: item.columnOrder,
+        updatedBy: new mongoose.Types.ObjectId(userId),
+      };
+      const unsetFields: Record<string, unknown> = {};
+
+      if (item.sprintId !== undefined) {
+        if (item.sprintId) {
+          setFields.sprintId = new mongoose.Types.ObjectId(item.sprintId);
+        } else {
+          // Moving to backlog — remove sprintId
+          unsetFields.sprintId = '';
+        }
+      }
+
+      const updateOp: Record<string, unknown> = { $set: setFields };
+      if (Object.keys(unsetFields).length > 0) {
+        updateOp.$unset = unsetFields;
+      }
+
+      return {
+        updateOne: {
+          filter: { _id: new mongoose.Types.ObjectId(item.taskId), projectId: new mongoose.Types.ObjectId(projectId) },
+          update: updateOp,
+        },
+      };
+    });
+
+    await Task.bulkWrite(bulkOps);
+
+    res.status(200).json({
+      success: true,
+      data: { updated: bulkOps.length },
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Reorder tasks error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reorder tasks',
     } as ApiResponse);
   }
 };

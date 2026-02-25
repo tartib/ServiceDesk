@@ -1,6 +1,7 @@
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import env from '../../config/env';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -14,11 +15,7 @@ class SocketService {
   initialize(httpServer: HttpServer): void {
     this.io = new Server(httpServer, {
       cors: {
-        origin: [
-          'http://localhost:3000',
-          'http://localhost:3001',
-          'http://127.0.0.1:3001',
-        ],
+        origin: env.CORS_ORIGIN.split(',').map(o => o.trim()),
         credentials: true,
       },
     });
@@ -30,7 +27,7 @@ class SocketService {
       }
 
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as {
+        const decoded = jwt.verify(token, env.JWT_SECRET) as {
           userId: string;
           organizationId: string;
         };

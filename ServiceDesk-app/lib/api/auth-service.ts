@@ -6,10 +6,11 @@
 import axios from 'axios';
 import axiosInstance from './axios-instance';
 import { fetchCsrfToken, clearCsrfToken } from './csrf';
+import { API_BASE_URL } from './config';
 import type { AxiosError } from 'axios';
 
 // Auth uses v2 endpoints, create a dedicated instance
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+const API_BASE = API_BASE_URL;
 const authAxios = axios.create({
   baseURL: `${API_BASE}/api`,
   withCredentials: true,

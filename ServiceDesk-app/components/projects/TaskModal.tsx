@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState, useEffect } from 'react';
 import { X, User, Calendar, Tag, MessageSquare, Paperclip, Clock, Target } from 'lucide-react';
 
@@ -47,7 +48,7 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}`, {
+      const res = await fetch(`${API_URL}/pm/tasks/${taskId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -72,7 +73,7 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     if (!token) return;
     try {
-      await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}/transition`, {
+      await fetch(`${API_URL}/pm/tasks/${taskId}/transition`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ statusId }),
@@ -88,7 +89,7 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     if (!token) return;
     try {
-      await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}`, {
+      await fetch(`${API_URL}/pm/tasks/${taskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({

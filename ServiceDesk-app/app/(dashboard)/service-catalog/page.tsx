@@ -13,9 +13,14 @@ import {
   Star,
   Users,
   Zap,
+  Plus,
+  Trash2,
+  Pencil,
 } from 'lucide-react';
 import { useServiceCatalog, IServiceCatalogItem } from '@/hooks/useServiceCatalog';
 import { useLocale } from '@/hooks/useLocale';
+import ServiceFormModal from '@/components/service-catalog/ServiceFormModal';
+import DeleteServiceDialog from '@/components/service-catalog/DeleteServiceDialog';
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
   active: { label: 'Active', color: 'bg-green-100 text-green-700', icon: CheckCircle },
@@ -29,6 +34,9 @@ export default function ServiceCatalogStandalonePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editTarget, setEditTarget] = useState<IServiceCatalogItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const { data: catalogData, isLoading } = useServiceCatalog();
   const services: IServiceCatalogItem[] = useMemo(() => catalogData?.data || [], [catalogData]);
@@ -80,6 +88,13 @@ export default function ServiceCatalogStandalonePage() {
             <span className="text-sm text-gray-500">({filteredServices.length} services)</span>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Add Service
+            </button>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -168,15 +183,37 @@ export default function ServiceCatalogStandalonePage() {
                       {service.metrics?.total_requests || 0} requests
                     </span>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`);
-                    }}
-                    className="w-full mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    Request Service
-                  </button>
+                  <div className="flex items-center gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`);
+                      }}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Request Service
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditTarget(service);
+                      }}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit service"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget({ id: service.service_id, name: service.name });
+                      }}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete service"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -214,12 +251,26 @@ export default function ServiceCatalogStandalonePage() {
                   </div>
                   <div className="col-span-1 text-sm text-gray-600">{service.fulfillment?.estimated_hours || 0}h</div>
                   <div className="col-span-2">{renderStars(service.metrics?.satisfaction_score || 0)}</div>
-                  <div className="col-span-2">
+                  <div className="col-span-2 flex items-center gap-2">
                     <button
                       onClick={() => router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`)}
                       className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Request
+                    </button>
+                    <button
+                      onClick={() => setEditTarget(service)}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit service"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget({ id: service.service_id, name: service.name })}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete service"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -232,9 +283,33 @@ export default function ServiceCatalogStandalonePage() {
           <div className="text-center py-12">
             <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">No services found</p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Add First Service
+            </button>
           </div>
         )}
       </div>
+
+      {/* Create/Edit Service Modal */}
+      <ServiceFormModal
+        open={showCreateModal || !!editTarget}
+        onOpenChange={(open) => {
+          if (!open) { setShowCreateModal(false); setEditTarget(null); }
+        }}
+        service={editTarget}
+      />
+
+      {/* Delete Service Dialog */}
+      <DeleteServiceDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        serviceId={deleteTarget?.id || null}
+        serviceName={deleteTarget?.name || ''}
+      />
     </div>
   );
 }

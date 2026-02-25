@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import mammoth from 'mammoth';
@@ -14,13 +15,8 @@ if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 }
 
-// Helper function to get API URL with fallback
-const getApiUrl = () => {
-  if (typeof window !== 'undefined') {
-    return process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:5000/api/v1';
-  }
-  return 'http://localhost:5000/api/v1';
-};
+// Helper function to get API URL
+const getApiUrl = () => API_URL;
 
 interface FileMetadata {
   _id: string;

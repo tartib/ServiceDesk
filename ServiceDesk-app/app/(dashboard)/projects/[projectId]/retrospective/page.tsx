@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -121,8 +122,6 @@ const columnConfig = {
     borderColor: 'border-orange-200' 
   },
 };
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export default function RetrospectivePage() {
   const params = useParams();

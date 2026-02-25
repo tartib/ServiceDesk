@@ -66,6 +66,31 @@ export const uploadInventoryImage = multer({
   },
 }).single('image');
 
+// File filter for CSV only
+const csvFileFilter = (
+  _req: Express.Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
+  const allowedMimeTypes = ['text/csv', 'application/vnd.ms-excel', 'text/plain'];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (allowedMimeTypes.includes(file.mimetype) || ext === '.csv') {
+    cb(null, true);
+  } else {
+    cb(new ApiError(400, 'Only CSV files (.csv) are allowed'));
+  }
+};
+
+// Configure multer for CSV import (memory storage, 2MB limit)
+export const uploadCSV = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: csvFileFilter,
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2MB max
+  },
+}).single('file');
+
 // Helper to delete old image
 export const deleteImage = (imageUrl: string): void => {
   if (imageUrl) {
@@ -82,6 +107,6 @@ export const deleteImage = (imageUrl: string): void => {
 
 // Get image URL from file path
 export const getImageUrl = (filename: string, type: 'products' | 'inventory' = 'products'): string => {
-  const baseUrl = process.env.BASE_URL || `http://localhost:${env.PORT}`;
+  const baseUrl = env.BASE_URL;
   return `${baseUrl}/uploads/${type}/${filename}`;
 };

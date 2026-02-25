@@ -1,0 +1,3 @@
+Title,Type,Priority,Description,Story Points,Labels,Due Date,Assignee
+"User authentication flow",story,high,"Implement login and registration pages",5,"auth,frontend",2025-03-15,user@example.com
+"Fix navbar responsive layout",bug,medium,"Navbar breaks on mobile screens",2,"ui,bug-fix",2025-03-10,

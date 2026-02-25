@@ -20,7 +20,17 @@ export interface IServiceCatalogItem {
     placeholder?: string;
     default_value?: unknown;
     options?: Array<{ value: string; label: string; label_ar?: string }>;
+    validation?: {
+      min?: number;
+      max?: number;
+      pattern?: string;
+      message?: string;
+    };
     order: number;
+    depends_on?: {
+      field_id: string;
+      value: unknown;
+    };
   }>;
   workflow: {
     approval_chain: Array<{

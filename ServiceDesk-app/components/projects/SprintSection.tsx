@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -12,10 +12,14 @@ import {
   MoveRight,
   CheckCircle2,
   Circle,
-  Clock
+  Clock,
+  GripVertical
 } from 'lucide-react';
 import TaskCard from './TaskCard';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Task {
   _id: string;
@@ -61,9 +65,79 @@ interface SprintSectionProps {
   onDeleteSprint?: () => void;
   onMoveWorkItems?: () => void;
   onReorderSprint?: () => void;
+  isDragActive?: boolean;
+}
+
+// Sortable task item within a sprint
+function SortableSprintTask({ task, onClick, onTaskSelect, isSelected }: {
+  task: Task;
+  onClick?: () => void;
+  onTaskSelect?: (taskId: string, selected: boolean) => void;
+  isSelected: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task._id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`group/drag flex items-center border-b border-gray-100 last:border-b-0 cursor-grab active:cursor-grabbing ${
+        isDragging ? 'shadow-lg ring-2 ring-blue-500 bg-blue-50/50 rounded-lg' : ''
+      }`}
+    >
+      {/* Drag Handle (visual indicator) */}
+      <div
+        ref={setActivatorNodeRef}
+        className="flex items-center justify-center w-6 shrink-0 opacity-30 group-hover/drag:opacity-100 transition-opacity"
+      >
+        <GripVertical className="h-3.5 w-3.5 text-gray-400" />
+      </div>
+      {/* Checkbox */}
+      <div className="ps-1" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+        <input
+          type="checkbox"
+          className="w-4 h-4 rounded border-gray-300"
+          checked={isSelected}
+          onChange={(e) => onTaskSelect?.(task._id, e.target.checked)}
+        />
+      </div>
+      {/* Task details */}
+      <div className="flex-1" onClick={onClick}>
+        <TaskCard
+          taskKey={task.key}
+          title={task.title}
+          type={task.type}
+          priority={task.priority}
+          status={task.status}
+          assignee={task.assignee}
+          storyPoints={task.storyPoints}
+          variant="list"
+          showStatus
+        />
+      </div>
+    </div>
+  );
 }
 
 export default function SprintSection({
+  id,
   name,
   startDate,
   endDate,
@@ -82,6 +156,7 @@ export default function SprintSection({
   onDeleteSprint,
   onMoveWorkItems,
   onReorderSprint,
+  isDragActive = false,
 }: SprintSectionProps) {
   const { t } = useLanguage();
   const [showActionsMenu, setShowActionsMenu] = useState(false);
@@ -91,6 +166,15 @@ export default function SprintSection({
   const [renameValue, setRenameValue] = useState(name);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
   const createInputRef = useRef<HTMLInputElement>(null);
+
+  // Droppable zone for this sprint
+  const droppableId = `sprint-${id}`;
+  const isCompleted = status === 'completed';
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: droppableId,
+    disabled: isCompleted,
+  });
+  const taskIds = useMemo(() => tasks.map(t => t._id), [tasks]);
 
   // Close menu on outside click
   useEffect(() => {
@@ -313,42 +397,34 @@ export default function SprintSection({
       </div>
 
       {/* Sprint Tasks */}
-      {isExpanded && (
-        <div className="border-t border-gray-200">
+      {(isExpanded || (isDragActive && !isCompleted)) && (
+        <div
+          ref={setDroppableRef}
+          className={`border-t border-gray-200 transition-colors ${
+            isOver && !isCompleted ? 'bg-blue-50/40 ring-2 ring-inset ring-blue-400' : ''
+          } ${isCompleted && isDragActive ? 'opacity-50' : ''}`}
+        >
+          <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {tasks.length === 0 ? (
-            <div className="px-3 py-4 text-gray-400 text-sm text-center">
-              {t('projects.sprints.noTasksInSprint') || 'No tasks in this sprint'}
+            <div className={`px-3 py-4 text-sm text-center ${
+              isOver && !isCompleted ? 'text-blue-500 font-medium' : 'text-gray-400'
+            }`}>
+              {isOver && !isCompleted
+                ? (t('projects.backlog.dropHere') || 'Drop here')
+                : (t('projects.sprints.noTasksInSprint') || 'No tasks in this sprint')}
             </div>
           ) : (
             tasks.map((task) => (
-              <div key={task._id} className="flex items-center border-b border-gray-100 last:border-b-0">
-                {/* US6: Task checkbox */}
-                <div className="ps-3">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 rounded border-gray-300"
-                    checked={selectedTasks.has(task._id)}
-                    onChange={(e) => onTaskSelect?.(task._id, e.target.checked)}
-                  />
-                </div>
-                {/* US5: Task details */}
-                <div className="flex-1">
-                  <TaskCard
-                    taskKey={task.key}
-                    title={task.title}
-                    type={task.type}
-                    priority={task.priority}
-                    status={task.status}
-                    assignee={task.assignee}
-                    storyPoints={task.storyPoints}
-                    onClick={() => onTaskClick?.(task)}
-                    variant="list"
-                    showStatus
-                  />
-                </div>
-              </div>
+              <SortableSprintTask
+                key={task._id}
+                task={task}
+                onClick={() => onTaskClick?.(task)}
+                onTaskSelect={onTaskSelect}
+                isSelected={selectedTasks.has(task._id)}
+              />
             ))
           )}
+          </SortableContext>
           
           {/* US4: Create Task Inline */}
           {isCreating ? (

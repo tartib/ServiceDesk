@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -67,7 +68,7 @@ export default function SprintsPage() {
 
   const fetchProject = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -82,7 +83,7 @@ export default function SprintsPage() {
       const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
       if (org) headers['X-Organization-ID'] = org;
       
-      const res = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/sprints`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/sprints`, {
         headers,
       });
       const data = await res.json();
@@ -155,7 +156,7 @@ export default function SprintsPage() {
       const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
       const orgId = typeof project?.organization === 'string' ? project.organization : project?.organization?._id;
       if (orgId) headers['X-Organization-ID'] = orgId;
-      const res = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/sprints`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/sprints`, {
         method: 'POST',
         headers,
         body: JSON.stringify(newSprintData),

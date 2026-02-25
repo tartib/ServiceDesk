@@ -5,8 +5,9 @@
 
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { getCsrfToken } from './csrf';
+import { API_URL } from './config';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const API_BASE_URL = API_URL;
 
 // Create axios instance
 const axiosInstance: AxiosInstance = axios.create({

@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -66,7 +67,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       if (!token) return;
 
       try {
-        const res = await fetch(`http://localhost:5000/api/v1/pm/search?q=${encodeURIComponent(query)}`, {
+        const res = await fetch(`${API_URL}/pm/search?q=${encodeURIComponent(query)}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();

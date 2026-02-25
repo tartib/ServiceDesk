@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FolderKanban } from 'lucide-react';
@@ -82,7 +83,7 @@ export default function ProjectsPage() {
 
   const fetchProjects = async (token: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/v1/pm/projects', {
+      const response = await fetch('API_URL/pm/projects', {
         headers: { Authorization: `Bearer ${token}` },
       });
       

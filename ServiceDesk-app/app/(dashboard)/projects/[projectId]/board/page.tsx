@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -208,7 +209,7 @@ export default function ProjectBoardPage() {
 
   const fetchProject = useCallback(async (token: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -226,7 +227,7 @@ export default function ProjectBoardPage() {
 
   const fetchTeams = useCallback(async (token: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/teams`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/teams`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -246,7 +247,7 @@ export default function ProjectBoardPage() {
 
   const fetchSprints = useCallback(async (token: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/sprints`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/sprints`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -268,7 +269,7 @@ export default function ProjectBoardPage() {
   //       headers['X-Organization-ID'] = project.organization;
   //     }
 
-  //     const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/workflow/statuses`, {
+  //     const response = await fetch(`${API_URL}/pm/projects/${projectId}/workflow/statuses`, {
   //       headers,
   //     });
   //     const data = await response.json();
@@ -290,7 +291,7 @@ export default function ProjectBoardPage() {
 
   const fetchBoardTasks = useCallback(async (token: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/board`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/board`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -355,7 +356,7 @@ export default function ProjectBoardPage() {
       if (task) {
         setSelectedTask(task);
         // Fetch full task details
-        const res = await fetch(`http://localhost:5000/api/v1/pm/tasks/${task._id}`, {
+        const res = await fetch(`${API_URL}/pm/tasks/${task._id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -409,7 +410,7 @@ export default function ProjectBoardPage() {
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/tasks`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -508,7 +509,7 @@ export default function ProjectBoardPage() {
     optimisticUpdate();
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}/move`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${taskId}/move`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -520,6 +521,7 @@ export default function ProjectBoardPage() {
       const data = await response.json();
       
       if (!response.ok) {
+        console.error('[Board] Move task failed:', { status: response.status, data });
         setTasksByStatus(previousTasksByStatus);
         const all: Task[] = [];
         Object.values(previousTasksByStatus).forEach((tasks: Task[]) => {
@@ -545,7 +547,7 @@ export default function ProjectBoardPage() {
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}/transition`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${taskId}/transition`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -579,7 +581,7 @@ export default function ProjectBoardPage() {
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -659,7 +661,7 @@ export default function ProjectBoardPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/v1/pm/projects/${projectId}/members`,
+        `${API_URL}/pm/projects/${projectId}/members`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -736,7 +738,7 @@ export default function ProjectBoardPage() {
     if (!token || !activeSprint) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/sprints/${activeSprint._id}/complete`, {
+      const response = await fetch(`${API_URL}/pm/sprints/${activeSprint._id}/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -805,7 +807,7 @@ export default function ProjectBoardPage() {
         'X-Organization-ID': project.organization,
       };
 
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/workflow/statuses`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/workflow/statuses`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -861,7 +863,7 @@ export default function ProjectBoardPage() {
         'X-Organization-ID': project.organization,
       };
 
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/workflow/statuses/${statusId}`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/workflow/statuses/${statusId}`, {
         method: 'DELETE',
         headers,
       });
@@ -908,7 +910,7 @@ export default function ProjectBoardPage() {
       // Create array of status IDs in new order
       const statusOrder = newStatuses.map(s => s.id);
 
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/workflow/statuses/reorder`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/workflow/statuses/reorder`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ statusOrder }),

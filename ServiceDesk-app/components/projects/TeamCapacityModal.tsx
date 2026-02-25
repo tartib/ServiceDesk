@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState, useEffect, useCallback } from 'react';
 import { X, Calendar, Clock, Users, Check, Loader2 } from 'lucide-react';
 import { useSprintPlanning, TeamMember, CapacitySettings } from '@/hooks/useSprintPlanning';
@@ -68,7 +69,7 @@ export default function TeamCapacityModal({
     setLoadingMembers(true);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/v1/pm/projects/${projectId}/members`,
+        `${API_URL}/pm/projects/${projectId}/members`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await response.json();

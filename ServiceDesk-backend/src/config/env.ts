@@ -39,6 +39,9 @@ const envSchema = Joi.object({
   MINIO_USE_SSL: Joi.boolean().default(false),
   MINIO_DEFAULT_BUCKET: Joi.string().default('servicedesk-files'),
   MINIO_PUBLIC_URL: Joi.string().default('http://localhost:9000'),
+  BASE_URL: Joi.string().default('http://localhost:5000'),
+  REDIS_URL: Joi.string().default('redis://localhost:6379'),
+  JWT_REFRESH_SECRET: Joi.string().allow('').optional(),
 }).unknown(true); // Allow other env vars
 
 // Validate environment variables
@@ -80,6 +83,9 @@ interface EnvConfig {
   MINIO_USE_SSL: boolean;
   MINIO_DEFAULT_BUCKET: string;
   MINIO_PUBLIC_URL: string;
+  BASE_URL: string;
+  REDIS_URL: string;
+  JWT_REFRESH_SECRET?: string;
 }
 
 const env: EnvConfig = {
@@ -110,6 +116,9 @@ const env: EnvConfig = {
   MINIO_USE_SSL: validatedEnv.MINIO_USE_SSL === 'true' || validatedEnv.MINIO_USE_SSL === true,
   MINIO_DEFAULT_BUCKET: validatedEnv.MINIO_DEFAULT_BUCKET,
   MINIO_PUBLIC_URL: validatedEnv.MINIO_PUBLIC_URL,
+  BASE_URL: validatedEnv.BASE_URL,
+  REDIS_URL: validatedEnv.REDIS_URL,
+  JWT_REFRESH_SECRET: validatedEnv.JWT_REFRESH_SECRET,
 };
 
 export default env;

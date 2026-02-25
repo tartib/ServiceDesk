@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -13,6 +14,9 @@ import {
   Star,
   Users,
   Zap,
+  Plus,
+  Trash2,
+  Pencil,
 } from 'lucide-react';
 import {
   ProjectHeader,
@@ -21,6 +25,8 @@ import {
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
 import { useServiceCatalog, IServiceCatalogItem } from '@/hooks/useServiceCatalog';
+import ServiceFormModal from '@/components/service-catalog/ServiceFormModal';
+import DeleteServiceDialog from '@/components/service-catalog/DeleteServiceDialog';
 
 interface Project {
   _id: string;
@@ -46,6 +52,9 @@ export default function ServiceCatalogPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editTarget, setEditTarget] = useState<IServiceCatalogItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const { data: catalogData, isLoading: catalogLoading } = useServiceCatalog();
   const services: IServiceCatalogItem[] = useMemo(() => catalogData?.data || [], [catalogData]);
@@ -57,7 +66,7 @@ export default function ServiceCatalogPage() {
 
   const fetchProject = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -135,6 +144,15 @@ export default function ServiceCatalogPage() {
               className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          {/* Add Service Button */}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+          >
+            <Plus className="h-4 w-4" />
+            Add Service
+          </button>
 
           {/* View Toggle */}
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
@@ -224,16 +242,38 @@ export default function ServiceCatalogPage() {
                     </span>
                   </div>
 
-                  {/* Action */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`);
-                    }}
-                    className="w-full mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    Request Service
-                  </button>
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`);
+                      }}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Request Service
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditTarget(service);
+                      }}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit service"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget({ id: service.service_id, name: service.name });
+                      }}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete service"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -287,12 +327,26 @@ export default function ServiceCatalogPage() {
                   <div className="col-span-1">
                     {renderStars(service.metrics?.satisfaction_score || 0)}
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-2 flex items-center gap-2">
                     <button
                       onClick={() => router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`)}
                       className="px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Request
+                    </button>
+                    <button
+                      onClick={() => setEditTarget(service)}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit service"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget({ id: service.service_id, name: service.name })}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete service"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -306,9 +360,33 @@ export default function ServiceCatalogPage() {
             <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-1">No services found</h3>
             <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Add First Service
+            </button>
           </div>
         )}
       </div>
+
+      {/* Create/Edit Service Modal */}
+      <ServiceFormModal
+        open={showCreateModal || !!editTarget}
+        onOpenChange={(open) => {
+          if (!open) { setShowCreateModal(false); setEditTarget(null); }
+        }}
+        service={editTarget}
+      />
+
+      {/* Delete Service Dialog */}
+      <DeleteServiceDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        serviceId={deleteTarget?.id || null}
+        serviceName={deleteTarget?.name || ''}
+      />
     </div>
   );
 }

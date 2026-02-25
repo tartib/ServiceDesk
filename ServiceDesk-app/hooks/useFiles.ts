@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import api from '@/lib/axios';
 import { useToast } from '@/components/ui/Toast';
 import { parseApiResponse, getErrorMessage } from '@/lib/api/response-parser';
+import { API_BASE_URL } from '@/lib/api/config';
 
 export interface FileMetadata {
   _id: string;
@@ -175,7 +176,7 @@ export const useFiles = () => {
 
   const downloadFile = useCallback((fileId: string, fileName: string) => {
     const token = localStorage.getItem('token');
-    const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/file-storage/${fileId}/download`;
+    const url = `${API_BASE_URL}/file-storage/${fileId}/download`;
     
     fetch(url, {
       headers: {

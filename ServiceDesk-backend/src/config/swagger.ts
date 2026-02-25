@@ -1,6 +1,7 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { Application } from 'express';
+import env from './env';
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -38,7 +39,7 @@ Authorization: Bearer <your-jwt-token>
     },
     servers: [
       {
-        url: 'http://localhost:5000/api',
+        url: `${env.BASE_URL}/api`,
         description: 'Development server',
       },
     ],

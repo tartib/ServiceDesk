@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -147,7 +148,7 @@ export default function ProjectHeader({
     setIsSearching(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/users/search?q=${encodeURIComponent(query)}`,
+        `${API_URL}/users/search?q=${encodeURIComponent(query)}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -194,7 +195,7 @@ export default function ProjectHeader({
     setIsInviting(true);
     try {
       const promises = inviteEmails.map(email =>
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/v1/pm/projects/${projectId}/members/invite`, {
+        fetch(`${API_URL}/pm/projects/${projectId}/members/invite`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

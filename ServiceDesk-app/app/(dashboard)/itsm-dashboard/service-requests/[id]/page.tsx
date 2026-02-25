@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuthStore } from '@/store/authStore';
@@ -25,6 +26,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useServiceCatalogItem } from '@/hooks/useServiceCatalog';
 import {
   useServiceRequest,
   useUpdateServiceRequestStatus,
@@ -43,6 +45,18 @@ export default function ServiceRequestDetailPage() {
   const id = params.id as string;
 
   const { data: request, isLoading, error, refetch } = useServiceRequest(id);
+  const { data: catalogService } = useServiceCatalogItem(request?.service_id || '');
+
+  // Build lookup map: field_id → { label, label_ar, type }
+  const fieldDefs = useMemo(() => {
+    const map = new Map<string, { label: string; label_ar?: string; type: string }>();
+    const svc = catalogService as { form?: Array<{ field_id: string; label: string; label_ar?: string; type: string }> } | undefined;
+    if (svc?.form) {
+      svc.form.forEach((f) => map.set(f.field_id, { label: f.label, label_ar: f.label_ar, type: f.type }));
+    }
+    return map;
+  }, [catalogService]);
+
   const updateStatus = useUpdateServiceRequestStatus();
   const approveRequest = useApproveServiceRequest();
   const assignRequest = useAssignServiceRequest();
@@ -258,19 +272,68 @@ export default function ServiceRequestDetailPage() {
                   <p className="font-medium">{request.service_id}</p>
                 </div>
               </div>
-              {request.form_data && Object.keys(request.form_data).length > 0 && (
-                <div className="border-t pt-4">
-                  <p className="text-sm font-medium mb-2">{locale === 'ar' ? 'بيانات النموذج' : 'Form Data'}</p>
-                  <div className="bg-muted p-4 rounded-lg space-y-2">
-                    {Object.entries(request.form_data).map(([key, value]) => (
-                      <div key={key}>
-                        <span className="text-sm text-muted-foreground capitalize">{key.replace(/_/g, ' ')}: </span>
-                        <span className="text-sm">{String(value)}</span>
+              {request.form_data && Object.keys(request.form_data).length > 0 && (() => {
+                const entries = Object.entries(request.form_data);
+                const justification = entries.find(([k]) => k === 'justification');
+                const fields = entries.filter(([k]) => k !== 'justification');
+
+                const formatValue = (key: string, val: unknown) => {
+                  const strVal = String(val ?? '');
+                  if (!strVal) return <span className="text-muted-foreground italic text-sm">{locale === 'ar' ? 'غير محدد' : 'N/A'}</span>;
+                  const def = fieldDefs.get(key);
+                  const type = def?.type || '';
+                  if (type === 'checkbox' || strVal === 'true' || strVal === 'false') {
+                    return strVal === 'true'
+                      ? <CheckCircle className="h-4 w-4 text-green-600" />
+                      : <XCircle className="h-4 w-4 text-muted-foreground" />;
+                  }
+                  if ((type === 'date' || type === 'datetime') && !isNaN(Date.parse(strVal))) {
+                    return <span className="text-sm font-medium">{new Date(strVal).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}</span>;
+                  }
+                  if (strVal.includes(',') && (type === 'multiselect' || type === 'multi_select')) {
+                    return (
+                      <div className="flex flex-wrap gap-1">
+                        {strVal.split(',').filter(Boolean).map((v, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">{v.trim()}</Badge>
+                        ))}
                       </div>
-                    ))}
+                    );
+                  }
+                  return <span className="text-sm font-medium">{strVal}</span>;
+                };
+
+                const getLabel = (key: string) => {
+                  const def = fieldDefs.get(key);
+                  if (def) return locale === 'ar' ? (def.label_ar || def.label) : def.label;
+                  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                };
+
+                return (
+                  <div className="border-t pt-4 space-y-4">
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      {locale === 'ar' ? 'بيانات النموذج' : 'Form Data'}
+                    </p>
+                    {fields.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {fields.map(([key, value]) => (
+                          <div key={key} className="bg-muted/50 border rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground mb-1">{getLabel(key)}</p>
+                            {formatValue(key, value)}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {justification && String(justification[1]).trim() && (
+                      <div className="bg-muted/50 border rounded-lg p-3">
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {locale === 'ar' ? 'سبب الطلب' : 'Justification'}
+                        </p>
+                        <p className="text-sm font-medium whitespace-pre-wrap">{String(justification[1])}</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </CardContent>
           </Card>
 

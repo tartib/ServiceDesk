@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { SOCKET_URL } from './api/config';
 
 let socket: Socket | null = null;
 
@@ -6,7 +7,7 @@ export const initSocket = () => {
   if (typeof window !== 'undefined' && !socket) {
     const token = localStorage.getItem('token');
     
-    socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000', {
+    socket = io(SOCKET_URL, {
       auth: {
         token,
       },

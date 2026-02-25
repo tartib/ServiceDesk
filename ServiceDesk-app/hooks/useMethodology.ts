@@ -1,3 +1,4 @@
+import { API_URL } from '@/lib/api/config';
 import { useState, useEffect, useCallback } from 'react';
 
 export type MethodologyType = 'scrum' | 'kanban' | 'waterfall' | 'itil' | 'lean' | 'okr';
@@ -218,7 +219,7 @@ export function useMethodology(projectId: string): UseMethodologyReturn {
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/v1/pm/projects/${projectId}/methodology`,
+        `${API_URL}/pm/projects/${projectId}/methodology`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -233,7 +234,7 @@ export function useMethodology(projectId: string): UseMethodologyReturn {
       } else if (response.status === 404) {
         // No methodology config yet, try to get from project
         const projectResponse = await fetch(
-          `http://localhost:5000/api/v1/pm/projects/${projectId}`,
+          `${API_URL}/pm/projects/${projectId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -267,7 +268,7 @@ export function useMethodology(projectId: string): UseMethodologyReturn {
       if (!token) throw new Error('Not authenticated');
 
       const response = await fetch(
-        `http://localhost:5000/api/v1/pm/projects/${projectId}/methodology`,
+        `${API_URL}/pm/projects/${projectId}/methodology`,
         {
           method: 'PUT',
           headers: {
@@ -302,7 +303,7 @@ export function useMethodology(projectId: string): UseMethodologyReturn {
       if (!token) throw new Error('Not authenticated');
 
       const response = await fetch(
-        `http://localhost:5000/api/v1/pm/projects/${projectId}/methodology/change`,
+        `${API_URL}/pm/projects/${projectId}/methodology/change`,
         {
           method: 'POST',
           headers: {
@@ -333,7 +334,7 @@ export function useMethodology(projectId: string): UseMethodologyReturn {
     if (!token) throw new Error('Not authenticated');
 
     const response = await fetch(
-      `http://localhost:5000/api/v1/pm/projects/${projectId}/methodology/okr/objectives`,
+      `${API_URL}/pm/projects/${projectId}/methodology/okr/objectives`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -350,7 +351,7 @@ export function useMethodology(projectId: string): UseMethodologyReturn {
     if (!token) throw new Error('Not authenticated');
 
     const response = await fetch(
-      `http://localhost:5000/api/v1/pm/projects/${projectId}/methodology/okr/objectives/${objectiveId}/key-results`,
+      `${API_URL}/pm/projects/${projectId}/methodology/okr/objectives/${objectiveId}/key-results`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -367,7 +368,7 @@ export function useMethodology(projectId: string): UseMethodologyReturn {
     if (!token) throw new Error('Not authenticated');
 
     const response = await fetch(
-      `http://localhost:5000/api/v1/pm/projects/${projectId}/methodology/okr/objectives/${objectiveId}/key-results/${krId}`,
+      `${API_URL}/pm/projects/${projectId}/methodology/okr/objectives/${objectiveId}/key-results/${krId}`,
       {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -384,7 +385,7 @@ export function useMethodology(projectId: string): UseMethodologyReturn {
     if (!token) throw new Error('Not authenticated');
 
     const response = await fetch(
-      `http://localhost:5000/api/v1/pm/projects/${projectId}/methodology/okr/check-ins`,
+      `${API_URL}/pm/projects/${projectId}/methodology/okr/check-ins`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

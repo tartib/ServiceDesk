@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/lib/api/config';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -249,7 +250,7 @@ export default function TaskDetailPage() {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${taskId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -279,7 +280,7 @@ export default function TaskDetailPage() {
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}`, {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -306,7 +307,7 @@ export default function TaskDetailPage() {
       if (!token) return;
 
       try {
-        const response = await fetch('http://localhost:5000/api/v1/auth/me', {
+        const response = await fetch('API_URL/auth/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
@@ -334,7 +335,7 @@ export default function TaskDetailPage() {
 
       try {
         // Fetch team members
-        const membersRes = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/members`, {
+        const membersRes = await fetch(`${API_URL}/pm/projects/${projectId}/members`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (membersRes.ok) {
@@ -371,7 +372,7 @@ export default function TaskDetailPage() {
         if (project?.organization) {
           sprintHeaders['X-Organization-ID'] = typeof project.organization === 'string' ? project.organization : project.organization._id;
         }
-        const sprintsRes = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/sprints`, {
+        const sprintsRes = await fetch(`${API_URL}/pm/projects/${projectId}/sprints`, {
           headers: sprintHeaders,
         });
         if (sprintsRes.ok) {
@@ -380,7 +381,7 @@ export default function TaskDetailPage() {
         }
 
         // Fetch labels
-        const labelsRes = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/labels`, {
+        const labelsRes = await fetch(`${API_URL}/pm/projects/${projectId}/labels`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (labelsRes.ok) {
@@ -389,7 +390,7 @@ export default function TaskDetailPage() {
         }
 
         // Fetch teams
-        const teamsRes = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/teams`, {
+        const teamsRes = await fetch(`${API_URL}/pm/projects/${projectId}/teams`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (teamsRes.ok) {
@@ -398,7 +399,7 @@ export default function TaskDetailPage() {
         }
 
         // Fetch available statuses (workflow)
-        const workflowRes = await fetch(`http://localhost:5000/api/v1/pm/projects/${projectId}/workflow`, {
+        const workflowRes = await fetch(`${API_URL}/pm/projects/${projectId}/workflow`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (workflowRes.ok) {
@@ -421,7 +422,7 @@ export default function TaskDetailPage() {
       if (!token || !taskId) return;
 
       try {
-        const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}/activity`, {
+        const response = await fetch(`${API_URL}/pm/tasks/${taskId}/activity`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
@@ -500,7 +501,7 @@ export default function TaskDetailPage() {
     setTask({ ...task, ...updates });
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${taskId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -546,7 +547,7 @@ export default function TaskDetailPage() {
     setAssigneeSearch('');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${taskId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -634,7 +635,7 @@ export default function TaskDetailPage() {
     setShowStatusDropdown(false);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/pm/tasks/${taskId}/transition`, {
+      const response = await fetch(`${API_URL}/pm/tasks/${taskId}/transition`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -678,7 +679,7 @@ export default function TaskDetailPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/v1/pm/projects/${projectId}/tasks?search=${encodeURIComponent(query)}&type=epic,story`,
+        `${API_URL}/pm/projects/${projectId}/tasks?search=${encodeURIComponent(query)}&type=epic,story`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.ok) {

@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useCreateServiceRequest, Priority } from '@/hooks/useServiceRequests';
-import { useServiceCatalog, IServiceCatalogItem } from '@/hooks/useServiceCatalog';
+import { useServiceCatalog, useServiceCatalogItem, IServiceCatalogItem } from '@/hooks/useServiceCatalog';
 import { useAuthStore } from '@/store/authStore';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -42,21 +42,32 @@ export default function NewServiceRequestPage() {
   const { data: catalogData, isLoading: catalogLoading } = useServiceCatalog({ is_active: true });
   const services: IServiceCatalogItem[] = useMemo(() => catalogData?.data || [], [catalogData]);
 
+  // Fetch individual service for fresh data (includes form fields)
+  const { data: singleService, isLoading: singleLoading } = useServiceCatalogItem(preServiceId || '');
+
   const [step, setStep] = useState<'select' | 'form'>(preServiceId ? 'form' : 'select');
   const [selectedService, setSelectedService] = useState<IServiceCatalogItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  // When services load and we have a pre-selected service_id, find and select it
+  // Prefer fresh single-service data (has form fields) over list data
   useEffect(() => {
-    if (preServiceId && services.length > 0 && !selectedService) {
+    if (preServiceId && singleService && !selectedService) {
+      setSelectedService(singleService as IServiceCatalogItem);
+      setStep('form');
+    }
+  }, [preServiceId, singleService, selectedService]);
+
+  // Fallback: use list data if single fetch didn't return
+  useEffect(() => {
+    if (preServiceId && services.length > 0 && !selectedService && !singleService && !singleLoading) {
       const match = services.find(s => s.service_id === preServiceId);
       if (match) {
         setSelectedService(match);
         setStep('form');
       }
     }
-  }, [preServiceId, services, selectedService]);
+  }, [preServiceId, services, selectedService, singleService, singleLoading]);
 
   // Dynamic form fields state — keyed by field_id
   const [formData, setFormData] = useState<Record<string, string>>({});
@@ -163,13 +174,14 @@ export default function NewServiceRequestPage() {
   const renderFormField = (field: IServiceCatalogItem['form'][0]) => {
     const label = locale === 'ar' ? (field.label_ar || field.label) : field.label;
     const value = formData[field.field_id] || '';
+    const reqMark = field.required ? <span className="text-red-500 ml-0.5">*</span> : null;
 
     switch (field.type) {
       case 'select':
       case 'dropdown':
         return (
           <div key={field.field_id} className="space-y-2">
-            <Label>{label} {field.required && '*'}</Label>
+            <Label>{label} {reqMark}</Label>
             <Select value={value} onValueChange={(v) => setFormData(prev => ({ ...prev, [field.field_id]: v }))}>
               <SelectTrigger>
                 <SelectValue placeholder={field.placeholder || (locale === 'ar' ? 'اختر...' : 'Select...')} />
@@ -184,10 +196,71 @@ export default function NewServiceRequestPage() {
             </Select>
           </div>
         );
+      case 'multiselect':
+        return (
+          <div key={field.field_id} className="space-y-2">
+            <Label>{label} {reqMark}</Label>
+            <div className="space-y-1.5 border rounded-md p-3">
+              {field.options?.map(opt => {
+                const selected = value ? value.split(',').filter(Boolean) : [];
+                const isChecked = selected.includes(opt.value);
+                return (
+                  <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        const newSelected = e.target.checked
+                          ? [...selected, opt.value]
+                          : selected.filter(v => v !== opt.value);
+                        setFormData(prev => ({ ...prev, [field.field_id]: newSelected.join(',') }));
+                      }}
+                    />
+                    {locale === 'ar' ? (opt.label_ar || opt.label) : opt.label}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        );
+      case 'radio':
+        return (
+          <div key={field.field_id} className="space-y-2">
+            <Label>{label} {reqMark}</Label>
+            <div className="space-y-1.5">
+              {field.options?.map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name={field.field_id}
+                    className="h-4 w-4"
+                    checked={value === opt.value}
+                    onChange={() => setFormData(prev => ({ ...prev, [field.field_id]: opt.value }))}
+                  />
+                  {locale === 'ar' ? (opt.label_ar || opt.label) : opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
+        );
+      case 'checkbox':
+        return (
+          <div key={field.field_id} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id={field.field_id}
+              className="h-4 w-4 rounded"
+              checked={value === 'true'}
+              onChange={(e) => setFormData(prev => ({ ...prev, [field.field_id]: String(e.target.checked) }))}
+            />
+            <Label htmlFor={field.field_id}>{label} {reqMark}</Label>
+          </div>
+        );
       case 'textarea':
         return (
           <div key={field.field_id} className="space-y-2">
-            <Label>{label} {field.required && '*'}</Label>
+            <Label>{label} {reqMark}</Label>
             <Textarea
               value={value}
               onChange={(e) => setFormData(prev => ({ ...prev, [field.field_id]: e.target.value }))}
@@ -197,12 +270,32 @@ export default function NewServiceRequestPage() {
             />
           </div>
         );
-      default:
+      case 'file':
         return (
           <div key={field.field_id} className="space-y-2">
-            <Label>{label} {field.required && '*'}</Label>
+            <Label>{label} {reqMark}</Label>
             <Input
-              type={field.type === 'number' ? 'number' : 'text'}
+              type="file"
+              onChange={(e) => {
+                const fileName = e.target.files?.[0]?.name || '';
+                setFormData(prev => ({ ...prev, [field.field_id]: fileName }));
+              }}
+            />
+          </div>
+        );
+      default: {
+        const inputType =
+          field.type === 'number' ? 'number' :
+          field.type === 'email' ? 'email' :
+          field.type === 'phone' ? 'tel' :
+          field.type === 'date' ? 'date' :
+          field.type === 'datetime' ? 'datetime-local' :
+          'text';
+        return (
+          <div key={field.field_id} className="space-y-2">
+            <Label>{label} {reqMark}</Label>
+            <Input
+              type={inputType}
               value={value}
               onChange={(e) => setFormData(prev => ({ ...prev, [field.field_id]: e.target.value }))}
               placeholder={field.placeholder || ''}
@@ -210,6 +303,7 @@ export default function NewServiceRequestPage() {
             />
           </div>
         );
+      }
     }
   };
 
@@ -329,7 +423,7 @@ export default function NewServiceRequestPage() {
               </div>
             )}
           </>
-        ) : catalogLoading && !selectedService ? (
+        ) : (catalogLoading || singleLoading) && !selectedService ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
             <span className="ml-3 text-muted-foreground">

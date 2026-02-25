@@ -3,8 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/authStore';
-
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+import { SOCKET_URL } from '@/lib/api/config';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SocketCallback = (data: any) => void;

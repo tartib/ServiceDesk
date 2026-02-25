@@ -63,6 +63,7 @@ export default function ProjectNavTabs({ projectId, methodology = 'scrum', showE
           { id: 'planning', label: t('projects.planning.title') || 'Planning', href: `/projects/${projectId}/planning`, icon: <Target className="h-4 w-4" /> },
           { id: 'standup', label: t('projects.standup.title') || 'Standup', href: `/projects/${projectId}/standup`, icon: <FileText className="h-4 w-4" /> },
           { id: 'retrospective', label: t('projects.retrospective.title') || 'Retro', href: `/projects/${projectId}/retrospective`, icon: <Headphones className="h-4 w-4" /> },
+          { id: 'roadmap', label: t('projects.roadmap.title') || 'Roadmap', href: `/projects/${projectId}/roadmap`, icon: <Map className="h-4 w-4" /> },
           { id: 'analytics', label: t('projects.analytics.title') || 'Analytics', href: `/projects/${projectId}/analytics`, icon: <BarChart2 className="h-4 w-4" /> },
           { id: 'settings', label: t('projects.settings.title') || 'Settings', href: `/projects/${projectId}/settings`, icon: <Settings className="h-4 w-4" /> },
         ];
@@ -73,6 +74,7 @@ export default function ProjectNavTabs({ projectId, methodology = 'scrum', showE
           { id: 'backlog', label: t('projects.backlog.title') || 'Backlog', href: `/projects/${projectId}/backlog`, icon: <List className="h-4 w-4" /> },
           { id: 'metrics', label: t('projects.metrics.title') || 'Metrics', href: `/projects/${projectId}/metrics`, icon: <TrendingUp className="h-4 w-4" /> },
           { id: 'calendar', label: t('projects.calendar.title') || 'Calendar', href: `/projects/${projectId}/calendar`, icon: <Calendar className="h-4 w-4" /> },
+          { id: 'roadmap', label: t('projects.roadmap.title') || 'Roadmap', href: `/projects/${projectId}/roadmap`, icon: <Map className="h-4 w-4" /> },
           { id: 'analytics', label: t('projects.analytics.title') || 'Analytics', href: `/projects/${projectId}/analytics`, icon: <BarChart2 className="h-4 w-4" /> },
           { id: 'settings', label: t('projects.settings.title') || 'Settings', href: `/projects/${projectId}/settings`, icon: <Settings className="h-4 w-4" /> },
         ];
@@ -104,6 +106,7 @@ export default function ProjectNavTabs({ projectId, methodology = 'scrum', showE
           { id: 'value-stream', label: t('projects.valueStream.title') || 'Value Stream', href: `/projects/${projectId}/value-stream`, icon: <TrendingUp className="h-4 w-4" /> },
           { id: 'board', label: t('projects.board.title') || 'Board', href: `/projects/${projectId}/board`, icon: <LayoutGrid className="h-4 w-4" /> },
           { id: 'improvements', label: t('projects.improvements.title') || 'Improvements', href: `/projects/${projectId}/improvements`, icon: <Target className="h-4 w-4" /> },
+          { id: 'roadmap', label: t('projects.roadmap.title') || 'Roadmap', href: `/projects/${projectId}/roadmap`, icon: <Map className="h-4 w-4" /> },
           { id: 'analytics', label: t('projects.analytics.title') || 'Analytics', href: `/projects/${projectId}/analytics`, icon: <BarChart2 className="h-4 w-4" /> },
           { id: 'settings', label: t('projects.settings.title') || 'Settings', href: `/projects/${projectId}/settings`, icon: <Settings className="h-4 w-4" /> },
         ];
