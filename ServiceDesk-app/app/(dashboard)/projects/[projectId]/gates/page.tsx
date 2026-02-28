@@ -65,67 +65,31 @@ interface Project {
   key: string;
 }
 
-const defaultGates: GateReview[] = [
-  {
-    id: 'g1',
-    name: 'Requirements Gate',
-    phaseId: 'requirements',
-    phaseName: 'Requirements',
-    status: 'approved',
-    requestedAt: '2024-01-10',
-    completedAt: '2024-01-14',
-    criteria: [
-      { id: 'c1', name: 'Requirements documented', status: 'passed', checkedBy: 'John Doe' },
-      { id: 'c2', name: 'Stakeholder sign-off obtained', status: 'passed', checkedBy: 'Jane Smith' },
-      { id: 'c3', name: 'Scope baseline approved', status: 'passed', checkedBy: 'John Doe' },
-    ],
-    approvers: [
-      { id: 'a1', name: 'Sarah Johnson', role: 'Project Sponsor', decision: 'approved', decidedAt: '2024-01-14' },
-      { id: 'a2', name: 'Mike Chen', role: 'Technical Lead', decision: 'approved', decidedAt: '2024-01-13' },
-    ],
-    comments: [],
-  },
-  {
-    id: 'g2',
-    name: 'Design Gate',
-    phaseId: 'design',
-    phaseName: 'Design',
-    status: 'in_review',
-    requestedAt: '2024-01-28',
-    criteria: [
-      { id: 'c4', name: 'Architecture document complete', status: 'passed', checkedBy: 'Mike Chen' },
-      { id: 'c5', name: 'UI/UX designs approved', status: 'passed', checkedBy: 'Design Team' },
-      { id: 'c6', name: 'Technical feasibility confirmed', status: 'not_checked' },
-      { id: 'c7', name: 'Security review completed', status: 'not_checked' },
-    ],
-    approvers: [
-      { id: 'a3', name: 'Sarah Johnson', role: 'Project Sponsor', decision: 'pending' },
-      { id: 'a4', name: 'Mike Chen', role: 'Technical Lead', decision: 'approved', decidedAt: '2024-01-29' },
-      { id: 'a5', name: 'Security Team', role: 'Security', decision: 'pending' },
-    ],
-    comments: [
-      { id: 'cm1', author: 'Mike Chen', content: 'Architecture looks solid. Approved from technical perspective.', createdAt: '2024-01-29' },
-    ],
-  },
-  {
-    id: 'g3',
-    name: 'Development Gate',
-    phaseId: 'development',
-    phaseName: 'Development',
-    status: 'pending',
-    criteria: [
-      { id: 'c8', name: 'Code complete', status: 'not_checked' },
-      { id: 'c9', name: 'Unit tests passing', status: 'not_checked' },
-      { id: 'c10', name: 'Code review completed', status: 'not_checked' },
-      { id: 'c11', name: 'Documentation updated', status: 'not_checked' },
-    ],
-    approvers: [
-      { id: 'a6', name: 'Mike Chen', role: 'Technical Lead', decision: 'pending' },
-      { id: 'a7', name: 'QA Lead', role: 'Quality Assurance', decision: 'pending' },
-    ],
-    comments: [],
-  },
-];
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const mapGate = (g: Record<string, any>): GateReview => {
+  const getName = (u: any) => u?.profile ? `${u.profile.firstName} ${u.profile.lastName}`.trim() : u?.email || 'Unknown';
+  return {
+    id: g._id,
+    name: g.name,
+    phaseId: g.phaseId || '',
+    phaseName: g.phaseName || '',
+    status: g.status || 'pending',
+    requestedAt: g.requestedAt,
+    completedAt: g.completedAt,
+    criteria: (g.criteria || []).map((c: any, i: number) => ({
+      id: c._id || `c${i}`, name: c.name, description: c.description,
+      status: c.status || 'not_checked', checkedBy: c.checkedBy, checkedAt: c.checkedAt,
+    })),
+    approvers: (g.approvers || []).map((a: any, i: number) => ({
+      id: a._id || `a${i}`, name: getName(a.userId), role: a.role,
+      decision: a.decision || 'pending', decidedAt: a.decidedAt, comment: a.comment,
+    })),
+    comments: (g.comments || []).map((c: any, i: number) => ({
+      id: c._id || `cm${i}`, author: getName(c.author), content: c.content, createdAt: c.createdAt,
+    })),
+  };
+};
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 const statusConfig = {
   pending: { label: 'Pending', color: 'bg-gray-100 text-gray-700', icon: Clock },
@@ -142,32 +106,34 @@ export default function GatesPage() {
   const { methodology } = useMethodology(projectId);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [gates, setGates] = useState<GateReview[]>(defaultGates);
+  const [gates, setGates] = useState<GateReview[]>([]);
   const [selectedGate, setSelectedGate] = useState<GateReview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProject = useCallback(async (token: string) => {
+  const getToken = () => localStorage.getItem('token') || localStorage.getItem('accessToken');
+
+  const fetchData = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
+      const [projRes, gatesRes] = await Promise.all([
+        fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/gates`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const projData = await projRes.json();
+      if (projData.success) setProject(projData.data.project);
+      const gatesData = await gatesRes.json();
+      if (gatesData.success) setGates((gatesData.data.gates || []).map(mapGate));
     } catch (error) {
-      console.error('Failed to fetch project:', error);
+      console.error('Failed to fetch gates:', error);
     } finally {
       setIsLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+    const token = getToken();
+    if (!token) { router.push('/login'); return; }
+    fetchData(token);
+  }, [projectId, router, fetchData]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '—';

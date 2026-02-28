@@ -21,6 +21,8 @@ import {
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useProjectIssueTypes } from '@/hooks/useProjectIssueTypes';
+import ManageWorkTypesModal from '@/components/projects/ManageWorkTypesModal';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   DndContext,
@@ -155,6 +157,9 @@ export default function ProjectBoardPage() {
   }>>([]);
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [showWorkTypesModal, setShowWorkTypesModal] = useState(false);
+  const [workTypesModalMode, setWorkTypesModalMode] = useState<'list' | 'add' | 'edit'>('list');
+  const [workTypesEditTypeId, setWorkTypesEditTypeId] = useState<string | undefined>(undefined);
 
   const showTooltip = (e: React.MouseEvent, text: string) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -183,13 +188,7 @@ export default function ProjectBoardPage() {
     })
   );
 
-  const workTypes = [
-    { id: 'epic', name: 'Epic', icon: '⚡', color: 'text-purple-400' },
-    { id: 'feature', name: 'Feature', icon: '📦', color: 'text-orange-400' },
-    { id: 'task', name: 'Task', icon: '✓', color: 'text-blue-400' },
-    { id: 'story', name: 'Story', icon: '📖', color: 'text-green-400' },
-    { id: 'bug', name: 'Bug', icon: '🐛', color: 'text-red-400' },
-  ];
+  const { issueTypes: workTypes, addIssueType, updateIssueType, deleteIssueType } = useProjectIssueTypes(projectId);
 
   const taskStatuses = [
     { id: 'idea', name: 'Idea', color: 'bg-slate-500' },
@@ -827,7 +826,7 @@ export default function ProjectBoardPage() {
       }
 
       if (data.success) {
-        toast.success(t('projects.board.statusCreated') || 'Status created!');
+        toast.success(t('projects.board.statusCreatedSuccess') || 'Status created!');
         // Refetch board to get updated columns (backend auto-syncs workflow to board)
         const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
         if (token) {
@@ -974,7 +973,7 @@ export default function ProjectBoardPage() {
             <button 
               onClick={() => setShowStatusManagementModal(true)}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-              title={t('projects.board.manageWorkTypes') || 'Manage Workflow Statuses'}
+              title={t('projects.board.manageStatuses') || 'Manage Workflow Statuses'}
             >
               <Settings className="h-4 w-4" />
             </button>
@@ -1250,9 +1249,9 @@ export default function ProjectBoardPage() {
                       </button>
                     ))}
                     <div className="border-t border-gray-200">
-                      <button className="w-full px-4 py-2 text-left text-gray-600 hover:bg-gray-100">{t('projects.board.addWorkType') || 'Add work type'}</button>
-                      <button className="w-full px-4 py-2 text-left text-gray-600 hover:bg-gray-100">{t('projects.board.editWorkType') || 'Edit work type'}</button>
-                      <button className="w-full px-4 py-2 text-left text-gray-600 hover:bg-gray-100">{t('projects.board.manageWorkTypes') || 'Manage work types'}</button>
+                      <button onClick={() => { setShowTypeDropdown(false); setWorkTypesModalMode('add'); setWorkTypesEditTypeId(undefined); setShowWorkTypesModal(true); }} className="w-full px-4 py-2 text-left text-gray-600 hover:bg-gray-100">{t('projects.board.addWorkType') || 'Add work type'}</button>
+                      <button onClick={() => { setShowTypeDropdown(false); setWorkTypesModalMode('edit'); setWorkTypesEditTypeId(newTaskType); setShowWorkTypesModal(true); }} className="w-full px-4 py-2 text-left text-gray-600 hover:bg-gray-100">{t('projects.board.editWorkType') || 'Edit work type'}</button>
+                      <button onClick={() => { setShowTypeDropdown(false); setWorkTypesModalMode('list'); setWorkTypesEditTypeId(undefined); setShowWorkTypesModal(true); }} className="w-full px-4 py-2 text-left text-gray-600 hover:bg-gray-100">{t('projects.board.manageWorkTypes') || 'Manage work types'}</button>
                     </div>
                   </div>
                 )}
@@ -1606,6 +1605,18 @@ export default function ProjectBoardPage() {
         onAdd={handleAddStatus}
       />
       
+      {/* Manage Work Types Modal */}
+      <ManageWorkTypesModal
+        isOpen={showWorkTypesModal}
+        onClose={() => setShowWorkTypesModal(false)}
+        issueTypes={workTypes}
+        onAdd={addIssueType}
+        onUpdate={updateIssueType}
+        onDelete={deleteIssueType}
+        initialMode={workTypesModalMode}
+        initialEditTypeId={workTypesEditTypeId}
+      />
+
       {/* Toast Notifications */}
       <Toaster position="top-right" />
     </div>

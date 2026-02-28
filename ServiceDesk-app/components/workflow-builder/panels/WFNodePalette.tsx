@@ -11,6 +11,7 @@ import {
   Clock,
   ShieldCheck,
   HelpCircle,
+  Cog,
 } from 'lucide-react';
 
 interface WFNodeTypeItem {
@@ -104,6 +105,16 @@ const nodeTypeItems: WFNodeTypeItem[] = [
     bgColor: 'bg-amber-50 border-amber-200 hover:bg-amber-100',
     description: 'Time-based trigger',
     descriptionAr: 'محفز زمني',
+  },
+  {
+    type: 'wfExternalTask',
+    labelEn: 'External Task',
+    labelAr: 'مهمة خارجية',
+    icon: Cog,
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-50 border-orange-200 hover:bg-orange-100',
+    description: 'Delegated to external worker',
+    descriptionAr: 'مفوضة لعامل خارجي',
   },
 ];
 

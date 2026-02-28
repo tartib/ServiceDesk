@@ -4,6 +4,7 @@ import { API_URL } from '@/lib/api/config';
 import { useState, useRef, useEffect } from 'react';
 import { Calendar, ChevronDown, User, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useProjectIssueTypes } from '@/hooks/useProjectIssueTypes';
 
 interface TeamMember {
   _id: string;
@@ -33,13 +34,14 @@ export function QuickCreateTask({
 }: QuickCreateTaskProps) {
   const { t, locale } = useLanguage();
   const isRTL = locale === 'ar';
+  const { issueTypes: projectIssueTypes } = useProjectIssueTypes(projectId);
   
-  const issueTypes = [
-    { id: 'task', name: t('projects.roadmap.types.task') || 'Task', icon: '✓', color: 'bg-blue-100 text-blue-700' },
-    { id: 'bug', name: t('projects.roadmap.types.bug') || 'Bug', icon: '🐛', color: 'bg-red-100 text-red-700' },
-    { id: 'story', name: t('projects.roadmap.types.story') || 'Story', icon: '📖', color: 'bg-green-100 text-green-700' },
-    { id: 'epic', name: t('projects.roadmap.types.epic') || 'Epic', icon: '⚡', color: 'bg-purple-100 text-purple-700' },
-  ];
+  const issueTypes = projectIssueTypes.map(it => ({
+    id: it.id,
+    name: it.name,
+    icon: it.icon,
+    color: it.color.replace('text-', 'bg-').replace('-400', '-100') + ' ' + it.color.replace('-400', '-700'),
+  }));
   const [title, setTitle] = useState('');
   const [selectedType, setSelectedType] = useState('task');
   const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null);

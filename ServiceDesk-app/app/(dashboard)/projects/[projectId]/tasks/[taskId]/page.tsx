@@ -1,7 +1,8 @@
 'use client';
 
 import { API_URL } from '@/lib/api/config';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useProjectIssueTypes } from '@/hooks/useProjectIssueTypes';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -132,6 +133,61 @@ interface Label {
   color: string;
 }
 
+interface Subtask {
+  _id: string;
+  key: string;
+  title: string;
+  type: string;
+  status: {
+    id: string;
+    name: string;
+    category?: string;
+  };
+  assignee?: TaskAssignee;
+}
+
+interface LinkedIssue {
+  _id: string;
+  type: string;
+  targetIssue: {
+    _id: string;
+    key: string;
+    title: string;
+    type: string;
+    status: {
+      id: string;
+      name: string;
+      category?: string;
+    };
+    priority?: string;
+    assignee?: TaskAssignee;
+  };
+}
+
+interface SearchResult {
+  _id: string;
+  key: string;
+  title: string;
+  type: string;
+  status?: {
+    id: string;
+    name: string;
+    category?: string;
+  };
+  priority?: string;
+  assignee?: TaskAssignee;
+}
+
+const relationshipTypes = [
+  { id: 'is_blocked_by', name: 'is blocked by', inverse: 'blocks' },
+  { id: 'blocks', name: 'blocks', inverse: 'is blocked by' },
+  { id: 'is_cloned_by', name: 'is cloned by', inverse: 'clones' },
+  { id: 'clones', name: 'clones', inverse: 'is cloned by' },
+  { id: 'is_duplicated_by', name: 'is duplicated by', inverse: 'duplicates' },
+  { id: 'duplicates', name: 'duplicates', inverse: 'is duplicated by' },
+  { id: 'relates_to', name: 'relates to', inverse: 'relates to' },
+];
+
 interface CurrentUser {
   _id: string;
   profile: {
@@ -153,7 +209,7 @@ const priorities = [
   { id: 'none', name: 'None', color: 'text-gray-500', bg: 'bg-gray-100', icon: '⚪' },
 ];
 
-const issueTypes = [
+const fallbackIssueTypes = [
   { id: 'epic', name: 'Epic', icon: '⚡', color: 'bg-purple-100 text-purple-700' },
   { id: 'story', name: 'Story', icon: '📖', color: 'bg-green-100 text-green-700' },
   { id: 'task', name: 'Task', icon: '✓', color: 'bg-blue-100 text-blue-700' },
@@ -169,6 +225,19 @@ export default function TaskDetailPage() {
   const projectId = params.projectId as string;
   const taskId = params.taskId as string;
 
+  const { issueTypes: projectIssueTypes } = useProjectIssueTypes(projectId);
+  const issueTypes = useMemo(() => {
+    if (projectIssueTypes.length > 0) {
+      return projectIssueTypes.map(it => ({
+        id: it.id,
+        name: it.name,
+        icon: it.icon,
+        color: it.color.replace('text-', 'bg-').replace('-400', '-100') + ' ' + it.color.replace('-400', '-700'),
+      }));
+    }
+    return fallbackIssueTypes;
+  }, [projectIssueTypes]);
+
   // Core state
   const [task, setTask] = useState<Task | null>(null);
   const [project, setProject] = useState<Project | null>(null);
@@ -180,6 +249,25 @@ export default function TaskDetailPage() {
   const [activities, setActivities] = useState<Array<{ _id: string; type: string; author?: { profile?: { firstName: string; lastName: string } }; field?: string; oldValue?: string; newValue?: string; timestamp: string }>>([]);
   const [editingDescription, setEditingDescription] = useState(false);
   const [descriptionValue, setDescriptionValue] = useState('');
+
+  // Subtask state
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [showCreateSubtaskModal, setShowCreateSubtaskModal] = useState(false);
+  const [showLinkSubtaskModal, setShowLinkSubtaskModal] = useState(false);
+  const [showSubtaskAddDropdown, setShowSubtaskAddDropdown] = useState(false);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [linkSubtaskSearch, setLinkSubtaskSearch] = useState('');
+  const [linkSubtaskResults, setLinkSubtaskResults] = useState<Subtask[]>([]);
+  const [isLinkingSubtask, setIsLinkingSubtask] = useState(false);
+  const subtaskAddRef = useRef<HTMLDivElement>(null);
+
+  // Linked issues state
+  const [linkedIssues, setLinkedIssues] = useState<LinkedIssue[]>([]);
+  const [showLinkSection, setShowLinkSection] = useState(false);
+  const [selectedRelationship, setSelectedRelationship] = useState<string>('is_blocked_by');
+  const [issueSearchQuery, setIssueSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [selectedIssue, setSelectedIssue] = useState<SearchResult | null>(null);
 
   // Comment API hooks
   const { data: apiComments = [], isLoading: commentsLoading } = useTaskComments(taskId);
@@ -300,6 +388,51 @@ export default function TaskDetailPage() {
     fetchProject();
   }, [fetchTask, fetchProject]);
 
+  // Fetch subtasks
+  const fetchSubtasks = useCallback(async () => {
+    const token = getToken();
+    if (!token || !taskId) return;
+
+    try {
+      const response = await fetch(
+        `${API_URL}/pm/projects/${projectId}/tasks?parentId=${taskId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setSubtasks(data.data.tasks || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch subtasks:', err);
+    }
+  }, [taskId, projectId]);
+
+  useEffect(() => {
+    fetchSubtasks();
+  }, [fetchSubtasks]);
+
+  // Fetch linked issues
+  useEffect(() => {
+    const fetchLinkedIssues = async () => {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${API_URL}/pm/tasks/${taskId}/links`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success) {
+          setLinkedIssues(data.data.links || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch linked issues:', err);
+      }
+    };
+
+    fetchLinkedIssues();
+  }, [taskId]);
+
   // Fetch current user
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -307,7 +440,7 @@ export default function TaskDetailPage() {
       if (!token) return;
 
       try {
-        const response = await fetch('API_URL/auth/me', {
+        const response = await fetch(`${API_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
@@ -691,6 +824,88 @@ export default function TaskDetailPage() {
     }
   };
 
+  // Create subtask
+  const handleCreateSubtask = async () => {
+    if (!newSubtaskTitle.trim()) return;
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: newSubtaskTitle.trim(),
+          type: 'subtask',
+          parentId: taskId,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || data.message || 'Failed to create subtask');
+
+      toast.success(t('projects.board.subtaskCreated') || 'Subtask created!');
+      setNewSubtaskTitle('');
+      setShowCreateSubtaskModal(false);
+      fetchSubtasks();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create subtask');
+    }
+  };
+
+  // Search tasks to link as subtask
+  const handleSearchSubtaskToLink = async (query: string) => {
+    setLinkSubtaskSearch(query);
+    if (!query.trim()) { setLinkSubtaskResults([]); return; }
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        `${API_URL}/pm/projects/${projectId}/tasks?search=${encodeURIComponent(query)}&limit=20`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (data.success) {
+        const existingIds = subtasks.map(s => s._id);
+        setLinkSubtaskResults(
+          (data.data.tasks || []).filter((t: Subtask) => t._id !== taskId && !existingIds.includes(t._id))
+        );
+      }
+    } catch (err) {
+      console.error('Failed to search tasks:', err);
+    }
+  };
+
+  // Link existing task as subtask
+  const handleLinkExistingSubtask = async (targetTaskId: string) => {
+    const token = getToken();
+    if (!token) return;
+    setIsLinkingSubtask(true);
+    try {
+      const response = await fetch(`${API_URL}/pm/tasks/${targetTaskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ parentId: taskId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || data.message || 'Failed to link task');
+
+      toast.success(t('projects.board.taskLinkedAsSubtask') || 'Task linked as subtask!');
+      setShowLinkSubtaskModal(false);
+      setLinkSubtaskSearch('');
+      setLinkSubtaskResults([]);
+      fetchSubtasks();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to link task');
+    } finally {
+      setIsLinkingSubtask(false);
+    }
+  };
+
   const handleCopyLink = () => {
     const url = window.location.href;
     navigator.clipboard.writeText(url).then(() => {
@@ -922,6 +1137,103 @@ export default function TaskDetailPage() {
                     </p>
                   )}
                 </div>
+              )}
+            </div>
+
+            {/* Subtasks Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  {t('projects.board.subtasks') || 'Subtasks'}
+                  {subtasks.length > 0 && (
+                    <span className="text-gray-400 font-normal text-sm">({subtasks.length})</span>
+                  )}
+                </h2>
+                <div className="relative" ref={subtaskAddRef}>
+                  <button
+                    onClick={() => setShowSubtaskAddDropdown(!showSubtaskAddDropdown)}
+                    className="text-blue-600 text-sm hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {t('projects.board.addSubtask') || 'Add subtask'}
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                  {showSubtaskAddDropdown && (
+                    <div className="absolute end-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-56">
+                      <button
+                        onClick={() => { setShowCreateSubtaskModal(true); setShowSubtaskAddDropdown(false); }}
+                        className="w-full px-3 py-2.5 text-start text-sm hover:bg-gray-100 flex items-center gap-2 rounded-t-lg"
+                      >
+                        <Plus className="h-4 w-4 text-blue-600" />
+                        <span>{t('projects.board.createSubtask') || 'Create subtask'}</span>
+                      </button>
+                      <button
+                        onClick={() => { setShowLinkSubtaskModal(true); setShowSubtaskAddDropdown(false); }}
+                        className="w-full px-3 py-2.5 text-start text-sm hover:bg-gray-100 flex items-center gap-2 rounded-b-lg"
+                      >
+                        <GitCommit className="h-4 w-4 text-purple-600" />
+                        <span>{t('projects.board.linkExistingTask') || 'Link existing task'}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              {subtasks.length > 0 && (() => {
+                const doneCount = subtasks.filter(s => s.status?.category?.toLowerCase() === 'done').length;
+                const percent = Math.round((doneCount / subtasks.length) * 100);
+                return (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                      <span>{doneCount}/{subtasks.length} {t('projects.board.completed') || 'completed'}</span>
+                      <span className="font-medium">{percent}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-300 ${percent === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Subtask List */}
+              {subtasks.length > 0 ? (
+                <div className="space-y-1">
+                  {subtasks.map((sub) => {
+                    const statusCategory = sub.status?.category?.toLowerCase() || 'todo';
+                    const statusColor = statusCategory === 'done'
+                      ? 'bg-green-100 text-green-700'
+                      : statusCategory === 'in_progress'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-gray-100 text-gray-600';
+                    return (
+                      <div
+                        key={sub._id}
+                        onClick={() => router.push(`/projects/${projectId}/tasks/${sub._id}`)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 border border-gray-100 cursor-pointer group transition-colors"
+                      >
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}`}>
+                          {sub.status?.name || 'To Do'}
+                        </span>
+                        <span className="text-xs text-gray-400 font-mono">{sub.key}</span>
+                        <span className="text-sm text-gray-900 truncate flex-1">{sub.title}</span>
+                        {sub.assignee && (
+                          <div
+                            className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-medium shrink-0"
+                            title={`${sub.assignee.profile?.firstName || ''} ${sub.assignee.profile?.lastName || ''}`}
+                          >
+                            {(sub.assignee.profile?.firstName?.[0] || '?').toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">{t('projects.board.noSubtasks') || 'No subtasks yet'}</p>
               )}
             </div>
 
@@ -1715,6 +2027,146 @@ export default function TaskDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Create Subtask Modal */}
+      {showCreateSubtaskModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowCreateSubtaskModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl w-[480px] max-w-[90vw] p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {t('projects.board.createSubtask') || 'Create Subtask'}
+              </h2>
+              <button
+                onClick={() => setShowCreateSubtaskModal(false)}
+                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="subtask-title" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('projects.board.subtaskTitle') || 'Subtask title'}
+                </label>
+                <input
+                  id="subtask-title"
+                  type="text"
+                  value={newSubtaskTitle}
+                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  placeholder={t('projects.board.enterSubtaskTitle') || 'Enter subtask title...'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === 'Enter' && newSubtaskTitle.trim()) handleCreateSubtask(); }}
+                />
+              </div>
+              <div className="text-sm text-gray-500">
+                {t('projects.board.parentIssue') || 'Parent issue'}: <span className="font-medium text-gray-700">{task.key}</span>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowCreateSubtaskModal(false); setNewSubtaskTitle(''); }}
+                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                {t('projects.board.cancel') || 'Cancel'}
+              </button>
+              <button
+                onClick={handleCreateSubtask}
+                disabled={!newSubtaskTitle.trim()}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t('projects.board.create') || 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Link Existing Task as Subtask Modal */}
+      {showLinkSubtaskModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => { setShowLinkSubtaskModal(false); setLinkSubtaskSearch(''); setLinkSubtaskResults([]); }}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl w-[480px] max-w-[90vw] p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {t('projects.board.linkExistingTask') || 'Link existing task'}
+              </h2>
+              <button
+                onClick={() => { setShowLinkSubtaskModal(false); setLinkSubtaskSearch(''); setLinkSubtaskResults([]); }}
+                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="link-subtask-search" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('projects.board.searchAndLink') || 'Search and link a task'}
+                </label>
+                <div className="relative">
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    id="link-subtask-search"
+                    type="text"
+                    value={linkSubtaskSearch}
+                    onChange={(e) => handleSearchSubtaskToLink(e.target.value)}
+                    placeholder={t('projects.board.searchTasks') || 'Search tasks...'}
+                    className="w-full ps-10 pe-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="text-xs text-gray-500">
+                {t('projects.board.parentIssue') || 'Parent issue'}: <span className="font-medium text-gray-700">{task.key}</span>
+              </div>
+              {linkSubtaskResults.length > 0 && (
+                <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
+                  {linkSubtaskResults.map((sub) => {
+                    const cat = sub.status?.category?.toLowerCase() || 'todo';
+                    const color = cat === 'done' ? 'bg-green-100 text-green-700' : cat === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600';
+                    return (
+                      <button
+                        key={sub._id}
+                        onClick={() => handleLinkExistingSubtask(sub._id)}
+                        disabled={isLinkingSubtask}
+                        className="w-full px-3 py-2.5 text-start hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 last:border-b-0 disabled:opacity-50"
+                      >
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${color}`}>{sub.status?.name || 'To Do'}</span>
+                        <span className="text-xs text-blue-600 font-medium shrink-0">{sub.key}</span>
+                        <span className="text-sm text-gray-900 truncate flex-1">{sub.title}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {linkSubtaskSearch.trim() && linkSubtaskResults.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-3">
+                  {t('projects.board.noTasksFound') || 'No tasks found'}
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowLinkSubtaskModal(false); setLinkSubtaskSearch(''); setLinkSubtaskResults([]); }}
+                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                {t('projects.board.cancel') || 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Parent Search Modal */}
       {showParentModal && (

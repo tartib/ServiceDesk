@@ -52,12 +52,21 @@ export const useRegister = () => {
 };
 
 export const useCurrentUser = () => {
+  const { updateUser, isAuthenticated } = useAuthStore();
+
   return useQuery({
     queryKey: ['auth', 'me'],
     queryFn: async () => {
-      const response = await axiosInstance.get('/auth/me') as { data?: User } | User;
-      return 'data' in response && response.data ? response.data : response as User;
+      const response = await axiosInstance.get('/auth/me');
+      const body = response.data;
+      // Backend returns { success, data: { user: { id, name, email, role, ... } } }
+      const user = body?.data?.user || body?.data || body;
+      if (user) {
+        updateUser(user);
+      }
+      return user as User;
     },
+    enabled: isAuthenticated,
   });
 };
 

@@ -44,74 +44,18 @@ interface Project {
   key: string;
 }
 
-const defaultImprovements: Improvement[] = [
-  {
-    id: 'imp1',
-    title: 'Automate deployment pipeline',
-    description: 'Implement CI/CD to reduce manual deployment time from 2 hours to 15 minutes',
-    category: 'automation',
-    status: 'in_progress',
-    priority: 'high',
-    submittedBy: 'Mike Chen',
-    assignee: 'DevOps Team',
-    votes: 12,
-    expectedImpact: 'Reduce deployment time by 87%',
-    estimatedSavings: '40 hours/month',
-    createdAt: '2024-01-05T10:00:00Z',
-  },
-  {
-    id: 'imp2',
-    title: 'Eliminate duplicate data entry',
-    description: 'Integrate CRM with support system to avoid entering customer data twice',
-    category: 'waste_reduction',
-    status: 'approved',
-    priority: 'high',
-    submittedBy: 'Sarah Johnson',
-    votes: 8,
-    expectedImpact: 'Eliminate 30 minutes of daily duplicate work per agent',
-    estimatedSavings: '20 hours/month',
-    createdAt: '2024-01-08T14:00:00Z',
-  },
-  {
-    id: 'imp3',
-    title: 'Standardize code review process',
-    description: 'Create checklist and guidelines for consistent code reviews',
-    category: 'quality',
-    status: 'completed',
-    priority: 'medium',
-    submittedBy: 'John Doe',
-    assignee: 'Tech Lead',
-    votes: 6,
-    expectedImpact: 'Reduce bugs in production by 25%',
-    createdAt: '2024-01-02T09:00:00Z',
-    completedAt: '2024-01-12T16:00:00Z',
-  },
-  {
-    id: 'imp4',
-    title: 'Reduce meeting overhead',
-    description: 'Implement async standups and reduce meeting frequency',
-    category: 'efficiency',
-    status: 'evaluating',
-    priority: 'medium',
-    submittedBy: 'Emily Davis',
-    votes: 15,
-    expectedImpact: 'Save 5 hours per week per team member',
-    estimatedSavings: '100 hours/month',
-    createdAt: '2024-01-10T11:00:00Z',
-  },
-  {
-    id: 'imp5',
-    title: 'Optimize database queries',
-    description: 'Add indexes and optimize slow queries identified in monitoring',
-    category: 'process_improvement',
-    status: 'idea',
-    priority: 'low',
-    submittedBy: 'Tech Team',
-    votes: 4,
-    expectedImpact: 'Improve page load times by 40%',
-    createdAt: '2024-01-14T08:00:00Z',
-  },
-];
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const mapImprovement = (i: Record<string, any>): Improvement => {
+  const getName = (u: any) => u?.profile ? `${u.profile.firstName} ${u.profile.lastName}`.trim() : u?.email || 'Unknown';
+  return {
+    id: i._id, title: i.title, description: i.description,
+    category: i.category, status: i.status || 'idea', priority: i.priority || 'medium',
+    submittedBy: getName(i.submittedBy), assignee: i.assignee ? getName(i.assignee) : undefined,
+    votes: i.votes || 0, expectedImpact: i.expectedImpact || '',
+    estimatedSavings: i.estimatedSavings, createdAt: i.createdAt, completedAt: i.completedAt,
+  };
+};
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 const categoryConfig = {
   waste_reduction: { label: 'Waste Reduction', color: 'bg-red-100 text-red-700', icon: '🗑️' },
@@ -138,34 +82,48 @@ export default function ImprovementsPage() {
   const { methodology } = useMethodology(projectId);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [improvements] = useState<Improvement[]>(defaultImprovements);
+  const [improvements, setImprovements] = useState<Improvement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showNewImprovementModal, setShowNewImprovementModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'votes' | 'recent'>('votes');
 
-  const fetchProject = useCallback(async (token: string) => {
+  const getToken = () => localStorage.getItem('token') || localStorage.getItem('accessToken');
+
+  const fetchData = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
+      const [projRes, impRes] = await Promise.all([
+        fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/improvements`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const projData = await projRes.json();
+      if (projData.success) setProject(projData.data.project);
+      const impData = await impRes.json();
+      if (impData.success) setImprovements((impData.data.improvements || []).map(mapImprovement));
     } catch (error) {
-      console.error('Failed to fetch project:', error);
+      console.error('Failed to fetch improvements:', error);
     } finally {
       setIsLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+    const token = getToken();
+    if (!token) { router.push('/login'); return; }
+    fetchData(token);
+  }, [projectId, router, fetchData]);
+
+  const handleVote = async (improvementId: string) => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/pm/improvements/${improvementId}/vote`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) fetchData(token);
+    } catch (error) { console.error('Failed to vote:', error); }
+  };
 
   const getStats = () => {
     return {
@@ -310,7 +268,7 @@ export default function ImprovementsPage() {
               <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                 <div className="flex items-center gap-3">
                   {/* Vote Button */}
-                  <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+                  <button onClick={() => handleVote(improvement.id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
                     <ArrowUp className="h-4 w-4" />
                     <span className="font-semibold">{improvement.votes}</span>
                   </button>

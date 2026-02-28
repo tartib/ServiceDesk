@@ -3,7 +3,8 @@
 import { API_URL } from '@/lib/api/config';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { X, ChevronDown, Loader2, User } from 'lucide-react';
+import { X, ChevronDown, Loader2, User, Search, GitBranch } from 'lucide-react';
+import { useProjectIssueTypes } from '@/hooks/useProjectIssueTypes';
 
 interface Project {
   _id: string;
@@ -24,6 +25,14 @@ interface TaskFormData {
   description: string;
   status: string;
   assignee?: string;
+  parentId?: string;
+}
+
+interface ParentTaskOption {
+  _id: string;
+  key: string;
+  title: string;
+  type: string;
 }
 
 interface Member {
@@ -40,14 +49,6 @@ interface Member {
   };
 }
 
-const workTypes = [
-  { id: 'epic', name: 'Epic', icon: '⚡', color: 'text-purple-400' },
-  { id: 'feature', name: 'Feature', icon: '📦', color: 'text-orange-400' },
-  { id: 'task', name: 'Task', icon: '✓', color: 'text-blue-400' },
-  { id: 'story', name: 'Story', icon: '📖', color: 'text-green-400' },
-  { id: 'bug', name: 'Bug', icon: '🐛', color: 'text-red-400' },
-];
-
 const taskStatuses = [
   { id: 'idea', name: 'Idea', color: 'bg-slate-500' },
   { id: 'todo', name: 'To Do', color: 'bg-blue-500' },
@@ -61,6 +62,7 @@ export default function CreateTaskModal({
   onSubmit,
   project,
 }: CreateTaskModalProps) {
+  const { issueTypes: workTypes } = useProjectIssueTypes(project?._id);
   const [formData, setFormData] = useState<TaskFormData>({
     title: '',
     type: 'task',
@@ -74,11 +76,16 @@ export default function CreateTaskModal({
   const [createAnother, setCreateAnother] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [showParentDropdown, setShowParentDropdown] = useState(false);
+  const [parentSearch, setParentSearch] = useState('');
+  const [parentTasks, setParentTasks] = useState<ParentTaskOption[]>([]);
+  const [isLoadingParents, setIsLoadingParents] = useState(false);
   const { t } = useLanguage();
 
   const selectedType = workTypes.find(w => w.id === formData.type);
   const selectedStatus = taskStatuses.find(s => s.id === formData.status);
   const selectedAssignee = members.find(m => m.userId._id === formData.assignee);
+  const selectedParent = parentTasks.find(t => t._id === formData.parentId);
 
   // Fetch project members
   useEffect(() => {
@@ -115,6 +122,39 @@ export default function CreateTaskModal({
     fetchMembers();
   }, [project, isOpen]);
 
+  // Fetch tasks for parent picker
+  useEffect(() => {
+    if (!project || !isOpen) return;
+
+    const fetchParentTasks = async () => {
+      setIsLoadingParents(true);
+      try {
+        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const response = await fetch(
+          `${API_URL}/pm/projects/${project._id}/tasks?limit=100`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await response.json();
+        if (data.success && data.data?.tasks) {
+          setParentTasks(data.data.tasks.map((t: { _id: string; key: string; title: string; type: string }) => ({
+            _id: t._id,
+            key: t.key,
+            title: t.title,
+            type: t.type,
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch parent tasks:', error);
+      } finally {
+        setIsLoadingParents(false);
+      }
+    };
+
+    fetchParentTasks();
+  }, [project, isOpen]);
+
   const handleSubmit = async () => {
     if (!formData.title.trim()) return;
     
@@ -132,12 +172,32 @@ export default function CreateTaskModal({
   };
 
   const handleClose = () => {
-    setFormData({ title: '', type: 'task', description: '', status: 'idea', assignee: undefined });
+    setFormData({ title: '', type: 'task', description: '', status: 'idea', assignee: undefined, parentId: undefined });
     setShowTypeDropdown(false);
     setShowStatusDropdown(false);
     setShowAssigneeDropdown(false);
+    setShowParentDropdown(false);
+    setParentSearch('');
     onClose();
   };
+
+  const closeAllDropdowns = () => {
+    setShowTypeDropdown(false);
+    setShowStatusDropdown(false);
+    setShowAssigneeDropdown(false);
+    setShowParentDropdown(false);
+  };
+
+  const typeIcons: Record<string, string> = {
+    epic: '\u26A1', story: '\uD83D\uDCD6', task: '\u2713', bug: '\uD83D\uDC1B',
+    subtask: '\uD83D\uDCCB', feature: '\uD83D\uDCE6',
+  };
+
+  const filteredParentTasks = parentTasks.filter(t =>
+    (t.key.toLowerCase().includes(parentSearch.toLowerCase()) ||
+     t.title.toLowerCase().includes(parentSearch.toLowerCase())) &&
+    t.type !== 'subtask'
+  );
 
   if (!isOpen) return null;
 
@@ -319,6 +379,83 @@ export default function CreateTaskModal({
                     </button>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* Parent Task */}
+          <div className="mb-4 relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              <GitBranch className="inline h-3.5 w-3.5 mr-1" />
+              Parent task
+            </label>
+            <button
+              type="button"
+              onClick={() => { closeAllDropdowns(); setShowParentDropdown(!showParentDropdown); }}
+              className="w-full flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded text-gray-900"
+              disabled={isLoadingParents}
+            >
+              {isLoadingParents ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-gray-500">Loading...</span>
+                </>
+              ) : selectedParent ? (
+                <>
+                  <span className="text-xs">{typeIcons[selectedParent.type] || '\u2713'}</span>
+                  <span className="text-blue-600 text-sm font-medium">{selectedParent.key}</span>
+                  <span className="truncate text-sm">{selectedParent.title}</span>
+                </>
+              ) : (
+                <span className="text-gray-500">No parent (top-level task)</span>
+              )}
+              <ChevronDown className="h-4 w-4 ml-auto text-gray-400" />
+            </button>
+            {formData.parentId && (
+              <p className="text-xs text-blue-600 mt-1">Type will be set to subtask automatically</p>
+            )}
+            {showParentDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-64 overflow-hidden">
+                <div className="p-2 border-b border-gray-100">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={parentSearch}
+                      onChange={(e) => setParentSearch(e.target.value)}
+                      placeholder="Search tasks..."
+                      className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {/* No parent option */}
+                  <button
+                    type="button"
+                    onClick={() => { setFormData({ ...formData, parentId: undefined, type: formData.type === 'subtask' ? 'task' : formData.type }); setShowParentDropdown(false); setParentSearch(''); }}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-100 text-left ${!formData.parentId ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                  >
+                    <span className="text-gray-400">--</span>
+                    <span>No parent (top-level task)</span>
+                  </button>
+                  {filteredParentTasks.length === 0 ? (
+                    <p className="px-4 py-3 text-sm text-gray-500">No tasks found</p>
+                  ) : (
+                    filteredParentTasks.map((task) => (
+                      <button
+                        key={task._id}
+                        type="button"
+                        onClick={() => { setFormData({ ...formData, parentId: task._id, type: 'subtask' }); setShowParentDropdown(false); setParentSearch(''); }}
+                        className={`w-full flex items-center gap-2 px-4 py-2.5 hover:bg-gray-100 text-left ${formData.parentId === task._id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                      >
+                        <span className="text-xs">{typeIcons[task.type] || '\u2713'}</span>
+                        <span className="text-blue-600 text-xs font-medium shrink-0">{task.key}</span>
+                        <span className="text-sm truncate flex-1">{task.title}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -42,13 +42,14 @@ interface ImportResult {
   errors: ValidationError[];
 }
 
-const EXPECTED_COLUMNS = ['Title', 'Type', 'Priority', 'Description', 'Story Points', 'Labels', 'Due Date', 'Assignee'];
+const EXPECTED_COLUMNS = ['Title', 'Type', 'Priority', 'Description', 'Story Points', 'Labels', 'Due Date', 'Assignee', 'Epic'];
 const REQUIRED_COLUMNS = ['Title'];
 
 const COLUMN_MAP: Record<string, string> = {
   title: 'Title',
   summary: 'Title',
   type: 'Type',
+  issuetype: 'Type',
   priority: 'Priority',
   description: 'Description',
   storypoints: 'Story Points',
@@ -61,6 +62,9 @@ const COLUMN_MAP: Record<string, string> = {
   assignee: 'Assignee',
   assignedto: 'Assignee',
   owner: 'Assignee',
+  epicname: 'Epic',
+  epiclink: 'Epic',
+  epic: 'Epic',
 };
 
 function normalizeHeader(header: string): string {

@@ -98,7 +98,7 @@ export default function ProjectWizard({ onClose, onSuccess }: ProjectWizardProps
       }
 
       // Create project
-      const response = await fetch('API_URL/pm/projects', {
+      const response = await fetch(`${API_URL}/pm/projects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

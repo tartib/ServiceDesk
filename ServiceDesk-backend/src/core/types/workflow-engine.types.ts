@@ -38,6 +38,7 @@ export enum WFStateType {
   FORK = 'fork',
   JOIN = 'join',
   END = 'end',
+  EXTERNAL_TASK = 'external_task',
 }
 
 /**
@@ -88,6 +89,7 @@ export enum WFActionType {
   LOG_ACTIVITY = 'log_activity',
   ADD_COMMENT = 'add_comment',
   RUN_SCRIPT = 'run_script',
+  EXTERNAL_TASK = 'external_task',
   CUSTOM = 'custom',
 }
 
@@ -122,6 +124,7 @@ export enum WFInstanceStatus {
   CANCELLED = 'cancelled',
   SUSPENDED = 'suspended',
   ERROR = 'error',
+  WAITING = 'waiting',
 }
 
 /**
@@ -149,6 +152,10 @@ export enum WFEventType {
   PARALLEL_JOIN = 'parallel_join',
   ASSIGNMENT_CHANGED = 'assignment_changed',
   VARIABLE_CHANGED = 'variable_changed',
+  EXTERNAL_TASK_CREATED = 'external_task_created',
+  EXTERNAL_TASK_LOCKED = 'external_task_locked',
+  EXTERNAL_TASK_COMPLETED = 'external_task_completed',
+  EXTERNAL_TASK_FAILED = 'external_task_failed',
 }
 
 /**
@@ -296,6 +303,17 @@ export interface IWFEscalationRule {
 }
 
 /**
+ * تكوين المهمة الخارجية
+ */
+export interface IWFExternalTaskConfig {
+  topic: string;
+  retries: number;
+  timeout: number;
+  priority: number;
+  errorHandling: 'retry' | 'fail_instance' | 'skip';
+}
+
+/**
  * حالة في تعريف سير العمل
  */
 export interface IWFStateDefinition {
@@ -317,6 +335,8 @@ export interface IWFStateDefinition {
   // For JOIN state
   joinStrategy?: WFJoinStrategy;
   joinCount?: number;
+  // For EXTERNAL_TASK state
+  externalTask?: IWFExternalTaskConfig;
   // Visual position for builder
   position?: { x: number; y: number };
 }

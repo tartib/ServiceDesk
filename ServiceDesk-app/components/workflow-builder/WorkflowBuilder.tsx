@@ -51,6 +51,7 @@ const defaultLabels: Record<string, string> = {
   wfFork: 'Fork',
   wfJoin: 'Join',
   wfTimer: 'Timer',
+  wfExternalTask: 'External Task',
 };
 
 const defaultNodeData: Record<string, Record<string, unknown>> = {
@@ -62,6 +63,7 @@ const defaultNodeData: Record<string, Record<string, unknown>> = {
   wfTimer: { hours: 24 },
   wfStart: {},
   wfEnd: {},
+  wfExternalTask: { label: 'External Task', topic: '', retries: 3, timeout: 300, priority: 0, errorHandling: 'retry' },
 };
 
 // ============================================

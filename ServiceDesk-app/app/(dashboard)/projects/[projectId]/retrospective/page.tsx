@@ -17,6 +17,12 @@ import {
   Clock,
   Timer,
   StopCircle,
+  History,
+  FileDown,
+  ChevronRight,
+  Printer,
+  TrendingUp,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   ProjectHeader,
@@ -24,6 +30,7 @@ import {
   LoadingState,
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
+import toast from 'react-hot-toast';
 
 interface User {
   _id: string;
@@ -75,6 +82,8 @@ interface Retrospective {
   actionItems: ActionItem[];
   publishedBy?: User;
   publishedAt?: string;
+  votingStartedAt?: string;
+  votingDurationMinutes?: number;
   createdBy: User;
   createdAt: string;
   updatedAt: string;
@@ -162,6 +171,9 @@ export default function RetrospectivePage() {
   const [actionDescription, setActionDescription] = useState('');
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
+  // History & Report views
+  const [viewMode, setViewMode] = useState<'board' | 'history' | 'report'>('board');
+
   const isLeader = currentUserRole === 'lead' || currentUserRole === 'manager';
   const canAddNotes = retrospective?.status === 'draft' || retrospective?.status === 'voting';
   const canVote = retrospective?.status === 'draft' || retrospective?.status === 'voting';
@@ -181,7 +193,7 @@ export default function RetrospectivePage() {
 
   const fetchProject = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/v1/pm/projects/${projectId}`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -190,7 +202,10 @@ export default function RetrospectivePage() {
         
         // Find current user's role
         const currentMember = data.data.project.members.find(
-          (m: { userId: { _id: string }; role: string }) => m.userId._id === currentUserId
+          (m: { userId: { _id: string } | string; role: string }) => {
+            const uid = typeof m.userId === 'string' ? m.userId : m.userId?._id;
+            return uid === currentUserId;
+          }
         );
         if (currentMember) {
           setCurrentUserRole(currentMember.role);
@@ -203,7 +218,7 @@ export default function RetrospectivePage() {
 
   const fetchSprints = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/v1/pm/projects/${projectId}/sprints`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/sprints`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -217,7 +232,7 @@ export default function RetrospectivePage() {
 
   const fetchRetrospective = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/v1/pm/projects/${projectId}/retrospectives`, {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/retrospectives`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -235,7 +250,7 @@ export default function RetrospectivePage() {
 
   const fetchVotingStatus = useCallback(async (token: string, retroId: string) => {
     try {
-      const res = await fetch(`${API_URL}/v1/pm/retrospectives/${retroId}/voting-status`, {
+      const res = await fetch(`${API_URL}/pm/retrospectives/${retroId}/voting-status`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -273,6 +288,26 @@ export default function RetrospectivePage() {
       fetchVotingStatus(token, retrospective._id);
     }
   }, [retrospective, fetchVotingStatus]);
+
+  // Restore voting timer from backend data on page load / retrospective change
+  useEffect(() => {
+    if (
+      retrospective?.status === 'voting' &&
+      retrospective.votingStartedAt &&
+      retrospective.votingDurationMinutes &&
+      !timerActive
+    ) {
+      const startedAt = new Date(retrospective.votingStartedAt).getTime();
+      const durationMs = retrospective.votingDurationMinutes * 60 * 1000;
+      const endTime = startedAt + durationMs;
+      const remaining = Math.floor((endTime - Date.now()) / 1000);
+
+      if (remaining > 0) {
+        setTimeRemaining(remaining);
+        setTimerActive(true);
+      }
+    }
+  }, [retrospective, timerActive]);
   
   const handleCloseVoting = useCallback(async () => {
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
@@ -280,8 +315,20 @@ export default function RetrospectivePage() {
     
     setTimerActive(false);
     setTimeRemaining(null);
-    await handlePublish();
-  }, [retrospective]);
+    
+    try {
+      const res = await fetch(`${API_URL}/pm/retrospectives/${retrospective._id}/publish`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchRetrospective(token);
+      }
+    } catch (error) {
+      console.error('Failed to close voting:', error);
+    }
+  }, [retrospective, fetchRetrospective]);
   
   // Timer countdown effect
   useEffect(() => {
@@ -315,7 +362,7 @@ export default function RetrospectivePage() {
 
     setIsSaving(true);
     try {
-      const res = await fetch(`${API_URL}/v1/pm/sprints/${selectedSprintId}/retrospective`, {
+      const res = await fetch(`${API_URL}/pm/sprints/${selectedSprintId}/retrospective`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -332,9 +379,13 @@ export default function RetrospectivePage() {
         setSelectedSprintId('');
         setMaxVotes(3);
         fetchRetrospective(token);
+        toast.success('Retrospective created!');
+      } else {
+        toast.error(data.error || 'Failed to create retrospective');
       }
     } catch (error) {
       console.error('Failed to create retrospective:', error);
+      toast.error('Failed to create retrospective');
     } finally {
       setIsSaving(false);
     }
@@ -346,7 +397,7 @@ export default function RetrospectivePage() {
 
     setIsSaving(true);
     try {
-      const res = await fetch(`${API_URL}/v1/pm/retrospectives/${retrospective._id}/notes`, {
+      const res = await fetch(`${API_URL}/pm/retrospectives/${retrospective._id}/notes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -382,7 +433,7 @@ export default function RetrospectivePage() {
     const endpoint = hasVoted ? 'DELETE' : 'POST';
 
     try {
-      const res = await fetch(`${API_URL}/v1/pm/retrospectives/${retrospective._id}/notes/${noteId}/vote`, {
+      const res = await fetch(`${API_URL}/pm/retrospectives/${retrospective._id}/notes/${noteId}/vote`, {
         method: endpoint,
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -402,7 +453,7 @@ export default function RetrospectivePage() {
     if (!token || !retrospective) return;
 
     try {
-      const res = await fetch(`${API_URL}/v1/pm/retrospectives/${retrospective._id}/publish`, {
+      const res = await fetch(`${API_URL}/pm/retrospectives/${retrospective._id}/publish`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -422,9 +473,13 @@ export default function RetrospectivePage() {
 
     setIsSaving(true);
     try {
-      const res = await fetch(`${API_URL}/v1/pm/retrospectives/${retrospective._id}/start-voting`, {
+      const res = await fetch(`${API_URL}/pm/retrospectives/${retrospective._id}/start-voting`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ votingDurationMinutes: votingDuration }),
       });
       
       const data = await res.json();
@@ -448,7 +503,7 @@ export default function RetrospectivePage() {
 
     setIsSaving(true);
     try {
-      const res = await fetch(`${API_URL}/v1/pm/retrospectives/${retrospective._id}/action-items`, {
+      const res = await fetch(`${API_URL}/pm/retrospectives/${retrospective._id}/action-items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -488,7 +543,6 @@ export default function RetrospectivePage() {
   }
 
   if (!retrospective) {
-    console.log('No retrospective found. isLeader:', isLeader, 'currentUserRole:', currentUserRole);
     return (
       <div className="flex flex-col h-full bg-gray-50">
         <ProjectHeader 
@@ -503,15 +557,9 @@ export default function RetrospectivePage() {
             <MessageCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Retrospective Found</h3>
             <p className="text-gray-500 mb-4">Create a retrospective for your sprint to get started.</p>
-            <p className="text-xs text-gray-400 mb-2">Debug: isLeader={String(isLeader)}, role={currentUserRole}</p>
             {isLeader && (
               <button 
-                onClick={() => {
-                  console.log('Create button clicked, isLeader:', isLeader);
-                  console.log('Current showCreateForm:', showCreateForm);
-                  setShowCreateForm(true);
-                  console.log('After setState, showCreateForm should be true');
-                }}
+                onClick={() => setShowCreateForm(true)}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
               >
                 Create Retrospective
@@ -644,7 +692,37 @@ export default function RetrospectivePage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {retrospectives.length > 1 && (
+            {/* View Mode Tabs */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode('board')}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'board' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                Board
+              </button>
+              <button
+                onClick={() => setViewMode('history')}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'history' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <History className="h-3.5 w-3.5" />
+                History
+              </button>
+              <button
+                onClick={() => setViewMode('report')}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'report' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <FileDown className="h-3.5 w-3.5" />
+                Report
+              </button>
+            </div>
+            {retrospectives.length > 1 && viewMode === 'board' && (
               <select
                 value={retrospective._id}
                 onChange={(e) => {
@@ -718,7 +796,297 @@ export default function RetrospectivePage() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden p-4">
-        <div className="grid grid-cols-3 gap-4 h-full">
+        {/* ===== HISTORY VIEW ===== */}
+        {viewMode === 'history' && (
+          <div className="h-full overflow-y-auto">
+            <div className="max-w-4xl mx-auto space-y-4">
+              <div className="flex items-center gap-3 mb-2">
+                <History className="h-5 w-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Retrospective History</h3>
+                <span className="text-sm text-gray-500">({retrospectives.length} total)</span>
+              </div>
+
+              {retrospectives.length === 0 ? (
+                <div className="text-center py-16 text-gray-400">
+                  <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No retrospectives yet</p>
+                </div>
+              ) : (
+                retrospectives.map((retro, idx) => {
+                  const sprintName = typeof retro.sprintId === 'object' ? retro.sprintId.name : 'Sprint';
+                  const sprintDates = typeof retro.sprintId === 'object'
+                    ? `${new Date(retro.sprintId.startDate).toLocaleDateString()} - ${new Date(retro.sprintId.endDate).toLocaleDateString()}`
+                    : '';
+                  const wentWell = retro.notes.filter(n => n.category === 'went_well');
+                  const toImprove = retro.notes.filter(n => n.category === 'to_improve');
+                  const totalVotes = retro.notes.reduce((sum, n) => sum + n.voteCount, 0);
+                  const completedActions = retro.actionItems.filter(a => a.status === 'completed').length;
+                  const isActive = retro._id === retrospective?._id;
+
+                  return (
+                    <div
+                      key={retro._id}
+                      className={`bg-white border rounded-xl overflow-hidden transition-all hover:shadow-md ${
+                        isActive ? 'border-purple-300 ring-1 ring-purple-200' : 'border-gray-200'
+                      }`}
+                    >
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                              retro.status === 'published' ? 'bg-green-100 text-green-700' :
+                              retro.status === 'voting' ? 'bg-blue-100 text-blue-700' :
+                              retro.status === 'archived' ? 'bg-purple-100 text-purple-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {idx + 1}
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{sprintName}</h4>
+                              {sprintDates && <p className="text-xs text-gray-500">{sprintDates}</p>}
+                            </div>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors[retro.status]}`}>
+                              {retro.status.charAt(0).toUpperCase() + retro.status.slice(1)}
+                            </span>
+                            {isActive && (
+                              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700">Current</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400">{new Date(retro.createdAt).toLocaleDateString()}</span>
+                            <button
+                              onClick={() => { setRetrospective(retro); setViewMode('board'); }}
+                              className="flex items-center gap-1 px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded-lg transition-colors font-medium"
+                            >
+                              View <ChevronRight className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Stats row */}
+                        <div className="flex items-center gap-4 text-sm">
+                          <div className="flex items-center gap-1.5 text-green-600">
+                            <ThumbsUp className="h-3.5 w-3.5" />
+                            <span>{wentWell.length} went well</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-orange-600">
+                            <ThumbsDown className="h-3.5 w-3.5" />
+                            <span>{toImprove.length} to improve</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-red-500">
+                            <Heart className="h-3.5 w-3.5" />
+                            <span>{totalVotes} votes</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-blue-600">
+                            <Target className="h-3.5 w-3.5" />
+                            <span>{completedActions}/{retro.actionItems.length} actions done</span>
+                          </div>
+                        </div>
+
+                        {/* Top voted notes preview */}
+                        {retro.notes.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <p className="text-xs font-medium text-gray-500 mb-2">Top voted items:</p>
+                            <div className="space-y-1.5">
+                              {[...retro.notes].sort((a, b) => b.voteCount - a.voteCount).slice(0, 3).map(note => (
+                                <div key={note._id} className="flex items-center gap-2 text-sm">
+                                  <span className={`w-1.5 h-1.5 rounded-full ${note.category === 'went_well' ? 'bg-green-500' : 'bg-orange-500'}`} />
+                                  <span className="text-gray-700 truncate flex-1">{note.content}</span>
+                                  <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                                    <Heart className="h-3 w-3" /> {note.voteCount}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ===== REPORT VIEW ===== */}
+        {viewMode === 'report' && (
+          <div className="h-full overflow-y-auto">
+            <div className="max-w-3xl mx-auto">
+              {/* Report Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <FileDown className="h-5 w-5 text-purple-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Retrospective Report</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={retrospective._id}
+                    onChange={(e) => {
+                      const selected = retrospectives.find(r => r._id === e.target.value);
+                      if (selected) setRetrospective(selected);
+                    }}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg"
+                  >
+                    {retrospectives.map((retro) => (
+                      <option key={retro._id} value={retro._id}>
+                        {typeof retro.sprintId === 'object' ? retro.sprintId.name : 'Sprint'} - {retro.status}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => window.print()}
+                    className="flex items-center gap-2 px-4 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Print Report
+                  </button>
+                </div>
+              </div>
+
+              {/* Printable Report Content */}
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm print:shadow-none print:border-0" id="retro-report">
+                {/* Report Title */}
+                <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
+                  <h1 className="text-xl font-bold text-gray-900">
+                    Sprint Retrospective: {typeof retrospective.sprintId === 'object' ? retrospective.sprintId.name : 'Sprint'}
+                  </h1>
+                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                    {typeof retrospective.sprintId === 'object' && (
+                      <span>
+                        {new Date(retrospective.sprintId.startDate).toLocaleDateString()} — {new Date(retrospective.sprintId.endDate).toLocaleDateString()}
+                      </span>
+                    )}
+                    <span>Status: {retrospective.status.charAt(0).toUpperCase() + retrospective.status.slice(1)}</span>
+                    <span>Generated: {new Date().toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                {/* Summary Stats */}
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" /> Summary
+                  </h2>
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-700">
+                        {retrospective.notes.filter(n => n.category === 'went_well').length}
+                      </div>
+                      <div className="text-xs text-green-600 mt-1">Went Well</div>
+                    </div>
+                    <div className="text-center p-3 bg-orange-50 rounded-lg">
+                      <div className="text-2xl font-bold text-orange-700">
+                        {retrospective.notes.filter(n => n.category === 'to_improve').length}
+                      </div>
+                      <div className="text-xs text-orange-600 mt-1">To Improve</div>
+                    </div>
+                    <div className="text-center p-3 bg-red-50 rounded-lg">
+                      <div className="text-2xl font-bold text-red-700">
+                        {retrospective.notes.reduce((s, n) => s + n.voteCount, 0)}
+                      </div>
+                      <div className="text-xs text-red-600 mt-1">Total Votes</div>
+                    </div>
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-700">
+                        {retrospective.actionItems.length}
+                      </div>
+                      <div className="text-xs text-blue-600 mt-1">Action Items</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* What Went Well */}
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <ThumbsUp className="h-4 w-4 text-green-600" /> What Went Well
+                  </h2>
+                  {retrospective.notes.filter(n => n.category === 'went_well').length === 0 ? (
+                    <p className="text-sm text-gray-400 italic">No items</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {[...retrospective.notes]
+                        .filter(n => n.category === 'went_well')
+                        .sort((a, b) => b.voteCount - a.voteCount)
+                        .map((note, i) => (
+                          <div key={note._id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50">
+                            <span className="text-sm font-medium text-gray-400 w-5 text-right">{i + 1}.</span>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-800">{note.content}</p>
+                              <span className="text-xs text-gray-400">by {getUserName(note.createdBy)}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-red-400">
+                              <Heart className="h-3 w-3" /> {note.voteCount}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* What To Improve */}
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-600" /> What To Improve
+                  </h2>
+                  {retrospective.notes.filter(n => n.category === 'to_improve').length === 0 ? (
+                    <p className="text-sm text-gray-400 italic">No items</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {[...retrospective.notes]
+                        .filter(n => n.category === 'to_improve')
+                        .sort((a, b) => b.voteCount - a.voteCount)
+                        .map((note, i) => (
+                          <div key={note._id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50">
+                            <span className="text-sm font-medium text-gray-400 w-5 text-right">{i + 1}.</span>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-800">{note.content}</p>
+                              <span className="text-xs text-gray-400">by {getUserName(note.createdBy)}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-red-400">
+                              <Heart className="h-3 w-3" /> {note.voteCount}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Items */}
+                <div className="p-6">
+                  <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <Target className="h-4 w-4 text-blue-600" /> Action Items
+                  </h2>
+                  {retrospective.actionItems.length === 0 ? (
+                    <p className="text-sm text-gray-400 italic">No action items</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {retrospective.actionItems.map((item, i) => (
+                        <div key={item._id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50">
+                          <span className="text-sm font-medium text-gray-400 w-5 text-right">{i + 1}.</span>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-800">{item.title}</p>
+                            {item.description && <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>}
+                            {item.owner && <span className="text-xs text-gray-400">Owner: {getUserName(item.owner)}</span>}
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            item.status === 'completed' ? 'bg-green-100 text-green-700' :
+                            item.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {item.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== BOARD VIEW (original) ===== */}
+        {viewMode === 'board' && <div className="grid grid-cols-3 gap-4 h-full">
           {/* Notes Columns */}
           {(['went_well', 'to_improve'] as const).map((category) => {
             const config = columnConfig[category];
@@ -848,7 +1216,7 @@ export default function RetrospectivePage() {
               </div>
             )}
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Start Voting Modal */}
@@ -1037,11 +1405,15 @@ export default function RetrospectivePage() {
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="">Choose a sprint...</option>
-                  {sprints.map((sprint) => (
-                    <option key={sprint._id} value={sprint._id}>
-                      {sprint.name} - {sprint.status}
-                    </option>
-                  ))}
+                  {sprints
+                    .filter(sprint => !retrospectives.some(retro => 
+                      typeof retro.sprintId === 'object' ? retro.sprintId._id === sprint._id : retro.sprintId === sprint._id
+                    ))
+                    .map((sprint) => (
+                      <option key={sprint._id} value={sprint._id}>
+                        {sprint.name} - {sprint.status}
+                      </option>
+                    ))}
                 </select>
               </div>
               

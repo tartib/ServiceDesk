@@ -86,6 +86,21 @@ export interface IPMTask {
     uploadedBy: mongoose.Types.ObjectId;
     uploadedAt: Date;
   }[];
+  links: {
+    _id: mongoose.Types.ObjectId;
+    type: string;
+    targetTaskId: mongoose.Types.ObjectId;
+    createdBy: mongoose.Types.ObjectId;
+    createdAt: Date;
+  }[];
+  webLinks: {
+    _id: mongoose.Types.ObjectId;
+    url: string;
+    title: string;
+    description?: string;
+    createdBy: mongoose.Types.ObjectId;
+    createdAt: Date;
+  }[];
   workflowHistory: {
     fromStatus: string;
     toStatus: string;
@@ -121,7 +136,6 @@ const TaskSchema = new Schema<IPMTask>(
     },
     type: {
       type: String,
-      enum: Object.values(PMTaskType),
       required: true,
       default: PMTaskType.TASK,
     },
@@ -205,6 +219,23 @@ const TaskSchema = new Schema<IPMTask>(
         mimeType: { type: String },
         uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
         uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
+    links: [
+      {
+        type: { type: String, required: true },
+        targetTaskId: { type: Schema.Types.ObjectId, ref: 'PMTask', required: true },
+        createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    webLinks: [
+      {
+        url: { type: String, required: true },
+        title: { type: String, required: true },
+        description: { type: String },
+        createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        createdAt: { type: Date, default: Date.now },
       },
     ],
     workflowHistory: [

@@ -7,7 +7,6 @@ import {
   Clock,
   TrendingUp,
   TrendingDown,
-  BarChart3,
   Activity,
   Layers,
   ArrowRight,
@@ -22,7 +21,7 @@ import { useMethodology } from '@/hooks/useMethodology';
 
 interface CycleTimeData {
   column: string;
-  avgTime: number; // hours
+  avgTime: number;
   minTime: number;
   maxTime: number;
   itemsCount: number;
@@ -34,33 +33,84 @@ interface ThroughputData {
   started: number;
 }
 
+interface WipData {
+  column: string;
+  count: number;
+  limit: number;
+}
+
+interface BackendTask {
+  _id: string;
+  status: { name: string; category: string };
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  startDate?: string;
+  dueDate?: string;
+}
+
 interface Project {
   _id: string;
   name: string;
   key: string;
 }
 
-const cycleTimeData: CycleTimeData[] = [
-  { column: 'To Do', avgTime: 24, minTime: 2, maxTime: 72, itemsCount: 8 },
-  { column: 'In Progress', avgTime: 48, minTime: 8, maxTime: 120, itemsCount: 5 },
-  { column: 'Review', avgTime: 12, minTime: 2, maxTime: 36, itemsCount: 3 },
-  { column: 'Testing', avgTime: 18, minTime: 4, maxTime: 48, itemsCount: 4 },
-  { column: 'Done', avgTime: 0, minTime: 0, maxTime: 0, itemsCount: 45 },
-];
+const computeMetrics = (tasks: BackendTask[]) => {
+  const statusGroups: Record<string, BackendTask[]> = {};
+  tasks.forEach(t => {
+    const cat = t.status.category || 'todo';
+    if (!statusGroups[cat]) statusGroups[cat] = [];
+    statusGroups[cat].push(t);
+  });
 
-const throughputData: ThroughputData[] = [
-  { week: 'Week 1', completed: 8, started: 10 },
-  { week: 'Week 2', completed: 12, started: 9 },
-  { week: 'Week 3', completed: 10, started: 14 },
-  { week: 'Week 4', completed: 15, started: 11 },
-];
+  const columnOrder = ['todo', 'in_progress', 'review', 'done'];
+  const columnLabels: Record<string, string> = {
+    todo: 'To Do', in_progress: 'In Progress', review: 'Review', done: 'Done',
+  };
 
-const wipData = [
-  { column: 'To Do', count: 8, limit: 15 },
-  { column: 'In Progress', count: 5, limit: 5 },
-  { column: 'Review', count: 3, limit: 4 },
-  { column: 'Testing', count: 4, limit: 4 },
-];
+  const cycleTime: CycleTimeData[] = columnOrder.map(cat => {
+    const items = statusGroups[cat] || [];
+    if (items.length === 0 || cat === 'done') {
+      return { column: columnLabels[cat] || cat, avgTime: 0, minTime: 0, maxTime: 0, itemsCount: items.length };
+    }
+    const now = Date.now();
+    const ages = items.map(t => (now - new Date(t.updatedAt || t.createdAt).getTime()) / (1000 * 60 * 60));
+    return {
+      column: columnLabels[cat] || cat,
+      avgTime: Math.round(ages.reduce((s, a) => s + a, 0) / ages.length),
+      minTime: Math.round(Math.min(...ages)),
+      maxTime: Math.round(Math.max(...ages)),
+      itemsCount: items.length,
+    };
+  });
+
+  const now = new Date();
+  const throughput: ThroughputData[] = [];
+  for (let w = 3; w >= 0; w--) {
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - (w + 1) * 7);
+    const weekEnd = new Date(now);
+    weekEnd.setDate(weekEnd.getDate() - w * 7);
+    const completed = tasks.filter(t => {
+      if (!t.completedAt) return false;
+      const d = new Date(t.completedAt);
+      return d >= weekStart && d < weekEnd;
+    }).length;
+    const started = tasks.filter(t => {
+      const d = new Date(t.createdAt);
+      return d >= weekStart && d < weekEnd;
+    }).length;
+    throughput.push({ week: `Week ${4 - w}`, completed, started });
+  }
+
+  const wip: WipData[] = ['todo', 'in_progress', 'review'].map(cat => ({
+    column: columnLabels[cat] || cat,
+    count: (statusGroups[cat] || []).length,
+    limit: cat === 'todo' ? 15 : cat === 'in_progress' ? 5 : 4,
+  }));
+
+  return { cycleTime, throughput, wip };
+};
 
 export default function MetricsPage() {
   const params = useParams();
@@ -72,16 +122,33 @@ export default function MetricsPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter'>('month');
+  const [cycleTimeData, setCycleTimeData] = useState<CycleTimeData[]>([]);
+  const [throughputData, setThroughputData] = useState<ThroughputData[]>([]);
+  const [wipData, setWipData] = useState<WipData[]>([]);
 
-  const fetchProject = useCallback(async (token: string) => {
+  const fetchData = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
+      const [projRes, taskRes] = await Promise.all([
+        fetch(`${API_URL}/pm/projects/${projectId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/pm/projects/${projectId}/tasks?limit=500`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      const projData = await projRes.json();
+      if (projData.success) setProject(projData.data.project);
+
+      const taskData = await taskRes.json();
+      if (taskData.success) {
+        const rawTasks: BackendTask[] = taskData.data.tasks || taskData.data || [];
+        const metrics = computeMetrics(rawTasks);
+        setCycleTimeData(metrics.cycleTime);
+        setThroughputData(metrics.throughput);
+        setWipData(metrics.wip);
+      }
     } catch (error) {
-      console.error('Failed to fetch project:', error);
+      console.error('Failed to fetch metrics:', error);
     } finally {
       setIsLoading(false);
     }
@@ -93,8 +160,8 @@ export default function MetricsPage() {
       router.push('/login');
       return;
     }
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+    fetchData(token);
+  }, [projectId, router, fetchData]);
 
   const formatTime = (hours: number) => {
     if (hours < 24) return `${hours}h`;
@@ -106,12 +173,12 @@ export default function MetricsPage() {
   };
 
   const getAvgThroughput = () => {
+    if (throughputData.length === 0) return 0;
     return Math.round(throughputData.reduce((sum, d) => sum + d.completed, 0) / throughputData.length);
   };
 
   const getWipStatus = () => {
-    const atLimit = wipData.filter(w => w.count >= w.limit).length;
-    return atLimit;
+    return wipData.filter(w => w.count >= w.limit).length;
   };
 
   if (isLoading) {

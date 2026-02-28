@@ -98,7 +98,15 @@
     "serviceRequests": "طلبات الخدمة",
     "problems": "المشاكل",
     "changes": "التغييرات",
-    "loggedInAs": "تم تسجيل الدخول باسم"
+    "loggedInAs": "تم تسجيل الدخول باسم",
+    "projectIntake": "طلبات المشاريع",
+    "workflows": "سير العمل",
+    "vacations": "الإجازات",
+    "serviceCatalog": "كتالوج الخدمات",
+    "sla": "اتفاقية مستوى الخدمة",
+    "releases": "الإصدارات",
+    "cab": "لجنة التغيير",
+    "portfolioAnalytics": "تحليلات المحفظة"
   },
   "tasks": {
     "title": "المهام",

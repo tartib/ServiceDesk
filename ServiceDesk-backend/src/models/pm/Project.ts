@@ -45,6 +45,13 @@ export interface IProject {
     permissions: string[];
     addedAt: Date;
   }>;
+  issueTypes: Array<{
+    id: string;
+    name: string;
+    icon: string;
+    color: string;
+    description?: string;
+  }>;
   settings: {
     visibility: 'public' | 'private';
     allowExternalAccess: boolean;
@@ -114,6 +121,24 @@ const ProjectSchema = new Schema<IProject>(
         addedAt: { type: Date, default: Date.now },
       },
     ],
+    issueTypes: {
+      type: [
+        {
+          id: { type: String, required: true },
+          name: { type: String, required: true },
+          icon: { type: String, required: true },
+          color: { type: String, required: true },
+          description: { type: String },
+        },
+      ],
+      default: [
+        { id: 'epic', name: 'Epic', icon: '⚡', color: 'text-purple-400' },
+        { id: 'feature', name: 'Feature', icon: '📦', color: 'text-orange-400' },
+        { id: 'task', name: 'Task', icon: '✓', color: 'text-blue-400' },
+        { id: 'story', name: 'Story', icon: '📖', color: 'text-green-400' },
+        { id: 'bug', name: 'Bug', icon: '🐛', color: 'text-red-400' },
+      ],
+    },
     settings: {
       visibility: { type: String, enum: ['public', 'private'], default: 'private' },
       allowExternalAccess: { type: Boolean, default: false },

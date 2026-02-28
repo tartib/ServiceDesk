@@ -17,6 +17,17 @@ const authAxios = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Attach Bearer token for protected auth endpoints (e.g. logout)
+authAxios.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -142,7 +153,7 @@ class AuthService {
    */
   async logout(): Promise<void> {
     try {
-      await axiosInstance.post('/auth/logout');
+      await authAxios.post('/v2/core/auth/logout');
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {

@@ -97,7 +97,48 @@ export class TimerManager {
       console.error('[TimerManager] Error fetching due timers:', error.message);
     }
 
+    // Reset expired external task locks
+    try {
+      await this.resetExpiredExternalTaskLocks();
+    } catch (error: any) {
+      console.error('[TimerManager] Error resetting expired external task locks:', error.message);
+    }
+
     return { processed, errors, details };
+  }
+
+  /**
+   * إعادة تعيين الأقفال المنتهية للمهام الخارجية
+   */
+  async resetExpiredExternalTaskLocks(): Promise<number> {
+    try {
+      const ExternalTask = (await import('../../../models/workflow/ExternalTask')).default;
+      const now = new Date();
+
+      const result = await ExternalTask.updateMany(
+        {
+          status: 'locked',
+          lockExpiresAt: { $lte: now },
+        },
+        {
+          $set: {
+            status: 'available',
+            workerId: null,
+            lockExpiresAt: null,
+            lockedAt: null,
+          },
+        }
+      );
+
+      const count = result.modifiedCount || 0;
+      if (count > 0) {
+        console.log(`[TimerManager] Reset ${count} expired external task lock(s)`);
+      }
+      return count;
+    } catch (error: any) {
+      console.error('[TimerManager] Failed to reset expired locks:', error.message);
+      return 0;
+    }
   }
 
   /**

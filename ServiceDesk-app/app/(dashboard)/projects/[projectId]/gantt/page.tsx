@@ -6,12 +6,6 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ChevronLeft,
   ChevronRight,
-  ZoomIn,
-  ZoomOut,
-  Calendar,
-  Flag,
-  Link2,
-  MoreHorizontal,
 } from 'lucide-react';
 import {
   ProjectHeader,
@@ -23,14 +17,24 @@ import { useMethodology } from '@/hooks/useMethodology';
 interface GanttTask {
   id: string;
   name: string;
-  phase?: string;
+  key?: string;
   startDate: string;
   endDate: string;
   progress: number;
   assignee?: string;
-  dependencies?: string[];
-  milestone?: boolean;
   color?: string;
+  statusCategory?: string;
+}
+
+interface BackendTask {
+  _id: string;
+  key: string;
+  title: string;
+  startDate?: string;
+  dueDate?: string;
+  status: { name: string; category: string };
+  assignee?: { profile?: { firstName: string; lastName: string } };
+  storyPoints?: number;
 }
 
 interface Project {
@@ -39,155 +43,34 @@ interface Project {
   key: string;
 }
 
-const defaultTasks: GanttTask[] = [
-  {
-    id: 'phase1',
-    name: 'Requirements',
-    startDate: '2024-01-01',
-    endDate: '2024-01-21',
-    progress: 100,
-    color: '#3b82f6',
-  },
-  {
-    id: 'task1',
-    name: 'Gather Requirements',
-    phase: 'phase1',
-    startDate: '2024-01-01',
-    endDate: '2024-01-10',
-    progress: 100,
-    assignee: 'Sarah Johnson',
-  },
-  {
-    id: 'task2',
-    name: 'Document Specifications',
-    phase: 'phase1',
-    startDate: '2024-01-08',
-    endDate: '2024-01-18',
-    progress: 100,
-    assignee: 'Mike Chen',
-    dependencies: ['task1'],
-  },
-  {
-    id: 'milestone1',
-    name: 'Requirements Sign-off',
-    startDate: '2024-01-21',
-    endDate: '2024-01-21',
-    progress: 100,
-    milestone: true,
-    dependencies: ['task2'],
-  },
-  {
-    id: 'phase2',
-    name: 'Design',
-    startDate: '2024-01-22',
-    endDate: '2024-02-11',
-    progress: 75,
-    color: '#8b5cf6',
-  },
-  {
-    id: 'task3',
-    name: 'System Architecture',
-    phase: 'phase2',
-    startDate: '2024-01-22',
-    endDate: '2024-02-02',
-    progress: 100,
-    assignee: 'Tech Lead',
-    dependencies: ['milestone1'],
-  },
-  {
-    id: 'task4',
-    name: 'UI/UX Design',
-    phase: 'phase2',
-    startDate: '2024-01-25',
-    endDate: '2024-02-08',
-    progress: 60,
-    assignee: 'Emily Davis',
-  },
-  {
-    id: 'milestone2',
-    name: 'Design Review',
-    startDate: '2024-02-11',
-    endDate: '2024-02-11',
-    progress: 0,
-    milestone: true,
-    dependencies: ['task3', 'task4'],
-  },
-  {
-    id: 'phase3',
-    name: 'Development',
-    startDate: '2024-02-12',
-    endDate: '2024-03-24',
-    progress: 30,
-    color: '#10b981',
-  },
-  {
-    id: 'task5',
-    name: 'Backend Development',
-    phase: 'phase3',
-    startDate: '2024-02-12',
-    endDate: '2024-03-10',
-    progress: 45,
-    assignee: 'Dev Team',
-    dependencies: ['milestone2'],
-  },
-  {
-    id: 'task6',
-    name: 'Frontend Development',
-    phase: 'phase3',
-    startDate: '2024-02-19',
-    endDate: '2024-03-17',
-    progress: 25,
-    assignee: 'Frontend Team',
-    dependencies: ['task4'],
-  },
-  {
-    id: 'task7',
-    name: 'Integration',
-    phase: 'phase3',
-    startDate: '2024-03-11',
-    endDate: '2024-03-24',
-    progress: 0,
-    assignee: 'Dev Team',
-    dependencies: ['task5', 'task6'],
-  },
-  {
-    id: 'phase4',
-    name: 'Testing',
-    startDate: '2024-03-25',
-    endDate: '2024-04-14',
-    progress: 0,
-    color: '#f59e0b',
-  },
-  {
-    id: 'task8',
-    name: 'QA Testing',
-    phase: 'phase4',
-    startDate: '2024-03-25',
-    endDate: '2024-04-07',
-    progress: 0,
-    assignee: 'QA Team',
-    dependencies: ['task7'],
-  },
-  {
-    id: 'task9',
-    name: 'UAT',
-    phase: 'phase4',
-    startDate: '2024-04-01',
-    endDate: '2024-04-14',
-    progress: 0,
-    assignee: 'Business Team',
-    dependencies: ['task8'],
-  },
-  {
-    id: 'milestone3',
-    name: 'Go Live',
-    startDate: '2024-04-15',
-    endDate: '2024-04-15',
-    progress: 0,
-    milestone: true,
-    dependencies: ['task9'],
-  },
-];
+const statusColorMap: Record<string, string> = {
+  todo: '#94a3b8',
+  in_progress: '#3b82f6',
+  review: '#8b5cf6',
+  done: '#10b981',
+};
+
+const mapTaskToGantt = (t: BackendTask): GanttTask | null => {
+  if (!t.startDate && !t.dueDate) return null;
+  const now = new Date().toISOString().split('T')[0];
+  const start = t.startDate || t.dueDate || now;
+  const end = t.dueDate || t.startDate || now;
+  const assignee = t.assignee?.profile
+    ? `${t.assignee.profile.firstName} ${t.assignee.profile.lastName}`.trim()
+    : undefined;
+  const progress = t.status.category === 'done' ? 100 : t.status.category === 'in_progress' ? 50 : 0;
+  return {
+    id: t._id,
+    name: `${t.key}: ${t.title}`,
+    key: t.key,
+    startDate: start,
+    endDate: end,
+    progress,
+    assignee,
+    color: statusColorMap[t.status.category] || '#94a3b8',
+    statusCategory: t.status.category,
+  };
+};
 
 export default function GanttPage() {
   const params = useParams();
@@ -197,21 +80,39 @@ export default function GanttPage() {
   const { methodology } = useMethodology(projectId);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [tasks] = useState<GanttTask[]>(defaultTasks);
+  const [tasks, setTasks] = useState<GanttTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [zoom, setZoom] = useState<'day' | 'week' | 'month'>('week');
-  const [startDate, setStartDate] = useState(new Date('2024-01-01'));
+  const [startDate, setStartDate] = useState(new Date());
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const fetchProject = useCallback(async (token: string) => {
+  const fetchData = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
+      const [projRes, taskRes] = await Promise.all([
+        fetch(`${API_URL}/pm/projects/${projectId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/pm/projects/${projectId}/tasks?limit=200`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      const projData = await projRes.json();
+      if (projData.success) setProject(projData.data.project);
+
+      const taskData = await taskRes.json();
+      if (taskData.success) {
+        const rawTasks: BackendTask[] = taskData.data.tasks || taskData.data || [];
+        const ganttItems = rawTasks.map(mapTaskToGantt).filter(Boolean) as GanttTask[];
+        ganttItems.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+        setTasks(ganttItems);
+        if (ganttItems.length > 0) {
+          const earliest = new Date(ganttItems[0].startDate);
+          earliest.setDate(earliest.getDate() - 3);
+          setStartDate(earliest);
+        }
+      }
     } catch (error) {
-      console.error('Failed to fetch project:', error);
+      console.error('Failed to fetch gantt data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -223,8 +124,8 @@ export default function GanttPage() {
       router.push('/login');
       return;
     }
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+    fetchData(token);
+  }, [projectId, router, fetchData]);
 
   const getDaysBetween = (start: Date, end: Date) => {
     return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
@@ -240,7 +141,18 @@ export default function GanttPage() {
 
   const getDateRange = () => {
     const dates: Date[] = [];
-    const endDate = new Date('2024-05-01');
+    let endDate: Date;
+    if (tasks.length > 0) {
+      const latest = tasks.reduce((max, t) => {
+        const d = new Date(t.endDate);
+        return d > max ? d : max;
+      }, new Date(tasks[0].endDate));
+      endDate = new Date(latest);
+      endDate.setDate(endDate.getDate() + 14);
+    } else {
+      endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 3);
+    }
     const current = new Date(startDate);
     
     while (current <= endDate) {
@@ -266,7 +178,7 @@ export default function GanttPage() {
     
     return {
       left: daysFromStart * dayWidth,
-      width: Math.max(duration * dayWidth, task.milestone ? 20 : 30),
+      width: Math.max(duration * dayWidth, 30),
     };
   };
 
@@ -351,7 +263,7 @@ export default function GanttPage() {
               <ChevronLeft className="h-5 w-5" />
             </button>
             <button
-              onClick={() => setStartDate(new Date('2024-01-01'))}
+              onClick={() => setStartDate(new Date())}
               className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Today
@@ -380,16 +292,13 @@ export default function GanttPage() {
             {tasks.map((task) => (
               <div
                 key={task.id}
-                className={`h-10 border-b border-gray-100 px-4 flex items-center gap-2 hover:bg-gray-50 ${
-                  task.phase ? 'pl-8' : ''
-                } ${task.milestone ? 'bg-yellow-50' : ''} ${!task.phase && !task.milestone ? 'bg-blue-50/50 font-medium' : ''}`}
+                className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 hover:bg-gray-50"
               >
-                {task.milestone ? (
-                  <Flag className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-                ) : task.dependencies?.length ? (
-                  <Link2 className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                ) : null}
-                <span className={`text-sm truncate ${task.milestone ? 'text-yellow-700' : 'text-gray-700'}`}>
+                <div
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: task.color || '#94a3b8' }}
+                />
+                <span className="text-sm truncate text-gray-700">
                   {task.name}
                 </span>
               </div>
@@ -432,46 +341,38 @@ export default function GanttPage() {
                 
                 return (
                   <div key={task.id} className="h-10 relative border-b border-gray-100">
-                    {task.milestone ? (
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 h-6 rounded cursor-pointer group"
+                      style={{
+                        left: position.left,
+                        width: position.width,
+                        backgroundColor: task.color || '#94a3b8',
+                      }}
+                      title={`${task.name} (${task.progress}%)`}
+                    >
+                      {/* Progress */}
                       <div
-                        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-yellow-500 rotate-45 cursor-pointer hover:bg-yellow-600 transition-colors"
-                        style={{ left: position.left }}
-                        title={task.name}
-                      />
-                    ) : (
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 h-6 rounded cursor-pointer group"
+                        className="absolute inset-y-0 left-0 rounded-l opacity-80"
                         style={{
-                          left: position.left,
-                          width: position.width,
-                          backgroundColor: task.color || '#94a3b8',
+                          width: `${task.progress}%`,
+                          backgroundColor: 'rgba(0,0,0,0.2)',
                         }}
-                        title={`${task.name} (${task.progress}%)`}
-                      >
-                        {/* Progress */}
-                        <div
-                          className="absolute inset-y-0 left-0 rounded-l opacity-80"
-                          style={{
-                            width: `${task.progress}%`,
-                            backgroundColor: 'rgba(0,0,0,0.2)',
-                          }}
-                        />
-                        
-                        {/* Label */}
-                        {position.width > 60 && (
-                          <span className="absolute inset-0 flex items-center px-2 text-xs text-white font-medium truncate">
-                            {task.name}
-                          </span>
-                        )}
+                      />
+                      
+                      {/* Label */}
+                      {position.width > 60 && (
+                        <span className="absolute inset-0 flex items-center px-2 text-xs text-white font-medium truncate">
+                          {task.name}
+                        </span>
+                      )}
 
-                        {/* Hover tooltip */}
-                        <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-10">
-                          <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                            {task.name} - {task.progress}%
-                          </div>
+                      {/* Hover tooltip */}
+                      <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-10">
+                        <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                          {task.name} - {task.progress}%
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 );
               })}
@@ -484,24 +385,20 @@ export default function GanttPage() {
       <div className="bg-white border-t border-gray-200 px-4 py-2">
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-3 rounded bg-blue-500" />
-            <span className="text-gray-600">Requirements</span>
+            <div className="w-4 h-3 rounded" style={{ backgroundColor: '#94a3b8' }} />
+            <span className="text-gray-600">To Do</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-3 rounded bg-purple-500" />
-            <span className="text-gray-600">Design</span>
+            <div className="w-4 h-3 rounded" style={{ backgroundColor: '#3b82f6' }} />
+            <span className="text-gray-600">In Progress</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-3 rounded bg-green-500" />
-            <span className="text-gray-600">Development</span>
+            <div className="w-4 h-3 rounded" style={{ backgroundColor: '#8b5cf6' }} />
+            <span className="text-gray-600">Review</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-3 rounded bg-yellow-500" />
-            <span className="text-gray-600">Testing</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-500 rotate-45" />
-            <span className="text-gray-600">Milestone</span>
+            <div className="w-4 h-3 rounded" style={{ backgroundColor: '#10b981' }} />
+            <span className="text-gray-600">Done</span>
           </div>
         </div>
       </div>

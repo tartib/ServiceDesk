@@ -21,6 +21,7 @@ interface CSVRow {
   labels?: string;
   dueDate?: string;
   assignee?: string;
+  epic?: string;
 }
 
 interface ImportError {
@@ -110,6 +111,7 @@ function normalizeHeader(header: string): string {
     title: 'title',
     summary: 'title',
     type: 'type',
+    issuetype: 'type',
     priority: 'priority',
     description: 'description',
     storypoints: 'storyPoints',
@@ -122,6 +124,9 @@ function normalizeHeader(header: string): string {
     assignee: 'assignee',
     assignedto: 'assignee',
     owner: 'assignee',
+    epicname: 'epic',
+    epiclink: 'epic',
+    epic: 'epic',
   };
   return mapping[lower] || header;
 }
@@ -186,6 +191,13 @@ export const importTasksFromCSV = async (req: PMAuthRequest, res: Response): Pro
       }
     }
 
+    // Build epic name → epicId map (pre-existing epics in the project)
+    const existingEpics = await Task.find({ projectId, type: 'epic' }, 'title').lean();
+    const epicNameToId: Record<string, string> = {};
+    for (const e of existingEpics) {
+      epicNameToId[e.title.toLowerCase().trim()] = e._id.toString();
+    }
+
     // Get next task number
     const lastTask = await Task.findOne({ projectId }).sort({ number: -1 });
     let nextNumber = (lastTask?.number || 0) + 1;
@@ -194,21 +206,32 @@ export const importTasksFromCSV = async (req: PMAuthRequest, res: Response): Pro
     const skipped: { row: number; reason: string }[] = [];
     const errors: ImportError[] = [];
 
+    // Pre-process all rows: normalize headers and determine type
+    interface NormalizedRow {
+      rowNum: number;
+      row: CSVRow;
+    }
+    const normalizedRows: NormalizedRow[] = [];
     for (let i = 0; i < rows.length; i++) {
       const rawRow = rows[i];
       const rowNum = i + 2; // +2 because row 1 is header, data starts at row 2
-
-      // Map raw row to normalized keys
       const row: CSVRow = {};
       for (const [originalHeader, value] of Object.entries(rawRow)) {
         const normalizedKey = headerMap[originalHeader] || originalHeader;
         (row as Record<string, string>)[normalizedKey] = value;
       }
+      normalizedRows.push({ rowNum, row });
+    }
 
+    // Helper to create a task from a normalized row
+    const createTask = async (
+      { rowNum, row }: NormalizedRow,
+      resolveEpic: boolean
+    ): Promise<boolean> => {
       // Validate required: title
       if (!row.title || !row.title.trim()) {
         skipped.push({ row: rowNum, reason: 'Missing title' });
-        continue;
+        return false;
       }
 
       const title = row.title.trim().substring(0, 500);
@@ -274,6 +297,17 @@ export const importTasksFromCSV = async (req: PMAuthRequest, res: Response): Pro
         }
       }
 
+      // Epic (match by name — only for non-epic rows in pass 2)
+      let epicId: string | undefined;
+      if (resolveEpic && row.epic && row.epic.trim()) {
+        const epicName = row.epic.trim().toLowerCase();
+        if (epicNameToId[epicName]) {
+          epicId = epicNameToId[epicName];
+        } else {
+          errors.push({ row: rowNum, field: 'epic', message: `Epic "${row.epic}" not found in project, skipping field` });
+        }
+      }
+
       // Create the task
       const taskKey = `${project.key}-${nextNumber}`;
       const task = new Task({
@@ -296,6 +330,7 @@ export const importTasksFromCSV = async (req: PMAuthRequest, res: Response): Pro
         components: [],
         storyPoints,
         dueDate,
+        epicId: epicId || undefined,
         workflowHistory: [
           {
             fromStatus: '',
@@ -310,7 +345,31 @@ export const importTasksFromCSV = async (req: PMAuthRequest, res: Response): Pro
 
       await task.save();
       imported.push(taskKey);
+
+      // If this is an epic, register it so later rows can reference it
+      if (type === TaskType.EPIC) {
+        epicNameToId[title.toLowerCase()] = task._id.toString();
+      }
+
       nextNumber++;
+      return true;
+    };
+
+    // Pass 1: Create epic-type rows first so they exist for linking
+    const epicRowIndices = new Set<number>();
+    for (let i = 0; i < normalizedRows.length; i++) {
+      const { row } = normalizedRows[i];
+      const rowType = row.type?.toLowerCase().trim();
+      if (rowType === 'epic') {
+        epicRowIndices.add(i);
+        await createTask(normalizedRows[i], false);
+      }
+    }
+
+    // Pass 2: Create all remaining rows with epic resolution enabled
+    for (let i = 0; i < normalizedRows.length; i++) {
+      if (epicRowIndices.has(i)) continue;
+      await createTask(normalizedRows[i], true);
     }
 
     res.status(200).json({

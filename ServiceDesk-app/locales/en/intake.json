@@ -1,0 +1,195 @@
+{
+  "intake": {
+    "title": "Project Intake",
+    "subtitle": "Manage project requests through the governance pipeline",
+    "newRequest": "New Request",
+    "searchPlaceholder": "Search requests...",
+    "allStages": "All Stages",
+    "allPriorities": "All Priorities",
+    "refresh": "Refresh",
+    "noRequests": "No requests",
+    "noIntakeRequests": "No intake requests found",
+    "createFirst": "Create your first request",
+
+    "stats": {
+      "totalRequests": "Total Requests",
+      "inReview": "In Review",
+      "approved": "Approved",
+      "avgApprovalTime": "Avg. Approval Time"
+    },
+
+    "stages": {
+      "draft": "Draft",
+      "screening": "Screening",
+      "business_case": "Business Case",
+      "prioritization": "Prioritization",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+
+    "priorities": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+
+    "categories": {
+      "new_product": "New Product",
+      "improvement": "Improvement",
+      "maintenance": "Maintenance",
+      "research": "Research",
+      "infrastructure": "Infrastructure"
+    },
+    "categoryDescriptions": {
+      "new_product": "Build a new product or service",
+      "improvement": "Enhance existing capabilities",
+      "maintenance": "Fix or maintain existing systems",
+      "research": "Explore new technologies or approaches",
+      "infrastructure": "Infrastructure and tooling"
+    },
+
+    "methodologies": {
+      "scrum": "Scrum",
+      "kanban": "Kanban",
+      "waterfall": "Waterfall",
+      "itil": "ITIL",
+      "lean": "Lean",
+      "okr": "OKR"
+    },
+    "methodologyDescriptions": {
+      "scrum": "Iterative sprints with ceremonies",
+      "kanban": "Continuous flow with WIP limits",
+      "waterfall": "Sequential phases with gates",
+      "itil": "IT service management framework",
+      "lean": "Minimize waste, maximize value",
+      "okr": "Objectives and Key Results"
+    },
+
+    "table": {
+      "title": "Title",
+      "stage": "Stage",
+      "priority": "Priority",
+      "category": "Category",
+      "requester": "Requester",
+      "created": "Created"
+    },
+
+    "new": {
+      "title": "New Project Request",
+      "subtitle": "Submit a new project for review and approval",
+      "steps": {
+        "projectInfo": "Project Info",
+        "businessCase": "Business Case",
+        "details": "Details",
+        "review": "Review"
+      },
+      "projectTitle": "Project Title",
+      "projectTitlePlaceholder": "e.g. Customer Portal Redesign",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe what this project aims to achieve...",
+      "categoryLabel": "Category",
+      "priorityLabel": "Priority",
+      "businessJustification": "Business Justification",
+      "businessJustificationPlaceholder": "Why is this project needed? What problem does it solve?",
+      "expectedBenefits": "Expected Benefits",
+      "expectedBenefitsPlaceholder": "What benefits will this project deliver?",
+      "estimatedBudget": "Estimated Budget",
+      "estimatedBudgetPlaceholder": "e.g. 50000",
+      "estimatedTimeline": "Estimated Timeline",
+      "estimatedTimelinePlaceholder": "e.g. 3 months",
+      "riskLevel": "Risk Level",
+      "strategicAlignment": "Strategic Alignment",
+      "strategicAlignmentPlaceholder": "How does this align with organizational strategy?",
+      "preferredMethodology": "Preferred Methodology",
+      "suggestedTeam": "Suggested Team / Resources",
+      "suggestedTeamPlaceholder": "Describe the team or resources needed...",
+      "reviewNotice": "Review your request below. Once submitted, it will enter the <strong>Draft</strong> stage. You can advance it to <strong>Screening</strong> when ready.",
+      "back": "Back",
+      "cancel": "Cancel",
+      "next": "Next",
+      "submitting": "Submitting...",
+      "submitRequest": "Submit Request",
+      "successMessage": "Intake request created successfully!",
+      "budget": "Budget",
+      "timeline": "Timeline",
+      "risk": "Risk",
+      "methodology": "Methodology"
+    },
+
+    "detail": {
+      "notFound": "Intake request not found",
+      "backToIntake": "Back to intake",
+      "requestedBy": "Requested by",
+      "on": "on",
+      "projectCreated": "Project created successfully",
+      "openProject": "Open Project",
+
+      "description": "Description",
+      "businessCase": "Business Case",
+      "justification": "Justification",
+      "expectedBenefits": "Expected Benefits",
+      "strategicAlignment": "Strategic Alignment",
+
+      "scoring": "Scoring",
+      "avgLabel": "Avg",
+      "scoreCriteria": {
+        "strategicValue": "Strategic Value",
+        "roiPotential": "ROI Potential",
+        "technicalFeasibility": "Technical Feasibility",
+        "resourceAvailability": "Resource Availability",
+        "riskLevel": "Risk Level"
+      },
+
+      "comments": "Comments",
+      "noComments": "No comments yet",
+      "addComment": "Add a comment...",
+
+      "actions": "Actions",
+      "advanceStage": "Advance Stage",
+      "approveCreate": "Approve & Create Project",
+      "reject": "Reject",
+      "cancelRequest": "Cancel Request",
+
+      "details": "Details",
+      "category": "Category",
+      "methodology": "Methodology",
+      "budget": "Budget",
+      "timeline": "Timeline",
+      "risk": "Risk",
+      "avgScore": "Avg Score",
+
+      "timelineSection": "Timeline",
+      "by": "by",
+
+      "modal": {
+        "advanceTitle": "Advance to Next Stage",
+        "rejectTitle": "Reject Request",
+        "approveTitle": "Approve & Create Project",
+        "projectKey": "Project Key (2-10 chars)",
+        "projectKeyPlaceholder": "e.g. PROJ",
+        "commentRequired": "Comment (required)",
+        "commentOptional": "Comment (optional)",
+        "commentPlaceholder": "Add a comment...",
+        "cancel": "Cancel",
+        "advance": "Advance",
+        "approve": "Approve",
+        "processing": "Processing..."
+      },
+
+      "unknown": "Unknown",
+      "failedComment": "Failed to add comment",
+      "failedScore": "Failed to save score",
+      "actionFailed": "Action failed"
+    },
+
+    "card": {
+      "timeAgo": {
+        "days": "d ago",
+        "hours": "h ago",
+        "minutes": "m ago"
+      }
+    }
+  }
+}

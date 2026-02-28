@@ -14,6 +14,7 @@ import {
   FileText,
   Send,
   ChevronLeft,
+  ChevronRight,
   Crown,
   RefreshCw,
   BarChart3,
@@ -85,7 +86,7 @@ interface Project {
   key: string;
 }
 
-type DateFilter = 'today' | 'yesterday';
+const getTodayStr = () => new Date().toISOString().split('T')[0];
 
 export default function StandupPage() {
   const params = useParams();
@@ -98,7 +99,11 @@ export default function StandupPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [standups, setStandups] = useState<StandupEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dateFilter, setDateFilter] = useState<DateFilter>('today');
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayStr());
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() };
+  });
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>('member');
   
@@ -114,14 +119,43 @@ export default function StandupPage() {
   const [showSummary, setShowSummary] = useState(false);
 
   const isLeader = currentUserRole === 'lead' || currentUserRole === 'manager';
+  const isToday = selectedDate === getTodayStr();
 
-  const getDateForFilter = (filter: DateFilter) => {
-    const date = new Date();
-    if (filter === 'yesterday') {
-      date.setDate(date.getDate() - 1);
-    }
-    return date.toISOString().split('T')[0];
+  const formatDisplayDate = (dateStr: string) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    const today = new Date(); today.setHours(0,0,0,0);
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+    if (d.getTime() === today.getTime()) return 'Today';
+    if (d.getTime() === yesterday.getTime()) return 'Yesterday';
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
+
+  const getCalendarDays = (year: number, month: number) => {
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    const days: { day: number; current: boolean; dateStr: string }[] = [];
+    for (let i = firstDay - 1; i >= 0; i--) {
+      const d = daysInPrevMonth - i;
+      const m = month === 0 ? 11 : month - 1;
+      const y = month === 0 ? year - 1 : year;
+      days.push({ day: d, current: false, dateStr: `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      days.push({ day: d, current: true, dateStr: `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
+    }
+    const remaining = 7 - (days.length % 7);
+    if (remaining < 7) {
+      for (let d = 1; d <= remaining; d++) {
+        const m = month === 11 ? 0 : month + 1;
+        const y = month === 11 ? year + 1 : year;
+        days.push({ day: d, current: false, dateStr: `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
+      }
+    }
+    return days;
+  };
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   const fetchProject = useCallback(async (token: string) => {
     try {
@@ -171,11 +205,9 @@ export default function StandupPage() {
 
   const fetchStandups = useCallback(async (token: string) => {
     try {
-      const date = getDateForFilter(dateFilter);
-      // Use /today endpoint for today's standups, otherwise filter by date
-      const endpoint = dateFilter === 'today'
+      const endpoint = isToday
         ? `${API_URL}/pm/projects/${projectId}/standups/today`
-        : `${API_URL}/pm/projects/${projectId}/standups?date=${date}`;
+        : `${API_URL}/pm/projects/${projectId}/standups?date=${selectedDate}`;
       
       const res = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
@@ -192,7 +224,8 @@ export default function StandupPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [projectId, dateFilter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, selectedDate]);
 
   // Fetch current user's standup using /me endpoint
   const fetchMyStandup = useCallback(async (token: string) => {
@@ -243,7 +276,7 @@ export default function StandupPage() {
     if (token) {
       fetchStandups(token);
     }
-  }, [dateFilter, fetchStandups]);
+  }, [selectedDate, fetchStandups]);
 
   const handleRefresh = () => {
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
@@ -284,8 +317,8 @@ export default function StandupPage() {
 
   // Use myStandupData from /me endpoint for current user's standup (more reliable)
   const myStandup = myStandupData || (currentUserId ? getUserStandup(currentUserId) : null);
-  const canWriteStandup = dateFilter === 'today' && !myStandup;
-  const canEditStandup = dateFilter === 'today' && myStandup;
+  const canWriteStandup = isToday && !myStandup;
+  const canEditStandup = isToday && myStandup;
 
   const handleOpenForm = (memberId?: string) => {
     if (memberId && memberId !== currentUserId) {
@@ -405,26 +438,113 @@ export default function StandupPage() {
               <h2 className="text-lg font-semibold text-gray-900">Daily Standup</h2>
             </div>
             
-            {/* Date Filter */}
-            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            {/* Date Navigation */}
+            <div className="flex items-center gap-1">
               <button
-                onClick={() => setDateFilter('today')}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  dateFilter === 'today' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Calendar className="h-4 w-4" />
-                Today
-              </button>
-              <button
-                onClick={() => setDateFilter('yesterday')}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  dateFilter === 'yesterday' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
+                onClick={() => {
+                  const d = new Date(selectedDate + 'T00:00:00');
+                  d.setDate(d.getDate() - 1);
+                  setSelectedDate(d.toISOString().split('T')[0]);
+                }}
+                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Yesterday
               </button>
+
+              <div className="relative">
+                <button
+                  onClick={() => { setShowCalendar(!showCalendar); setCalendarMonth({ year: new Date(selectedDate + 'T00:00:00').getFullYear(), month: new Date(selectedDate + 'T00:00:00').getMonth() }); }}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                >
+                  <Calendar className="h-4 w-4" />
+                  {formatDisplayDate(selectedDate)}
+                </button>
+
+                {showCalendar && (
+                  <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-3 w-72">
+                    {/* Calendar Header */}
+                    <div className="flex items-center justify-between mb-2">
+                      <button onClick={() => setCalendarMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 })} className="p-1 hover:bg-gray-100 rounded">
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <span className="text-sm font-semibold text-gray-900">{monthNames[calendarMonth.month]} {calendarMonth.year}</span>
+                      <button onClick={() => setCalendarMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 })} className="p-1 hover:bg-gray-100 rounded">
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {/* Day headers */}
+                    <div className="grid grid-cols-7 gap-0.5 mb-1">
+                      {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
+                        <div key={d} className="text-center text-xs font-medium text-gray-400 py-1">{d}</div>
+                      ))}
+                    </div>
+                    {/* Days */}
+                    <div className="grid grid-cols-7 gap-0.5">
+                      {getCalendarDays(calendarMonth.year, calendarMonth.month).map((day, i) => {
+                        const isSelected = day.dateStr === selectedDate;
+                        const isTodayDate = day.dateStr === getTodayStr();
+                        const isFuture = day.dateStr > getTodayStr();
+                        return (
+                          <button
+                            key={i}
+                            disabled={isFuture}
+                            onClick={() => { setSelectedDate(day.dateStr); setShowCalendar(false); }}
+                            className={`text-center py-1.5 text-xs rounded-lg transition-colors ${
+                              isSelected ? 'bg-blue-600 text-white font-bold' :
+                              isTodayDate ? 'bg-blue-50 text-blue-600 font-semibold' :
+                              !day.current ? 'text-gray-300' :
+                              isFuture ? 'text-gray-200 cursor-not-allowed' :
+                              'text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {day.day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Quick links */}
+                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+                      <button
+                        onClick={() => { setSelectedDate(getTodayStr()); setShowCalendar(false); }}
+                        className="flex-1 text-xs text-center py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg font-medium"
+                      >
+                        Today
+                      </button>
+                      <button
+                        onClick={() => {
+                          const y = new Date(); y.setDate(y.getDate() - 1);
+                          setSelectedDate(y.toISOString().split('T')[0]); setShowCalendar(false);
+                        }}
+                        className="flex-1 text-xs text-center py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium"
+                      >
+                        Yesterday
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => {
+                  const d = new Date(selectedDate + 'T00:00:00');
+                  d.setDate(d.getDate() + 1);
+                  const next = d.toISOString().split('T')[0];
+                  if (next <= getTodayStr()) setSelectedDate(next);
+                }}
+                disabled={selectedDate >= getTodayStr()}
+                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+
+              {!isToday && (
+                <button
+                  onClick={() => setSelectedDate(getTodayStr())}
+                  className="px-2.5 py-1.5 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg font-medium transition-colors"
+                >
+                  Jump to Today
+                </button>
+              )}
             </div>
           </div>
           
@@ -449,7 +569,7 @@ export default function StandupPage() {
               </button>
             )}
             
-            {dateFilter === 'today' && (canWriteStandup || canEditStandup) && (
+            {isToday && (canWriteStandup || canEditStandup) && (
               <button
                 onClick={() => handleOpenForm()}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -607,7 +727,7 @@ export default function StandupPage() {
                             </span>
                           )}
                           {/* Edit button for own standup */}
-                          {isCurrentUser && standup && dateFilter === 'today' && (
+                          {isCurrentUser && standup && isToday && (
                             <button
                               onClick={() => handleOpenForm()}
                               className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -616,7 +736,7 @@ export default function StandupPage() {
                             </button>
                           )}
                           {/* Leader can write for others */}
-                          {isLeader && !isCurrentUser && dateFilter === 'today' && (
+                          {isLeader && !isCurrentUser && isToday && (
                             <button
                               onClick={() => handleOpenForm(member.id)}
                               className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"

@@ -9,6 +9,7 @@ import {
   GitFork,
   GitMerge,
   ShieldCheck,
+  Cog,
 } from 'lucide-react';
 
 // ============================================
@@ -239,6 +240,45 @@ export const ConditionNode = memo(({ selected }: NodeProps) => {
 ConditionNode.displayName = 'ConditionNode';
 
 // ============================================
+// External Task Node - مهمة خارجية (Rounded rectangle with cog)
+// ============================================
+export const ExternalTaskNode = memo(({ data, selected }: NodeProps) => {
+  const d = data as Record<string, unknown>;
+  return (
+    <div
+      className={`px-5 py-3 min-w-[150px] max-w-[220px] rounded-xl border-2 bg-orange-50 ${
+        selected ? 'border-orange-600 ring-2 ring-offset-2 ring-orange-400 shadow-lg' : 'border-orange-300'
+      } transition-all hover:shadow-md`}
+    >
+      <Handle type="target" position={Position.Top} className="!bg-orange-400 !w-3 !h-3 !border-2 !border-white" />
+      <div className="text-center">
+        <Cog className="w-5 h-5 text-orange-500 mx-auto mb-1" />
+        <p className="text-sm font-semibold text-orange-700 leading-tight">
+          {String(d.label || 'External Task')}
+        </p>
+        {Boolean(d.nameAr) && (
+          <p className="text-xs text-orange-400 mt-0.5" dir="rtl">
+            {String(d.nameAr)}
+          </p>
+        )}
+        {Boolean(d.topic) && (
+          <p className="text-[10px] text-orange-400 mt-1 font-mono">
+            {String(d.topic)}
+          </p>
+        )}
+        {Boolean(d.retries) && (
+          <p className="text-[10px] text-orange-400">
+            retries: {String(d.retries)}
+          </p>
+        )}
+      </div>
+      <Handle type="source" position={Position.Bottom} className="!bg-orange-400 !w-3 !h-3 !border-2 !border-white" />
+    </div>
+  );
+});
+ExternalTaskNode.displayName = 'ExternalTaskNode';
+
+// ============================================
 // Node Types Map
 // ============================================
 export const wfNodeTypes = {
@@ -250,4 +290,5 @@ export const wfNodeTypes = {
   wfTimer: TimerNode,
   wfApproval: ApprovalNode,
   wfCondition: ConditionNode,
+  wfExternalTask: ExternalTaskNode,
 };

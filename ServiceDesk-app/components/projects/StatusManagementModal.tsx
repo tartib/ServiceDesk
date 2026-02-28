@@ -62,11 +62,11 @@ function SortableStatusItem({ status, onDelete }: SortableStatusItemProps) {
   const getCategoryLabel = (category: string) => {
     switch (category) {
       case 'todo':
-        return t('projects.board.categoryTodo') || 'To Do';
+        return t('projects.board.statusCatTodo') || 'To Do';
       case 'in_progress':
-        return t('projects.board.categoryInProgress') || 'In Progress';
+        return t('projects.board.statusCatInProgress') || 'In Progress';
       case 'done':
-        return t('projects.board.categoryDone') || 'Done';
+        return t('projects.board.statusCatDone') || 'Done';
       default:
         return category;
     }
@@ -156,7 +156,7 @@ export function StatusManagementModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            {t('projects.board.manageWorkTypes') || 'Manage Workflow Statuses'}
+            {t('projects.board.manageStatuses') || 'Manage Workflow Statuses'}
           </h2>
           <button
             onClick={onClose}

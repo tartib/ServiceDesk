@@ -7,7 +7,6 @@ import {
   Activity,
   CheckCircle,
   MessageSquare,
-  GitCommit,
   FileText,
   User,
   Clock,
@@ -22,9 +21,24 @@ import {
 import { useMethodology } from '@/hooks/useMethodology';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+interface BackendActivity {
+  _id: string;
+  type: string;
+  actor: {
+    _id: string;
+    email: string;
+    profile?: { firstName: string; lastName: string; avatar?: string };
+  } | null;
+  description: string;
+  metadata: Record<string, unknown>;
+  taskId?: { _id: string; key: string; title: string };
+  sprintId?: string;
+  createdAt: string;
+}
+
 interface ActivityItem {
   id: string;
-  type: 'task_completed' | 'task_created' | 'comment' | 'status_change' | 'assignment' | 'file_upload';
+  type: string;
   user: string;
   userAvatar?: string;
   action: string;
@@ -40,20 +54,47 @@ interface Project {
   key: string;
 }
 
-const defaultActivities: ActivityItem[] = [
-  { id: 'a1', type: 'task_completed', user: 'Sarah Johnson', action: 'completed', target: 'PROJ-101: User authentication flow', timestamp: '2024-01-15T14:30:00Z' },
-  { id: 'a2', type: 'comment', user: 'Mike Chen', action: 'commented on', target: 'PROJ-102: Dashboard redesign', details: 'Looking good! Just need to fix the mobile layout.', timestamp: '2024-01-15T14:15:00Z' },
-  { id: 'a3', type: 'status_change', user: 'Emily Davis', action: 'moved', target: 'PROJ-103: Fix login timeout', details: 'from "In Progress" to "Review"', timestamp: '2024-01-15T13:45:00Z' },
-  { id: 'a4', type: 'assignment', user: 'John Doe', action: 'was assigned to', target: 'PROJ-104: API rate limiting', timestamp: '2024-01-15T13:30:00Z' },
-  { id: 'a5', type: 'task_created', user: 'Sarah Johnson', action: 'created', target: 'PROJ-105: Email notifications', timestamp: '2024-01-15T12:00:00Z' },
-  { id: 'a6', type: 'file_upload', user: 'Emily Davis', action: 'uploaded', target: 'design-mockup-v2.fig', details: 'to PROJ-102', timestamp: '2024-01-15T11:30:00Z' },
-  { id: 'a7', type: 'task_completed', user: 'Mike Chen', action: 'completed', target: 'PROJ-098: Database optimization', timestamp: '2024-01-15T10:45:00Z' },
-  { id: 'a8', type: 'comment', user: 'John Doe', action: 'commented on', target: 'PROJ-101: User authentication flow', details: 'Great work on the OAuth integration!', timestamp: '2024-01-15T10:30:00Z' },
-  { id: 'a9', type: 'status_change', user: 'Sarah Johnson', action: 'moved', target: 'PROJ-099: Performance testing', details: 'from "Review" to "Done"', timestamp: '2024-01-14T17:00:00Z' },
-  { id: 'a10', type: 'assignment', user: 'Emily Davis', action: 'was assigned to', target: 'PROJ-106: Mobile responsive fixes', timestamp: '2024-01-14T16:30:00Z' },
-];
+const mapTypeToDisplay = (type: string): string => {
+  const map: Record<string, string> = {
+    task_created: 'task_created',
+    task_updated: 'status_change',
+    task_deleted: 'task_created',
+    task_moved: 'status_change',
+    status_changed: 'status_change',
+    assignee_changed: 'assignment',
+    priority_changed: 'status_change',
+    comment_added: 'comment',
+    comment_updated: 'comment',
+    comment_deleted: 'comment',
+    sprint_created: 'task_created',
+    sprint_started: 'task_completed',
+    sprint_completed: 'task_completed',
+    project_created: 'task_created',
+    project_updated: 'status_change',
+    member_added: 'assignment',
+    member_removed: 'assignment',
+  };
+  return map[type] || 'status_change';
+};
 
-const typeConfig = {
+const mapBackendToItem = (a: BackendActivity): ActivityItem => {
+  const actorName = a.actor?.profile
+    ? `${a.actor.profile.firstName} ${a.actor.profile.lastName}`.trim()
+    : a.actor?.email || 'Unknown';
+  const taskTarget = a.taskId ? `${a.taskId.key}: ${a.taskId.title}` : undefined;
+  return {
+    id: a._id,
+    type: mapTypeToDisplay(a.type),
+    user: actorName,
+    userAvatar: a.actor?.profile?.avatar,
+    action: a.description,
+    target: taskTarget,
+    targetId: a.taskId?._id,
+    timestamp: a.createdAt,
+  };
+};
+
+const typeConfig: Record<string, { icon: typeof CheckCircle; color: string; bgColor: string }> = {
   task_completed: { icon: CheckCircle, color: 'text-green-500', bgColor: 'bg-green-100' },
   task_created: { icon: FileText, color: 'text-blue-500', bgColor: 'bg-blue-100' },
   comment: { icon: MessageSquare, color: 'text-purple-500', bgColor: 'bg-purple-100' },
@@ -71,19 +112,33 @@ export default function ActivityPage() {
   const { t } = useLanguage();
 
   const [project, setProject] = useState<Project | null>(null);
-  const [activities] = useState<ActivityItem[]>(defaultActivities);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchProject = useCallback(async (token: string) => {
+  const fetchData = useCallback(async (token: string, pageNum = 1) => {
     try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
+      const [projRes, actRes] = await Promise.all([
+        fetch(`${API_URL}/pm/projects/${projectId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/pm/projects/${projectId}/activity?page=${pageNum}&limit=30`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      const projData = await projRes.json();
+      if (projData.success) setProject(projData.data.project);
+
+      const actData = await actRes.json();
+      if (actData.success) {
+        const mapped = (actData.data.activities || []).map(mapBackendToItem);
+        setActivities(mapped);
+        setTotalPages(actData.data.pagination?.pages || 1);
+      }
     } catch (error) {
-      console.error('Failed to fetch project:', error);
+      console.error('Failed to fetch activity:', error);
     } finally {
       setIsLoading(false);
     }
@@ -95,8 +150,8 @@ export default function ActivityPage() {
       router.push('/login');
       return;
     }
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+    fetchData(token, page);
+  }, [projectId, router, fetchData, page]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -235,6 +290,27 @@ export default function ActivityPage() {
             <div className="text-center py-12">
               <Activity className="h-12 w-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500">{t('projects.activity.noActivity') || 'No activity found'}</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>

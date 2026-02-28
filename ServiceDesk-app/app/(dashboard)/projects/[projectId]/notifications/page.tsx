@@ -37,16 +37,25 @@ interface Project {
   key: string;
 }
 
-const defaultNotifications: Notification[] = [
-  { id: 'n1', type: 'mention', title: 'Sarah mentioned you', message: 'in PROJ-102: "Can you review the dashboard layout?"', read: false, timestamp: '2024-01-15T14:30:00Z', actionUrl: '/tasks/102' },
-  { id: 'n2', type: 'assignment', title: 'New task assigned', message: 'PROJ-105: Email notifications has been assigned to you', read: false, timestamp: '2024-01-15T13:00:00Z', actionUrl: '/tasks/105' },
-  { id: 'n3', type: 'comment', title: 'New comment', message: 'Mike commented on PROJ-101: "Great work on the OAuth!"', read: false, timestamp: '2024-01-15T10:30:00Z', actionUrl: '/tasks/101' },
-  { id: 'n4', type: 'deadline', title: 'Deadline approaching', message: 'PROJ-103 is due tomorrow', read: true, timestamp: '2024-01-15T09:00:00Z', actionUrl: '/tasks/103' },
-  { id: 'n5', type: 'task', title: 'Task completed', message: 'PROJ-098 has been marked as done by Mike', read: true, timestamp: '2024-01-14T17:00:00Z', actionUrl: '/tasks/98' },
-  { id: 'n6', type: 'system', title: 'Sprint 2 started', message: 'Sprint 2 has begun. Good luck team!', read: true, timestamp: '2024-01-14T09:00:00Z' },
-  { id: 'n7', type: 'mention', title: 'Emily mentioned you', message: 'in PROJ-106: "Need your input on the mobile design"', read: true, timestamp: '2024-01-13T15:00:00Z', actionUrl: '/tasks/106' },
-  { id: 'n8', type: 'assignment', title: 'Task reassigned', message: 'PROJ-104 has been reassigned to John', read: true, timestamp: '2024-01-13T11:00:00Z', actionUrl: '/tasks/104' },
-];
+interface BackendNotification {
+  _id: string;
+  type: Notification['type'];
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  actionUrl?: string;
+}
+
+const mapNotification = (n: BackendNotification): Notification => ({
+  id: n._id,
+  type: n.type || 'system',
+  title: n.title,
+  message: n.message,
+  read: n.read,
+  timestamp: n.createdAt,
+  actionUrl: n.actionUrl,
+});
 
 const typeConfig = {
   task: { icon: CheckCircle, color: 'text-green-500', bgColor: 'bg-green-100' },
@@ -65,32 +74,34 @@ export default function NotificationsPage() {
   const { methodology } = useMethodology(projectId);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>(defaultNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  const fetchProject = useCallback(async (token: string) => {
+  const getToken = () => localStorage.getItem('token') || localStorage.getItem('accessToken');
+
+  const fetchData = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
+      const [projRes, notifRes] = await Promise.all([
+        fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/notifications`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const projData = await projRes.json();
+      if (projData.success) setProject(projData.data.project);
+      const notifData = await notifRes.json();
+      if (notifData.success) setNotifications((notifData.data.notifications || []).map(mapNotification));
     } catch (error) {
-      console.error('Failed to fetch project:', error);
+      console.error('Failed to fetch notifications:', error);
     } finally {
       setIsLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+    const token = getToken();
+    if (!token) { router.push('/login'); return; }
+    fetchData(token);
+  }, [projectId, router, fetchData]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -105,18 +116,34 @@ export default function NotificationsPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const handleMarkAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const handleMarkAsRead = async (id: string) => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/pm/notifications/${id}/read`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data.success) setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch (error) { console.error('Failed to mark as read:', error); }
   };
 
-  const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const handleMarkAllAsRead = async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/notifications/read-all`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data.success) setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (error) { console.error('Failed to mark all as read:', error); }
   };
 
-  const handleDelete = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  const handleDelete = async (id: string) => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/pm/notifications/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data.success) setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (error) { console.error('Failed to delete notification:', error); }
   };
 
   const filteredNotifications = filter === 'unread' 

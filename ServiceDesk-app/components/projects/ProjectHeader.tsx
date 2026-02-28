@@ -23,6 +23,7 @@ import {
   Search
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import toast from 'react-hot-toast';
 
 interface ProjectHeaderProps {
   projectKey?: string;
@@ -194,27 +195,45 @@ export default function ProjectHeader({
     
     setIsInviting(true);
     try {
-      const promises = inviteEmails.map(email =>
-        fetch(`${API_URL}/pm/projects/${projectId}/members/invite`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ email, role: selectedRole }),
-        }).then(res => res.json())
+      const results = await Promise.all(
+        inviteEmails.map(async (email) => {
+          const res = await fetch(`${API_URL}/pm/projects/${projectId}/members/invite`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ email, role: selectedRole }),
+          });
+          const data = await res.json();
+          return { email, ...data };
+        })
       );
       
-      const results = await Promise.all(promises);
-      const hasError = results.some(r => !r.success);
+      const successes = results.filter(r => r.success);
+      const failures = results.filter(r => !r.success);
       
-      if (!hasError) {
+      if (successes.length > 0) {
+        toast.success(`${successes.length} member(s) added successfully`);
+      }
+      if (failures.length > 0) {
+        failures.forEach(f => {
+          const errMsg = f.error || (f.errors?.[0]?.message) || 'Failed to invite';
+          toast.error(`${f.email}: ${errMsg}`);
+        });
+      }
+      
+      if (failures.length === 0) {
         setShowAddPeopleModal(false);
         setInviteEmails([]);
         setSearchEmail('');
+      } else {
+        // Remove successfully invited emails, keep failed ones
+        setInviteEmails(failures.map(f => f.email));
       }
     } catch (error) {
       console.error('Failed to invite members:', error);
+      toast.error('Failed to send invites');
     } finally {
       setIsInviting(false);
     }

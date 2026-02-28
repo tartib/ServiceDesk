@@ -108,6 +108,8 @@ const LEAD_ROLES = ['supervisor', 'manager', 'product_owner', 'project_manager']
 const menuItems = [
   { icon: LayoutDashboard, labelKey: 'nav.homePage', href: '/homePage', roles: ALL_ROLES },
   { icon: FolderKanban, labelKey: 'nav.projects', href: '/projects', roles: ALL_ROLES },
+  { icon: ClipboardList, labelKey: 'nav.projectIntake', href: '/projects/intake', roles: LEAD_ROLES },
+  { icon: BarChart3, labelKey: 'nav.portfolioAnalytics', href: '/portfolio-analytics', roles: LEAD_ROLES },
   // { icon: CheckSquare, labelKey: 'nav.myTasks', href: '/tasks/my-tasks', roles: ALL_ROLES },
   // { icon: ClipboardList, labelKey: 'nav.allTasks', href: '/tasks', roles: LEAD_ROLES },
   { icon: HardDrive, labelKey: 'nav.drive', href: '/drive', roles: ALL_ROLES },
@@ -150,7 +152,7 @@ export default function Sidebar() {
       if (!token) return;
 
       try {
-        const response = await fetch('API_URL/pm/projects?limit=5', {
+        const response = await fetch(`${API_URL}/pm/projects?limit=5`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         

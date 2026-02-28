@@ -5,7 +5,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Flag,
-  Plus,
   MoreHorizontal,
   CheckCircle,
   Clock,
@@ -40,64 +39,19 @@ interface Project {
   key: string;
 }
 
-const defaultMilestones: Milestone[] = [
-  {
-    id: 'm1',
-    name: 'Requirements Sign-off',
-    description: 'All stakeholders approve the requirements document',
-    dueDate: '2024-01-15',
-    phaseId: 'requirements',
-    phaseName: 'Requirements',
-    status: 'completed',
-    completedAt: '2024-01-14',
-    owner: 'John Doe',
-    dependencies: [],
-  },
-  {
-    id: 'm2',
-    name: 'Design Review Complete',
-    description: 'Architecture and UI designs approved by technical lead',
-    dueDate: '2024-02-01',
-    phaseId: 'design',
-    phaseName: 'Design',
-    status: 'at_risk',
-    owner: 'Jane Smith',
-    dependencies: ['m1'],
-  },
-  {
-    id: 'm3',
-    name: 'MVP Development Complete',
-    description: 'Core features implemented and unit tested',
-    dueDate: '2024-03-15',
-    phaseId: 'development',
-    phaseName: 'Development',
-    status: 'upcoming',
-    owner: 'Dev Team',
-    dependencies: ['m2'],
-  },
-  {
-    id: 'm4',
-    name: 'UAT Sign-off',
-    description: 'User acceptance testing completed successfully',
-    dueDate: '2024-04-01',
-    phaseId: 'testing',
-    phaseName: 'Testing',
-    status: 'upcoming',
-    owner: 'QA Team',
-    dependencies: ['m3'],
-  },
-  {
-    id: 'm5',
-    name: 'Go Live',
-    description: 'Production deployment and launch',
-    dueDate: '2024-04-15',
-    phaseId: 'deployment',
-    phaseName: 'Deployment',
-    status: 'upcoming',
-    owner: 'DevOps Team',
-    dependencies: ['m4'],
-  },
-];
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const mapMilestone = (m: Record<string, any>): Milestone => ({
+  id: m._id,
+  name: m.name,
+  description: m.description,
+  dueDate: m.dueDate,
+  phaseId: m.phaseId,
+  status: m.status || 'upcoming',
+  completedAt: m.completedAt,
+  owner: m.owner?.profile ? `${m.owner.profile.firstName} ${m.owner.profile.lastName}`.trim() : m.owner?.email,
+  dependencies: m.dependencies || [],
+});
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 const statusConfig = {
   upcoming: { label: 'Upcoming', color: 'bg-blue-100 text-blue-700', icon: Clock, iconColor: 'text-blue-500' },
@@ -114,33 +68,35 @@ export default function MilestonesPage() {
   const { methodology } = useMethodology(projectId);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [milestones, setMilestones] = useState<Milestone[]>(defaultMilestones);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showNewMilestoneModal, setShowNewMilestoneModal] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
 
-  const fetchProject = useCallback(async (token: string) => {
+  const getToken = () => localStorage.getItem('token') || localStorage.getItem('accessToken');
+
+  const fetchData = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
+      const [projRes, msRes] = await Promise.all([
+        fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/milestones`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const projData = await projRes.json();
+      if (projData.success) setProject(projData.data.project);
+      const msData = await msRes.json();
+      if (msData.success) setMilestones((msData.data.milestones || []).map(mapMilestone));
     } catch (error) {
-      console.error('Failed to fetch project:', error);
+      console.error('Failed to fetch milestones:', error);
     } finally {
       setIsLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+    const token = getToken();
+    if (!token) { router.push('/login'); return; }
+    fetchData(token);
+  }, [projectId, router, fetchData]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -249,7 +205,6 @@ export default function MilestonesPage() {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-3">
           {milestones.map((milestone) => {
-            const StatusIcon = statusConfig[milestone.status].icon;
             const daysUntil = getDaysUntil(milestone.dueDate);
 
             return (

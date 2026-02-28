@@ -38,14 +38,26 @@ interface Project {
   key: string;
 }
 
-const defaultReports: Report[] = [
-  { id: 'r1', name: 'Sprint Velocity', type: 'velocity', description: 'Track team velocity across sprints', lastGenerated: '2024-01-15', schedule: 'weekly', icon: 'bar' },
-  { id: 'r2', name: 'Burndown Chart', type: 'burndown', description: 'Sprint progress and remaining work', lastGenerated: '2024-01-15', schedule: 'daily', icon: 'line' },
-  { id: 'r3', name: 'Sprint Summary', type: 'sprint', description: 'Completed vs planned work per sprint', lastGenerated: '2024-01-14', schedule: 'weekly', icon: 'pie' },
-  { id: 'r4', name: 'Team Workload', type: 'team', description: 'Work distribution across team members', lastGenerated: '2024-01-15', schedule: 'weekly', icon: 'bar' },
-  { id: 'r5', name: 'Cycle Time Analysis', type: 'custom', description: 'Time from start to completion', lastGenerated: '2024-01-12', schedule: 'monthly', icon: 'line' },
-  { id: 'r6', name: 'Issue Type Distribution', type: 'custom', description: 'Breakdown by issue type', lastGenerated: '2024-01-10', schedule: 'manual', icon: 'pie' },
-];
+interface BackendReport {
+  _id: string;
+  name: string;
+  type: Report['type'];
+  description: string;
+  schedule: Report['schedule'];
+  icon: Report['icon'];
+  lastGeneratedAt?: string;
+  createdAt: string;
+}
+
+const mapReport = (r: BackendReport): Report => ({
+  id: r._id,
+  name: r.name,
+  type: r.type,
+  description: r.description,
+  lastGenerated: r.lastGeneratedAt || r.createdAt,
+  schedule: r.schedule,
+  icon: r.icon || 'bar',
+});
 
 const iconMap = {
   bar: BarChart3,
@@ -62,33 +74,51 @@ export default function ReportsPage() {
   const { methodology } = useMethodology(projectId);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [reports] = useState<Report[]>(defaultReports);
+  const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
 
-  const fetchProject = useCallback(async (token: string) => {
+  const getToken = () => localStorage.getItem('token') || localStorage.getItem('accessToken');
+
+  const fetchData = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
+      const [projRes, reportsRes] = await Promise.all([
+        fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/reports`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const projData = await projRes.json();
+      if (projData.success) setProject(projData.data.project);
+      const reportsData = await reportsRes.json();
+      if (reportsData.success) setReports((reportsData.data.reports || []).map(mapReport));
     } catch (error) {
-      console.error('Failed to fetch project:', error);
+      console.error('Failed to fetch reports:', error);
     } finally {
       setIsLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+    const token = getToken();
+    if (!token) { router.push('/login'); return; }
+    fetchData(token);
+  }, [projectId, router, fetchData]);
+
+  const handleCreateReport = async () => {
+    const name = prompt('Report name:');
+    if (!name) return;
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/reports`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, type: 'custom', description: name, schedule: 'manual', icon: 'bar' }),
+      });
+      const data = await res.json();
+      if (data.success) fetchData(token);
+    } catch (error) { console.error('Failed to create report:', error); }
+  };
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -134,7 +164,10 @@ export default function ReportsPage() {
               <option value="quarter">Last 90 days</option>
               <option value="year">Last year</option>
             </select>
-            <button className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+            <button
+              onClick={handleCreateReport}
+              className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
               <Plus className="h-4 w-4" />
               Create Report
             </button>

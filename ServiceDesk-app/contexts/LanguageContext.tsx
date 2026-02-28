@@ -33,8 +33,12 @@ import enWorkflows from '@/locales/en/workflows.json';
 import arWorkflows from '@/locales/ar/workflows.json';
 import enVacations from '@/locales/en/vacations.json';
 import arVacations from '@/locales/ar/vacations.json';
+import enIntake from '@/locales/en/intake.json';
+import arIntake from '@/locales/ar/intake.json';
+import enPortfolio from '@/locales/en/portfolio.json';
+import arPortfolio from '@/locales/ar/portfolio.json';
 
-type Messages = typeof enRoot & typeof enCommon & typeof enDashboard & typeof enReports & typeof enUsers & typeof enItsm & typeof enInventory & typeof enCategories & typeof enRoadmap & typeof enProjects & typeof enSettings & typeof enProfile & typeof enDrive & typeof enWorkflows & typeof enVacations;
+type Messages = typeof enRoot & typeof enCommon & typeof enDashboard & typeof enReports & typeof enUsers & typeof enItsm & typeof enInventory & typeof enCategories & typeof enRoadmap & typeof enProjects & typeof enSettings & typeof enProfile & typeof enDrive & typeof enWorkflows & typeof enVacations & typeof enIntake & typeof enPortfolio;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deepMerge(...objects: Record<string, any>[]): Record<string, any> {
@@ -59,8 +63,8 @@ function deepMerge(...objects: Record<string, any>[]): Record<string, any> {
 }
 
 const messages: Record<Locale, Messages> = {
-  en: deepMerge(enRoot, enCommon, enDashboard, enReports, enUsers, enItsm, enInventory, enCategories, enRoadmap, enProjects, enSettings, enProfile, enDrive, enWorkflows, enVacations) as Messages,
-  ar: deepMerge(arRoot, arCommon, arDashboard, arReports, arUsers, arItsm, arInventory, arCategories, arRoadmap, arProjects, arSettings, arProfile, arDrive, arWorkflows, arVacations) as Messages,
+  en: deepMerge(enRoot, enCommon, enDashboard, enReports, enUsers, enItsm, enInventory, enCategories, enRoadmap, enProjects, enSettings, enProfile, enDrive, enWorkflows, enVacations, enIntake, enPortfolio) as Messages,
+  ar: deepMerge(arRoot, arCommon, arDashboard, arReports, arUsers, arItsm, arInventory, arCategories, arRoadmap, arProjects, arSettings, arProfile, arDrive, arWorkflows, arVacations, arIntake, arPortfolio) as Messages,
 };
 
 interface LanguageContextType {

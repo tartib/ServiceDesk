@@ -13,7 +13,7 @@ router.post(
   [
     param('projectId').isMongoId().withMessage('Invalid project ID'),
     body('title').trim().notEmpty().withMessage('Title is required'),
-    body('type').optional().isIn(['epic', 'story', 'task', 'bug', 'feature', 'subtask', 'change', 'incident', 'problem']),
+    body('type').optional().isString(),
     body('priority').optional().isIn(['critical', 'high', 'medium', 'low']),
     body('assignee').optional({ nullable: true, checkFalsy: true }).isMongoId(),
     body('storyPoints').optional({ nullable: true, checkFalsy: true }).isNumeric(),
@@ -51,7 +51,7 @@ const updateTaskValidation = [
   param('taskId').isMongoId().withMessage('Invalid task ID'),
   body('title').optional().trim().notEmpty(),
   body('description').optional(),
-  body('type').optional().isIn(['epic', 'story', 'task', 'bug', 'feature', 'subtask', 'change', 'incident', 'problem']),
+  body('type').optional().isString(),
   body('priority').optional().isIn(['critical', 'high', 'medium', 'low']),
   body('assignee').optional({ nullable: true, checkFalsy: true }).isMongoId(),
   body('storyPoints').optional({ nullable: true, checkFalsy: true }).isNumeric(),
@@ -104,6 +104,13 @@ router.delete(
   (req: Request, res: Response) => taskController.deleteTask(req as any, res)
 );
 
+// Clone task
+router.post(
+  '/tasks/:taskId/clone',
+  [param('taskId').isMongoId().withMessage('Invalid task ID')],
+  (req: Request, res: Response) => taskController.cloneTask(req as any, res)
+);
+
 // ==================== WATCHERS ====================
 
 // Get watchers
@@ -138,6 +145,110 @@ router.delete(
   '/tasks/:taskId/watchers',
   [param('taskId').isMongoId().withMessage('Invalid task ID')],
   (req: Request, res: Response) => taskController.removeWatcher(req as any, res)
+);
+
+// ==================== SUBTASK PROGRESS ====================
+
+// Get subtask progress for a task
+router.get(
+  '/tasks/:taskId/progress',
+  [param('taskId').isMongoId().withMessage('Invalid task ID')],
+  (req: Request, res: Response) => taskController.getSubtaskProgress(req as any, res)
+);
+
+// ==================== TASK LINKS ====================
+
+// Get task links
+router.get(
+  '/tasks/:taskId/links',
+  [param('taskId').isMongoId().withMessage('Invalid task ID')],
+  (req: Request, res: Response) => taskController.getTaskLinks(req as any, res)
+);
+
+// Add task link
+router.post(
+  '/tasks/:taskId/links',
+  [
+    param('taskId').isMongoId().withMessage('Invalid task ID'),
+    body('type').notEmpty().withMessage('Link type is required'),
+    body('targetIssueKey').notEmpty().withMessage('Target issue key is required'),
+  ],
+  (req: Request, res: Response) => taskController.addTaskLink(req as any, res)
+);
+
+// Remove task link
+router.delete(
+  '/tasks/:taskId/links/:linkId',
+  [
+    param('taskId').isMongoId().withMessage('Invalid task ID'),
+    param('linkId').isMongoId().withMessage('Invalid link ID'),
+  ],
+  (req: Request, res: Response) => taskController.removeTaskLink(req as any, res)
+);
+
+// ==================== WEB LINKS ====================
+
+// Add web link
+router.post(
+  '/tasks/:taskId/web-links',
+  [
+    param('taskId').isMongoId().withMessage('Invalid task ID'),
+    body('url').notEmpty().withMessage('URL is required'),
+    body('title').notEmpty().withMessage('Title is required'),
+  ],
+  (req: Request, res: Response) => taskController.addWebLink(req as any, res)
+);
+
+// Remove web link
+router.delete(
+  '/tasks/:taskId/web-links/:linkId',
+  [
+    param('taskId').isMongoId().withMessage('Invalid task ID'),
+    param('linkId').isMongoId().withMessage('Invalid link ID'),
+  ],
+  (req: Request, res: Response) => taskController.removeWebLink(req as any, res)
+);
+
+// ==================== ISSUE TYPES (WORK TYPES) ====================
+
+// Get project issue types
+router.get(
+  '/projects/:projectId/issue-types',
+  [param('projectId').isMongoId().withMessage('Invalid project ID')],
+  (req: Request, res: Response) => taskController.getIssueTypes(req as any, res)
+);
+
+// Add issue type
+router.post(
+  '/projects/:projectId/issue-types',
+  [
+    param('projectId').isMongoId().withMessage('Invalid project ID'),
+    body('id').trim().notEmpty().withMessage('ID is required'),
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('icon').trim().notEmpty().withMessage('Icon is required'),
+    body('color').trim().notEmpty().withMessage('Color is required'),
+  ],
+  (req: Request, res: Response) => taskController.addIssueType(req as any, res)
+);
+
+// Update issue type
+router.patch(
+  '/projects/:projectId/issue-types/:typeId',
+  [
+    param('projectId').isMongoId().withMessage('Invalid project ID'),
+    param('typeId').notEmpty().withMessage('Type ID is required'),
+  ],
+  (req: Request, res: Response) => taskController.updateIssueType(req as any, res)
+);
+
+// Delete issue type
+router.delete(
+  '/projects/:projectId/issue-types/:typeId',
+  [
+    param('projectId').isMongoId().withMessage('Invalid project ID'),
+    param('typeId').notEmpty().withMessage('Type ID is required'),
+  ],
+  (req: Request, res: Response) => taskController.deleteIssueType(req as any, res)
 );
 
 export default router;

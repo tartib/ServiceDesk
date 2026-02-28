@@ -320,6 +320,8 @@ export const startVoting = async (req: PMAuthRequest, res: Response): Promise<vo
     }
 
     retrospective.status = 'voting';
+    retrospective.votingStartedAt = new Date();
+    retrospective.votingDurationMinutes = req.body.votingDurationMinutes || 15;
     await retrospective.save();
 
     res.status(200).json({

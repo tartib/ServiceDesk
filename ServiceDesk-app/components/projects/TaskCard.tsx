@@ -27,6 +27,9 @@ interface TaskCardProps {
   onClick?: () => void;
   variant?: 'board' | 'list' | 'compact';
   showStatus?: boolean;
+  parentKey?: string;
+  subtaskCount?: number;
+  subtaskDoneCount?: number;
 }
 
 const typeIcons: Record<string, string> = {
@@ -71,6 +74,9 @@ export default function TaskCard({
   onClick,
   variant = 'board',
   showStatus = false,
+  parentKey,
+  subtaskCount,
+  subtaskDoneCount,
 }: TaskCardProps) {
   const typeIcon = typeIcons[type] || '✓';
   const priorityColor = priorityColors[priority] || 'text-gray-500';
@@ -104,6 +110,11 @@ export default function TaskCard({
         onClick={onClick}
         className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer group"
       >
+        {parentKey && (
+          <div className="flex items-center gap-1 mb-1.5">
+            <span className="text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded font-medium">↑ {parentKey}</span>
+          </div>
+        )}
         <p className="text-sm text-gray-900 mb-3 line-clamp-2">{title}</p>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -115,6 +126,11 @@ export default function TaskCard({
             {storyPoints !== undefined && (
               <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                 {storyPoints}
+              </span>
+            )}
+            {subtaskCount !== undefined && subtaskCount > 0 && (
+              <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex items-center gap-0.5" title={`${subtaskDoneCount || 0}/${subtaskCount} subtasks done`}>
+                ☐ {subtaskDoneCount || 0}/{subtaskCount}
               </span>
             )}
           </div>
@@ -138,6 +154,9 @@ export default function TaskCard({
         />
         <span className="text-sm shrink-0">{typeIcon}</span>
         <span className="text-blue-600 text-sm font-medium shrink-0">{taskKey}</span>
+        {parentKey && (
+          <span className="text-[10px] text-purple-600 bg-purple-50 px-1 py-0.5 rounded font-medium shrink-0">↑ {parentKey}</span>
+        )}
         <span className="flex-1 text-sm text-gray-900 truncate">{title}</span>
         {showStatus && status && (
           <span className={`px-2 py-0.5 text-xs rounded shrink-0 ${statusColor}`}>
@@ -146,6 +165,11 @@ export default function TaskCard({
         )}
         <span className="text-gray-400 shrink-0">—</span>
         <span className={`${priorityColor} shrink-0`}>=</span>
+        {subtaskCount !== undefined && subtaskCount > 0 && (
+          <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded shrink-0" title={`${subtaskDoneCount || 0}/${subtaskCount} subtasks done`}>
+            ☐ {subtaskDoneCount || 0}/{subtaskCount}
+          </span>
+        )}
         {renderAssignee()}
       </div>
     );

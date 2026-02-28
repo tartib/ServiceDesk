@@ -103,6 +103,16 @@ class SocketService {
         });
       });
 
+      // Join portfolio analytics room
+      socket.on('join:portfolio', () => {
+        socket.join('portfolio');
+        console.log(`User ${socket.userId} joined portfolio analytics`);
+      });
+
+      socket.on('leave:portfolio', () => {
+        socket.leave('portfolio');
+      });
+
       socket.on('disconnect', () => {
         console.log(`User disconnected: ${socket.userId}`);
         if (socket.userId) {
@@ -152,19 +162,23 @@ class SocketService {
   // Task events
   taskCreated(projectId: string, task: unknown): void {
     this.emitToProject(projectId, 'task:created', task);
+    this.portfolioStatsUpdated();
   }
 
   taskUpdated(projectId: string, taskId: string, task: unknown): void {
     this.emitToProject(projectId, 'task:updated', task);
     this.emitToTask(taskId, 'task:updated', task);
+    this.portfolioStatsUpdated();
   }
 
   taskDeleted(projectId: string, taskId: string): void {
     this.emitToProject(projectId, 'task:deleted', { taskId });
+    this.portfolioStatsUpdated();
   }
 
   taskMoved(projectId: string, task: unknown): void {
     this.emitToProject(projectId, 'task:moved', task);
+    this.portfolioStatsUpdated();
   }
 
   // Comment events
@@ -183,11 +197,21 @@ class SocketService {
   // Sprint events
   sprintUpdated(projectId: string, sprint: unknown): void {
     this.emitToProject(projectId, 'sprint:updated', sprint);
+    this.portfolioStatsUpdated();
   }
 
   // Notification
   sendNotification(userId: string, notification: unknown): void {
     this.emitToUser(userId, 'notification', notification);
+  }
+
+  // ==================== PORTFOLIO ANALYTICS EVENTS ====================
+
+  // Lightweight signal to portfolio dashboard to refetch
+  portfolioStatsUpdated(): void {
+    if (this.io) {
+      this.io.to('portfolio').emit('portfolio:stats:updated', { timestamp: Date.now() });
+    }
   }
 
   // ==================== PLANNING POKER EVENTS ====================

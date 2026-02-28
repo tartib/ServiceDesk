@@ -1,8 +1,9 @@
 'use client';
 
 import { API_URL } from '@/lib/api/config';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useProjectIssueTypes } from '@/hooks/useProjectIssueTypes';
 import {
   X,
   ExternalLink,
@@ -78,6 +79,12 @@ interface Task {
     status?: string;
     startDate?: string;
     endDate?: string;
+  };
+  parentId?: {
+    _id: string;
+    key: string;
+    title: string;
+    status?: TaskStatus;
   };
   parent?: {
     _id: string;
@@ -311,7 +318,7 @@ interface Watcher {
   };
 }
 
-const issueTypes = [
+const fallbackIssueTypes = [
   { id: 'epic', name: 'Epic', icon: '⚡', color: 'bg-purple-100 text-purple-700' },
   { id: 'story', name: 'Story', icon: '📖', color: 'bg-green-100 text-green-700' },
   { id: 'task', name: 'Task', icon: '✓', color: 'bg-blue-100 text-blue-700' },
@@ -349,6 +356,18 @@ export function TaskDetailPanel({
 }: TaskDetailPanelProps) {
   const router = useRouter();
   const { t } = useLanguage();
+  const { issueTypes: projectIssueTypes } = useProjectIssueTypes(projectId);
+  const issueTypes = useMemo(() => {
+    if (projectIssueTypes.length > 0) {
+      return projectIssueTypes.map(it => ({
+        id: it.id,
+        name: it.name,
+        icon: it.icon,
+        color: it.color.replace('text-', 'bg-').replace('-400', '-100') + ' ' + it.color.replace('-400', '-700'),
+      }));
+    }
+    return fallbackIssueTypes;
+  }, [projectIssueTypes]);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   // Prefer taskDetail (fully populated from detail API) over task (from list)
   const activeTask: Task = taskDetail || task;
@@ -460,6 +479,7 @@ export function TaskDetailPanel({
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<SearchResult | null>(null);
   const [linkedIssues, setLinkedIssues] = useState<LinkedIssue[]>([]);
+  const [subtasks, setSubtasks] = useState<{ _id: string; key: string; title: string; status: { id: string; name: string; category?: string }; assignee?: { _id: string; profile: { firstName: string; lastName: string; avatar?: string } } }[]>([]);
   const [showCreateLinkedModal, setShowCreateLinkedModal] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const relationshipDropdownRef = useRef<HTMLDivElement>(null);
@@ -475,6 +495,11 @@ export function TaskDetailPanel({
   const [quickAddSearch, setQuickAddSearch] = useState('');
   const [focusedQuickAddIndex, setFocusedQuickAddIndex] = useState<number>(-1);
   const [showCreateSubtaskModal, setShowCreateSubtaskModal] = useState(false);
+  const [showLinkSubtaskModal, setShowLinkSubtaskModal] = useState(false);
+  const [showSubtaskAddDropdown, setShowSubtaskAddDropdown] = useState(false);
+  const [linkSubtaskSearch, setLinkSubtaskSearch] = useState('');
+  const [linkSubtaskResults, setLinkSubtaskResults] = useState<{ _id: string; key: string; title: string; type: string; status: { id: string; name: string; category?: string } }[]>([]);
+  const [isLinkingSubtask, setIsLinkingSubtask] = useState(false);
   const [showAddWebLinkModal, setShowAddWebLinkModal] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [webLinkUrl, setWebLinkUrl] = useState('');
@@ -495,6 +520,10 @@ export function TaskDetailPanel({
   const [isWatching, setIsWatching] = useState(false);
   const [showWatchersDropdown, setShowWatchersDropdown] = useState(false);
   const [epicSearch, setEpicSearch] = useState('');
+  const [showParentDropdown, setShowParentDropdown] = useState(false);
+  const [parentSearch, setParentSearch] = useState('');
+  const [availableParentTasks, setAvailableParentTasks] = useState<{ _id: string; key: string; title: string; type: string }[]>([]);
+  const parentDropdownRef = useRef<HTMLDivElement>(null);
   const epicDropdownRef = useRef<HTMLDivElement>(null);
   const issueTypeDropdownRef = useRef<HTMLDivElement>(null);
   const kebabMenuRef = useRef<HTMLDivElement>(null);
@@ -523,33 +552,61 @@ export function TaskDetailPanel({
     item.label.toLowerCase().includes(quickAddSearch.toLowerCase())
   );
 
-  // Mock activity data - in real implementation, fetch from API
-  const [activities] = useState<ActivityItem[]>([
-    {
-      _id: '1',
-      type: 'created',
-      author: { _id: 'u1', profile: { firstName: 'John', lastName: 'Doe' } },
-      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      _id: '2',
-      type: 'status_change',
-      author: { _id: 'u1', profile: { firstName: 'John', lastName: 'Doe' } },
-      timestamp: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString(),
-      field: 'status',
-      oldValue: { id: 'idea', name: 'Idea' },
-      newValue: { id: 'todo', name: 'To Do' },
-    },
-    {
-      _id: '3',
-      type: 'sprint_change',
-      author: { _id: 'u2', profile: { firstName: 'Jane', lastName: 'Smith' } },
-      timestamp: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
-      field: 'sprint',
-      oldValue: { id: 's1', name: 'Sprint 1' },
-      newValue: { id: 's2', name: 'Sprint 2' },
-    },
-  ]);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0);
+
+  const refreshActivities = useCallback(() => {
+    setTimeout(() => setActivityRefreshKey(k => k + 1), 500);
+  }, []);
+
+  // Fetch real activity data from API
+  useEffect(() => {
+    const fetchActivities = async () => {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}/activity`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success) {
+          const mapped: ActivityItem[] = (data.data.activities || []).map((a: { _id: string; type: string; actor: { _id: string; name?: string; email?: string; profile?: { firstName: string; lastName: string; avatar?: string } }; createdAt: string; description: string; metadata?: { field?: string; oldValue?: unknown; newValue?: unknown } }) => {
+            // Map backend activity types to frontend types
+            const typeMap: Record<string, ActivityItem['type']> = {
+              task_created: 'created',
+              task_updated: 'field_update',
+              task_deleted: 'field_update',
+              status_changed: 'status_change',
+              assignee_changed: 'field_update',
+              priority_changed: 'field_update',
+              comment_added: 'comment',
+            };
+            const actorProfile = a.actor?.profile?.firstName
+              ? a.actor.profile
+              : { firstName: a.actor?.name || a.actor?.email || 'Unknown', lastName: '', avatar: a.actor?.profile?.avatar };
+            return {
+              _id: a._id,
+              type: typeMap[a.type] || 'field_update',
+              author: {
+                _id: a.actor?._id || '',
+                profile: actorProfile,
+              },
+              timestamp: a.createdAt,
+              field: a.metadata?.field as string | undefined,
+              oldValue: a.metadata?.oldValue as string | { id: string; name: string } | undefined,
+              newValue: a.metadata?.newValue as string | { id: string; name: string } | undefined,
+            };
+          });
+          setActivities(mapped);
+        }
+      } catch (error) {
+        console.error('Failed to fetch activities:', error);
+      }
+    };
+
+    fetchActivities();
+  }, [activeTask._id, activityRefreshKey]);
 
   const closeAllDropdowns = () => {
     setShowAssigneeDropdown(false);
@@ -899,7 +956,7 @@ export function TaskDetailPanel({
         body: JSON.stringify({
           title: newSubtaskTitle.trim(),
           type: 'subtask',
-          parent: activeTask._id,
+          parentId: activeTask._id,
         }),
       });
 
@@ -911,12 +968,95 @@ export function TaskDetailPanel({
       toast.success(t('projects.board.subtaskCreated') || 'Subtask created!');
       setShowCreateSubtaskModal(false);
       setNewSubtaskTitle('');
+      // Refresh subtasks list
+      const subtasksRes = await fetch(
+        `${API_URL}/pm/projects/${projectId}/tasks?parentId=${activeTask._id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const subtasksData = await subtasksRes.json();
+      if (subtasksData.success) {
+        setSubtasks(subtasksData.data.tasks || []);
+      }
       onTaskUpdate();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create subtask';
       toast.error(errorMessage);
     }
   }, [newSubtaskTitle, projectId, activeTask._id, t, onTaskUpdate]);
+
+  // Search for tasks to link as subtask
+  const handleSearchSubtaskToLink = useCallback(async (query: string) => {
+    setLinkSubtaskSearch(query);
+    if (!query.trim()) {
+      setLinkSubtaskResults([]);
+      return;
+    }
+
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        `${API_URL}/pm/projects/${projectId}/tasks?search=${encodeURIComponent(query)}&limit=20`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (data.success) {
+        const existingSubtaskIds = subtasks.map(s => s._id);
+        const filtered = (data.data.tasks || []).filter(
+          (t: { _id: string; type: string }) =>
+            t._id !== activeTask._id && !existingSubtaskIds.includes(t._id)
+        );
+        setLinkSubtaskResults(filtered);
+      }
+    } catch (error) {
+      console.error('Failed to search tasks for linking:', error);
+    }
+  }, [projectId, activeTask._id, subtasks]);
+
+  // Link an existing task as subtask by setting its parentId
+  const handleLinkExistingSubtask = useCallback(async (taskId: string) => {
+    const token = getToken();
+    if (!token) return;
+
+    setIsLinkingSubtask(true);
+    try {
+      const response = await fetch(`${API_URL}/pm/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ parentId: activeTask._id }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to link task');
+      }
+
+      toast.success(t('projects.board.taskLinkedAsSubtask') || 'Task linked as subtask!');
+      setShowLinkSubtaskModal(false);
+      setLinkSubtaskSearch('');
+      setLinkSubtaskResults([]);
+
+      // Refresh subtasks list
+      const subtasksRes = await fetch(
+        `${API_URL}/pm/projects/${projectId}/tasks?parentId=${activeTask._id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const subtasksData = await subtasksRes.json();
+      if (subtasksData.success) {
+        setSubtasks(subtasksData.data.tasks || []);
+      }
+      onTaskUpdate();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to link task';
+      toast.error(errorMessage);
+    } finally {
+      setIsLinkingSubtask(false);
+    }
+  }, [projectId, activeTask._id, t, onTaskUpdate]);
 
   const handleAddWebLink = useCallback(async () => {
     if (!webLinkUrl.trim()) return;
@@ -1016,6 +1156,82 @@ export function TaskDetailPanel({
     fetchEpics();
   }, [projectId]);
 
+  // Fetch available parent tasks
+  useEffect(() => {
+    const fetchParentTasks = async () => {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${API_URL}/pm/projects/${projectId}/tasks?limit=100`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success) {
+          setAvailableParentTasks(
+            (data.data.tasks || [])
+              .filter((t: { _id: string; type: string }) => t._id !== activeTask._id && t.type !== 'subtask')
+              .map((t: { _id: string; key: string; title: string; type: string }) => ({
+                _id: t._id,
+                key: t.key,
+                title: t.title,
+                type: t.type,
+              }))
+          );
+        }
+      } catch (error) {
+        console.error('Failed to fetch parent tasks:', error);
+      }
+    };
+
+    fetchParentTasks();
+  }, [projectId, activeTask._id]);
+
+  // Fetch subtasks
+  useEffect(() => {
+    const fetchSubtasks = async () => {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        const response = await fetch(
+          `${API_URL}/pm/projects/${projectId}/tasks?parentId=${activeTask._id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await response.json();
+        if (data.success) {
+          setSubtasks(data.data.tasks || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch subtasks:', error);
+      }
+    };
+
+    fetchSubtasks();
+  }, [activeTask._id, projectId]);
+
+  // Fetch linked issues
+  useEffect(() => {
+    const fetchLinkedIssues = async () => {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}/links`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success) {
+          setLinkedIssues(data.data.links || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch linked issues:', error);
+      }
+    };
+
+    fetchLinkedIssues();
+  }, [activeTask._id]);
+
   // Fetch watchers
   useEffect(() => {
     const fetchWatchers = async () => {
@@ -1108,11 +1324,12 @@ export function TaskDetailPanel({
       toast.success(t('projects.board.issueTypeChanged') || 'Issue type changed!');
       setShowIssueTypeDropdown(false);
       onTaskUpdate();
+      refreshActivities();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to change issue type';
       toast.error(errorMessage);
     }
-  }, [activeTask._id, t, onTaskUpdate]);
+  }, [activeTask._id, t, onTaskUpdate, refreshActivities]);
 
   // Change parent epic
   const handleChangeEpic = useCallback(async (epicId: string | null) => {
@@ -1140,6 +1357,36 @@ export function TaskDetailPanel({
       onTaskUpdate();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to change epic';
+      toast.error(errorMessage);
+    }
+  }, [activeTask._id, t, onTaskUpdate]);
+
+  // Change parent task
+  const handleChangeParent = useCallback(async (parentId: string | null) => {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ parentId: parentId || '' }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to change parent');
+      }
+
+      toast.success(parentId ? (t('projects.board.parentAssigned') || 'Parent task assigned!') : (t('projects.board.parentRemoved') || 'Parent task removed!'));
+      setShowParentDropdown(false);
+      setParentSearch('');
+      onTaskUpdate();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to change parent';
       toast.error(errorMessage);
     }
   }, [activeTask._id, t, onTaskUpdate]);
@@ -1236,6 +1483,7 @@ export function TaskDetailPanel({
 
       toast.success(t('projects.board.statusUpdated') || 'Status updated!');
       onTaskUpdate();
+      refreshActivities();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update status';
       toast.error(errorMessage);
@@ -1243,7 +1491,7 @@ export function TaskDetailPanel({
       setShowStatusDropdown(false);
       setFocusedStatusIndex(-1);
     }
-  }, [canEditStatus, activeTask._id, onTaskUpdate, t]);
+  }, [canEditStatus, activeTask._id, onTaskUpdate, t, refreshActivities]);
 
   const handleStatusKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!showStatusDropdown) {
@@ -1306,7 +1554,7 @@ export function TaskDetailPanel({
     setNewStatusName('');
     setNewStatusCategory('todo');
     setShowCreateStatusModal(false);
-    toast.success(t('projects.board.statusCreated') || 'Status created!');
+    toast.success(t('projects.board.statusCreatedSuccess') || 'Status created!');
   }, [newStatusName, newStatusCategory, t]);
 
   // Get current status styling
@@ -1337,6 +1585,7 @@ export function TaskDetailPanel({
 
       toast.success(t('projects.board.taskUpdated') || 'Task updated successfully!');
       onTaskUpdate();
+      refreshActivities();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update task';
       toast.error(errorMessage);
@@ -1354,7 +1603,7 @@ export function TaskDetailPanel({
 
     try {
       // Get current user
-      const response = await fetch('API_URL/auth/me', {
+      const response = await fetch(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -2065,9 +2314,9 @@ export function TaskDetailPanel({
                     onChange={(e) => setNewStatusCategory(e.target.value as 'todo' | 'in_progress' | 'done')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="todo">{t('projects.board.categoryTodo') || 'To Do'}</option>
-                    <option value="in_progress">{t('projects.board.categoryInProgress') || 'In Progress'}</option>
-                    <option value="done">{t('projects.board.categoryDone') || 'Done'}</option>
+                    <option value="todo">{t('projects.board.statusCatTodo') || 'To Do'}</option>
+                    <option value="in_progress">{t('projects.board.statusCatInProgress') || 'In Progress'}</option>
+                    <option value="done">{t('projects.board.statusCatDone') || 'Done'}</option>
                   </select>
                 </div>
               </div>
@@ -2450,15 +2699,195 @@ export function TaskDetailPanel({
           />
         </div>
 
+        {/* Parent Task */}
+        <div className="mb-6" ref={parentDropdownRef}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-medium text-gray-900 flex items-center gap-1.5">
+              <GitBranch className="h-4 w-4" />
+              {t('projects.board.parentTask') || 'Parent Task'}
+            </h3>
+          </div>
+          <div className="relative">
+            {activeTask.parentId ? (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50">
+                <span className="text-xs">{issueTypeIcons[activeTask.parentId.status?.category || '']?.icon || '✓'}</span>
+                <a
+                  href={`/projects/${projectId}/board?selectedIssue=${activeTask.parentId.key}`}
+                  className="text-blue-600 text-xs font-medium hover:underline"
+                >
+                  {activeTask.parentId.key}
+                </a>
+                <span className="text-sm text-gray-900 truncate flex-1">{activeTask.parentId.title}</span>
+                <button
+                  onClick={() => handleChangeParent(null)}
+                  className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                  title={t('projects.board.removeParent') || 'Remove parent'}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => setShowParentDropdown(!showParentDropdown)}
+                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                  title={t('projects.board.changeParent') || 'Change parent'}
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowParentDropdown(!showParentDropdown)}
+                className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>{t('projects.board.setParent') || 'Set parent task'}</span>
+              </button>
+            )}
+
+            {showParentDropdown && (
+              <div className="absolute start-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-full min-w-[280px]">
+                <div className="p-2 border-b border-gray-100">
+                  <div className="relative">
+                    <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={parentSearch}
+                      onChange={(e) => setParentSearch(e.target.value)}
+                      placeholder={t('projects.board.searchTasks') || 'Search tasks...'}
+                      className="w-full ps-9 pe-3 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+                <ul className="max-h-48 overflow-y-auto py-1">
+                  {activeTask.parentId && (
+                    <li>
+                      <button
+                        onClick={() => handleChangeParent(null)}
+                        className="w-full px-3 py-2 text-start text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        {t('projects.board.removeParent') || 'Remove parent'}
+                      </button>
+                    </li>
+                  )}
+                  {availableParentTasks
+                    .filter(t => t.key.toLowerCase().includes(parentSearch.toLowerCase()) || t.title.toLowerCase().includes(parentSearch.toLowerCase()))
+                    .map((task) => (
+                    <li key={task._id}>
+                      <button
+                        onClick={() => handleChangeParent(task._id)}
+                        className={`w-full px-3 py-2 text-start text-sm hover:bg-gray-100 flex items-center gap-2 ${
+                          activeTask.parentId?._id === task._id ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <span className="text-xs">{issueTypeIcons[task.type]?.icon || '✓'}</span>
+                        <span className="font-medium text-blue-600 shrink-0">{task.key}</span>
+                        <span className="text-gray-700 truncate flex-1">{task.title}</span>
+                        {activeTask.parentId?._id === task._id && <Check className="h-4 w-4 text-blue-600 shrink-0" />}
+                      </button>
+                    </li>
+                  ))}
+                  {availableParentTasks.filter(t => t.key.toLowerCase().includes(parentSearch.toLowerCase()) || t.title.toLowerCase().includes(parentSearch.toLowerCase())).length === 0 && (
+                    <li className="px-3 py-2 text-sm text-gray-500">
+                      {t('projects.board.noTasksFound') || 'No tasks found'}
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Subtasks */}
         <div className="mb-6">
-          <h3 className="font-medium text-gray-900 mb-2">{t('projects.board.subtasks') || 'Subtasks'}</h3>
-          <button 
-            onClick={() => setShowCreateSubtaskModal(true)}
-            className="text-blue-600 text-sm hover:underline"
-          >
-            {t('projects.board.addSubtask') || 'Add subtask'}
-          </button>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-gray-900">
+              {t('projects.board.subtasks') || 'Subtasks'}
+              {subtasks.length > 0 && (
+                <span className="text-gray-500 font-normal ml-2">({subtasks.length})</span>
+              )}
+            </h3>
+            <div className="relative">
+              <button 
+                onClick={() => setShowSubtaskAddDropdown(!showSubtaskAddDropdown)}
+                className="text-blue-600 text-sm hover:underline flex items-center gap-1"
+              >
+                <span>+</span> {t('projects.board.addSubtask') || 'Add subtask'}
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+              {showSubtaskAddDropdown && (
+                <div className="absolute end-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-56">
+                  <button
+                    onClick={() => { setShowCreateSubtaskModal(true); setShowSubtaskAddDropdown(false); }}
+                    className="w-full px-3 py-2.5 text-start text-sm hover:bg-gray-100 flex items-center gap-2 rounded-t-lg"
+                  >
+                    <Plus className="h-4 w-4 text-blue-600" />
+                    <span>{t('projects.board.createSubtask') || 'Create subtask'}</span>
+                  </button>
+                  <button
+                    onClick={() => { setShowLinkSubtaskModal(true); setShowSubtaskAddDropdown(false); }}
+                    className="w-full px-3 py-2.5 text-start text-sm hover:bg-gray-100 flex items-center gap-2 rounded-b-lg"
+                  >
+                    <GitCommit className="h-4 w-4 text-purple-600" />
+                    <span>{t('projects.board.linkExistingTask') || 'Link existing task'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Subtask Progress Bar */}
+          {subtasks.length > 0 && (() => {
+            const doneCount = subtasks.filter(s => s.status?.category?.toLowerCase() === 'done').length;
+            const percent = Math.round((doneCount / subtasks.length) * 100);
+            return (
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                  <span>{doneCount}/{subtasks.length} {t('projects.board.completed') || 'completed'}</span>
+                  <span className="font-medium">{percent}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all duration-300 ${percent === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })()}
+
+          {subtasks.length > 0 ? (
+            <div className="space-y-1">
+              {subtasks.map((sub) => {
+                const statusCategory = sub.status?.category?.toLowerCase() || 'todo';
+                const statusColor = statusCategory === 'done'
+                  ? 'bg-green-100 text-green-700'
+                  : statusCategory === 'in_progress'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-gray-100 text-gray-600';
+                return (
+                  <div
+                    key={sub._id}
+                    onClick={() => router.push(`/projects/${projectId}/board?selectedIssue=${sub.key}`)}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 border border-gray-100 cursor-pointer group transition-colors"
+                  >
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}`}>
+                      {sub.status?.name || 'To Do'}
+                    </span>
+                    <span className="text-xs text-gray-400 font-mono">{sub.key}</span>
+                    <span className="text-sm text-gray-900 truncate flex-1">{sub.title}</span>
+                    {sub.assignee && (
+                      <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-medium shrink-0" title={`${sub.assignee.profile?.firstName || ''} ${sub.assignee.profile?.lastName || ''}`}>
+                        {(sub.assignee.profile?.firstName?.[0] || '?').toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-sm">{t('projects.board.noSubtasks') || 'No subtasks yet'}</p>
+          )}
         </div>
 
         {/* Create Subtask Modal */}
@@ -2529,6 +2958,102 @@ export function TaskDetailPanel({
                   className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('projects.board.create') || 'Create'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Link Existing Task as Subtask Modal */}
+        {showLinkSubtaskModal && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={() => { setShowLinkSubtaskModal(false); setLinkSubtaskSearch(''); setLinkSubtaskResults([]); }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="link-subtask-title"
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl w-[480px] max-w-[90vw] p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 id="link-subtask-title" className="text-lg font-semibold text-gray-900">
+                  {t('projects.board.linkExistingTask') || 'Link existing task'}
+                </h2>
+                <button
+                  onClick={() => { setShowLinkSubtaskModal(false); setLinkSubtaskSearch(''); setLinkSubtaskResults([]); }}
+                  className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                  aria-label={t('projects.board.close') || 'Close'}
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="link-subtask-search" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('projects.board.searchAndLink') || 'Search and link a task'}
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      id="link-subtask-search"
+                      type="text"
+                      value={linkSubtaskSearch}
+                      onChange={(e) => handleSearchSubtaskToLink(e.target.value)}
+                      placeholder={t('projects.board.searchTasks') || 'Search tasks...'}
+                      className="w-full ps-10 pe-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <div className="text-xs text-gray-500">
+                  {t('projects.board.parentIssue') || 'Parent issue'}: <span className="font-medium text-gray-700">{activeTask.key}</span>
+                </div>
+
+                {/* Search Results */}
+                {linkSubtaskResults.length > 0 && (
+                  <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
+                    {linkSubtaskResults.map((task) => {
+                      const statusCategory = task.status?.category?.toLowerCase() || 'todo';
+                      const statusColor = statusCategory === 'done'
+                        ? 'bg-green-100 text-green-700'
+                        : statusCategory === 'in_progress'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-600';
+                      return (
+                        <button
+                          key={task._id}
+                          onClick={() => handleLinkExistingSubtask(task._id)}
+                          disabled={isLinkingSubtask}
+                          className="w-full px-3 py-2.5 text-start hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 last:border-b-0 disabled:opacity-50"
+                        >
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${statusColor}`}>
+                            {task.status?.name || 'To Do'}
+                          </span>
+                          <span className="text-xs text-blue-600 font-medium shrink-0">{task.key}</span>
+                          <span className="text-sm text-gray-900 truncate flex-1">{task.title}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {linkSubtaskSearch.trim() && linkSubtaskResults.length === 0 && (
+                  <p className="text-sm text-gray-500 text-center py-3">
+                    {t('projects.board.noTasksFound') || 'No tasks found'}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => { setShowLinkSubtaskModal(false); setLinkSubtaskSearch(''); setLinkSubtaskResults([]); }}
+                  className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                >
+                  {t('projects.board.cancel') || 'Cancel'}
                 </button>
               </div>
             </div>
@@ -3128,11 +3653,27 @@ export function TaskDetailPanel({
             {t('projects.board.development') || 'Development'}
           </h3>
           <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+            <button
+              onClick={() => {
+                const slug = activeTask.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
+                const prefix = activeTask.type === 'bug' ? 'bugfix' : 'feature';
+                const branchName = `${prefix}/${activeTask.key}-${slug}`;
+                navigator.clipboard.writeText(branchName);
+                toast.success(`Copied: ${branchName}`);
+              }}
+              className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            >
               <GitBranch className="h-4 w-4" />
               {t('projects.board.createBranch') || 'Create branch'}
             </button>
-            <button className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+            <button
+              onClick={() => {
+                const commitMsg = `${activeTask.key}: `;
+                navigator.clipboard.writeText(commitMsg);
+                toast.success(`Copied: ${commitMsg}`);
+              }}
+              className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            >
               <GitCommit className="h-4 w-4" />
               {t('projects.board.createCommit') || 'Create commit'}
             </button>

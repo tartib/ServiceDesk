@@ -35,6 +35,7 @@ import {
 import { useLocale } from '@/hooks/useLocale';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/authStore';
+import authService from '@/lib/api/auth-service';
 import { ALL_ROLES } from '@/types';
 
 const ADMIN_ROLES = ['manager', 'product_owner', 'project_manager'];
@@ -243,7 +244,8 @@ export default function HomePage() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authService.logout();
     logout();
     router.push('/login');
   };

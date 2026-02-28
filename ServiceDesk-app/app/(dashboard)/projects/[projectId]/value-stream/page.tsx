@@ -39,91 +39,20 @@ interface Project {
   key: string;
 }
 
-const defaultSteps: ValueStreamStep[] = [
-  {
-    id: 'step1',
-    name: 'Request Received',
-    type: 'process',
-    processTime: 15,
-    waitTime: 0,
-    valueAdded: true,
-    efficiency: 95,
-    bottleneck: false,
-    owner: 'Support Team',
-    description: 'Initial request intake and logging',
-  },
-  {
-    id: 'step2',
-    name: 'Queue for Review',
-    type: 'wait',
-    processTime: 0,
-    waitTime: 120,
-    valueAdded: false,
-    efficiency: 0,
-    bottleneck: true,
-    description: 'Waiting in queue for analyst review',
-  },
-  {
-    id: 'step3',
-    name: 'Analysis',
-    type: 'process',
-    processTime: 45,
-    waitTime: 30,
-    valueAdded: true,
-    efficiency: 60,
-    bottleneck: false,
-    owner: 'Business Analyst',
-    description: 'Requirements analysis and documentation',
-  },
-  {
-    id: 'step4',
-    name: 'Approval',
-    type: 'decision',
-    processTime: 10,
-    waitTime: 240,
-    valueAdded: false,
-    efficiency: 4,
-    bottleneck: true,
-    owner: 'Manager',
-    description: 'Management approval decision',
-  },
-  {
-    id: 'step5',
-    name: 'Development',
-    type: 'process',
-    processTime: 480,
-    waitTime: 60,
-    valueAdded: true,
-    efficiency: 89,
-    bottleneck: false,
-    owner: 'Dev Team',
-    description: 'Implementation and coding',
-  },
-  {
-    id: 'step6',
-    name: 'Testing',
-    type: 'process',
-    processTime: 120,
-    waitTime: 30,
-    valueAdded: true,
-    efficiency: 80,
-    bottleneck: false,
-    owner: 'QA Team',
-    description: 'Quality assurance testing',
-  },
-  {
-    id: 'step7',
-    name: 'Deployment',
-    type: 'process',
-    processTime: 30,
-    waitTime: 0,
-    valueAdded: true,
-    efficiency: 100,
-    bottleneck: false,
-    owner: 'DevOps',
-    description: 'Production deployment',
-  },
-];
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const mapStep = (s: Record<string, any>): ValueStreamStep => ({
+  id: s._id,
+  name: s.name,
+  type: s.type || 'process',
+  processTime: s.processTime || 0,
+  waitTime: s.waitTime || 0,
+  valueAdded: s.valueAdded ?? true,
+  efficiency: s.efficiency || 0,
+  bottleneck: s.bottleneck || false,
+  owner: s.owner,
+  description: s.description,
+});
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default function ValueStreamPage() {
   const params = useParams();
@@ -133,32 +62,34 @@ export default function ValueStreamPage() {
   const { methodology } = useMethodology(projectId);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [steps] = useState<ValueStreamStep[]>(defaultSteps);
+  const [steps, setSteps] = useState<ValueStreamStep[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStep, setSelectedStep] = useState<ValueStreamStep | null>(null);
 
-  const fetchProject = useCallback(async (token: string) => {
+  const getToken = () => localStorage.getItem('token') || localStorage.getItem('accessToken');
+
+  const fetchData = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
+      const [projRes, stepsRes] = await Promise.all([
+        fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/value-stream`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const projData = await projRes.json();
+      if (projData.success) setProject(projData.data.project);
+      const stepsData = await stepsRes.json();
+      if (stepsData.success) setSteps((stepsData.data.steps || []).map(mapStep));
     } catch (error) {
-      console.error('Failed to fetch project:', error);
+      console.error('Failed to fetch value stream:', error);
     } finally {
       setIsLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+    const token = getToken();
+    if (!token) { router.push('/login'); return; }
+    fetchData(token);
+  }, [projectId, router, fetchData]);
 
   const formatTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;

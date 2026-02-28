@@ -36,6 +36,8 @@ export interface IPMRetrospective {
   actionItems: IActionItem[];
   publishedBy?: mongoose.Types.ObjectId;
   publishedAt?: Date;
+  votingStartedAt?: Date;
+  votingDurationMinutes?: number;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -144,6 +146,12 @@ const RetrospectiveSchema = new Schema<IPMRetrospective>(
     },
     publishedAt: {
       type: Date,
+    },
+    votingStartedAt: {
+      type: Date,
+    },
+    votingDurationMinutes: {
+      type: Number,
     },
     createdBy: {
       type: Schema.Types.ObjectId,

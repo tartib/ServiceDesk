@@ -10,7 +10,6 @@ import {
   MoreHorizontal,
   CheckCircle,
   Clock,
-  AlertCircle,
   Pause,
   Calendar,
   FileText,
@@ -53,58 +52,21 @@ interface Project {
   key: string;
 }
 
-const defaultPhases: Phase[] = [
-  {
-    id: 'requirements',
-    name: 'Requirements',
-    description: 'Gather and document project requirements',
-    order: 0,
-    status: 'completed',
-    deliverables: ['Requirements Document', 'Stakeholder Sign-off'],
-    progress: 100,
-    tasks: [],
-  },
-  {
-    id: 'design',
-    name: 'Design',
-    description: 'Create system architecture and design documents',
-    order: 1,
-    status: 'in_progress',
-    deliverables: ['Architecture Document', 'UI/UX Designs', 'Database Schema'],
-    progress: 65,
-    tasks: [],
-  },
-  {
-    id: 'development',
-    name: 'Development',
-    description: 'Build the system according to specifications',
-    order: 2,
-    status: 'not_started',
-    deliverables: ['Source Code', 'Unit Tests', 'API Documentation'],
-    progress: 0,
-    tasks: [],
-  },
-  {
-    id: 'testing',
-    name: 'Testing',
-    description: 'Verify system meets requirements',
-    order: 3,
-    status: 'not_started',
-    deliverables: ['Test Plan', 'Test Results', 'Bug Reports'],
-    progress: 0,
-    tasks: [],
-  },
-  {
-    id: 'deployment',
-    name: 'Deployment',
-    description: 'Release system to production',
-    order: 4,
-    status: 'not_started',
-    deliverables: ['Release Notes', 'Deployment Guide', 'Training Materials'],
-    progress: 0,
-    tasks: [],
-  },
-];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mapPhase = (p: Record<string, any>): Phase => ({
+  id: p._id,
+  name: p.name,
+  description: p.description,
+  order: p.order,
+  plannedStartDate: p.plannedStartDate,
+  plannedEndDate: p.plannedEndDate,
+  actualStartDate: p.actualStartDate,
+  actualEndDate: p.actualEndDate,
+  status: p.status || 'not_started',
+  deliverables: p.deliverables || [],
+  progress: p.progress || 0,
+  tasks: [],
+});
 
 const statusConfig = {
   not_started: { label: 'Not Started', color: 'bg-gray-100 text-gray-700', icon: Clock },
@@ -121,33 +83,71 @@ export default function PhasesPage() {
   const { methodology } = useMethodology(projectId);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [phases, setPhases] = useState<Phase[]>(defaultPhases);
-  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set(['design']));
+  const [phases, setPhases] = useState<Phase[]>([]);
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [showNewPhaseModal, setShowNewPhaseModal] = useState(false);
+  const [newPhase, setNewPhase] = useState({ name: '', description: '', plannedStartDate: '', plannedEndDate: '' });
 
-  const fetchProject = useCallback(async (token: string) => {
+  const getToken = () => localStorage.getItem('token') || localStorage.getItem('accessToken');
+
+  const fetchData = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
+      const [projRes, phasesRes] = await Promise.all([
+        fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/phases`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const projData = await projRes.json();
+      if (projData.success) setProject(projData.data.project);
+      const phasesData = await phasesRes.json();
+      if (phasesData.success) setPhases((phasesData.data.phases || []).map(mapPhase));
     } catch (error) {
-      console.error('Failed to fetch project:', error);
+      console.error('Failed to fetch phases:', error);
     } finally {
       setIsLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+    const token = getToken();
+    if (!token) { router.push('/login'); return; }
+    fetchData(token);
+  }, [projectId, router, fetchData]);
+
+  const handleCreatePhase = async () => {
+    if (!newPhase.name) return;
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/phases`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPhase),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchData(token);
+        setShowNewPhaseModal(false);
+        setNewPhase({ name: '', description: '', plannedStartDate: '', plannedEndDate: '' });
+      }
+    } catch (error) { console.error('Failed to create phase:', error); }
+  };
+
+  const handleUpdatePhaseStatus = async (phaseId: string, status: Phase['status'], progress?: number) => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const body: Record<string, unknown> = { status };
+      if (progress !== undefined) body.progress = progress;
+      if (status === 'in_progress') body.actualStartDate = new Date().toISOString();
+      if (status === 'completed') { body.actualEndDate = new Date().toISOString(); body.progress = 100; }
+      const res = await fetch(`${API_URL}/pm/phases/${phaseId}`, {
+        method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.success) fetchData(token);
+    } catch (error) { console.error('Failed to update phase:', error); }
+  };
 
   const togglePhase = (phaseId: string) => {
     setExpandedPhases((prev) => {
@@ -232,8 +232,6 @@ export default function PhasesPage() {
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {phases.map((phase, index) => {
           const isExpanded = expandedPhases.has(phase.id);
-          const StatusIcon = statusConfig[phase.status].icon;
-          const isFirst = index === 0;
           const isLast = index === phases.length - 1;
           const prevPhase = index > 0 ? phases[index - 1] : null;
           const canStart = !prevPhase || prevPhase.status === 'completed';
@@ -368,22 +366,22 @@ export default function PhasesPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
                     {phase.status === 'not_started' && canStart && (
-                      <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                      <button onClick={() => handleUpdatePhaseStatus(phase.id, 'in_progress')} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
                         Start Phase
                       </button>
                     )}
                     {phase.status === 'in_progress' && (
                       <>
-                        <button className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        <button onClick={() => handleUpdatePhaseStatus(phase.id, 'completed', 100)} className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
                           Complete Phase
                         </button>
-                        <button className="px-4 py-2 bg-yellow-500 text-white text-sm font-medium rounded-lg hover:bg-yellow-600 transition-colors">
+                        <button onClick={() => handleUpdatePhaseStatus(phase.id, 'on_hold')} className="px-4 py-2 bg-yellow-500 text-white text-sm font-medium rounded-lg hover:bg-yellow-600 transition-colors">
                           Put On Hold
                         </button>
                       </>
                     )}
                     {phase.status === 'on_hold' && (
-                      <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                      <button onClick={() => handleUpdatePhaseStatus(phase.id, 'in_progress')} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
                         Resume Phase
                       </button>
                     )}
@@ -418,6 +416,8 @@ export default function PhasesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phase Name</label>
                 <input
                   type="text"
+                  value={newPhase.name}
+                  onChange={(e) => setNewPhase(p => ({ ...p, name: e.target.value }))}
                   placeholder="e.g., User Acceptance Testing"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -425,6 +425,8 @@ export default function PhasesPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
+                  value={newPhase.description}
+                  onChange={(e) => setNewPhase(p => ({ ...p, description: e.target.value }))}
                   placeholder="Describe the phase objectives..."
                   rows={3}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -453,7 +455,7 @@ export default function PhasesPage() {
                 >
                   Cancel
                 </button>
-                <button className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <button onClick={handleCreatePhase} className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                   Add Phase
                 </button>
               </div>

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import authService from '@/lib/api/auth-service';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useRouter } from 'next/navigation';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -25,7 +26,8 @@ export default function Header() {
   const router = useRouter();
   const { t } = useLanguage();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authService.logout();
     logout();
     router.push('/login');
   };

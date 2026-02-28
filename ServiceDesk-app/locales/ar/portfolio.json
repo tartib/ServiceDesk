@@ -1,0 +1,95 @@
+{
+  "portfolio": {
+    "title": "تحليلات المحفظة",
+    "subtitle": "أداء في الوقت الفعلي عبر جميع المشاريع",
+    "connected": "مباشر",
+    "disconnected": "غير متصل",
+    "lastUpdated": "آخر تحديث",
+    "refresh": "تحديث",
+    "loading": "جاري تحميل التحليلات...",
+    "noData": "لا توجد بيانات متاحة",
+
+    "kpi": {
+      "totalProjects": "إجمالي المشاريع",
+      "activeProjects": "المشاريع النشطة",
+      "totalTasks": "إجمالي المهام",
+      "completionRate": "نسبة الإنجاز",
+      "overdueTasks": "المهام المتأخرة",
+      "activeSprints": "السبرنت النشطة",
+      "teamMembers": "أعضاء الفريق",
+      "storyPoints": "نقاط القصة"
+    },
+
+    "projects": {
+      "title": "صحة المشاريع",
+      "name": "المشروع",
+      "methodology": "المنهجية",
+      "completion": "الإنجاز",
+      "velocity": "السرعة",
+      "overdue": "متأخر",
+      "timeline": "الجدول الزمني",
+      "members": "الأعضاء",
+      "tasks": "المهام",
+      "noProjects": "لا توجد مشاريع",
+      "viewDetails": "عرض التفاصيل",
+      "activeSprint": "السبرنت النشط",
+      "daysLeft": "أيام متبقية",
+      "daysOverdue": "أيام تأخير",
+      "pts": "نقاط",
+      "status": {
+        "on_track": "في الموعد",
+        "at_risk": "معرض للخطر",
+        "overdue": "متأخر",
+        "no_deadline": "بدون موعد"
+      }
+    },
+
+    "drilldown": {
+      "taskBreakdown": "توزيع المهام",
+      "priorityDistribution": "توزيع الأولويات",
+      "velocityHistory": "سجل السرعة",
+      "topMembers": "أفضل الأعضاء",
+      "recentActivity": "النشاط الأخير",
+      "todo": "للعمل",
+      "inProgress": "قيد التنفيذ",
+      "done": "مكتمل",
+      "critical": "حرج",
+      "high": "عالي",
+      "medium": "متوسط",
+      "low": "منخفض",
+      "planned": "مخطط",
+      "completed": "مكتمل",
+      "completionRate": "نسبة الإنجاز",
+      "noActivity": "لا يوجد نشاط حديث",
+      "noVelocity": "لا توجد بيانات سرعة بعد",
+      "noMembers": "لا توجد بيانات أعضاء"
+    },
+
+    "trends": {
+      "title": "الاتجاهات الأسبوعية",
+      "created": "تم إنشاؤها",
+      "completed": "مكتملة",
+      "tasksCreated": "المهام المنشأة",
+      "tasksCompleted": "المهام المكتملة",
+      "noTrends": "لا توجد بيانات اتجاهات"
+    },
+
+    "workload": {
+      "title": "عبء عمل الفريق",
+      "member": "العضو",
+      "assigned": "مسندة",
+      "inProgress": "قيد التنفيذ",
+      "completed": "مكتملة",
+      "overdue": "متأخرة",
+      "points": "النقاط",
+      "noMembers": "لا توجد بيانات عبء عمل"
+    },
+
+    "timeline": {
+      "title": "صحة الجدول الزمني",
+      "onTime": "في الموعد",
+      "overdue": "متأخر",
+      "noDeadline": "بدون موعد"
+    }
+  }
+}

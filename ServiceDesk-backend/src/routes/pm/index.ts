@@ -18,6 +18,9 @@ import retrospectiveRoutes from './retrospective.routes';
 import planningPokerRoutes from './planningPoker.routes';
 import workflowRoutes from './workflow.routes';
 import importRoutes from './import.routes';
+import intakeRoutes from './intake.routes';
+import portfolioAnalyticsRoutes from './portfolioAnalytics.routes';
+import projectExtrasRoutes from './projectExtras.routes';
 
 const router = Router();
 
@@ -77,5 +80,14 @@ router.use('/pm', planningPokerRoutes);
 
 // Workflow routes
 router.use('/pm', workflowRoutes);
+
+// Intake routes
+router.use('/pm', intakeRoutes);
+
+// Portfolio Analytics routes
+router.use('/pm/analytics/portfolio', portfolioAnalyticsRoutes);
+
+// Project Extras routes (phases, gates, milestones, improvements, value-stream, files, notifications, reports)
+router.use('/pm', projectExtrasRoutes);
 
 export default router;

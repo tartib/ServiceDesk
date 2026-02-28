@@ -214,6 +214,62 @@ export function useITSMSocket(options?: {
   return { isConnected };
 }
 
+export function usePortfolioSocket(options?: {
+  onStatsUpdated?: SocketCallback;
+}) {
+  const socketRef = useRef<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const { user } = useAuthStore();
+
+  useEffect(() => {
+    if (!user) return;
+
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    socketRef.current = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      autoConnect: true,
+      auth: { token },
+    });
+
+    const socket = socketRef.current;
+
+    socket.on('connect', () => {
+      setIsConnected(true);
+      socket.emit('join:portfolio');
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
+    });
+
+    socket.on('connect_error', () => {
+      setIsConnected(false);
+    });
+
+    return () => {
+      socket.emit('leave:portfolio');
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!isConnected || !socketRef.current) return;
+
+    if (options?.onStatsUpdated) {
+      socketRef.current.on('portfolio:stats:updated', options.onStatsUpdated);
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('portfolio:stats:updated');
+      }
+    };
+  }, [isConnected, options]);
+
+  return { isConnected };
+}
+
 export function useSelfServiceSocket(options?: {
   onServiceRequestCreated?: SocketCallback;
   onServiceRequestUpdated?: SocketCallback;

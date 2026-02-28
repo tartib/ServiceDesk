@@ -98,7 +98,15 @@
     "serviceRequests": "Service Requests",
     "problems": "Problems",
     "changes": "Changes",
-    "loggedInAs": "Logged in as"
+    "loggedInAs": "Logged in as",
+    "projectIntake": "Project Intake",
+    "workflows": "Workflows",
+    "vacations": "Vacations",
+    "serviceCatalog": "Service Catalog",
+    "sla": "SLA",
+    "releases": "Releases",
+    "cab": "CAB",
+    "portfolioAnalytics": "Portfolio Analytics"
   },
   "tasks": {
     "title": "Tasks",

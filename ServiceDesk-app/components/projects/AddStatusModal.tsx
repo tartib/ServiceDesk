@@ -99,7 +99,7 @@ export function AddStatusModal({ isOpen, onClose, onAdd }: AddStatusModalProps) 
                     : 'border-gray-300 hover:border-gray-400'
                 }`}
               >
-                {t('projects.board.categoryTodo') || 'To Do'}
+                {t('projects.board.statusCatTodo') || 'To Do'}
               </button>
               <button
                 onClick={() => setStatusCategory('in_progress')}
@@ -109,7 +109,7 @@ export function AddStatusModal({ isOpen, onClose, onAdd }: AddStatusModalProps) 
                     : 'border-gray-300 hover:border-gray-400'
                 }`}
               >
-                {t('projects.board.categoryInProgress') || 'In Progress'}
+                {t('projects.board.statusCatInProgress') || 'In Progress'}
               </button>
               <button
                 onClick={() => setStatusCategory('done')}
@@ -119,7 +119,7 @@ export function AddStatusModal({ isOpen, onClose, onAdd }: AddStatusModalProps) 
                     : 'border-gray-300 hover:border-gray-400'
                 }`}
               >
-                {t('projects.board.categoryDone') || 'Done'}
+                {t('projects.board.statusCatDone') || 'Done'}
               </button>
             </div>
           </div>

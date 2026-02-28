@@ -14,7 +14,7 @@ export const getProjectActivity = async (req: PMAuthRequest, res: Response): Pro
 
     const [activities, total] = await Promise.all([
       Activity.find({ projectId })
-        .populate('actor', 'profile.firstName profile.lastName profile.avatar email')
+        .populate('actor', 'name profile.firstName profile.lastName profile.avatar email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
@@ -39,7 +39,7 @@ export const getTaskActivity = async (req: PMAuthRequest, res: Response): Promis
     const { taskId } = req.params;
 
     const activities = await Activity.find({ taskId })
-      .populate('actor', 'profile.firstName profile.lastName profile.avatar email')
+      .populate('actor', 'name profile.firstName profile.lastName profile.avatar email')
       .sort({ createdAt: -1 })
       .limit(100);
 
@@ -97,7 +97,7 @@ export const getOrganizationFeed = async (req: PMAuthRequest, res: Response): Pr
 
     const [activities, total] = await Promise.all([
       Activity.find({ organizationId })
-        .populate('actor', 'profile.firstName profile.lastName profile.avatar email')
+        .populate('actor', 'name profile.firstName profile.lastName profile.avatar email')
         .populate('projectId', 'name key')
         .populate('taskId', 'key title')
         .sort({ createdAt: -1 })

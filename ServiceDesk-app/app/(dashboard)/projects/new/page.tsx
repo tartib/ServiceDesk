@@ -107,7 +107,7 @@ export default function NewProjectPage() {
     }
 
     try {
-      const response = await fetch('API_URL/pm/projects', {
+      const response = await fetch(`${API_URL}/pm/projects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

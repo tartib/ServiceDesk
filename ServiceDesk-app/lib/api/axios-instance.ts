@@ -18,17 +18,24 @@ const axiosInstance: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor - add CSRF token to state-changing requests
+// Request interceptor - add auth token and CSRF token
 axiosInstance.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    // Attach Bearer token from localStorage
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
     // Only add CSRF token for state-changing requests
     if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
       try {
-        const token = await getCsrfToken();
-        config.headers['X-CSRF-Token'] = token;
+        const csrfToken = await getCsrfToken();
+        config.headers['X-CSRF-Token'] = csrfToken;
       } catch (error) {
         console.error('Failed to add CSRF token to request:', error);
-        // Continue without token - let server handle the error
       }
     }
 

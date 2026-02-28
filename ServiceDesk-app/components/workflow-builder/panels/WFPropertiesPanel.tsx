@@ -24,6 +24,7 @@ const nodeTypeLabels: Record<string, { en: string; ar: string }> = {
   wfFork: { en: 'Fork (Parallel)', ar: 'تفرع (متوازي)' },
   wfJoin: { en: 'Join (Merge)', ar: 'انضمام (دمج)' },
   wfTimer: { en: 'Timer', ar: 'مؤقت' },
+  wfExternalTask: { en: 'External Task', ar: 'مهمة خارجية' },
 };
 
 const categoryOptions = [
@@ -152,6 +153,7 @@ export default function WFPropertiesPanel({
   const isStateOrApproval = ['wfState', 'wfApproval'].includes(nodeType);
   const isJoin = nodeType === 'wfJoin';
   const isTimer = nodeType === 'wfTimer';
+  const isExternalTask = nodeType === 'wfExternalTask';
 
   return (
     <div className="w-72 bg-white border-s border-gray-200 flex flex-col h-full">
@@ -339,6 +341,131 @@ export default function WFPropertiesPanel({
               className="mt-1"
             />
           </div>
+        )}
+
+        {/* External Task Config */}
+        {isExternalTask && (
+          <>
+            <div>
+              <Label htmlFor="ext-label" className="text-xs text-gray-500">
+                {isAr ? 'الاسم (إنجليزي)' : 'Name (English)'}
+              </Label>
+              <Input
+                id="ext-label"
+                value={String(nodeData.label || '')}
+                onChange={(e) => onNodeChange(selectedNode.id, { ...nodeData, label: e.target.value })}
+                placeholder={isAr ? 'مثال: Send Invoice' : 'e.g. Send Invoice'}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="ext-label-ar" className="text-xs text-gray-500">
+                {isAr ? 'الاسم (عربي)' : 'Name (Arabic)'}
+              </Label>
+              <Input
+                id="ext-label-ar"
+                value={String(nodeData.nameAr || '')}
+                onChange={(e) => onNodeChange(selectedNode.id, { ...nodeData, nameAr: e.target.value })}
+                placeholder={isAr ? 'مثال: إرسال فاتورة' : 'e.g. إرسال فاتورة'}
+                className="mt-1"
+                dir="rtl"
+              />
+            </div>
+
+            <div className="pt-2 border-t border-gray-100">
+              <Label htmlFor="ext-topic" className="text-xs text-gray-500">
+                {isAr ? 'الموضوع (Topic)' : 'Topic'} *
+              </Label>
+              <Input
+                id="ext-topic"
+                value={String(nodeData.topic || '')}
+                onChange={(e) =>
+                  onNodeChange(selectedNode.id, {
+                    ...nodeData,
+                    topic: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''),
+                  })
+                }
+                placeholder="send-invoice, validate-payment"
+                className="mt-1 font-mono"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="ext-retries" className="text-xs text-gray-500">
+                {isAr ? 'عدد المحاولات' : 'Retries'}
+              </Label>
+              <Input
+                id="ext-retries"
+                type="number"
+                min={0}
+                max={10}
+                value={String(nodeData.retries ?? 3)}
+                onChange={(e) =>
+                  onNodeChange(selectedNode.id, {
+                    ...nodeData,
+                    retries: e.target.value ? Number(e.target.value) : 3,
+                  })
+                }
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="ext-timeout" className="text-xs text-gray-500">
+                {isAr ? 'مدة القفل (ثواني)' : 'Lock Timeout (seconds)'}
+              </Label>
+              <Input
+                id="ext-timeout"
+                type="number"
+                min={10}
+                value={String(nodeData.timeout ?? 300)}
+                onChange={(e) =>
+                  onNodeChange(selectedNode.id, {
+                    ...nodeData,
+                    timeout: e.target.value ? Number(e.target.value) : 300,
+                  })
+                }
+                placeholder="300"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="ext-priority" className="text-xs text-gray-500">
+                {isAr ? 'الأولوية' : 'Priority'}
+              </Label>
+              <Input
+                id="ext-priority"
+                type="number"
+                min={0}
+                value={String(nodeData.priority ?? 0)}
+                onChange={(e) =>
+                  onNodeChange(selectedNode.id, {
+                    ...nodeData,
+                    priority: e.target.value ? Number(e.target.value) : 0,
+                  })
+                }
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="ext-error-handling" className="text-xs text-gray-500">
+                {isAr ? 'عند الفشل' : 'Error Handling'}
+              </Label>
+              <select
+                id="ext-error-handling"
+                value={String(nodeData.errorHandling || 'retry')}
+                onChange={(e) => onNodeChange(selectedNode.id, { ...nodeData, errorHandling: e.target.value })}
+                className="mt-1 w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="retry">{isAr ? 'إعادة المحاولة' : 'Retry'}</option>
+                <option value="fail_instance">{isAr ? 'إنهاء سير العمل' : 'Fail Instance'}</option>
+                <option value="skip">{isAr ? 'تخطي' : 'Skip'}</option>
+              </select>
+            </div>
+          </>
         )}
 
         {/* Position (read-only) */}

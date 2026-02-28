@@ -27,6 +27,7 @@ import {
   type IWFExecutionContext,
   type IWFActionResult,
   type IWFActiveTimer,
+  type IWFExternalTaskConfig,
 } from '../../types/workflow-engine.types';
 
 import { GuardEvaluator } from './GuardEvaluator';
@@ -54,10 +55,33 @@ export interface IWFDefinitionStore {
   findLatestPublished(organizationId: string, entityType: string): Promise<IWFDefinition | null>;
 }
 
+export interface IWFExternalTaskStore {
+  create(task: {
+    instanceId: any;
+    definitionId: any;
+    organizationId: any;
+    topic: string;
+    stateCode: string;
+    variables: Record<string, any>;
+    retries: number;
+    retriesLeft: number;
+    priority: number;
+    errorHandling: 'retry' | 'fail_instance' | 'skip';
+  }): Promise<any>;
+  findById(id: string): Promise<any | null>;
+  findAvailableByTopic(topic: string, maxTasks: number): Promise<any[]>;
+  lockTask(taskId: string, workerId: string, lockDuration: number): Promise<any | null>;
+  completeTask(taskId: string, resultVariables?: Record<string, any>): Promise<any | null>;
+  failTask(taskId: string, errorMessage: string, errorDetails?: string): Promise<any | null>;
+  resetExpiredLocks(): Promise<number>;
+  cancelByInstance(instanceId: string): Promise<number>;
+}
+
 export interface IGenericWorkflowEngineOptions {
   instanceStore: IWFInstanceStore;
   definitionStore: IWFDefinitionStore;
   eventStore: IWFEventStore;
+  externalTaskStore?: IWFExternalTaskStore;
   notificationService?: IWFNotificationService;
   webhookService?: IWFWebhookService;
   entityService?: IWFEntityService;
@@ -71,6 +95,7 @@ export class GenericWorkflowEngine {
   private instanceStore: IWFInstanceStore;
   private definitionStore: IWFDefinitionStore;
   private eventStore: IWFEventStore;
+  private externalTaskStore?: IWFExternalTaskStore;
   private guardEvaluator: GuardEvaluator;
   private actionExecutor: ActionExecutor;
   private parallelManager: ParallelStepManager;
@@ -80,6 +105,7 @@ export class GenericWorkflowEngine {
     this.instanceStore = options.instanceStore;
     this.definitionStore = options.definitionStore;
     this.eventStore = options.eventStore;
+    this.externalTaskStore = options.externalTaskStore;
     this.entityService = options.entityService;
 
     this.guardEvaluator = new GuardEvaluator();
@@ -381,11 +407,15 @@ export class GenericWorkflowEngine {
       await this.initializeSLA(instance, toState);
     }
 
-    // 18. التعامل مع Fork/Join
+    // 18. التعامل مع Fork/Join/ExternalTask
     if (toState.type === WFStateType.FORK) {
       await this.handleFork(instance, definition, toState, context);
     } else if (toState.type === WFStateType.JOIN) {
       await this.handleJoin(instance, definition, toState, context);
+    } else if (toState.type === WFStateType.EXTERNAL_TASK) {
+      await this.handleExternalTask(instance, definition, toState, context);
+      newStatus = WFInstanceStatus.WAITING;
+      instance.status = newStatus;
     }
 
     // 19. حفظ الـ instance
@@ -798,6 +828,273 @@ export class GenericWorkflowEngine {
     }
 
     instance.timers = [...(instance.timers || []), ...timers];
+  }
+
+  // ============================================
+  // EXTERNAL TASK HANDLING
+  // ============================================
+
+  /**
+   * التعامل مع حالة مهمة خارجية — إنشاء مهمة خارجية ووضع الـ instance في حالة انتظار
+   */
+  private async handleExternalTask(
+    instance: IWFInstance,
+    definition: IWFDefinition,
+    state: IWFStateDefinition,
+    context: IWFExecutionContext
+  ): Promise<void> {
+    if (!this.externalTaskStore) {
+      console.error('[WorkflowEngine] External task store not configured');
+      return;
+    }
+
+    const config = state.externalTask;
+    if (!config) {
+      console.error(`[WorkflowEngine] State "${state.code}" is EXTERNAL_TASK but has no externalTask config`);
+      return;
+    }
+
+    const externalTask = await this.externalTaskStore.create({
+      instanceId: instance._id,
+      definitionId: definition._id,
+      organizationId: instance.organizationId,
+      topic: config.topic,
+      stateCode: state.code,
+      variables: instance.variables || {},
+      retries: config.retries || 3,
+      retriesLeft: config.retries || 3,
+      priority: config.priority || 0,
+      errorHandling: config.errorHandling || 'retry',
+    });
+
+    await this.recordEvent({
+      instanceId: instance._id,
+      definitionId: definition._id,
+      organizationId: instance.organizationId,
+      entityType: instance.entityType,
+      entityId: instance.entityId,
+      type: WFEventType.EXTERNAL_TASK_CREATED,
+      fromState: state.code,
+      actorId: context.actor.id,
+      actorType: WFActorType.SYSTEM,
+      data: {
+        externalTaskId: externalTask._id?.toString(),
+        topic: config.topic,
+        priority: config.priority,
+      },
+      timestamp: new Date(),
+    });
+  }
+
+  /**
+   * إكمال مهمة خارجية واستئناف سير العمل
+   */
+  async completeExternalTask(params: {
+    externalTaskId: string;
+    workerId: string;
+    variables?: Record<string, any>;
+  }): Promise<IWFTransitionResult> {
+    if (!this.externalTaskStore) {
+      throw new Error('External task store not configured');
+    }
+
+    // 1. Find and complete the external task
+    const externalTask = await this.externalTaskStore.findById(params.externalTaskId);
+    if (!externalTask) {
+      throw new Error(`External task "${params.externalTaskId}" not found`);
+    }
+    if (externalTask.status !== 'locked') {
+      throw new Error(`External task is not locked (status: ${externalTask.status})`);
+    }
+    if (externalTask.workerId !== params.workerId) {
+      throw new Error(`External task is locked by a different worker`);
+    }
+
+    await this.externalTaskStore.completeTask(params.externalTaskId, params.variables);
+
+    // 2. Get the workflow instance
+    const instance = await this.instanceStore.findById(externalTask.instanceId.toString());
+    if (!instance) {
+      throw new Error('Workflow instance not found');
+    }
+
+    const definition = await this.definitionStore.findById(instance.definitionId.toString());
+    if (!definition) {
+      throw new Error('Workflow definition not found');
+    }
+
+    // 3. Merge result variables into instance
+    if (params.variables) {
+      instance.variables = { ...instance.variables, ...params.variables };
+    }
+
+    // 4. Record completion event
+    await this.recordEvent({
+      instanceId: instance._id,
+      definitionId: definition._id,
+      organizationId: instance.organizationId,
+      entityType: instance.entityType,
+      entityId: instance.entityId,
+      type: WFEventType.EXTERNAL_TASK_COMPLETED,
+      fromState: instance.currentState,
+      actorId: params.workerId,
+      actorType: WFActorType.API,
+      actorName: params.workerId,
+      data: {
+        externalTaskId: params.externalTaskId,
+        resultVariables: params.variables,
+      },
+      timestamp: new Date(),
+    });
+
+    // 5. Set instance back to active
+    instance.status = WFInstanceStatus.ACTIVE;
+    await this.instanceStore.update(instance._id.toString(), {
+      status: WFInstanceStatus.ACTIVE,
+      variables: instance.variables,
+    });
+
+    // 6. Auto-advance: find the outgoing transition from this external task state and execute it
+    const outTransitions = definition.transitions.filter(
+      t => t.fromState === instance.currentState || t.fromState === '*'
+    );
+
+    if (outTransitions.length > 0) {
+      // Take the first available transition (external tasks typically have one outgoing path)
+      const transition = outTransitions[0];
+      return this.executeTransition({
+        instanceId: instance._id.toString(),
+        transitionId: transition.transitionId,
+        actorId: params.workerId,
+        actorName: params.workerId,
+        actorType: WFActorType.API,
+        data: params.variables,
+      });
+    }
+
+    return {
+      success: true,
+      instanceId: instance._id.toString(),
+      fromState: instance.currentState,
+      toState: instance.currentState,
+      transitionId: 'external_task_complete',
+      newStatus: WFInstanceStatus.ACTIVE,
+      actionResults: [],
+    };
+  }
+
+  /**
+   * فشل مهمة خارجية — إعادة المحاولة أو إنهاء سير العمل
+   */
+  async failExternalTask(params: {
+    externalTaskId: string;
+    workerId: string;
+    errorMessage: string;
+    errorDetails?: string;
+    retries?: number;
+  }): Promise<void> {
+    if (!this.externalTaskStore) {
+      throw new Error('External task store not configured');
+    }
+
+    const externalTask = await this.externalTaskStore.findById(params.externalTaskId);
+    if (!externalTask) {
+      throw new Error(`External task "${params.externalTaskId}" not found`);
+    }
+    if (externalTask.status !== 'locked') {
+      throw new Error(`External task is not locked (status: ${externalTask.status})`);
+    }
+    if (externalTask.workerId !== params.workerId) {
+      throw new Error(`External task is locked by a different worker`);
+    }
+
+    // Update retries if provided
+    const retriesLeft = params.retries !== undefined
+      ? params.retries
+      : externalTask.retriesLeft - 1;
+
+    await this.externalTaskStore.failTask(
+      params.externalTaskId,
+      params.errorMessage,
+      params.errorDetails
+    );
+
+    const instance = await this.instanceStore.findById(externalTask.instanceId.toString());
+    if (!instance) return;
+
+    const definition = await this.definitionStore.findById(instance.definitionId.toString());
+
+    // Record failure event
+    await this.recordEvent({
+      instanceId: instance._id,
+      definitionId: instance.definitionId,
+      organizationId: instance.organizationId,
+      entityType: instance.entityType,
+      entityId: instance.entityId,
+      type: WFEventType.EXTERNAL_TASK_FAILED,
+      fromState: instance.currentState,
+      actorId: params.workerId,
+      actorType: WFActorType.API,
+      actorName: params.workerId,
+      data: {
+        externalTaskId: params.externalTaskId,
+        errorMessage: params.errorMessage,
+        retriesLeft,
+      },
+      timestamp: new Date(),
+    });
+
+    if (retriesLeft > 0) {
+      // Reset task to available for retry — the store's failTask already handles this
+      // based on retriesLeft > 0, it sets status back to 'available'
+      return;
+    }
+
+    // No retries left — handle based on errorHandling config
+    const errorHandling = externalTask.errorHandling || 'retry';
+
+    if (errorHandling === 'fail_instance') {
+      // Mark instance as error
+      instance.status = WFInstanceStatus.ERROR;
+      await this.instanceStore.update(instance._id.toString(), {
+        status: WFInstanceStatus.ERROR,
+      });
+
+      await this.recordEvent({
+        instanceId: instance._id,
+        definitionId: instance.definitionId,
+        organizationId: instance.organizationId,
+        entityType: instance.entityType,
+        entityId: instance.entityId,
+        type: WFEventType.INSTANCE_ERROR,
+        fromState: instance.currentState,
+        actorId: params.workerId,
+        actorType: WFActorType.API,
+        data: { reason: `External task failed: ${params.errorMessage}` },
+        timestamp: new Date(),
+      });
+    } else if (errorHandling === 'skip' && definition) {
+      // Skip: set instance back to active and auto-advance
+      instance.status = WFInstanceStatus.ACTIVE;
+      await this.instanceStore.update(instance._id.toString(), {
+        status: WFInstanceStatus.ACTIVE,
+      });
+
+      const outTransitions = definition.transitions.filter(
+        t => t.fromState === instance.currentState || t.fromState === '*'
+      );
+
+      if (outTransitions.length > 0) {
+        await this.executeTransition({
+          instanceId: instance._id.toString(),
+          transitionId: outTransitions[0].transitionId,
+          actorId: params.workerId,
+          actorName: params.workerId,
+          actorType: WFActorType.API,
+        });
+      }
+    }
+    // errorHandling === 'retry' with no retries left: task stays failed, instance stays waiting
   }
 
   /**

@@ -1,0 +1,195 @@
+{
+  "intake": {
+    "title": "طلبات المشاريع",
+    "subtitle": "إدارة طلبات المشاريع عبر مسار الحوكمة",
+    "newRequest": "طلب جديد",
+    "searchPlaceholder": "البحث في الطلبات...",
+    "allStages": "جميع المراحل",
+    "allPriorities": "جميع الأولويات",
+    "refresh": "تحديث",
+    "noRequests": "لا توجد طلبات",
+    "noIntakeRequests": "لم يتم العثور على طلبات",
+    "createFirst": "أنشئ طلبك الأول",
+
+    "stats": {
+      "totalRequests": "إجمالي الطلبات",
+      "inReview": "قيد المراجعة",
+      "approved": "معتمدة",
+      "avgApprovalTime": "متوسط وقت الاعتماد"
+    },
+
+    "stages": {
+      "draft": "مسودة",
+      "screening": "فرز",
+      "business_case": "دراسة الجدوى",
+      "prioritization": "الترتيب",
+      "approved": "معتمد",
+      "rejected": "مرفوض",
+      "cancelled": "ملغي"
+    },
+
+    "priorities": {
+      "critical": "حرج",
+      "high": "عالي",
+      "medium": "متوسط",
+      "low": "منخفض"
+    },
+
+    "categories": {
+      "new_product": "منتج جديد",
+      "improvement": "تحسين",
+      "maintenance": "صيانة",
+      "research": "بحث",
+      "infrastructure": "بنية تحتية"
+    },
+    "categoryDescriptions": {
+      "new_product": "بناء منتج أو خدمة جديدة",
+      "improvement": "تعزيز القدرات الحالية",
+      "maintenance": "إصلاح أو صيانة الأنظمة الحالية",
+      "research": "استكشاف تقنيات أو مناهج جديدة",
+      "infrastructure": "البنية التحتية والأدوات"
+    },
+
+    "methodologies": {
+      "scrum": "سكرم",
+      "kanban": "كانبان",
+      "waterfall": "شلالي",
+      "itil": "ITIL",
+      "lean": "لين",
+      "okr": "OKR"
+    },
+    "methodologyDescriptions": {
+      "scrum": "سبرنتات تكرارية مع احتفالات",
+      "kanban": "تدفق مستمر مع حدود العمل",
+      "waterfall": "مراحل متسلسلة مع بوابات",
+      "itil": "إطار إدارة خدمات تقنية المعلومات",
+      "lean": "تقليل الهدر وتعظيم القيمة",
+      "okr": "الأهداف والنتائج الرئيسية"
+    },
+
+    "table": {
+      "title": "العنوان",
+      "stage": "المرحلة",
+      "priority": "الأولوية",
+      "category": "الفئة",
+      "requester": "مقدم الطلب",
+      "created": "تاريخ الإنشاء"
+    },
+
+    "new": {
+      "title": "طلب مشروع جديد",
+      "subtitle": "تقديم مشروع جديد للمراجعة والاعتماد",
+      "steps": {
+        "projectInfo": "معلومات المشروع",
+        "businessCase": "دراسة الجدوى",
+        "details": "التفاصيل",
+        "review": "المراجعة"
+      },
+      "projectTitle": "عنوان المشروع",
+      "projectTitlePlaceholder": "مثال: إعادة تصميم بوابة العملاء",
+      "description": "الوصف",
+      "descriptionPlaceholder": "صف ما يهدف هذا المشروع إلى تحقيقه...",
+      "categoryLabel": "الفئة",
+      "priorityLabel": "الأولوية",
+      "businessJustification": "المبرر التجاري",
+      "businessJustificationPlaceholder": "لماذا هذا المشروع مطلوب؟ ما المشكلة التي يحلها؟",
+      "expectedBenefits": "الفوائد المتوقعة",
+      "expectedBenefitsPlaceholder": "ما الفوائد التي سيقدمها هذا المشروع؟",
+      "estimatedBudget": "الميزانية المقدرة",
+      "estimatedBudgetPlaceholder": "مثال: 50000",
+      "estimatedTimeline": "الجدول الزمني المقدر",
+      "estimatedTimelinePlaceholder": "مثال: 3 أشهر",
+      "riskLevel": "مستوى المخاطر",
+      "strategicAlignment": "التوافق الاستراتيجي",
+      "strategicAlignmentPlaceholder": "كيف يتوافق هذا مع الاستراتيجية المؤسسية؟",
+      "preferredMethodology": "المنهجية المفضلة",
+      "suggestedTeam": "الفريق / الموارد المقترحة",
+      "suggestedTeamPlaceholder": "صف الفريق أو الموارد المطلوبة...",
+      "reviewNotice": "راجع طلبك أدناه. بعد التقديم، سيدخل مرحلة <strong>المسودة</strong>. يمكنك نقله إلى مرحلة <strong>الفرز</strong> عندما يكون جاهزاً.",
+      "back": "رجوع",
+      "cancel": "إلغاء",
+      "next": "التالي",
+      "submitting": "جاري التقديم...",
+      "submitRequest": "تقديم الطلب",
+      "successMessage": "تم إنشاء طلب المشروع بنجاح!",
+      "budget": "الميزانية",
+      "timeline": "الجدول الزمني",
+      "risk": "المخاطر",
+      "methodology": "المنهجية"
+    },
+
+    "detail": {
+      "notFound": "لم يتم العثور على الطلب",
+      "backToIntake": "العودة إلى الطلبات",
+      "requestedBy": "مقدم من",
+      "on": "في",
+      "projectCreated": "تم إنشاء المشروع بنجاح",
+      "openProject": "فتح المشروع",
+
+      "description": "الوصف",
+      "businessCase": "دراسة الجدوى",
+      "justification": "المبرر",
+      "expectedBenefits": "الفوائد المتوقعة",
+      "strategicAlignment": "التوافق الاستراتيجي",
+
+      "scoring": "التقييم",
+      "avgLabel": "المتوسط",
+      "scoreCriteria": {
+        "strategicValue": "القيمة الاستراتيجية",
+        "roiPotential": "إمكانية العائد",
+        "technicalFeasibility": "الجدوى التقنية",
+        "resourceAvailability": "توفر الموارد",
+        "riskLevel": "مستوى المخاطر"
+      },
+
+      "comments": "التعليقات",
+      "noComments": "لا توجد تعليقات بعد",
+      "addComment": "أضف تعليقاً...",
+
+      "actions": "الإجراءات",
+      "advanceStage": "تقديم المرحلة",
+      "approveCreate": "اعتماد وإنشاء مشروع",
+      "reject": "رفض",
+      "cancelRequest": "إلغاء الطلب",
+
+      "details": "التفاصيل",
+      "category": "الفئة",
+      "methodology": "المنهجية",
+      "budget": "الميزانية",
+      "timeline": "الجدول الزمني",
+      "risk": "المخاطر",
+      "avgScore": "متوسط التقييم",
+
+      "timelineSection": "الجدول الزمني",
+      "by": "بواسطة",
+
+      "modal": {
+        "advanceTitle": "الانتقال إلى المرحلة التالية",
+        "rejectTitle": "رفض الطلب",
+        "approveTitle": "اعتماد وإنشاء مشروع",
+        "projectKey": "مفتاح المشروع (2-10 أحرف)",
+        "projectKeyPlaceholder": "مثال: PROJ",
+        "commentRequired": "تعليق (مطلوب)",
+        "commentOptional": "تعليق (اختياري)",
+        "commentPlaceholder": "أضف تعليقاً...",
+        "cancel": "إلغاء",
+        "advance": "تقديم",
+        "approve": "اعتماد",
+        "processing": "جاري المعالجة..."
+      },
+
+      "unknown": "غير معروف",
+      "failedComment": "فشل إضافة التعليق",
+      "failedScore": "فشل حفظ التقييم",
+      "actionFailed": "فشل الإجراء"
+    },
+
+    "card": {
+      "timeAgo": {
+        "days": "ي مضت",
+        "hours": "س مضت",
+        "minutes": "د مضت"
+      }
+    }
+  }
+}

@@ -1002,7 +1002,7 @@ export default function RoadmapPage() {
         {/* Fixed Left Column - Work Items */}
         <div className="w-64 sm:w-80 lg:w-96 shrink-0 border-r border-gray-300 bg-white z-20 flex flex-col">
           {/* Header */}
-          <div className="px-3 sm:px-4 py-3 border-b border-gray-200 bg-gray-50">
+          <div className="px-3 sm:px-4 py-1 border-b border-gray-200 bg-gray-50">
             <span className="text-sm font-semibold text-gray-700">{t('roadmap.columns.workItems')}</span>
           </div>
           
@@ -1020,15 +1020,10 @@ export default function RoadmapPage() {
                   className={`px-3 sm:px-4 py-3 border-b border-gray-100 hover:bg-blue-50/50 transition-colors cursor-pointer ${
                     epicIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
                   }`}
-                  style={{ minHeight: '60px' }}
+                  style={{ minHeight: '80px' }}
                 >
                   <div className="flex items-center gap-2">
                     <GripVertical className="h-4 w-4 text-gray-300 cursor-grab hover:text-gray-500" />
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
-                      aria-label={`Select ${epic.title}`}
-                    />
                     <button 
                       onClick={() => toggleItem(epic._id)} 
                       className="p-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
@@ -1043,7 +1038,7 @@ export default function RoadmapPage() {
                     >
                       {epic.key}
                     </button>
-                    <span className="text-gray-900 text-sm font-medium truncate flex-1">{epic.title || epic.summary}</span>
+                    <span className="text-gray-900 text-sm font-medium flex-1 break-words">{epic.title || epic.summary}</span>
                   </div>
                   <div className="ms-16 mt-2 flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -1075,7 +1070,6 @@ export default function RoadmapPage() {
                   >
                     <div className="flex items-center gap-2">
                       <GripVertical className="h-3.5 w-3.5 text-gray-300 cursor-grab" />
-                      <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600" />
                       <span className={`${getTypeColor(task.type)} text-sm`}>{getTypeIcon(task.type)}</span>
                       <button 
                         onClick={() => { setSelectedTask(task); setShowTaskDetail(true); }}
@@ -1083,22 +1077,24 @@ export default function RoadmapPage() {
                       >
                         {task.key}
                       </button>
-                      <span className="text-gray-800 text-sm truncate flex-1">{task.title || task.summary}</span>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              getTaskProgress(task) === 100 ? 'bg-green-500' :
-                              getTaskProgress(task) >= 50 ? 'bg-blue-500' :
-                              getTaskProgress(task) > 0 ? 'bg-amber-500' : 'bg-gray-300'
-                            }`}
-                            style={{ width: `${getTaskProgress(task)}%` }}
-                          ></div>
-                        </div>
-                        <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${getStatusBadge(task.status?.name || 'todo')}`}>
-                          {task.status?.name || 'TODO'}
-                        </span>
+                      <span className="text-gray-800 text-sm flex-1 break-words">{task.title || task.summary}</span>
+                    </div>
+                    <div className="ms-12 mt-1 flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            getTaskProgress(task) === 100 ? 'bg-green-500' :
+                            getTaskProgress(task) >= 50 ? 'bg-blue-500' :
+                            getTaskProgress(task) > 0 ? 'bg-amber-500' : 'bg-gray-300'
+                          }`}
+                          style={{ width: `${getTaskProgress(task)}%` }}
+                        ></div>
                       </div>
+                      <span className={`text-xs font-medium ${
+                        getTaskProgress(task) === 100 ? 'text-green-600' :
+                        getTaskProgress(task) >= 50 ? 'text-blue-600' :
+                        getTaskProgress(task) > 0 ? 'text-amber-600' : 'text-gray-400'
+                      }`}>{getTaskProgress(task)}%</span>
                     </div>
                   </div>
                 ))}
@@ -1116,7 +1112,6 @@ export default function RoadmapPage() {
               >
                 <div className="flex items-center gap-2">
                   <GripVertical className="h-4 w-4 text-gray-300 cursor-grab" />
-                  <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-blue-600" aria-label={`Select ${task.title}`} />
                   <span className={`${getTypeColor(task.type)} text-lg`}>{getTypeIcon(task.type)}</span>
                   <button 
                     onClick={() => { setSelectedTask(task); setShowTaskDetail(true); }}
@@ -1124,22 +1119,24 @@ export default function RoadmapPage() {
                   >
                     {task.key}
                   </button>
-                  <span className="text-gray-900 text-sm font-medium truncate flex-1">{task.title || task.summary}</span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          getTaskProgress(task) === 100 ? 'bg-green-500' :
-                          getTaskProgress(task) >= 50 ? 'bg-blue-500' :
-                          getTaskProgress(task) > 0 ? 'bg-amber-500' : 'bg-gray-300'
-                        }`}
-                        style={{ width: `${getTaskProgress(task)}%` }}
-                      ></div>
-                    </div>
-                    <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${getStatusBadge(task.status?.name || 'todo')}`}>
-                      {task.status?.name || 'TODO'}
-                    </span>
+                  <span className="text-gray-900 text-sm font-medium flex-1 break-words">{task.title || task.summary}</span>
+                </div>
+                <div className="ms-16 mt-1 flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        getTaskProgress(task) === 100 ? 'bg-green-500' :
+                        getTaskProgress(task) >= 50 ? 'bg-blue-500' :
+                        getTaskProgress(task) > 0 ? 'bg-amber-500' : 'bg-gray-300'
+                      }`}
+                      style={{ width: `${getTaskProgress(task)}%` }}
+                    ></div>
                   </div>
+                  <span className={`text-xs font-medium ${
+                    getTaskProgress(task) === 100 ? 'text-green-600' :
+                    getTaskProgress(task) >= 50 ? 'text-blue-600' :
+                    getTaskProgress(task) > 0 ? 'text-amber-600' : 'text-gray-400'
+                  }`}>{getTaskProgress(task)}%</span>
                 </div>
               </div>
             ))}
@@ -1225,7 +1222,7 @@ export default function RoadmapPage() {
                 {/* Epic Timeline Row */}
                 <div 
                   className={`relative flex border-b border-gray-100 ${epicIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
-                  style={{ minHeight: '60px' }}
+                  style={{ minHeight: '80px' }}
                 >
                   {timelineColumns.map((col, colIdx) => (
                     <div 
@@ -1321,7 +1318,7 @@ export default function RoadmapPage() {
                   <div 
                     key={task._id}
                     className={`relative flex border-b border-gray-100 ${taskIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'}`}
-                    style={{ minHeight: '44px' }}
+                    style={{ minHeight: '80px' }}
                   >
                     {timelineColumns.map((col, colIdx) => (
                       <div 

@@ -25,6 +25,16 @@ import {
 import { useMethodology } from '@/hooks/useMethodology';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+interface BackendFile {
+  _id: string;
+  name: string;
+  type: 'file' | 'folder' | 'image' | 'document' | 'spreadsheet';
+  size?: number;
+  uploadedBy: { _id: string; email: string; profile?: { firstName: string; lastName: string } } | null;
+  taskKey?: string;
+  createdAt: string;
+}
+
 interface FileItem {
   id: string;
   name: string;
@@ -42,16 +52,15 @@ interface Project {
   key: string;
 }
 
-const defaultFiles: FileItem[] = [
-  { id: 'f1', name: 'Design Assets', type: 'folder', uploadedBy: 'Emily Davis', uploadedAt: '2024-01-15' },
-  { id: 'f2', name: 'dashboard-mockup-v3.fig', type: 'document', size: 4500000, uploadedBy: 'Emily Davis', uploadedAt: '2024-01-15', taskKey: 'PROJ-102' },
-  { id: 'f3', name: 'api-documentation.pdf', type: 'document', size: 1200000, uploadedBy: 'Sarah Johnson', uploadedAt: '2024-01-14', taskKey: 'PROJ-101' },
-  { id: 'f4', name: 'screenshot-bug-login.png', type: 'image', size: 850000, uploadedBy: 'Mike Chen', uploadedAt: '2024-01-14', taskKey: 'PROJ-103' },
-  { id: 'f5', name: 'sprint-report.xlsx', type: 'spreadsheet', size: 320000, uploadedBy: 'Sarah Johnson', uploadedAt: '2024-01-13' },
-  { id: 'f6', name: 'user-flow-diagram.png', type: 'image', size: 1500000, uploadedBy: 'Emily Davis', uploadedAt: '2024-01-12', taskKey: 'PROJ-102' },
-  { id: 'f7', name: 'meeting-notes-jan.md', type: 'document', size: 45000, uploadedBy: 'John Doe', uploadedAt: '2024-01-10' },
-  { id: 'f8', name: 'architecture-diagram.svg', type: 'image', size: 280000, uploadedBy: 'Mike Chen', uploadedAt: '2024-01-08' },
-];
+const mapFile = (f: BackendFile): FileItem => ({
+  id: f._id,
+  name: f.name,
+  type: f.type,
+  size: f.size,
+  uploadedBy: f.uploadedBy?.profile ? `${f.uploadedBy.profile.firstName} ${f.uploadedBy.profile.lastName}`.trim() : f.uploadedBy?.email || 'Unknown',
+  uploadedAt: f.createdAt,
+  taskKey: f.taskKey,
+});
 
 const typeConfig = {
   folder: { icon: Folder, color: 'text-yellow-500', bgColor: 'bg-yellow-100' },
@@ -70,34 +79,64 @@ export default function FilesPage() {
   const { t } = useLanguage();
 
   const [project, setProject] = useState<Project | null>(null);
-  const [files] = useState<FileItem[]>(defaultFiles);
+  const [files, setFiles] = useState<FileItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
 
-  const fetchProject = useCallback(async (token: string) => {
+  const getToken = () => localStorage.getItem('token') || localStorage.getItem('accessToken');
+
+  const fetchData = useCallback(async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
+      const [projRes, filesRes] = await Promise.all([
+        fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/files`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const projData = await projRes.json();
+      if (projData.success) setProject(projData.data.project);
+      const filesData = await filesRes.json();
+      if (filesData.success) setFiles((filesData.data.files || []).map(mapFile));
     } catch (error) {
-      console.error('Failed to fetch project:', error);
+      console.error('Failed to fetch files:', error);
     } finally {
       setIsLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+    const token = getToken();
+    if (!token) { router.push('/login'); return; }
+    fetchData(token);
+  }, [projectId, router, fetchData]);
+
+  const handleDelete = async (fileId: string) => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/pm/files/${fileId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data.success) {
+        setFiles(prev => prev.filter(f => f.id !== fileId));
+        if (selectedFile?.id === fileId) setSelectedFile(null);
+      }
+    } catch (error) { console.error('Failed to delete file:', error); }
+  };
+
+  const handleCreateFolder = async () => {
+    const name = prompt('Enter folder name:');
+    if (!name) return;
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/files`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, type: 'folder' }),
+      });
+      const data = await res.json();
+      if (data.success) fetchData(token);
+    } catch (error) { console.error('Failed to create folder:', error); }
+  };
 
   const formatSize = (bytes?: number) => {
     if (!bytes) return '-';
@@ -176,9 +215,12 @@ export default function FilesPage() {
                 <List className="h-4 w-4 text-gray-600" />
               </button>
             </div>
-            <button className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+            <button
+              onClick={handleCreateFolder}
+              className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
               <Upload className="h-4 w-4" />
-              {t('projects.files.upload') || 'Upload'}
+              {t('projects.files.upload') || 'New Folder'}
             </button>
           </div>
         </div>
@@ -337,7 +379,10 @@ export default function FilesPage() {
                 <Eye className="h-4 w-4" />
                 {t('projects.files.preview') || 'Preview'}
               </button>
-              <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-red-300 text-red-600 font-medium rounded-lg hover:bg-red-50 transition-colors">
+              <button
+                onClick={() => { if (selectedFile && confirm('Delete this file?')) handleDelete(selectedFile.id); }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-red-300 text-red-600 font-medium rounded-lg hover:bg-red-50 transition-colors"
+              >
                 <Trash2 className="h-4 w-4" />
                 {t('projects.common.delete') || 'Delete'}
               </button>

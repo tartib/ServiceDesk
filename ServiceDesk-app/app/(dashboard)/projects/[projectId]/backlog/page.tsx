@@ -386,10 +386,11 @@ export default function BacklogPage() {
         console.log('👥 Raw members array:', members);
         
         const mappedMembers = members
-          .map((m: { user?: { _id: string; profile: { firstName: string; lastName: string; avatar?: string } }; _id: string; profile?: { firstName: string; lastName: string; avatar?: string } }) => {
-            // Handle both nested user structure and direct structure
-            const userId = m.user?._id || m._id;
-            const userProfile = m.user?.profile || m.profile;
+          .map((m: { userId?: { _id: string; profile?: { firstName: string; lastName: string; avatar?: string } }; user?: { _id: string; profile?: { firstName: string; lastName: string; avatar?: string } }; _id?: string; profile?: { firstName: string; lastName: string; avatar?: string } }) => {
+            // Backend returns { userId: { _id, profile, email }, role }
+            const userObj = m.userId || m.user;
+            const userId = userObj?._id || m._id;
+            const userProfile = userObj?.profile || m.profile;
             
             if (!userId || !userProfile) {
               console.warn('⚠️ Skipping member with missing data:', m);

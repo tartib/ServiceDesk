@@ -71,6 +71,7 @@ export default function ProjectsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const [intakePending, setIntakePending] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
@@ -79,11 +80,22 @@ export default function ProjectsPage() {
       return;
     }
     fetchProjects(token);
+
+    // Fetch intake pending count
+    fetch(`${API_URL}/pm/intake/stats`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          const byStage = d.data.byStage || {};
+          setIntakePending((byStage.screening || 0) + (byStage.business_case || 0) + (byStage.prioritization || 0));
+        }
+      })
+      .catch(() => {});
   }, [router]);
 
   const fetchProjects = async (token: string) => {
     try {
-      const response = await fetch('API_URL/pm/projects', {
+      const response = await fetch(`${API_URL}/pm/projects`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -144,6 +156,21 @@ export default function ProjectsPage() {
           onSearchClick={() => setShowSearch(true)} 
           onCreateClick={() => setShowWizard(true)}
         />
+
+        {/* Intake Pending Banner */}
+        {intakePending > 0 && (
+          <div
+            onClick={() => router.push('/projects/intake')}
+            className="mb-4 flex items-center justify-between px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-amber-600 text-sm font-medium">
+                {intakePending} intake request{intakePending > 1 ? 's' : ''} pending review
+              </span>
+            </div>
+            <span className="text-amber-600 text-xs hover:underline">View Intake &rarr;</span>
+          </div>
+        )}
 
         {/* Content */}
         {projects.length === 0 ? (

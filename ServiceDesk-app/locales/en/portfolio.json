@@ -1,0 +1,95 @@
+{
+  "portfolio": {
+    "title": "Portfolio Analytics",
+    "subtitle": "Real-time performance across all projects",
+    "connected": "Live",
+    "disconnected": "Offline",
+    "lastUpdated": "Last updated",
+    "refresh": "Refresh",
+    "loading": "Loading analytics...",
+    "noData": "No data available",
+
+    "kpi": {
+      "totalProjects": "Total Projects",
+      "activeProjects": "Active Projects",
+      "totalTasks": "Total Tasks",
+      "completionRate": "Completion Rate",
+      "overdueTasks": "Overdue Tasks",
+      "activeSprints": "Active Sprints",
+      "teamMembers": "Team Members",
+      "storyPoints": "Story Points"
+    },
+
+    "projects": {
+      "title": "Project Health",
+      "name": "Project",
+      "methodology": "Methodology",
+      "completion": "Completion",
+      "velocity": "Velocity",
+      "overdue": "Overdue",
+      "timeline": "Timeline",
+      "members": "Members",
+      "tasks": "Tasks",
+      "noProjects": "No projects found",
+      "viewDetails": "View Details",
+      "activeSprint": "Active Sprint",
+      "daysLeft": "days left",
+      "daysOverdue": "days overdue",
+      "pts": "pts",
+      "status": {
+        "on_track": "On Track",
+        "at_risk": "At Risk",
+        "overdue": "Overdue",
+        "no_deadline": "No Deadline"
+      }
+    },
+
+    "drilldown": {
+      "taskBreakdown": "Task Breakdown",
+      "priorityDistribution": "Priority Distribution",
+      "velocityHistory": "Velocity History",
+      "topMembers": "Top Members",
+      "recentActivity": "Recent Activity",
+      "todo": "To Do",
+      "inProgress": "In Progress",
+      "done": "Done",
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "planned": "Planned",
+      "completed": "Completed",
+      "completionRate": "Completion Rate",
+      "noActivity": "No recent activity",
+      "noVelocity": "No velocity data yet",
+      "noMembers": "No member data"
+    },
+
+    "trends": {
+      "title": "Weekly Trends",
+      "created": "Created",
+      "completed": "Completed",
+      "tasksCreated": "Tasks Created",
+      "tasksCompleted": "Tasks Completed",
+      "noTrends": "No trend data available"
+    },
+
+    "workload": {
+      "title": "Team Workload",
+      "member": "Member",
+      "assigned": "Assigned",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "overdue": "Overdue",
+      "points": "Points",
+      "noMembers": "No workload data available"
+    },
+
+    "timeline": {
+      "title": "Timeline Health",
+      "onTime": "On Time",
+      "overdue": "Overdue",
+      "noDeadline": "No Deadline"
+    }
+  }
+}
