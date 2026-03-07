@@ -7,7 +7,7 @@
 import { Router } from 'express';
 import { body, param } from 'express-validator';
 import { authenticate } from '../../../middleware/auth';
-import * as organizationController from '../../../controllers/pm/organization.controller';
+import * as organizationController from '../../../modules/pm/controllers/organization.controller';
 
 const router = Router();
 

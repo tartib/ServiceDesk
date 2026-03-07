@@ -22,10 +22,10 @@ export const createMockAdmin = (overrides = {}) =>
 
 export const createMockRequest = (overrides = {}) => ({
   user: createMockUser(),
-  headers: {},
-  body: {},
-  params: {},
-  query: {},
+  headers: {} as Record<string, string>,
+  body: {} as Record<string, any>,
+  params: {} as Record<string, string>,
+  query: {} as Record<string, string>,
   ...overrides,
 });
 

@@ -1,4 +1,4 @@
-import { ProjectRole } from '../../models/pm/Project';
+import { ProjectRole } from '../../modules/pm/models/Project';
 
 export enum ProjectPermission {
   // Project management

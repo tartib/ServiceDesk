@@ -53,6 +53,7 @@ export enum ServiceRequestStatus {
   APPROVED = 'approved',
   REJECTED = 'rejected',
   IN_PROGRESS = 'in_progress',
+  ON_HOLD = 'on_hold',
   FULFILLED = 'fulfilled',
   CANCELLED = 'cancelled',
 }
@@ -309,6 +310,7 @@ export interface IServiceWorkflow {
   auto_assign_user?: string;
   sla_id: string;
   notification_template?: string;
+  fulfillment_workflow_id?: string;
 }
 
 // ============================================

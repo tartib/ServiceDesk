@@ -1,57 +1,25 @@
 /// <reference types="jest" />
 import request from 'supertest';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../../app';
-import User from '../../models/User';
 import Incident from '../../core/entities/Incident';
 import Counter from '../../core/entities/Counter';
-import jwt from 'jsonwebtoken';
-import env from '../../config/env';
+import { setupTestDB } from '../helpers/testSetup';
+import { seedUser, TestUser } from '../helpers/authHelper';
 
 /**
  * Integration Tests for Incidents API
  */
 
-let mongoServer: MongoMemoryServer;
-let prepToken: string;
-let supervisorToken: string;
-let managerToken: string;
-let prepUserId: string;
-let supervisorUserId: string;
-let managerUserId: string;
+setupTestDB({ dropAfterEach: false });
+
+let prepUser: TestUser;
+let supervisorUser: TestUser;
+let managerUser: TestUser;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-
-  const prepUser = await User.create({
-    name: 'Prep User',
-    email: 'prep@example.com',
-    password: 'password123',
-    role: 'prep',
-  });
-  prepUserId = prepUser._id.toString();
-  prepToken = jwt.sign({ id: prepUserId, role: 'prep' }, env.JWT_SECRET, { expiresIn: '1h' });
-
-  const supervisorUser = await User.create({
-    name: 'Supervisor User',
-    email: 'supervisor@example.com',
-    password: 'password123',
-    role: 'supervisor',
-  });
-  supervisorUserId = supervisorUser._id.toString();
-  supervisorToken = jwt.sign({ id: supervisorUserId, role: 'supervisor' }, env.JWT_SECRET, { expiresIn: '1h' });
-
-  const managerUser = await User.create({
-    name: 'Manager User',
-    email: 'manager@example.com',
-    password: 'password123',
-    role: 'manager',
-  });
-  managerUserId = managerUser._id.toString();
-  managerToken = jwt.sign({ id: managerUserId, role: 'manager' }, env.JWT_SECRET, { expiresIn: '1h' });
+  prepUser = await seedUser({ email: 'prep-inc@test.com', role: 'prep' });
+  supervisorUser = await seedUser({ email: 'sup-inc@test.com', role: 'supervisor' });
+  managerUser = await seedUser({ email: 'mgr-inc@test.com', role: 'manager' });
 
   const currentYear = new Date().getFullYear();
   await Counter.findOneAndUpdate(
@@ -59,11 +27,6 @@ beforeAll(async () => {
     { $setOnInsert: { sequence: 0, year: currentYear } },
     { upsert: true }
   );
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
 });
 
 beforeEach(async () => {
@@ -85,11 +48,11 @@ describe('Incidents API - Integration Tests', () => {
   // CREATE INCIDENT
   // ============================================
 
-  describe('POST /api/v2/incidents - Create Incident', () => {
+  describe('POST /api/v2/itsm/incidents - Create Incident', () => {
     it('should create an incident as prep user', async () => {
       const res = await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload());
 
       expect(res.status).toBe(201);
@@ -101,8 +64,8 @@ describe('Incidents API - Integration Tests', () => {
 
     it('should create high priority incident', async () => {
       const res = await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ impact: 'high', urgency: 'high' }));
 
       expect(res.status).toBe(201);
@@ -111,8 +74,8 @@ describe('Incidents API - Integration Tests', () => {
 
     it('should create major incident', async () => {
       const res = await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ is_major: true }));
 
       expect(res.status).toBe(201);
@@ -121,7 +84,7 @@ describe('Incidents API - Integration Tests', () => {
 
     it('should reject request without authentication', async () => {
       const res = await request(app)
-        .post('/api/v2/incidents')
+        .post('/api/v2/itsm/incidents')
         .send(createIncidentPayload());
 
       expect(res.status).toBe(401);
@@ -132,28 +95,28 @@ describe('Incidents API - Integration Tests', () => {
   // GET INCIDENTS
   // ============================================
 
-  describe('GET /api/v2/incidents - List Incidents', () => {
+  describe('GET /api/v2/itsm/incidents - List Incidents', () => {
     beforeEach(async () => {
       await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ title: 'Incident 1' }));
 
       await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ title: 'Incident 2', impact: 'high' }));
 
       await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ title: 'Incident 3' }));
     });
 
     it('should list incidents for supervisor', async () => {
       const res = await request(app)
-        .get('/api/v2/incidents')
-        .set('Authorization', `Bearer ${supervisorToken}`);
+        .get('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${supervisorUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -162,8 +125,8 @@ describe('Incidents API - Integration Tests', () => {
 
     it('should list incidents for manager', async () => {
       const res = await request(app)
-        .get('/api/v2/incidents')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(3);
@@ -171,16 +134,16 @@ describe('Incidents API - Integration Tests', () => {
 
     it('should deny access for prep user', async () => {
       const res = await request(app)
-        .get('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`);
+        .get('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(403);
     });
 
     it('should filter by status', async () => {
       const res = await request(app)
-        .get('/api/v2/incidents?status=open')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/incidents?status=open')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.every((i: any) => i.status === 'open')).toBe(true);
@@ -188,8 +151,8 @@ describe('Incidents API - Integration Tests', () => {
 
     it('should support pagination', async () => {
       const res = await request(app)
-        .get('/api/v2/incidents?page=1&limit=2')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/incidents?page=1&limit=2')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.length).toBeLessThanOrEqual(2);
@@ -201,21 +164,21 @@ describe('Incidents API - Integration Tests', () => {
   // GET SINGLE INCIDENT
   // ============================================
 
-  describe('GET /api/v2/incidents/:id - Get Single Incident', () => {
+  describe('GET /api/v2/itsm/incidents/:id - Get Single Incident', () => {
     let incidentId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload());
       incidentId = res.body.data.incident.incident_id;
     });
 
     it('should get incident by ID', async () => {
       const res = await request(app)
-        .get(`/api/v2/incidents/${incidentId}`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .get(`/api/v2/itsm/incidents/${incidentId}`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -224,8 +187,8 @@ describe('Incidents API - Integration Tests', () => {
 
     it('should return 404 for non-existent incident', async () => {
       const res = await request(app)
-        .get('/api/v2/incidents/INC-99999')
-        .set('Authorization', `Bearer ${prepToken}`);
+        .get('/api/v2/itsm/incidents/INC-99999')
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(404);
     });
@@ -235,21 +198,21 @@ describe('Incidents API - Integration Tests', () => {
   // UPDATE INCIDENT
   // ============================================
 
-  describe('PATCH /api/v2/incidents/:id - Update Incident', () => {
+  describe('PATCH /api/v2/itsm/incidents/:id - Update Incident', () => {
     let incidentId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload());
       incidentId = res.body.data.incident.incident_id;
     });
 
     it('should update incident as supervisor', async () => {
       const res = await request(app)
-        .patch(`/api/v2/incidents/${incidentId}`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .patch(`/api/v2/itsm/incidents/${incidentId}`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({ title: 'Updated Title' });
 
       expect(res.status).toBe(200);
@@ -258,8 +221,8 @@ describe('Incidents API - Integration Tests', () => {
 
     it('should deny update for prep user', async () => {
       const res = await request(app)
-        .patch(`/api/v2/incidents/${incidentId}`)
-        .set('Authorization', `Bearer ${prepToken}`)
+        .patch(`/api/v2/itsm/incidents/${incidentId}`)
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send({ title: 'Updated Title' });
 
       expect(res.status).toBe(403);
@@ -270,21 +233,21 @@ describe('Incidents API - Integration Tests', () => {
   // UPDATE STATUS
   // ============================================
 
-  describe('PATCH /api/v2/incidents/:id/status - Update Status', () => {
+  describe('PATCH /api/v2/itsm/incidents/:id/status - Update Status', () => {
     let incidentId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload());
       incidentId = res.body.data.incident.incident_id;
     });
 
     it('should update status to in_progress', async () => {
       const res = await request(app)
-        .patch(`/api/v2/incidents/${incidentId}/status`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .patch(`/api/v2/itsm/incidents/${incidentId}/status`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({ status: 'in_progress' });
 
       expect(res.status).toBe(200);
@@ -293,8 +256,8 @@ describe('Incidents API - Integration Tests', () => {
 
     it('should resolve incident', async () => {
       const res = await request(app)
-        .patch(`/api/v2/incidents/${incidentId}/status`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .patch(`/api/v2/itsm/incidents/${incidentId}/status`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
           status: 'resolved',
           resolution_code: 'fixed',
@@ -310,23 +273,23 @@ describe('Incidents API - Integration Tests', () => {
   // ASSIGN INCIDENT
   // ============================================
 
-  describe('PATCH /api/v2/incidents/:id/assign - Assign Incident', () => {
+  describe('PATCH /api/v2/itsm/incidents/:id/assign - Assign Incident', () => {
     let incidentId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload());
       incidentId = res.body.data.incident.incident_id;
     });
 
     it('should assign incident as manager', async () => {
       const res = await request(app)
-        .patch(`/api/v2/incidents/${incidentId}/assign`)
-        .set('Authorization', `Bearer ${managerToken}`)
+        .patch(`/api/v2/itsm/incidents/${incidentId}/assign`)
+        .set('Authorization', `Bearer ${managerUser.token}`)
         .send({
-          technician_id: supervisorUserId,
+          technician_id: supervisorUser.id,
           technician_name: 'Supervisor User',
           technician_email: 'supervisor@example.com',
           group_id: 'group-001',
@@ -339,10 +302,10 @@ describe('Incidents API - Integration Tests', () => {
 
     it('should deny assignment for supervisor', async () => {
       const res = await request(app)
-        .patch(`/api/v2/incidents/${incidentId}/assign`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .patch(`/api/v2/itsm/incidents/${incidentId}/assign`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
-          technician_id: supervisorUserId,
+          technician_id: supervisorUser.id,
           technician_name: 'Supervisor User',
           technician_email: 'supervisor@example.com',
         });
@@ -355,21 +318,21 @@ describe('Incidents API - Integration Tests', () => {
   // ADD WORKLOG
   // ============================================
 
-  describe('POST /api/v2/incidents/:id/worklogs - Add Worklog', () => {
+  describe('POST /api/v2/itsm/incidents/:id/worklogs - Add Worklog', () => {
     let incidentId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload());
       incidentId = res.body.data.incident.incident_id;
     });
 
     it('should add worklog as supervisor', async () => {
       const res = await request(app)
-        .post(`/api/v2/incidents/${incidentId}/worklogs`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post(`/api/v2/itsm/incidents/${incidentId}/worklogs`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
           minutes_spent: 30,
           note: 'Investigated the issue',
@@ -386,23 +349,23 @@ describe('Incidents API - Integration Tests', () => {
   // STATISTICS
   // ============================================
 
-  describe('GET /api/v2/incidents/stats - Incident Statistics', () => {
+  describe('GET /api/v2/itsm/incidents/stats - Incident Statistics', () => {
     beforeEach(async () => {
       await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ title: 'Incident 1' }));
 
       await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ title: 'Incident 2' }));
     });
 
     it('should return incident statistics', async () => {
       const res = await request(app)
-        .get('/api/v2/incidents/stats')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/incidents/stats')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -414,23 +377,23 @@ describe('Incidents API - Integration Tests', () => {
   // MY REQUESTS
   // ============================================
 
-  describe('GET /api/v2/incidents/my-requests - User Incidents', () => {
+  describe('GET /api/v2/itsm/incidents/my-requests - User Incidents', () => {
     beforeEach(async () => {
       await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ title: 'My Incident 1' }));
 
       await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ title: 'My Incident 2' }));
     });
 
     it('should return user incidents', async () => {
       const res = await request(app)
-        .get('/api/v2/incidents/my-requests')
-        .set('Authorization', `Bearer ${prepToken}`);
+        .get('/api/v2/itsm/incidents/my-requests')
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -442,18 +405,18 @@ describe('Incidents API - Integration Tests', () => {
   // OPEN INCIDENTS
   // ============================================
 
-  describe('GET /api/v2/incidents/open - Open Incidents', () => {
+  describe('GET /api/v2/itsm/incidents/open - Open Incidents', () => {
     beforeEach(async () => {
       await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ title: 'Open Incident' }));
     });
 
     it('should return open incidents', async () => {
       const res = await request(app)
-        .get('/api/v2/incidents/open')
-        .set('Authorization', `Bearer ${supervisorToken}`);
+        .get('/api/v2/itsm/incidents/open')
+        .set('Authorization', `Bearer ${supervisorUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.every((i: any) => i.status === 'open')).toBe(true);
@@ -464,23 +427,23 @@ describe('Incidents API - Integration Tests', () => {
   // MAJOR INCIDENTS
   // ============================================
 
-  describe('GET /api/v2/incidents/major - Major Incidents', () => {
+  describe('GET /api/v2/itsm/incidents/major - Major Incidents', () => {
     beforeEach(async () => {
       await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ is_major: true, title: 'Major Incident' }));
 
       await request(app)
-        .post('/api/v2/incidents')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/incidents')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createIncidentPayload({ title: 'Normal Incident' }));
     });
 
     it('should return only major incidents', async () => {
       const res = await request(app)
-        .get('/api/v2/incidents/major')
-        .set('Authorization', `Bearer ${supervisorToken}`);
+        .get('/api/v2/itsm/incidents/major')
+        .set('Authorization', `Bearer ${supervisorUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.every((i: any) => i.is_major === true)).toBe(true);

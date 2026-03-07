@@ -1,13 +1,10 @@
 /// <reference types="jest" />
 import request from 'supertest';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../../app';
-import User from '../../models/User';
 import Change from '../../core/entities/Change';
 import Counter from '../../core/entities/Counter';
-import jwt from 'jsonwebtoken';
-import env from '../../config/env';
+import { setupTestDB } from '../helpers/testSetup';
+import { seedUser, TestUser } from '../helpers/authHelper';
 
 /**
  * Integration Tests for Changes API
@@ -19,48 +16,16 @@ import env from '../../config/env';
  * - Authorization checks
  */
 
-let mongoServer: MongoMemoryServer;
-let prepToken: string;
-let supervisorToken: string;
-let managerToken: string;
-let prepUserId: string;
-let supervisorUserId: string;
-let managerUserId: string;
+setupTestDB({ dropAfterEach: false });
+
+let prepUser: TestUser;
+let supervisorUser: TestUser;
+let managerUser: TestUser;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-
-  // Create prep user (regular user)
-  const prepUser = await User.create({
-    name: 'Prep User',
-    email: 'prep@example.com',
-    password: 'password123',
-    role: 'prep',
-  });
-  prepUserId = prepUser._id.toString();
-  prepToken = jwt.sign({ id: prepUserId, role: 'prep' }, env.JWT_SECRET, { expiresIn: '1h' });
-
-  // Create supervisor user
-  const supervisorUser = await User.create({
-    name: 'Supervisor User',
-    email: 'supervisor@example.com',
-    password: 'password123',
-    role: 'supervisor',
-  });
-  supervisorUserId = supervisorUser._id.toString();
-  supervisorToken = jwt.sign({ id: supervisorUserId, role: 'supervisor' }, env.JWT_SECRET, { expiresIn: '1h' });
-
-  // Create manager user
-  const managerUser = await User.create({
-    name: 'Manager User',
-    email: 'manager@example.com',
-    password: 'password123',
-    role: 'manager',
-  });
-  managerUserId = managerUser._id.toString();
-  managerToken = jwt.sign({ id: managerUserId, role: 'manager' }, env.JWT_SECRET, { expiresIn: '1h' });
+  prepUser = await seedUser({ email: 'prep-chg@test.com', role: 'prep' });
+  supervisorUser = await seedUser({ email: 'sup-chg@test.com', role: 'supervisor' });
+  managerUser = await seedUser({ email: 'mgr-chg@test.com', role: 'manager' });
 
   // Initialize counter for change IDs (using correct schema)
   const currentYear = new Date().getFullYear();
@@ -69,11 +34,6 @@ beforeAll(async () => {
     { $setOnInsert: { sequence: 0, year: currentYear } },
     { upsert: true }
   );
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
 });
 
 beforeEach(async () => {
@@ -108,11 +68,11 @@ describe('Changes API - Integration Tests', () => {
   // CREATE CHANGE
   // ============================================
 
-  describe('POST /api/v2/changes - Create Change', () => {
+  describe('POST /api/v2/itsm/changes - Create Change', () => {
     it('should create a change request as prep user', async () => {
       const res = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload());
 
       expect(res.status).toBe(201);
@@ -125,8 +85,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should create emergency change', async () => {
       const res = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ type: 'emergency', risk: 'high' }));
 
       expect(res.status).toBe(201);
@@ -136,8 +96,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should create standard change without CAB requirement', async () => {
       const res = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ type: 'standard' }));
 
       expect(res.status).toBe(201);
@@ -147,8 +107,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should require CAB for normal high-risk change', async () => {
       const res = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ risk: 'high' }));
 
       expect(res.status).toBe(201);
@@ -157,7 +117,7 @@ describe('Changes API - Integration Tests', () => {
 
     it('should reject request without authentication', async () => {
       const res = await request(app)
-        .post('/api/v2/changes')
+        .post('/api/v2/itsm/changes')
         .send(createChangePayload());
 
       expect(res.status).toBe(401);
@@ -165,8 +125,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should reject invalid change type', async () => {
       const res = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ type: 'invalid_type' }));
 
       // Server returns 500 for validation errors (could be improved to 400)
@@ -178,29 +138,29 @@ describe('Changes API - Integration Tests', () => {
   // GET CHANGES
   // ============================================
 
-  describe('GET /api/v2/changes - List Changes', () => {
+  describe('GET /api/v2/itsm/changes - List Changes', () => {
     beforeEach(async () => {
       // Create test changes
       await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ title: 'Change 1' }));
 
       await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ title: 'Change 2', type: 'emergency' }));
 
       await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ title: 'Change 3', priority: 'high' }));
     });
 
     it('should list changes for supervisor', async () => {
       const res = await request(app)
-        .get('/api/v2/changes')
-        .set('Authorization', `Bearer ${supervisorToken}`);
+        .get('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${supervisorUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -209,8 +169,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should list changes for manager', async () => {
       const res = await request(app)
-        .get('/api/v2/changes')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(3);
@@ -218,16 +178,16 @@ describe('Changes API - Integration Tests', () => {
 
     it('should deny access for prep user', async () => {
       const res = await request(app)
-        .get('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`);
+        .get('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(403);
     });
 
     it('should filter by status', async () => {
       const res = await request(app)
-        .get('/api/v2/changes?status=draft')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/changes?status=draft')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.every((c: any) => c.status === 'draft')).toBe(true);
@@ -235,8 +195,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should filter by type', async () => {
       const res = await request(app)
-        .get('/api/v2/changes?type=emergency')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/changes?type=emergency')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.every((c: any) => c.type === 'emergency')).toBe(true);
@@ -244,8 +204,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should support pagination', async () => {
       const res = await request(app)
-        .get('/api/v2/changes?page=1&limit=2')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/changes?page=1&limit=2')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.length).toBeLessThanOrEqual(2);
@@ -259,21 +219,21 @@ describe('Changes API - Integration Tests', () => {
   // GET SINGLE CHANGE
   // ============================================
 
-  describe('GET /api/v2/changes/:id - Get Single Change', () => {
+  describe('GET /api/v2/itsm/changes/:id - Get Single Change', () => {
     let changeId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload());
       changeId = res.body.data.change.change_id;
     });
 
     it('should get change by ID', async () => {
       const res = await request(app)
-        .get(`/api/v2/changes/${changeId}`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .get(`/api/v2/itsm/changes/${changeId}`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -282,8 +242,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should return 404 for non-existent change', async () => {
       const res = await request(app)
-        .get('/api/v2/changes/CHG-99999')
-        .set('Authorization', `Bearer ${prepToken}`);
+        .get('/api/v2/itsm/changes/CHG-99999')
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(404);
     });
@@ -293,21 +253,21 @@ describe('Changes API - Integration Tests', () => {
   // UPDATE CHANGE
   // ============================================
 
-  describe('PATCH /api/v2/changes/:id - Update Change', () => {
+  describe('PATCH /api/v2/itsm/changes/:id - Update Change', () => {
     let changeId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload());
       changeId = res.body.data.change.change_id;
     });
 
     it('should update draft change as supervisor', async () => {
       const res = await request(app)
-        .patch(`/api/v2/changes/${changeId}`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .patch(`/api/v2/itsm/changes/${changeId}`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({ title: 'Updated Title' });
 
       expect(res.status).toBe(200);
@@ -316,8 +276,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should deny update for prep user', async () => {
       const res = await request(app)
-        .patch(`/api/v2/changes/${changeId}`)
-        .set('Authorization', `Bearer ${prepToken}`)
+        .patch(`/api/v2/itsm/changes/${changeId}`)
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send({ title: 'Updated Title' });
 
       expect(res.status).toBe(403);
@@ -325,8 +285,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should update multiple fields', async () => {
       const res = await request(app)
-        .patch(`/api/v2/changes/${changeId}`)
-        .set('Authorization', `Bearer ${managerToken}`)
+        .patch(`/api/v2/itsm/changes/${changeId}`)
+        .set('Authorization', `Bearer ${managerUser.token}`)
         .send({
           title: 'New Title',
           description: 'New Description',
@@ -344,21 +304,21 @@ describe('Changes API - Integration Tests', () => {
   // SUBMIT FOR APPROVAL
   // ============================================
 
-  describe('POST /api/v2/changes/:id/submit - Submit for Approval', () => {
+  describe('POST /api/v2/itsm/changes/:id/submit - Submit for Approval', () => {
     let changeId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload());
       changeId = res.body.data.change.change_id;
     });
 
     it('should submit change for approval', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/submit`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .post(`/api/v2/itsm/changes/${changeId}/submit`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(200);
       // Low risk normal change doesn't require CAB
@@ -368,15 +328,15 @@ describe('Changes API - Integration Tests', () => {
     it('should submit high-risk change to CAB review', async () => {
       // Create high-risk change
       const createRes = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ risk: 'high' }));
 
       const highRiskChangeId = createRes.body.data.change.change_id;
 
       const res = await request(app)
-        .post(`/api/v2/changes/${highRiskChangeId}/submit`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .post(`/api/v2/itsm/changes/${highRiskChangeId}/submit`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.change.status).toBe('cab_review');
@@ -385,13 +345,13 @@ describe('Changes API - Integration Tests', () => {
     it('should reject submitting non-draft change', async () => {
       // First submit
       await request(app)
-        .post(`/api/v2/changes/${changeId}/submit`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .post(`/api/v2/itsm/changes/${changeId}/submit`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       // Try to submit again
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/submit`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .post(`/api/v2/itsm/changes/${changeId}/submit`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(400);
     });
@@ -401,28 +361,28 @@ describe('Changes API - Integration Tests', () => {
   // CAB APPROVAL
   // ============================================
 
-  describe('POST /api/v2/changes/:id/cab/approve - CAB Approval', () => {
+  describe('POST /api/v2/itsm/changes/:id/cab/approve - CAB Approval', () => {
     let changeId: string;
 
     beforeEach(async () => {
       // Create high-risk change that requires CAB
       const createRes = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ risk: 'high' }));
 
       changeId = createRes.body.data.change.change_id;
 
       // Submit for approval
       await request(app)
-        .post(`/api/v2/changes/${changeId}/submit`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .post(`/api/v2/itsm/changes/${changeId}/submit`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
     });
 
     it('should allow manager to approve change', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/cab/approve`)
-        .set('Authorization', `Bearer ${managerToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/cab/approve`)
+        .set('Authorization', `Bearer ${managerUser.token}`)
         .send({
           decision: 'approved',
           comments: 'Looks good',
@@ -434,8 +394,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should allow manager to reject change', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/cab/approve`)
-        .set('Authorization', `Bearer ${managerToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/cab/approve`)
+        .set('Authorization', `Bearer ${managerUser.token}`)
         .send({
           decision: 'rejected',
           comments: 'Needs more details',
@@ -446,8 +406,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should deny CAB approval for supervisor', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/cab/approve`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/cab/approve`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
           decision: 'approved',
           comments: 'Approved',
@@ -458,8 +418,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should deny CAB approval for prep user', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/cab/approve`)
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/cab/approve`)
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send({
           decision: 'approved',
           comments: 'Approved',
@@ -473,27 +433,27 @@ describe('Changes API - Integration Tests', () => {
   // SCHEDULE CHANGE
   // ============================================
 
-  describe('POST /api/v2/changes/:id/schedule - Schedule Change', () => {
+  describe('POST /api/v2/itsm/changes/:id/schedule - Schedule Change', () => {
     let changeId: string;
 
     beforeEach(async () => {
       // Create and approve a change
       const createRes = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload());
 
       changeId = createRes.body.data.change.change_id;
 
       await request(app)
-        .post(`/api/v2/changes/${changeId}/submit`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .post(`/api/v2/itsm/changes/${changeId}/submit`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
     });
 
     it('should schedule approved change', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/schedule`)
-        .set('Authorization', `Bearer ${managerToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/schedule`)
+        .set('Authorization', `Bearer ${managerUser.token}`)
         .send({
           planned_start: '2024-03-01T08:00:00Z',
           planned_end: '2024-03-01T10:00:00Z',
@@ -506,8 +466,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should deny scheduling for supervisor', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/schedule`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/schedule`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
           planned_start: '2024-03-01T08:00:00Z',
           planned_end: '2024-03-01T10:00:00Z',
@@ -521,25 +481,25 @@ describe('Changes API - Integration Tests', () => {
   // IMPLEMENT CHANGE
   // ============================================
 
-  describe('POST /api/v2/changes/:id/implement - Start Implementation', () => {
+  describe('POST /api/v2/itsm/changes/:id/implement - Start Implementation', () => {
     let changeId: string;
 
     beforeEach(async () => {
       // Create, approve, and schedule a change
       const createRes = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload());
 
       changeId = createRes.body.data.change.change_id;
 
       await request(app)
-        .post(`/api/v2/changes/${changeId}/submit`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .post(`/api/v2/itsm/changes/${changeId}/submit`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       await request(app)
-        .post(`/api/v2/changes/${changeId}/schedule`)
-        .set('Authorization', `Bearer ${managerToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/schedule`)
+        .set('Authorization', `Bearer ${managerUser.token}`)
         .send({
           planned_start: '2024-03-01T08:00:00Z',
           planned_end: '2024-03-01T10:00:00Z',
@@ -548,8 +508,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should start implementation as supervisor', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/implement`)
-        .set('Authorization', `Bearer ${supervisorToken}`);
+        .post(`/api/v2/itsm/changes/${changeId}/implement`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.change.status).toBe('implementing');
@@ -557,8 +517,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should start implementation as manager', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/implement`)
-        .set('Authorization', `Bearer ${managerToken}`);
+        .post(`/api/v2/itsm/changes/${changeId}/implement`)
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.change.status).toBe('implementing');
@@ -566,8 +526,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should deny implementation for prep user', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/implement`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .post(`/api/v2/itsm/changes/${changeId}/implement`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(403);
     });
@@ -577,39 +537,39 @@ describe('Changes API - Integration Tests', () => {
   // COMPLETE CHANGE
   // ============================================
 
-  describe('POST /api/v2/changes/:id/complete - Complete Change', () => {
+  describe('POST /api/v2/itsm/changes/:id/complete - Complete Change', () => {
     let changeId: string;
 
     beforeEach(async () => {
       // Create full lifecycle change
       const createRes = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload());
 
       changeId = createRes.body.data.change.change_id;
 
       await request(app)
-        .post(`/api/v2/changes/${changeId}/submit`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .post(`/api/v2/itsm/changes/${changeId}/submit`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       await request(app)
-        .post(`/api/v2/changes/${changeId}/schedule`)
-        .set('Authorization', `Bearer ${managerToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/schedule`)
+        .set('Authorization', `Bearer ${managerUser.token}`)
         .send({
           planned_start: '2024-03-01T08:00:00Z',
           planned_end: '2024-03-01T10:00:00Z',
         });
 
       await request(app)
-        .post(`/api/v2/changes/${changeId}/implement`)
-        .set('Authorization', `Bearer ${supervisorToken}`);
+        .post(`/api/v2/itsm/changes/${changeId}/implement`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`);
     });
 
     it('should complete change successfully', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/complete`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/complete`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
           success: true,
           notes: 'Deployment completed successfully',
@@ -621,8 +581,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should mark change as failed', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/complete`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/complete`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
           success: false,
           notes: 'Rollback performed due to errors',
@@ -637,13 +597,13 @@ describe('Changes API - Integration Tests', () => {
   // CANCEL CHANGE
   // ============================================
 
-  describe('POST /api/v2/changes/:id/cancel - Cancel Change', () => {
+  describe('POST /api/v2/itsm/changes/:id/cancel - Cancel Change', () => {
     let changeId: string;
 
     beforeEach(async () => {
       const createRes = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload());
 
       changeId = createRes.body.data.change.change_id;
@@ -651,8 +611,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should cancel draft change', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/cancel`)
-        .set('Authorization', `Bearer ${managerToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/cancel`)
+        .set('Authorization', `Bearer ${managerUser.token}`)
         .send({ reason: 'No longer needed' });
 
       expect(res.status).toBe(200);
@@ -661,8 +621,8 @@ describe('Changes API - Integration Tests', () => {
 
     it('should deny cancellation for supervisor', async () => {
       const res = await request(app)
-        .post(`/api/v2/changes/${changeId}/cancel`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post(`/api/v2/itsm/changes/${changeId}/cancel`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({ reason: 'No longer needed' });
 
       expect(res.status).toBe(403);
@@ -673,28 +633,28 @@ describe('Changes API - Integration Tests', () => {
   // STATISTICS
   // ============================================
 
-  describe('GET /api/v2/changes/stats - Change Statistics', () => {
+  describe('GET /api/v2/itsm/changes/stats - Change Statistics', () => {
     beforeEach(async () => {
       // Create various changes
       await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ title: 'Draft Change' }));
 
       const approvedRes = await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ title: 'Approved Change' }));
 
       await request(app)
-        .post(`/api/v2/changes/${approvedRes.body.data.change.change_id}/submit`)
-        .set('Authorization', `Bearer ${prepToken}`);
+        .post(`/api/v2/itsm/changes/${approvedRes.body.data.change.change_id}/submit`)
+        .set('Authorization', `Bearer ${prepUser.token}`);
     });
 
     it('should return change statistics', async () => {
       const res = await request(app)
-        .get('/api/v2/changes/stats')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/changes/stats')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -706,23 +666,23 @@ describe('Changes API - Integration Tests', () => {
   // MY REQUESTS
   // ============================================
 
-  describe('GET /api/v2/changes/my-requests - User Change Requests', () => {
+  describe('GET /api/v2/itsm/changes/my-requests - User Change Requests', () => {
     beforeEach(async () => {
       await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ title: 'My Change 1' }));
 
       await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ title: 'My Change 2' }));
     });
 
     it('should return user change requests', async () => {
       const res = await request(app)
-        .get('/api/v2/changes/my-requests')
-        .set('Authorization', `Bearer ${prepToken}`);
+        .get('/api/v2/itsm/changes/my-requests')
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -734,23 +694,23 @@ describe('Changes API - Integration Tests', () => {
   // EMERGENCY CHANGES
   // ============================================
 
-  describe('GET /api/v2/changes/emergency - Emergency Changes', () => {
+  describe('GET /api/v2/itsm/changes/emergency - Emergency Changes', () => {
     beforeEach(async () => {
       await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ type: 'emergency', title: 'Emergency 1' }));
 
       await request(app)
-        .post('/api/v2/changes')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/changes')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ type: 'normal', title: 'Normal Change' }));
     });
 
     it('should return only emergency changes', async () => {
       const res = await request(app)
-        .get('/api/v2/changes/emergency')
-        .set('Authorization', `Bearer ${supervisorToken}`);
+        .get('/api/v2/itsm/changes/emergency')
+        .set('Authorization', `Bearer ${supervisorUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.every((c: any) => c.type === 'emergency')).toBe(true);

@@ -1,33 +1,18 @@
 import request from 'supertest';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../../app';
-import User from '../../models/User';
 import SLA from '../../core/entities/SLA';
 import { Priority } from '../../core/types/itsm.types';
-import jwt from 'jsonwebtoken';
-import env from '../../config/env';
+import { setupTestDB } from '../helpers/testSetup';
+import { seedUser, TestUser } from '../helpers/authHelper';
 
-let mongoServer: MongoMemoryServer;
+setupTestDB({ dropAfterEach: false });
+
+let managerUser: TestUser;
 let authToken: string;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
-
-  const testUser = await User.create({
-    name: 'Test Admin',
-    email: 'admin@test.com',
-    password: 'Test@123',
-    role: 'manager',
-    isActive: true,
-  });
-
-  authToken = jwt.sign(
-    { id: testUser._id.toString(), email: testUser.email, role: testUser.role },
-    env.JWT_SECRET,
-    { expiresIn: '1h' }
-  );
+  managerUser = await seedUser({ email: 'admin-wb@test.com', role: 'manager' });
+  authToken = managerUser.token;
 
   await SLA.create({
     sla_id: 'SLA-DEFAULT',
@@ -42,19 +27,14 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
-});
-
 // ============================================
 // INCIDENTS API - WHITE BOX TESTING
 // ============================================
 
-describe('Incidents API - Create (POST /api/v2/incidents)', () => {
+describe('Incidents API - Create (POST /api/v2/itsm/incidents)', () => {
   test('should create incident with valid data', async () => {
     const response = await request(app)
-      .post('/api/v2/incidents')
+      .post('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         title: 'Test Incident',
@@ -74,7 +54,7 @@ describe('Incidents API - Create (POST /api/v2/incidents)', () => {
 
   test('should calculate HIGH priority for high impact + high urgency', async () => {
     const response = await request(app)
-      .post('/api/v2/incidents')
+      .post('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         title: 'Critical Incident',
@@ -93,7 +73,7 @@ describe('Incidents API - Create (POST /api/v2/incidents)', () => {
 
   test('should calculate LOW priority for low impact + low urgency', async () => {
     const response = await request(app)
-      .post('/api/v2/incidents')
+      .post('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         title: 'Minor Incident',
@@ -111,7 +91,7 @@ describe('Incidents API - Create (POST /api/v2/incidents)', () => {
 
   test('should return 401 without authentication', async () => {
     const response = await request(app)
-      .post('/api/v2/incidents')
+      .post('/api/v2/itsm/incidents')
       .send({
         title: 'Test Incident',
         description: 'Test description',
@@ -127,7 +107,7 @@ describe('Incidents API - Create (POST /api/v2/incidents)', () => {
 
   test('should return 400 or 500 for missing required fields', async () => {
     const response = await request(app)
-      .post('/api/v2/incidents')
+      .post('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         title: 'Test Incident',
@@ -140,7 +120,7 @@ describe('Incidents API - Create (POST /api/v2/incidents)', () => {
 
   test('should set SLA due dates on creation', async () => {
     const response = await request(app)
-      .post('/api/v2/incidents')
+      .post('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         title: 'SLA Test Incident',
@@ -159,12 +139,12 @@ describe('Incidents API - Create (POST /api/v2/incidents)', () => {
   });
 });
 
-describe('Incidents API - Read (GET /api/v2/incidents)', () => {
+describe('Incidents API - Read (GET /api/v2/itsm/incidents)', () => {
   let testIncidentId: string;
 
   beforeAll(async () => {
     const response = await request(app)
-      .post('/api/v2/incidents')
+      .post('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         title: 'Read Test Incident',
@@ -180,7 +160,7 @@ describe('Incidents API - Read (GET /api/v2/incidents)', () => {
 
   test('should return list of incidents', async () => {
     const response = await request(app)
-      .get('/api/v2/incidents')
+      .get('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -190,7 +170,7 @@ describe('Incidents API - Read (GET /api/v2/incidents)', () => {
 
   test('should return incident by ID', async () => {
     const response = await request(app)
-      .get(`/api/v2/incidents/${testIncidentId}`)
+      .get(`/api/v2/itsm/incidents/${testIncidentId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -199,7 +179,7 @@ describe('Incidents API - Read (GET /api/v2/incidents)', () => {
 
   test('should return 400 or 404 for non-existent incident', async () => {
     const response = await request(app)
-      .get('/api/v2/incidents/INC-9999-99999')
+      .get('/api/v2/itsm/incidents/INC-9999-99999')
       .set('Authorization', `Bearer ${authToken}`);
 
     expect([400, 404]).toContain(response.status);
@@ -207,7 +187,7 @@ describe('Incidents API - Read (GET /api/v2/incidents)', () => {
 
   test('should filter incidents by status', async () => {
     const response = await request(app)
-      .get('/api/v2/incidents?status=open')
+      .get('/api/v2/itsm/incidents?status=open')
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -218,7 +198,7 @@ describe('Incidents API - Read (GET /api/v2/incidents)', () => {
 
   test('should paginate results', async () => {
     const response = await request(app)
-      .get('/api/v2/incidents?page=1&limit=5')
+      .get('/api/v2/itsm/incidents?page=1&limit=5')
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -227,10 +207,10 @@ describe('Incidents API - Read (GET /api/v2/incidents)', () => {
   });
 });
 
-describe('Incidents API - Statistics (GET /api/v2/incidents/stats)', () => {
+describe('Incidents API - Statistics (GET /api/v2/itsm/incidents/stats)', () => {
   test('should return incident statistics', async () => {
     const response = await request(app)
-      .get('/api/v2/incidents/stats')
+      .get('/api/v2/itsm/incidents/stats')
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -243,7 +223,7 @@ describe('Incidents API - Statistics (GET /api/v2/incidents/stats)', () => {
 
   test('should return open incidents list', async () => {
     const response = await request(app)
-      .get('/api/v2/incidents/open')
+      .get('/api/v2/itsm/incidents/open')
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -251,12 +231,12 @@ describe('Incidents API - Statistics (GET /api/v2/incidents/stats)', () => {
   });
 });
 
-describe('Incidents API - Status Transitions (PATCH /api/v2/incidents/:id/status)', () => {
+describe('Incidents API - Status Transitions (PATCH /api/v2/itsm/incidents/:id/status)', () => {
   let incidentId: string;
 
   beforeEach(async () => {
     const response = await request(app)
-      .post('/api/v2/incidents')
+      .post('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         title: 'Status Test Incident',
@@ -272,7 +252,7 @@ describe('Incidents API - Status Transitions (PATCH /api/v2/incidents/:id/status
 
   test('should transition from OPEN to IN_PROGRESS', async () => {
     const response = await request(app)
-      .patch(`/api/v2/incidents/${incidentId}/status`)
+      .patch(`/api/v2/itsm/incidents/${incidentId}/status`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({ status: 'in_progress' });
 
@@ -283,13 +263,13 @@ describe('Incidents API - Status Transitions (PATCH /api/v2/incidents/:id/status
   test('should transition from IN_PROGRESS to RESOLVED', async () => {
     // First move to in_progress
     await request(app)
-      .patch(`/api/v2/incidents/${incidentId}/status`)
+      .patch(`/api/v2/itsm/incidents/${incidentId}/status`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({ status: 'in_progress' });
 
     // Then resolve
     const response = await request(app)
-      .patch(`/api/v2/incidents/${incidentId}/status`)
+      .patch(`/api/v2/itsm/incidents/${incidentId}/status`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({ 
         status: 'resolved',
@@ -302,7 +282,7 @@ describe('Incidents API - Status Transitions (PATCH /api/v2/incidents/:id/status
 
   test('should reject invalid status transition (OPEN to CLOSED)', async () => {
     const response = await request(app)
-      .patch(`/api/v2/incidents/${incidentId}/status`)
+      .patch(`/api/v2/itsm/incidents/${incidentId}/status`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({ status: 'closed' });
 
@@ -311,7 +291,7 @@ describe('Incidents API - Status Transitions (PATCH /api/v2/incidents/:id/status
 
   test('should transition from OPEN to PENDING', async () => {
     const response = await request(app)
-      .patch(`/api/v2/incidents/${incidentId}/status`)
+      .patch(`/api/v2/itsm/incidents/${incidentId}/status`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({ status: 'pending' });
 
@@ -320,12 +300,12 @@ describe('Incidents API - Status Transitions (PATCH /api/v2/incidents/:id/status
   });
 });
 
-describe('Incidents API - Update (PATCH /api/v2/incidents/:id)', () => {
+describe('Incidents API - Update (PATCH /api/v2/itsm/incidents/:id)', () => {
   let incidentId: string;
 
   beforeEach(async () => {
     const response = await request(app)
-      .post('/api/v2/incidents')
+      .post('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         title: 'Update Test Incident',
@@ -341,7 +321,7 @@ describe('Incidents API - Update (PATCH /api/v2/incidents/:id)', () => {
 
   test('should update incident title', async () => {
     const response = await request(app)
-      .patch(`/api/v2/incidents/${incidentId}`)
+      .patch(`/api/v2/itsm/incidents/${incidentId}`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({ title: 'Updated Title' });
 
@@ -351,7 +331,7 @@ describe('Incidents API - Update (PATCH /api/v2/incidents/:id)', () => {
 
   test('should update incident description', async () => {
     const response = await request(app)
-      .patch(`/api/v2/incidents/${incidentId}`)
+      .patch(`/api/v2/itsm/incidents/${incidentId}`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({ description: 'Updated description' });
 
@@ -359,24 +339,23 @@ describe('Incidents API - Update (PATCH /api/v2/incidents/:id)', () => {
     expect(response.body.data.incident.description).toBe('Updated description');
   });
 
-  test('should recalculate priority when impact changes', async () => {
+  test('should reject updating impact/urgency via general update', async () => {
     const response = await request(app)
-      .patch(`/api/v2/incidents/${incidentId}`)
+      .patch(`/api/v2/itsm/incidents/${incidentId}`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({ impact: 'high', urgency: 'high' });
 
-    expect(response.status).toBe(200);
-    // high+high = critical priority
-    expect(['high', 'critical']).toContain(response.body.data.incident.priority);
+    // impact/urgency are not allowed in the general update schema
+    expect(response.status).toBe(400);
   });
 });
 
-describe('Incidents API - Worklogs (POST /api/v2/incidents/:id/worklogs)', () => {
+describe('Incidents API - Worklogs (POST /api/v2/itsm/incidents/:id/worklogs)', () => {
   let incidentId: string;
 
   beforeEach(async () => {
     const response = await request(app)
-      .post('/api/v2/incidents')
+      .post('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         title: 'Worklog Test Incident',
@@ -392,7 +371,7 @@ describe('Incidents API - Worklogs (POST /api/v2/incidents/:id/worklogs)', () =>
 
   test('should add worklog to incident', async () => {
     const response = await request(app)
-      .post(`/api/v2/incidents/${incidentId}/worklogs`)
+      .post(`/api/v2/itsm/incidents/${incidentId}/worklogs`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         minutes_spent: 30,
@@ -407,7 +386,7 @@ describe('Incidents API - Worklogs (POST /api/v2/incidents/:id/worklogs)', () =>
 
   test('should add internal worklog', async () => {
     const response = await request(app)
-      .post(`/api/v2/incidents/${incidentId}/worklogs`)
+      .post(`/api/v2/itsm/incidents/${incidentId}/worklogs`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         minutes_spent: 15,
@@ -425,24 +404,13 @@ describe('Incidents API - Authorization', () => {
   let prepUserToken: string;
 
   beforeAll(async () => {
-    const prepUser = await User.create({
-      name: 'Prep User',
-      email: 'prep@test.com',
-      password: 'Test@123',
-      role: 'prep',
-      isActive: true,
-    });
-
-    prepUserToken = jwt.sign(
-      { id: prepUser._id.toString(), email: prepUser.email, role: prepUser.role },
-      env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+    const prep = await seedUser({ email: 'prep-wb@test.com', role: 'prep' });
+    prepUserToken = prep.token;
   });
 
   test('prep user should be able to create incident', async () => {
     const response = await request(app)
-      .post('/api/v2/incidents')
+      .post('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${prepUserToken}`)
       .send({
         title: 'Prep User Incident',
@@ -459,7 +427,7 @@ describe('Incidents API - Authorization', () => {
 
   test('prep user should NOT be able to view all incidents', async () => {
     const response = await request(app)
-      .get('/api/v2/incidents')
+      .get('/api/v2/itsm/incidents')
       .set('Authorization', `Bearer ${prepUserToken}`);
 
     expect(response.status).toBe(403);
@@ -467,7 +435,7 @@ describe('Incidents API - Authorization', () => {
 
   test('prep user should NOT be able to view stats', async () => {
     const response = await request(app)
-      .get('/api/v2/incidents/stats')
+      .get('/api/v2/itsm/incidents/stats')
       .set('Authorization', `Bearer ${prepUserToken}`);
 
     expect(response.status).toBe(403);

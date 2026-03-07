@@ -60,7 +60,7 @@ export class ProblemController {
   createFromIncident = asyncHandler(async (req: Request, res: Response) => {
     const problem = await problemService.createFromIncident(
       req.params.incidentId,
-      (req as any).user!._id.toString(),
+      (req as any).user!.id,
       (req as any).user!.name,
       (req as any).user!.email
     );
@@ -93,7 +93,7 @@ export class ProblemController {
     const problem = await problemService.updateProblem(
       req.params.id,
       req.body,
-      (req as any).user!._id.toString(),
+      (req as any).user!.id,
       (req as any).user!.name
     );
 
@@ -115,7 +115,7 @@ export class ProblemController {
       req.params.id,
       root_cause,
       workaround,
-      (req as any).user!._id.toString(),
+      (req as any).user!.id,
       (req as any).user!.name
     );
 
@@ -135,8 +135,8 @@ export class ProblemController {
 
     const problem = await problemService.markAsKnownError(
       req.params.id,
-      { title, symptoms, root_cause, workaround, documented_by: (req as any).user!._id.toString() },
-      (req as any).user!._id.toString(),
+      { title, symptoms, root_cause, workaround, documented_by: (req as any).user!.id },
+      (req as any).user!.id,
       (req as any).user!.name
     );
 
@@ -157,7 +157,7 @@ export class ProblemController {
     const problem = await problemService.linkIncident(
       req.params.id,
       incident_id,
-      (req as any).user!._id.toString(),
+      (req as any).user!.id,
       (req as any).user!.name
     );
 
@@ -205,7 +205,7 @@ export class ProblemController {
     const problem = await problemService.resolveProblem(
       req.params.id,
       permanent_fix,
-      (req as any).user!._id.toString(),
+      (req as any).user!.id,
       (req as any).user!.name
     );
 

@@ -3,7 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
-  testPathIgnorePatterns: ['/node_modules/', '/src/__tests__/setup.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '/src/__tests__/setup.ts', '/src/__tests__/helpers/', '/src/__tests__/fixtures/'],
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
@@ -26,4 +26,6 @@ module.exports = {
   moduleFileExtensions: ['ts', 'js', 'json'],
   verbose: true,
   testTimeout: 30000,
+  forceExit: true,
+  detectOpenHandles: true,
   };

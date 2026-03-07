@@ -56,7 +56,7 @@ const fileFolderSchema = new Schema<IFileFolder>(
     },
     color: {
       type: String,
-      default: '#3B82F6',
+      default: '#ffffff',
     },
     icon: {
       type: String,

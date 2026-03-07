@@ -6,31 +6,77 @@ import { createServer, Server } from 'http';
 import { startAllJobs } from './jobs/taskScheduler';
 import { initializeSocket } from './config/socket';
 import { startWorkflowTimerJob, stopWorkflowTimerJob } from './jobs/workflowTimerJob';
-
-// Connect to database
-connectDB();
+import { eventBus } from './shared/events/event-bus';
+import { initNotificationConsumer } from './modules/notifications/consumers/notification.consumer';
+import { initAnalyticsConsumer } from './modules/analytics/consumers/analytics.consumer';
+import { initSLAMonitorConsumer } from './shared/events/consumers/sla-monitor.consumer';
+import { initSlaConsumer } from './modules/sla/consumers/sla.consumer';
+import { startSlaSchedulerJob, stopSlaSchedulerJob } from './modules/sla/jobs/slaSchedulerJob';
+import { initIntegrations, shutdownIntegrations } from './integrations';
+import FeatureFlagService from './shared/feature-flags/FeatureFlagService';
+import { isPostgresRequired, connectPostgres, disconnectPostgres } from './shared/database';
 
 // Create HTTP server
 const httpServer: Server = createServer(app);
+const server = httpServer;
 
 // Initialize WebSocket
 initializeSocket(httpServer);
 
-// Start server
-httpServer.listen(env.PORT, () => {
-  logger.info(`🚀 Server running in ${env.NODE_ENV} mode on port ${env.PORT}`);
-  logger.info(`📡 API available at http://localhost:${env.PORT}/api/${env.API_VERSION}`);
-  logger.info(`🔌 WebSocket server ready`);
-  
-  // Start background jobs
-  startAllJobs();
+// Boot sequence: connect DBs first, then listen
+(async () => {
+  // Connect to MongoDB (must complete before accepting requests)
+  await connectDB();
 
-  // Start workflow timer job (every 60 seconds)
-  startWorkflowTimerJob(60_000);
-  logger.info('⏱️ Workflow timer job started');
-});
+  // Connect to PostgreSQL (only if any module strategy requires it)
+  if (isPostgresRequired()) {
+    if (!env.POSTGRES_URL) {
+      logger.error('POSTGRES_URL is required when a module uses postgresql strategy');
+      process.exit(1);
+    }
+    await connectPostgres(env.POSTGRES_URL).catch((err) => {
+      logger.error('Failed to connect to PostgreSQL', { error: err });
+      process.exit(1);
+    });
+  }
 
-const server = httpServer;
+  httpServer.listen(env.PORT, async () => {
+    logger.info(`🚀 Server running in ${env.NODE_ENV} mode on port ${env.PORT}`);
+    logger.info(`📡 API available at http://localhost:${env.PORT}/api/${env.API_VERSION}`);
+    logger.info(`🔌 WebSocket server ready`);
+
+    // Initialize feature flags (seeds defaults into DB)
+    await FeatureFlagService.getInstance().initialize();
+
+    // Start background jobs
+    startAllJobs();
+
+    // Start workflow timer job (every 60 seconds)
+    startWorkflowTimerJob(60_000);
+    logger.info('⏱️ Workflow timer job started');
+
+    // Connect event bus (Kafka / Redpanda or in-memory fallback)
+    try {
+      await eventBus.connect();
+      // Initialize event consumers after bus is connected
+      await initNotificationConsumer();
+      await initAnalyticsConsumer();
+      await initSLAMonitorConsumer();
+      await initSlaConsumer();
+      logger.info('📨 Event bus and consumers initialized');
+
+      // Start SLA scheduler job (every 30 seconds)
+      startSlaSchedulerJob(30_000);
+      logger.info('⏱️ SLA scheduler job started');
+
+      // Initialize integration adapters (after event bus is ready)
+      await initIntegrations();
+    } catch (error) {
+      logger.error('Failed to initialize event bus', { error });
+      // Non-fatal — server continues without event bus
+    }
+  });
+})();
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err: Error) => {
@@ -49,9 +95,13 @@ process.on('uncaughtException', (err: Error) => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   logger.info('👋 SIGTERM RECEIVED. Shutting down gracefully');
   stopWorkflowTimerJob();
+  stopSlaSchedulerJob();
+  await shutdownIntegrations();
+  await eventBus.disconnect();
+  await disconnectPostgres();
   server.close(() => {
     logger.info('💥 Process terminated!');
   });

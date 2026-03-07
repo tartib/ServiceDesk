@@ -1,57 +1,25 @@
 /// <reference types="jest" />
 import request from 'supertest';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../../app';
-import User from '../../models/User';
 import Problem from '../../core/entities/Problem';
 import Counter from '../../core/entities/Counter';
-import jwt from 'jsonwebtoken';
-import env from '../../config/env';
+import { setupTestDB } from '../helpers/testSetup';
+import { seedUser, TestUser } from '../helpers/authHelper';
 
 /**
  * Integration Tests for Problems API
  */
 
-let mongoServer: MongoMemoryServer;
-let prepToken: string;
-let supervisorToken: string;
-let managerToken: string;
-let prepUserId: string;
-let supervisorUserId: string;
-let managerUserId: string;
+setupTestDB({ dropAfterEach: false });
+
+let prepUser: TestUser;
+let supervisorUser: TestUser;
+let managerUser: TestUser;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-
-  const prepUser = await User.create({
-    name: 'Prep User',
-    email: 'prep@example.com',
-    password: 'password123',
-    role: 'prep',
-  });
-  prepUserId = prepUser._id.toString();
-  prepToken = jwt.sign({ id: prepUserId, role: 'prep' }, env.JWT_SECRET, { expiresIn: '1h' });
-
-  const supervisorUser = await User.create({
-    name: 'Supervisor User',
-    email: 'supervisor@example.com',
-    password: 'password123',
-    role: 'supervisor',
-  });
-  supervisorUserId = supervisorUser._id.toString();
-  supervisorToken = jwt.sign({ id: supervisorUserId, role: 'supervisor' }, env.JWT_SECRET, { expiresIn: '1h' });
-
-  const managerUser = await User.create({
-    name: 'Manager User',
-    email: 'manager@example.com',
-    password: 'password123',
-    role: 'manager',
-  });
-  managerUserId = managerUser._id.toString();
-  managerToken = jwt.sign({ id: managerUserId, role: 'manager' }, env.JWT_SECRET, { expiresIn: '1h' });
+  prepUser = await seedUser({ email: 'prep-prb@test.com', role: 'prep' });
+  supervisorUser = await seedUser({ email: 'sup-prb@test.com', role: 'supervisor' });
+  managerUser = await seedUser({ email: 'mgr-prb@test.com', role: 'manager' });
 
   const currentYear = new Date().getFullYear();
   await Counter.findOneAndUpdate(
@@ -59,11 +27,6 @@ beforeAll(async () => {
     { $setOnInsert: { sequence: 0, year: currentYear } },
     { upsert: true }
   );
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
 });
 
 beforeEach(async () => {
@@ -87,11 +50,11 @@ describe('Problems API - Integration Tests', () => {
   // CREATE PROBLEM
   // ============================================
 
-  describe('POST /api/v2/problems - Create Problem', () => {
+  describe('POST /api/v2/itsm/problems - Create Problem', () => {
     it('should create a problem as supervisor', async () => {
       const res = await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload());
 
       expect(res.status).toBe(201);
@@ -104,26 +67,26 @@ describe('Problems API - Integration Tests', () => {
 
     it('should create a problem as manager', async () => {
       const res = await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${managerToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${managerUser.token}`)
         .send(createProblemPayload());
 
       expect(res.status).toBe(201);
       expect(res.body.data.problem).toBeDefined();
     });
 
-    it('should deny problem creation for prep user', async () => {
+    it('should allow problem creation for prep user', async () => {
       const res = await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${prepToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createProblemPayload());
 
-      expect(res.status).toBe(403);
+      expect(res.status).toBe(201);
     });
 
     it('should reject request without authentication', async () => {
       const res = await request(app)
-        .post('/api/v2/problems')
+        .post('/api/v2/itsm/problems')
         .send(createProblemPayload());
 
       expect(res.status).toBe(401);
@@ -134,28 +97,28 @@ describe('Problems API - Integration Tests', () => {
   // GET PROBLEMS
   // ============================================
 
-  describe('GET /api/v2/problems - List Problems', () => {
+  describe('GET /api/v2/itsm/problems - List Problems', () => {
     beforeEach(async () => {
       await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload({ title: 'Problem 1' }));
 
       await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload({ title: 'Problem 2', impact: 'high' }));
 
       await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload({ title: 'Problem 3' }));
     });
 
     it('should list problems for supervisor', async () => {
       const res = await request(app)
-        .get('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`);
+        .get('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -164,25 +127,25 @@ describe('Problems API - Integration Tests', () => {
 
     it('should list problems for manager', async () => {
       const res = await request(app)
-        .get('/api/v2/problems')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(3);
     });
 
-    it('should deny access for prep user', async () => {
+    it('should allow access for prep user', async () => {
       const res = await request(app)
-        .get('/api/v2/problems')
-        .set('Authorization', `Bearer ${prepToken}`);
+        .get('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${prepUser.token}`);
 
-      expect(res.status).toBe(403);
+      expect(res.status).toBe(200);
     });
 
     it('should filter by status', async () => {
       const res = await request(app)
-        .get('/api/v2/problems?status=open')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/problems?status=open')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.every((p: any) => p.status === 'open')).toBe(true);
@@ -190,8 +153,8 @@ describe('Problems API - Integration Tests', () => {
 
     it('should support pagination', async () => {
       const res = await request(app)
-        .get('/api/v2/problems?page=1&limit=2')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/problems?page=1&limit=2')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.length).toBeLessThanOrEqual(2);
@@ -203,21 +166,21 @@ describe('Problems API - Integration Tests', () => {
   // GET SINGLE PROBLEM
   // ============================================
 
-  describe('GET /api/v2/problems/:id - Get Single Problem', () => {
+  describe('GET /api/v2/itsm/problems/:id - Get Single Problem', () => {
     let problemId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload());
       problemId = res.body.data.problem.problem_id;
     });
 
     it('should get problem by ID', async () => {
       const res = await request(app)
-        .get(`/api/v2/problems/${problemId}`)
-        .set('Authorization', `Bearer ${supervisorToken}`);
+        .get(`/api/v2/itsm/problems/${problemId}`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -226,8 +189,8 @@ describe('Problems API - Integration Tests', () => {
 
     it('should return 404 for non-existent problem', async () => {
       const res = await request(app)
-        .get('/api/v2/problems/PRB-99999')
-        .set('Authorization', `Bearer ${supervisorToken}`);
+        .get('/api/v2/itsm/problems/PRB-99999')
+        .set('Authorization', `Bearer ${supervisorUser.token}`);
 
       expect(res.status).toBe(404);
     });
@@ -237,21 +200,21 @@ describe('Problems API - Integration Tests', () => {
   // UPDATE PROBLEM
   // ============================================
 
-  describe('PATCH /api/v2/problems/:id - Update Problem', () => {
+  describe('PATCH /api/v2/itsm/problems/:id - Update Problem', () => {
     let problemId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload());
       problemId = res.body.data.problem.problem_id;
     });
 
     it('should update problem as supervisor', async () => {
       const res = await request(app)
-        .patch(`/api/v2/problems/${problemId}`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .patch(`/api/v2/itsm/problems/${problemId}`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({ title: 'Updated Title' });
 
       expect(res.status).toBe(200);
@@ -260,21 +223,21 @@ describe('Problems API - Integration Tests', () => {
 
     it('should update problem as manager', async () => {
       const res = await request(app)
-        .patch(`/api/v2/problems/${problemId}`)
-        .set('Authorization', `Bearer ${managerToken}`)
+        .patch(`/api/v2/itsm/problems/${problemId}`)
+        .set('Authorization', `Bearer ${managerUser.token}`)
         .send({ description: 'Updated Description' });
 
       expect(res.status).toBe(200);
       expect(res.body.data.problem.description).toBe('Updated Description');
     });
 
-    it('should deny update for prep user', async () => {
+    it('should allow update for prep user', async () => {
       const res = await request(app)
-        .patch(`/api/v2/problems/${problemId}`)
-        .set('Authorization', `Bearer ${prepToken}`)
+        .patch(`/api/v2/itsm/problems/${problemId}`)
+        .set('Authorization', `Bearer ${prepUser.token}`)
         .send({ title: 'Updated Title' });
 
-      expect(res.status).toBe(403);
+      expect(res.status).toBe(200);
     });
   });
 
@@ -282,21 +245,21 @@ describe('Problems API - Integration Tests', () => {
   // ROOT CAUSE ANALYSIS
   // ============================================
 
-  describe('PATCH /api/v2/problems/:id/rca - Update Root Cause', () => {
+  describe('PATCH /api/v2/itsm/problems/:id/rca - Update Root Cause', () => {
     let problemId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload());
       problemId = res.body.data.problem.problem_id;
     });
 
     it('should add root cause analysis', async () => {
       const res = await request(app)
-        .patch(`/api/v2/problems/${problemId}/rca`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .patch(`/api/v2/itsm/problems/${problemId}/rca`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
           root_cause: 'Database connection pool exhaustion',
           analysis_method: '5 Whys',
@@ -310,21 +273,21 @@ describe('Problems API - Integration Tests', () => {
   // KNOWN ERROR
   // ============================================
 
-  describe('POST /api/v2/problems/:id/known-error - Mark as Known Error', () => {
+  describe('POST /api/v2/itsm/problems/:id/known-error - Mark as Known Error', () => {
     let problemId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload());
       problemId = res.body.data.problem.problem_id;
     });
 
     it('should mark as known error', async () => {
       const res = await request(app)
-        .post(`/api/v2/problems/${problemId}/known-error`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post(`/api/v2/itsm/problems/${problemId}/known-error`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
           workaround: 'Restart the service every 4 hours',
         });
@@ -337,21 +300,21 @@ describe('Problems API - Integration Tests', () => {
   // LINK INCIDENTS
   // ============================================
 
-  describe('POST /api/v2/problems/:id/link-incident - Link Incident', () => {
+  describe('POST /api/v2/itsm/problems/:id/link-incident - Link Incident', () => {
     let problemId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload());
       problemId = res.body.data.problem.problem_id;
     });
 
     it('should link incident to problem', async () => {
       const res = await request(app)
-        .post(`/api/v2/problems/${problemId}/link-incident`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post(`/api/v2/itsm/problems/${problemId}/link-incident`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
           incident_id: 'INC-001',
         });
@@ -365,20 +328,20 @@ describe('Problems API - Integration Tests', () => {
   // RESOLVE PROBLEM
   // ============================================
 
-  describe('POST /api/v2/problems/:id/resolve - Resolve Problem', () => {
+  describe('POST /api/v2/itsm/problems/:id/resolve - Resolve Problem', () => {
     let problemId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload());
       problemId = res.body.data.problem.problem_id;
 
       // Add root cause first using correct endpoint
       await request(app)
-        .patch(`/api/v2/problems/${problemId}/rca`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .patch(`/api/v2/itsm/problems/${problemId}/rca`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
           root_cause: 'Memory leak in application',
           analysis_method: 'Root Cause Analysis',
@@ -387,8 +350,8 @@ describe('Problems API - Integration Tests', () => {
 
     it('should resolve problem', async () => {
       const res = await request(app)
-        .post(`/api/v2/problems/${problemId}/resolve`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post(`/api/v2/itsm/problems/${problemId}/resolve`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
           resolution: 'Fixed memory leak by updating library version',
         });
@@ -401,23 +364,23 @@ describe('Problems API - Integration Tests', () => {
   // UPDATE STATUS
   // ============================================
 
-  describe('PATCH /api/v2/problems/:id/status - Update Status', () => {
+  describe('PATCH /api/v2/itsm/problems/:id/status - Update Status', () => {
     let problemId: string;
 
     beforeEach(async () => {
       const res = await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload());
       problemId = res.body.data.problem.problem_id;
     });
 
     it('should update problem status', async () => {
       const res = await request(app)
-        .patch(`/api/v2/problems/${problemId}/status`)
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .patch(`/api/v2/itsm/problems/${problemId}/status`)
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send({
-          status: 'investigating',
+          status: 'rca_in_progress',
           notes: 'Starting investigation',
         });
 
@@ -430,23 +393,23 @@ describe('Problems API - Integration Tests', () => {
   // STATISTICS
   // ============================================
 
-  describe('GET /api/v2/problems/stats - Problem Statistics', () => {
+  describe('GET /api/v2/itsm/problems/stats - Problem Statistics', () => {
     beforeEach(async () => {
       await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload({ title: 'Problem 1' }));
 
       await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload({ title: 'Problem 2' }));
     });
 
     it('should return problem statistics', async () => {
       const res = await request(app)
-        .get('/api/v2/problems/stats')
-        .set('Authorization', `Bearer ${managerToken}`);
+        .get('/api/v2/itsm/problems/stats')
+        .set('Authorization', `Bearer ${managerUser.token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -458,18 +421,18 @@ describe('Problems API - Integration Tests', () => {
   // OPEN PROBLEMS
   // ============================================
 
-  describe('GET /api/v2/problems/open - Open Problems', () => {
+  describe('GET /api/v2/itsm/problems/open - Open Problems', () => {
     beforeEach(async () => {
       await request(app)
-        .post('/api/v2/problems')
-        .set('Authorization', `Bearer ${supervisorToken}`)
+        .post('/api/v2/itsm/problems')
+        .set('Authorization', `Bearer ${supervisorUser.token}`)
         .send(createProblemPayload({ title: 'Open Problem' }));
     });
 
     it('should return open problems', async () => {
       const res = await request(app)
-        .get('/api/v2/problems/open')
-        .set('Authorization', `Bearer ${supervisorToken}`);
+        .get('/api/v2/itsm/problems/open')
+        .set('Authorization', `Bearer ${supervisorUser.token}`);
 
       expect(res.status).toBe(200);
       // Problems may have 'logged' or 'open' status

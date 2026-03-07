@@ -9,7 +9,7 @@
 import { Router, Response, RequestHandler } from 'express';
 import { body, param } from 'express-validator';
 import { authenticate } from '../../../middleware/auth';
-import * as pmTeamController from '../../../controllers/pm/team.controller';
+import * as pmTeamController from '../../../modules/pm/controllers/team.controller';
 import { PMAuthRequest } from '../../../types/pm';
 
 // Type wrapper to bridge PMAuthRequest handlers with Express RequestHandler

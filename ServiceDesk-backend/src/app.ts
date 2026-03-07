@@ -10,10 +10,8 @@ import { errorConverter, errorHandler, notFound } from './middleware/errorHandle
 import { apiLimiter } from './middleware/rateLimiter';
 import { xssSanitizer } from './middleware/xssSanitizer';
 import { correlationId } from './middleware/correlationId';
-import { globalDeprecationMiddleware } from './api/v2/shared/middleware/deprecation.middleware';
 import { csrfProtectionConditional } from './shared/middleware/csrf';
 import { diMiddleware } from './infrastructure/di/middleware';
-import { authenticate } from './middleware/auth';
 import logger from './utils/logger';
 import { setupSwagger } from './config/swagger';
 
@@ -173,92 +171,44 @@ app.get('/cache/stats', async (_req, res) => {
   }
 });
 
-// API routes v1 (legacy)
-import authRoutes from './routes/authRoutes';
-import prepTaskRoutes from './routes/prepTaskRoutes';
-import categoryRoutes from './routes/categoryRoutes';
-import inventoryRoutes from './routes/inventoryRoutes';
-import userRoutes from './routes/userRoutes';
-import reportRoutes from './routes/reportRoutes';
-import teamRoutes from './routes/teamRoutes';
-import knowledgeRoutes from './routes/knowledgeRoutes';
-import assetRoutes from './routes/assetRoutes';
-import serviceRequestRoutes from './routes/serviceRequestRoutes';
-import incidentRoutes from './presentation/routes/v2/incidentRoutes';
-import problemRoutes from './presentation/routes/v2/problemRoutes';
-import changeRoutes from './presentation/routes/v2/changeRoutes';
-import slaRoutes from './presentation/routes/v2/slaRoutes';
-import releaseRoutes from './presentation/routes/v2/releaseRoutes';
-import serviceCatalogRoutes from './presentation/routes/v2/serviceCatalogRoutes';
-import formTemplateRoutes from './routes/formTemplateRoutes';
-import formSubmissionRoutes from './routes/formSubmissionRoutes';
+// Legacy v1 routes (feature-flag gated, sunset: 2026-09-01)
+import { registerLegacyRoutes } from './routes';
 
-// API routes v2 (ITSM) - Legacy
-import v2LegacyRoutes from './presentation/routes/v2';
+// Module registry (ITSM, PM, Workflow Engine)
+import { registerModules } from './modules';
 
-// API routes v2 (Domain-based architecture)
-import v2DomainRoutes from './api/v2';
+// ── Legacy v1 Routes (gated by feature flags) ──
+registerLegacyRoutes(app);
 
-// Project Management routes
-import pmRoutes from './routes/pm';
+// ── Domain Modules (ITSM, PM, Workflow Engine) ──
+registerModules(app);
 
-// File Storage routes
-import fileStorageRoutes from './routes/fileStorage.routes';
-import fileFolderRoutes from './routes/fileFolder.routes';
+// Feature Flags admin routes
+import featureFlagRoutes from './shared/feature-flags/featureFlag.routes';
+app.use('/api/v2/admin/feature-flags', featureFlagRoutes);
 
-// Workflow Diagram routes
-import workflowRoutes from './routes/workflow.routes';
+// Integration routes (webhooks from external systems — no auth, adapters verify signatures)
+import integrationRoutes from './integrations/integration.routes';
+app.use('/api/v2/integrations', integrationRoutes);
 
-// Leave Request routes
-import leaveRequestRoutes from './routes/leaveRequest.routes';
-
-// Workflow Engine routes (Generic BPMN)
-import workflowEngineRoutes from './routes/workflow-engine';
-
-// v1 routes (with deprecation headers)
-app.use(`/api/${env.API_VERSION}`, globalDeprecationMiddleware);
-app.use(`/api/${env.API_VERSION}/auth`, authRoutes);
-app.use(`/api/${env.API_VERSION}/tasks`, prepTaskRoutes);
-app.use(`/api/${env.API_VERSION}/categories`, categoryRoutes);
-app.use(`/api/${env.API_VERSION}/inventory`, inventoryRoutes);
-app.use(`/api/${env.API_VERSION}/users`, userRoutes);
-app.use(`/api/${env.API_VERSION}/reports`, reportRoutes);
-app.use(`/api/${env.API_VERSION}/teams`, teamRoutes);
-app.use(`/api/${env.API_VERSION}/knowledge`, knowledgeRoutes);
-app.use(`/api/${env.API_VERSION}/assets`, assetRoutes);
-app.use(`/api/${env.API_VERSION}/service-requests`, serviceRequestRoutes);
-app.use(`/api/${env.API_VERSION}/incidents`, incidentRoutes);
-app.use(`/api/${env.API_VERSION}/problems`, problemRoutes);
-app.use(`/api/${env.API_VERSION}/changes`, changeRoutes);
-app.use(`/api/${env.API_VERSION}/slas`, slaRoutes);
-app.use(`/api/${env.API_VERSION}/releases`, releaseRoutes);
-app.use(`/api/${env.API_VERSION}/service-catalog`, serviceCatalogRoutes);
-
-// v2 ITSM routes (legacy - keeping for backward compatibility)
-app.use('/api/v2/itsm', v2LegacyRoutes);
-
-// v2 Forms routes (exposed at /api/v2/forms) - require authentication
-app.use('/api/v2/forms/templates', authenticate, formTemplateRoutes);
-app.use('/api/v2/forms/submissions', authenticate, formSubmissionRoutes);
-
-// v2 Domain-based API routes (new architecture)
-app.use('/api/v2', v2DomainRoutes);
-
-// Project Management routes (v1)
-app.use(`/api/${env.API_VERSION}`, pmRoutes);
-
-// File Storage routes (v1)
-app.use(`/api/${env.API_VERSION}/files`, fileStorageRoutes);
-app.use(`/api/${env.API_VERSION}/folders`, fileFolderRoutes);
-
-// Workflow Diagram routes (v1)
-app.use(`/api/${env.API_VERSION}/workflows`, workflowRoutes);
-
-// Leave Request routes (v1)
-app.use(`/api/${env.API_VERSION}/leave-requests`, leaveRequestRoutes);
-
-// Workflow Engine routes (Generic BPMN)
-app.use('/api/v2/workflow-engine', workflowEngineRoutes);
+// Event Bus health endpoint
+app.get('/api/v2/events/health', async (_req, res) => {
+  try {
+    const { eventBus } = await import('./shared/events/event-bus');
+    const status = eventBus.getStatus();
+    res.status(status.connected ? 200 : 503).json({
+      success: status.connected,
+      data: status,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve event bus status',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
 
 // API Documentation
 setupSwagger(app);

@@ -2,11 +2,14 @@ import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { UserRole } from '../types';
 
+export type ItsmRole = 'end_user' | 'technician' | 'team_lead' | 'manager' | 'cab_member' | 'admin';
+
 export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
   role: UserRole;
+  itsmRole: ItsmRole;
   profile?: {
     firstName?: string;
     lastName?: string;
@@ -15,6 +18,8 @@ export interface IUser extends Document {
     title?: string;
   };
   phone?: string;
+  department?: string;
+  teamIds: mongoose.Types.ObjectId[];
   isActive: boolean;
   fcmToken?: string;
   organizations: {
@@ -67,6 +72,19 @@ const userSchema = new Schema<IUser>(
       type: String,
       trim: true,
     },
+    itsmRole: {
+      type: String,
+      enum: ['end_user', 'technician', 'team_lead', 'manager', 'cab_member', 'admin'],
+      default: 'end_user',
+    },
+    department: {
+      type: String,
+      trim: true,
+    },
+    teamIds: [{
+      type: Schema.Types.ObjectId,
+      ref: 'PMTeam',
+    }],
     isActive: {
       type: Boolean,
       default: true,

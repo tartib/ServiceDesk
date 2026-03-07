@@ -1,3 +1,7 @@
+/**
+ * @deprecated Use src/modules/sla/ instead. This legacy SLA entity will be removed after migration.
+ * New SLA module: src/modules/sla/domain/interfaces.ts + src/modules/sla/models/
+ */
 import mongoose, { Document, Schema } from 'mongoose';
 import {
   Priority,

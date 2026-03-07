@@ -14,11 +14,11 @@ import { Router } from 'express';
 import { authenticate } from '../../../middleware/auth';
 
 // Import existing routes
-import analyticsRoutes from '../../../routes/pm/analytics.routes';
+import analyticsRoutes from '../../../modules/pm/routes/analytics.routes';
 import reportRoutes from '../../../routes/reportRoutes';
-import activityRoutes from '../../../routes/pm/activity.routes';
-import searchRoutes from '../../../routes/pm/search.routes';
-import exportRoutes from '../../../routes/pm/export.routes';
+import activityRoutes from '../../../modules/pm/routes/activity.routes';
+import searchRoutes from '../../../modules/pm/routes/search.routes';
+import exportRoutes from '../../../modules/pm/routes/export.routes';
 
 const router = Router();
 

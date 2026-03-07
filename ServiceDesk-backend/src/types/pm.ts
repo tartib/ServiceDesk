@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserRole } from './index';
+import { ItsmRole } from '../models/User';
 
 // Re-export from models
-export { MethodologyCode, ProjectRole, ProjectStatus } from '../models/pm/Project';
-export { PMTaskType as TaskType, PMTaskPriority as TaskPriority, PMStatusCategory as StatusCategory } from '../models/pm/Task';
+export { MethodologyCode, ProjectRole, ProjectStatus } from '../modules/pm/models/Project';
+export { PMTaskType as TaskType, PMTaskPriority as TaskPriority, PMStatusCategory as StatusCategory } from '../modules/pm/models/Task';
 
 // Organization Role enum
 export enum OrganizationRole {
@@ -19,7 +20,10 @@ export interface PMAuthRequest extends Request {
     email: string;
     name: string;
     role: UserRole;
+    itsmRole: ItsmRole;
     phone?: string;
+    department?: string;
+    teamIds: string[];
     isActive: boolean;
     organizations: Array<{
       organizationId: string;
@@ -27,6 +31,7 @@ export interface PMAuthRequest extends Request {
       joinedAt: Date;
     }>;
     organizationId?: string;
+    site_id?: string;
     createdAt: Date;
     updatedAt: Date;
   };

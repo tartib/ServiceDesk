@@ -1,3 +1,6 @@
+/**
+ * @deprecated Use src/modules/sla/routes/ instead. New SLA API is at /api/v2/sla/*
+ */
 import { Router } from 'express';
 import slaController from '../../controllers/SLAController';
 import { authenticate, authorize } from '../../../middleware/auth';

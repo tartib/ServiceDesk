@@ -32,6 +32,16 @@ const envSchema = Joi.object({
   TZ: Joi.string().default('Asia/Riyadh'),
   RABBITMQ_URL: Joi.string().default('amqp://localhost:5672'),
   RABBITMQ_ENABLED: Joi.boolean().default(false),
+  KAFKA_ENABLED: Joi.boolean().default(false),
+  KAFKA_BROKERS: Joi.string().default('localhost:19092'),
+  KAFKA_CLIENT_ID: Joi.string().default('servicedesk-backend'),
+  KAFKA_CONSUMER_GROUP: Joi.string().default('servicedesk-consumers'),
+  KAFKA_SASL_MECHANISM: Joi.string().valid('plain', 'scram-sha-256', 'scram-sha-512', '').default(''),
+  KAFKA_SASL_USERNAME: Joi.string().allow('').default(''),
+  KAFKA_SASL_PASSWORD: Joi.string().allow('').default(''),
+  KAFKA_SSL_ENABLED: Joi.boolean().default(false),
+  KAFKA_CONNECTION_TIMEOUT: Joi.number().default(3000),
+  KAFKA_REQUEST_TIMEOUT: Joi.number().default(30000),
   MINIO_ENDPOINT: Joi.string().default('localhost'),
   MINIO_PORT: Joi.number().default(9000),
   MINIO_ACCESS_KEY: Joi.string().default('minioadmin'),
@@ -42,6 +52,15 @@ const envSchema = Joi.object({
   BASE_URL: Joi.string().default('http://localhost:5000'),
   REDIS_URL: Joi.string().default('redis://localhost:6379'),
   JWT_REFRESH_SECRET: Joi.string().allow('').optional(),
+  POSTGRES_URL: Joi.string().allow('').default(''),
+  DB_STRATEGY_ITSM: Joi.string().valid('mongodb', 'postgresql').default('mongodb'),
+  DB_STRATEGY_PM: Joi.string().valid('mongodb', 'postgresql').default('mongodb'),
+  DB_STRATEGY_FORMS: Joi.string().valid('mongodb', 'postgresql').default('mongodb'),
+  DB_STRATEGY_WORKFLOW: Joi.string().valid('mongodb', 'postgresql').default('mongodb'),
+  DB_STRATEGY_PLATFORM: Joi.string().valid('mongodb', 'postgresql').default('mongodb'),
+  DB_STRATEGY_ANALYTICS: Joi.string().valid('mongodb', 'postgresql').default('mongodb'),
+  DB_STRATEGY_SLA: Joi.string().valid('mongodb', 'postgresql').default('mongodb'),
+  WORKFLOW_ENGINE_MODE: Joi.string().valid('local', 'remote').default('local'),
 }).unknown(true); // Allow other env vars
 
 // Validate environment variables
@@ -76,6 +95,16 @@ interface EnvConfig {
   TZ: string;
   RABBITMQ_URL: string;
   RABBITMQ_ENABLED: boolean;
+  KAFKA_ENABLED: boolean;
+  KAFKA_BROKERS: string;
+  KAFKA_CLIENT_ID: string;
+  KAFKA_CONSUMER_GROUP: string;
+  KAFKA_SASL_MECHANISM: string;
+  KAFKA_SASL_USERNAME: string;
+  KAFKA_SASL_PASSWORD: string;
+  KAFKA_SSL_ENABLED: boolean;
+  KAFKA_CONNECTION_TIMEOUT: number;
+  KAFKA_REQUEST_TIMEOUT: number;
   MINIO_ENDPOINT: string;
   MINIO_PORT: number;
   MINIO_ACCESS_KEY: string;
@@ -86,6 +115,15 @@ interface EnvConfig {
   BASE_URL: string;
   REDIS_URL: string;
   JWT_REFRESH_SECRET?: string;
+  POSTGRES_URL: string;
+  DB_STRATEGY_ITSM: string;
+  DB_STRATEGY_PM: string;
+  DB_STRATEGY_FORMS: string;
+  DB_STRATEGY_WORKFLOW: string;
+  DB_STRATEGY_PLATFORM: string;
+  DB_STRATEGY_ANALYTICS: string;
+  DB_STRATEGY_SLA: string;
+  WORKFLOW_ENGINE_MODE: string;
 }
 
 const env: EnvConfig = {
@@ -109,6 +147,16 @@ const env: EnvConfig = {
   TZ: validatedEnv.TZ,
   RABBITMQ_URL: validatedEnv.RABBITMQ_URL,
   RABBITMQ_ENABLED: validatedEnv.RABBITMQ_ENABLED === 'true' || validatedEnv.RABBITMQ_ENABLED === true,
+  KAFKA_ENABLED: validatedEnv.KAFKA_ENABLED === 'true' || validatedEnv.KAFKA_ENABLED === true,
+  KAFKA_BROKERS: validatedEnv.KAFKA_BROKERS,
+  KAFKA_CLIENT_ID: validatedEnv.KAFKA_CLIENT_ID,
+  KAFKA_CONSUMER_GROUP: validatedEnv.KAFKA_CONSUMER_GROUP,
+  KAFKA_SASL_MECHANISM: validatedEnv.KAFKA_SASL_MECHANISM,
+  KAFKA_SASL_USERNAME: validatedEnv.KAFKA_SASL_USERNAME,
+  KAFKA_SASL_PASSWORD: validatedEnv.KAFKA_SASL_PASSWORD,
+  KAFKA_SSL_ENABLED: validatedEnv.KAFKA_SSL_ENABLED === 'true' || validatedEnv.KAFKA_SSL_ENABLED === true,
+  KAFKA_CONNECTION_TIMEOUT: parseInt(validatedEnv.KAFKA_CONNECTION_TIMEOUT, 10),
+  KAFKA_REQUEST_TIMEOUT: parseInt(validatedEnv.KAFKA_REQUEST_TIMEOUT, 10),
   MINIO_ENDPOINT: validatedEnv.MINIO_ENDPOINT,
   MINIO_PORT: parseInt(validatedEnv.MINIO_PORT, 10),
   MINIO_ACCESS_KEY: validatedEnv.MINIO_ACCESS_KEY,
@@ -119,6 +167,15 @@ const env: EnvConfig = {
   BASE_URL: validatedEnv.BASE_URL,
   REDIS_URL: validatedEnv.REDIS_URL,
   JWT_REFRESH_SECRET: validatedEnv.JWT_REFRESH_SECRET,
+  POSTGRES_URL: validatedEnv.POSTGRES_URL,
+  DB_STRATEGY_ITSM: validatedEnv.DB_STRATEGY_ITSM,
+  DB_STRATEGY_PM: validatedEnv.DB_STRATEGY_PM,
+  DB_STRATEGY_FORMS: validatedEnv.DB_STRATEGY_FORMS,
+  DB_STRATEGY_WORKFLOW: validatedEnv.DB_STRATEGY_WORKFLOW,
+  DB_STRATEGY_PLATFORM: validatedEnv.DB_STRATEGY_PLATFORM,
+  DB_STRATEGY_ANALYTICS: validatedEnv.DB_STRATEGY_ANALYTICS,
+  DB_STRATEGY_SLA: validatedEnv.DB_STRATEGY_SLA,
+  WORKFLOW_ENGINE_MODE: validatedEnv.WORKFLOW_ENGINE_MODE,
 };
 
 export default env;

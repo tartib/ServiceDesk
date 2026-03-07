@@ -86,6 +86,22 @@ export const getAverageCompletionTime = async (req: Request, res: Response) => {
   }
 };
 
+export const getKPIById = async (req: Request, res: Response) => {
+  res.status(501).json({ success: false, error: 'Not implemented — use /api/v2/analytics/kpi instead' });
+};
+
+export const createKPI = async (req: Request, res: Response) => {
+  res.status(501).json({ success: false, error: 'Not implemented — KPIs are auto-calculated' });
+};
+
+export const updateKPI = async (req: Request, res: Response) => {
+  res.status(501).json({ success: false, error: 'Not implemented — KPIs are auto-calculated' });
+};
+
+export const deleteKPI = async (req: Request, res: Response) => {
+  res.status(501).json({ success: false, error: 'Not implemented — KPIs are auto-calculated' });
+};
+
 export const getOnTimeCompletionRate = async (req: Request, res: Response) => {
   try {
     const dashboardKPIService = container.resolve('dashboardKPIService');

@@ -104,6 +104,7 @@ const WorkflowSchema = new Schema<IServiceWorkflow>(
     auto_assign_user: { type: String },
     sla_id: { type: String, required: true },
     notification_template: { type: String },
+    fulfillment_workflow_id: { type: String },
   },
   { _id: false }
 );

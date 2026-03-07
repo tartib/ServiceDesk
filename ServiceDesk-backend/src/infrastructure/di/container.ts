@@ -19,32 +19,32 @@ import * as taskCommentService from '../../services/taskCommentService';
 import * as taskExecutionLogService from '../../services/taskExecutionLogService';
 
 // PM Services
-import authService from '../../services/pm/auth.service';
-import { methodologyService } from '../../services/pm/methodology.service';
-import roadmapService from '../../services/pm/roadmap.service';
-import socketService from '../../services/pm/socket.service';
-import workflowService from '../../services/pm/workflow.service';
+import authService from '../../modules/pm/services/auth.service';
+import { methodologyService } from '../../modules/pm/services/methodology.service';
+import roadmapService from '../../modules/pm/services/roadmap.service';
+import socketService from '../../modules/pm/services/socket.service';
+import workflowService from '../../modules/pm/services/workflow.service';
 
 // Refactored Form Services (Phase 3.1 & 3.2)
-import { FormFieldService } from '../../services/forms/FormFieldService';
-import { FormRuleService } from '../../services/forms/FormRuleService';
-import { FormWorkflowService } from '../../services/forms/FormWorkflowService';
-import { FormAccessService } from '../../services/forms/FormAccessService';
-import { FormSubmissionValidationService } from '../../services/forms/FormSubmissionValidationService';
-import { FormSubmissionTimelineService } from '../../services/forms/FormSubmissionTimelineService';
-import { FormSubmissionCommentService } from '../../services/forms/FormSubmissionCommentService';
+import { FormFieldService } from '../../modules/forms/services/FormFieldService';
+import { FormRuleService } from '../../modules/forms/services/FormRuleService';
+import { FormWorkflowService } from '../../modules/forms/services/FormWorkflowService';
+import { FormAccessService } from '../../modules/forms/services/FormAccessService';
+import { FormSubmissionValidationService } from '../../modules/forms/services/FormSubmissionValidationService';
+import { FormSubmissionTimelineService } from '../../modules/forms/services/FormSubmissionTimelineService';
+import { FormSubmissionCommentService } from '../../modules/forms/services/FormSubmissionCommentService';
 
 // Refactored Analytics Services (Phase 3.3)
-import { DashboardKPIService } from '../../services/analytics/DashboardKPIService';
-import { DashboardPerformanceService } from '../../services/analytics/DashboardPerformanceService';
-import { DashboardAnalyticsService } from '../../services/analytics/DashboardAnalyticsService';
-import { DashboardService } from '../../services/analytics/DashboardService.refactored';
+import { DashboardKPIService } from '../../modules/analytics/services/DashboardKPIService';
+import { DashboardPerformanceService } from '../../modules/analytics/services/DashboardPerformanceService';
+import { DashboardAnalyticsService } from '../../modules/analytics/services/DashboardAnalyticsService';
+import { DashboardService } from '../../modules/analytics/services/DashboardService.refactored';
 
 // Refactored Storage Services (Phase 3.4)
-import { FileUploadService } from '../../services/storage/FileUploadService';
-import { FileFolderService } from '../../services/storage/FileFolderService';
-import { FileShareService } from '../../services/storage/FileShareService';
-import { PrepTaskService } from '../../services/storage/PrepTaskService';
+import { FileUploadService } from '../../modules/storage/services/FileUploadService';
+import { FileFolderService } from '../../modules/storage/services/FileFolderService';
+import { FileShareService } from '../../modules/storage/services/FileShareService';
+import { PrepTaskService } from '../../modules/storage/services/PrepTaskService';
 
 // Create container
 const container: AwilixContainer = createContainer({

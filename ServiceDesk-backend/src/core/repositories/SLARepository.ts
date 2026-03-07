@@ -1,3 +1,7 @@
+/**
+ * @deprecated Use src/modules/sla/infrastructure/repositories/ instead.
+ * New SLA repos: PgSlaCalendarRepository, PgSlaPolicyRepository, PgSlaInstanceRepository, etc.
+ */
 import { FilterQuery } from 'mongoose';
 import { BaseRepository } from './BaseRepository';
 import SLA, { ISLA } from '../entities/SLA';

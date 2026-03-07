@@ -9,10 +9,10 @@
  * - الانتقالات التلقائية
  */
 
-import { TimerManager } from '../core/engines/workflow/TimerManager';
-import workflowDefinitionService from '../services/workflow-engine/workflowDefinition.service';
-import workflowInstanceService from '../services/workflow-engine/workflowInstance.service';
-import workflowEventService from '../services/workflow-engine/workflowEvent.service';
+import { TimerManager } from '../modules/workflow-engine/engine/TimerManager';
+import workflowDefinitionService from '../modules/workflow-engine/services/workflowDefinition.service';
+import workflowInstanceService from '../modules/workflow-engine/services/workflowInstance.service';
+import workflowEventService from '../modules/workflow-engine/services/workflowEvent.service';
 
 let timerManager: TimerManager | null = null;
 let intervalId: ReturnType<typeof setInterval> | null = null;

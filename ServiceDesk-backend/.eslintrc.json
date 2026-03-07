@@ -12,7 +12,27 @@
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-    "no-console": "warn"
+    "no-console": "warn",
+    "no-restricted-imports": ["warn", {
+      "patterns": [
+        {
+          "group": ["**/modules/*/controllers/*", "**/modules/*/engine/*", "**/modules/*/services/*"],
+          "message": "Do not import module internals directly. Use the module barrel export (index.ts) or shared contracts instead."
+        },
+        {
+          "group": ["**/modules/*/infrastructure/*", "**/modules/*/domain/*"],
+          "message": "Do not import module internal layers. Use the contracts/ barrel export or the Internal API Registry."
+        },
+        {
+          "group": ["**/modules/*/models/*"],
+          "message": "Do not import module models directly from outside. Use the Internal API facade (shared/internal-api) instead."
+        },
+        {
+          "group": ["**/core/entities/*", "**/core/services/*", "**/core/repositories/*"],
+          "message": "Prefer importing from the owning module's re-exports (modules/itsm/core-re-exports, modules/forms/core-re-exports, or shared/engines) instead of core/ directly."
+        }
+      ]
+    }]
   },
   "env": {
     "node": true,

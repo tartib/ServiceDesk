@@ -48,7 +48,10 @@ export const authenticate = asyncHandler(async (req: Request, _res: Response, ne
       email: user.email,
       name: user.name,
       role: user.role,
+      itsmRole: user.itsmRole || 'end_user',
       phone: user.phone,
+      department: user.department,
+      teamIds: (user.teamIds || []).map((t: { toString(): string }) => t.toString()),
       isActive: user.isActive,
       organizations: user.organizations.map((org) => ({
         organizationId: org.organizationId.toString(),

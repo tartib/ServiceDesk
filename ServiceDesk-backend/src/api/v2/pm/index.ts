@@ -13,16 +13,18 @@ import { Router } from 'express';
 import { authenticate } from '../../../middleware/auth';
 
 // Import existing PM routes
-import projectRoutes from '../../../routes/pm/project.routes';
-import taskRoutes from '../../../routes/pm/task.routes';
-import sprintRoutes from '../../../routes/pm/sprint.routes';
-import commentRoutes from '../../../routes/pm/comment.routes';
-import activityRoutes from '../../../routes/pm/activity.routes';
-import boardRoutes from '../../../routes/pm/board.routes';
-import methodologyRoutes from '../../../routes/pm/methodology.routes';
-import roadmapRoutes from '../../../routes/pm/roadmap.routes';
-import searchRoutes from '../../../routes/pm/search.routes';
-import exportRoutes from '../../../routes/pm/export.routes';
+import projectRoutes from '../../../modules/pm/routes/project.routes';
+import projectExtrasRoutes from '../../../modules/pm/routes/projectExtras.routes';
+import workflowRoutes from '../../../modules/pm/routes/workflow.routes';
+import taskRoutes from '../../../modules/pm/routes/task.routes';
+import sprintRoutes from '../../../modules/pm/routes/sprint.routes';
+import commentRoutes from '../../../modules/pm/routes/comment.routes';
+import activityRoutes from '../../../modules/pm/routes/activity.routes';
+import boardRoutes from '../../../modules/pm/routes/board.routes';
+import methodologyRoutes from '../../../modules/pm/routes/methodology.routes';
+import roadmapRoutes from '../../../modules/pm/routes/roadmap.routes';
+import searchRoutes from '../../../modules/pm/routes/search.routes';
+import exportRoutes from '../../../modules/pm/routes/export.routes';
 
 const router = Router();
 
@@ -31,6 +33,12 @@ router.use(authenticate);
 
 // Project routes
 router.use('/projects', projectRoutes);
+
+// Project extras routes (phases, gates, milestones, files, etc.)
+router.use('/projects', projectExtrasRoutes);
+
+// Workflow routes (must come after project routes to avoid conflicts)
+router.use('/projects', workflowRoutes);
 
 // Methodology routes (project-scoped)
 router.use('/projects', methodologyRoutes);

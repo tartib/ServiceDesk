@@ -1,3 +1,7 @@
+/**
+ * @deprecated Use src/modules/sla/services/ instead. This legacy SLA engine will be removed after migration.
+ * New SLA services: BusinessTimeCalculator, SlaClockEngine, SlaOrchestrator, EscalationEngine
+ */
 import { ISLA } from '../entities/SLA';
 import { IIncident } from '../entities/Incident';
 import { ISLAConfig, Priority, IEscalationLevel } from '../types/itsm.types';

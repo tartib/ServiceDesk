@@ -39,7 +39,7 @@ describe('Alert Controller', () => {
       mockReq.params = { id: new Types.ObjectId().toString() } as Record<string, string>;
       mockReq.body = { status: 'resolved' };
 
-      expect((mockReq.params as Record<string, string>).id).toBeDefined();
+      expect(mockReq.params.id).toBeDefined();
       expect(mockReq.body.status).toBe('resolved');
     });
   });
@@ -48,7 +48,7 @@ describe('Alert Controller', () => {
     it('should delete alert by id', async () => {
       mockReq.params = { id: new Types.ObjectId().toString() } as Record<string, string>;
 
-      expect((mockReq.params as Record<string, string>).id).toBeDefined();
+      expect(mockReq.params.id).toBeDefined();
     });
   });
 });

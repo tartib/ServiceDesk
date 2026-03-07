@@ -1,7 +1,8 @@
 /**
  * Core Notification Routes
- * 
- * User notification management
+ *
+ * @deprecated Use modules/notifications/routes instead (mounted at /api/v2/notifications).
+ * This stub is retained for backward compatibility only.
  */
 
 import { Router, Request, Response } from 'express';

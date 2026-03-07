@@ -1,4 +1,5 @@
 import { UserRole } from './index';
+import { ItsmRole } from '../models/User';
 
 declare module 'express' {
   interface Request {
@@ -7,7 +8,10 @@ declare module 'express' {
       email: string;
       name: string;
       role: UserRole;
+      itsmRole: ItsmRole;
       phone?: string;
+      department?: string;
+      teamIds: string[];
       isActive: boolean;
       organizations: Array<{
         organizationId: string;

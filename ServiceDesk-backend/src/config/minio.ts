@@ -22,6 +22,14 @@ class MinIOClient {
 
   private async initializeBuckets(): Promise<void> {
     try {
+      // Test connection first
+      await this.client.listBuckets();
+    } catch (connError) {
+      logger.warn('MinIO not available, file storage will be disabled. Start MinIO to enable file uploads.');
+      return;
+    }
+
+    try {
       const buckets = [
         this.defaultBucket,
         `${this.defaultBucket}-images`,

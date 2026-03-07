@@ -13,7 +13,7 @@ import { authLimiter } from '../../../middleware/rateLimiter';
 
 // Import controllers from both legacy systems
 import * as legacyAuthController from '../../../controllers/authController';
-import * as pmAuthController from '../../../controllers/pm/auth.controller';
+import * as pmAuthController from '../../../modules/pm/controllers/auth.controller';
 
 const router = Router();
 

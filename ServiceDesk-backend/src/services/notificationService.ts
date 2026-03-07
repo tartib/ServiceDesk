@@ -1,3 +1,9 @@
+/**
+ * @deprecated Use modules/notifications/services/NotificationService.ts instead.
+ * This file is retained for backward compatibility with legacy OPS code paths.
+ * New code should import from 'modules/notifications'.
+ */
+
 import Notification, { INotification } from '../models/Notification';
 import PrepTask from '../models/PrepTask';
 import User from '../models/User';

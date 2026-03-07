@@ -1,3 +1,7 @@
+/**
+ * @deprecated Use src/modules/sla/controllers/ instead.
+ * New controllers: policy.controller, calendar.controller, ticketSla.controller, report.controller
+ */
 import { Request, Response } from 'express';
 import asyncHandler from '../../utils/asyncHandler';
 import SLA from '../../core/entities/SLA';
