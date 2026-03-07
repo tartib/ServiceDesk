@@ -11,7 +11,7 @@ interface AddStatusModalProps {
 }
 
 const predefinedColors = [
-  { name: 'Blue', value: '#3B82F6' },
+  { name: 'Blue', value: '#ffffff' },
   { name: 'Green', value: '#10B981' },
   { name: 'Yellow', value: '#F59E0B' },
   { name: 'Red', value: '#EF4444' },
@@ -27,7 +27,7 @@ export function AddStatusModal({ isOpen, onClose, onAdd }: AddStatusModalProps) 
   const { t } = useLanguage();
   const [statusName, setStatusName] = useState('');
   const [statusCategory, setStatusCategory] = useState<'todo' | 'in_progress' | 'done'>('todo');
-  const [statusColor, setStatusColor] = useState('#3B82F6');
+  const [statusColor, setStatusColor] = useState('#ffffff');
 
   const handleSubmit = () => {
     if (!statusName.trim()) return;
@@ -37,14 +37,14 @@ export function AddStatusModal({ isOpen, onClose, onAdd }: AddStatusModalProps) 
     // Reset form
     setStatusName('');
     setStatusCategory('todo');
-    setStatusColor('#3B82F6');
+    setStatusColor('#ffffff');
     onClose();
   };
 
   const handleClose = () => {
     setStatusName('');
     setStatusCategory('todo');
-    setStatusColor('#3B82F6');
+    setStatusColor('#ffffff');
     onClose();
   };
 

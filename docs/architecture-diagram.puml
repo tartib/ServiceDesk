@@ -1,0 +1,635 @@
+@startuml ServiceDesk_Architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+skinparam defaultFontSize 11
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 50
+
+title ServiceDesk Platform — Modular Monolith Architecture Diagram (v5)
+
+' ============================================================
+' ACTORS
+' ============================================================
+actor "End User" as endUser
+actor "Technician /\nAgent" as agent
+actor "Manager /\nAdmin" as admin
+actor "External\nWorker" as extWorker
+
+' ============================================================
+' FRONTEND — Next.js 15 (React 19)
+' ============================================================
+package "Frontend — Next.js 15 + React 19 + TailwindCSS" as FE #E3F2FD {
+
+  package "Dashboard Modules" as dashModules {
+    component [Home\nDashboard] as feHome
+    component [ITSM\nDashboard] as feItsm
+
+    package "ITSM Pages" as feItsmPkg #FFF3E0 {
+      component [Incidents] as feIncidents
+      component [Problems] as feProblems
+      component [Changes] as feChanges
+      component [Releases] as feReleases
+      component [SLA Mgmt] as feSla
+      component [Service\nCatalog] as feCatalog
+      component [Self-Service\nPortal] as feSelfService
+      component [CMDB] as feCmdb
+      component [Automation\nRules] as feAutomation
+      component [Agent\nConsole] as feAgent
+      component [CAB] as feCab
+    }
+
+    package "Project Mgmt Pages" as fePmPkg #E8F5E9 {
+      component [Projects\n& Boards] as feProjects
+      component [Sprints &\nBacklog] as feSprints
+      component [Gantt /\nRoadmap] as feGantt
+      component [Team\nPerformance] as feTeamPerf
+      component [Portfolio\nAnalytics] as fePortfolio
+    }
+
+    package "OPS Pages" as feOpsPkg #F3E5F5 {
+      component [Tasks /\nWork Orders] as feTasks
+      component [Inventory\n& Assets] as feInventory
+      component [Categories] as feCategories
+    }
+
+    package "Platform Pages" as fePlatPkg #FFFDE7 {
+      component [Users &\nTeams] as feUsers
+      component [Notifications] as feNotifs
+      component [Knowledge\nBase] as feKB
+      component [Smart Forms] as feForms
+      component [File Drive] as feDrive
+      component [Reports] as feReports
+      component [Workflow\nBuilder (BPMN)] as feWfBuilder
+      component [External\nTasks Monitor] as feExtTasks
+      component [Vacations /\nLeave] as feLeave
+      component [Settings /\nProfile] as feSettings
+      component [Workflows\nList] as feWorkflows
+      component [Feature Flags\nAdmin] as feFeatureFlags
+    }
+  }
+
+  package "Shared Frontend" as feShared {
+    component [API Client\n(v2-client)] as feApiClient
+    component [Auth Store\n(Zustand)] as feAuthStore
+    component [React Query\nCache] as feQueryCache
+    component [Socket.IO\nClient] as feSocket
+    component [i18n\n(AR / EN)] as feI18n
+    component [Language\nContext] as feLangCtx
+  }
+}
+
+' ============================================================
+' API GATEWAY / MIDDLEWARE LAYER
+' ============================================================
+package "API Gateway & Middleware" as MW #FFF9C4 {
+  component [CORS] as mwCors
+  component [Helmet\n(Security)] as mwHelmet
+  component [Rate\nLimiter] as mwRate
+  component [JWT Auth\n& CSRF] as mwAuth
+  component [ITSM RBAC/ABAC\nAuthorize] as mwItsmAuth
+  component [Feature Gate\nMiddleware] as mwFeatureGate
+  component [XSS\nSanitizer] as mwXss
+  component [Correlation\nID] as mwCorrelation
+  component [Compression] as mwCompress
+  component [Structured\nLogging] as mwStructLog
+  component [Observability] as mwObservability
+  component [Caching\nMiddleware] as mwCaching
+  component [Deprecation\nHeaders] as mwDeprecation
+  component [Input\nValidation] as mwValidation
+}
+
+' ============================================================
+' BACKEND — Express.js / Node.js (Modular Monolith)
+' ============================================================
+package "Backend — Express.js + TypeScript (Modular Monolith)" as BE #E8EAF6 {
+
+  ' ── Module Registry ────────────────────────────────────────
+  component [Module Registry\n+ Internal API\nRegistration] as modRegistry
+
+  ' ── Domain Modules (src/modules/) ──────────────────────────
+  package "Modules (src/modules/)" as MOD #E0E0E0 {
+
+    package "modules/itsm" as modItsm #FFE0B2 {
+      component [Service\nCatalog] as modItsmCatalog
+      component [Service\nRequests] as modItsmRequests
+      component [CMDB] as modItsmCmdb
+      component [Automation\nRules Engine] as modItsmAutomation
+      package "itsm internal layers" as modItsmLayers #FFF3E0 {
+        component [domain/\ninterfaces] as modItsmDomain
+        component [infrastructure/\nrepositories] as modItsmInfra
+        component [contracts/\nItsmApi] as modItsmContract
+      }
+    }
+
+    package "modules/pm" as modPm #C8E6C9 {
+      component [Projects] as modPmProjects
+      component [Tasks /\nItems] as modPmTasks
+      component [Sprints] as modPmSprints
+      component [Board &\nBacklog] as modPmBoard
+      component [Comments] as modPmComments
+      component [Roadmap] as modPmRoadmap
+      component [Retrospectives] as modPmRetro
+      component [Standups] as modPmStandup
+      component [Planning\nPoker] as modPmPoker
+      component [Phases /\nGates / Miles.] as modPmExtras
+      component [Project\nIntake] as modPmIntake
+      component [Goals] as modPmGoals
+      component [Methodology\nConfig] as modPmMethodology
+      package "pm internal layers" as modPmLayers #E8F5E9 {
+        component [domain/\ninterfaces] as modPmDomain
+        component [infrastructure/\nrepositories] as modPmInfra
+        component [contracts/\nPmApi] as modPmContract
+      }
+    }
+
+    package "modules/workflow-engine" as modWf #FFCCBC {
+      component [WF Definitions\n(Versioning)] as modWfDef
+      component [WF Instances\n(Runtime)] as modWfInst
+      component [Guard\nEvaluator] as modWfGuard
+      component [Action\nExecutor] as modWfAction
+      component [Parallel Step\nManager] as modWfParallel
+      component [Timer\nManager] as modWfTimer
+      component [External Task\nBroker] as modWfExtTask
+      package "wf internal layers" as modWfLayers #FFCCBC {
+        component [domain/\ninterfaces] as modWfDomain
+        component [infrastructure/\nrepositories] as modWfInfra
+        component [contracts/\nWorkflowApi +\nClientFactory] as modWfContract
+      }
+    }
+
+    package "modules/forms" as modForms #B2DFDB {
+      component [Form Fields\n& Rules] as modFormsFields
+      component [Form Workflow\n& Access] as modFormsWf
+      component [Form\nSubmissions] as modFormsSub
+      component [domain/\ninterfaces] as modFormsDomain
+    }
+
+    package "modules/storage" as modStorage #B2DFDB {
+      component [File Upload] as modStorageUpload
+      component [File Folders\n& Sharing] as modStorageFolders
+      component [domain/\ninterfaces] as modStorageDomain
+    }
+
+    package "modules/analytics" as modAnalytics #D7CCC8 {
+      component [Dashboard\nKPI] as modAnalyticsKpi
+      component [Dashboard\nPerformance] as modAnalyticsPerf
+      component [Dashboard\nAnalytics] as modAnalyticsDash
+      component [domain/\ninterfaces] as modAnalyticsDomain
+      package "CQRS Read Models" as modAnalyticsCqrs #EFEBE9 {
+        component [TaskSnapshot] as rmTaskSnapshot
+        component [DailyKPI\nSnapshot] as rmDailyKpi
+        component [EventLog] as rmEventLog
+      }
+      package "Projectors" as modAnalyticsProj #EFEBE9 {
+        component [Task\nProjector] as projTask
+        component [KPI\nProjector] as projKpi
+        component [EventLog\nProjector] as projEventLog
+      }
+      component [Analytics\nConsumer] as modAnalyticsCons
+    }
+
+    package "modules/notifications" as modNotifications #FFECB3 {
+      component [Notification\nService] as modNotifService
+      component [Notification\nDispatcher] as modNotifDispatch
+      component [Unified\nNotification Model] as modNotifModel
+      component [Notification\nConsumer] as modNotifCons
+      component [contracts/\nNotificationsApi] as modNotifContract
+      component [v2 REST\nRoutes] as modNotifRoutes
+    }
+  }
+
+  ' ── Core Layer (src/core/) — decomposing, ownership assigned ──
+  package "Core Layer (src/core/)\n⚠ Decomposing — see MODULE_OWNERS.md" as CORE #B3E5FC {
+
+    package "ITSM-owned (→ modules/itsm/core-re-exports)" as coreItsmOwned #FFE0B2 {
+      package "Core Services" as coreSvc {
+        component [Incident\nService] as coreIncident
+        component [Problem\nService] as coreProblem
+        component [Change\nService] as coreChange
+        component [SLA\nEngine] as coreSla
+      }
+
+      package "Core Entities" as coreEntities {
+        component [Incident / Problem\nChange / Release] as coreItsmEntities
+        component [SLA / Site\nUser / Counter] as corePlatEntities
+      }
+
+      package "Repositories" as coreRepos {
+        component [Incident\nRepo] as repoIncident
+        component [Problem\nRepo] as repoProblem
+        component [Change\nRepo] as repoChange
+        component [SLA\nRepo] as repoSla
+      }
+    }
+
+    package "Forms-owned (→ modules/forms/core-re-exports)" as coreFormsOwned #B2DFDB {
+      component [FormTemplate\nFormSubmission] as coreFormEntities
+    }
+
+    package "Shared-owned (→ shared/engines)" as coreSharedOwned #F0F4C3 {
+      package "Core Engines" as coreEngines {
+        component [Approval\nEngine] as coreApproval
+        component [Auto-Assignment\nEngine] as coreAutoAssign
+        component [Rules\nEngine] as coreRules
+        component [Validation\nEngine] as coreValidation
+        component [Conditional\nLogic] as coreConditional
+        component [Dynamic\nFields] as coreDynFields
+      }
+    }
+  }
+
+  ' ── Presentation Layer (src/presentation/) ─────────────────
+  package "Presentation Layer (src/presentation/)" as PRES #C5CAE9 {
+    component [Incident\nController] as presIncident
+    component [Problem\nController] as presProblem
+    component [Change\nController] as presChange
+    component [Release\nController] as presRelease
+    component [SLA\nController] as presSla
+    component [ServiceCatalog\nController] as presCatalog
+  }
+
+  ' ── Legacy v1 Routes (feature-flag gated, sunset: 2026-09-01) ──
+  package "Legacy v1 Routes\n(feature-flag gated)\nSunset: 2026-09-01" as legacyV1 #CFD8DC {
+    component [registerLegacyRoutes()\n(consolidated entry)] as legRegister
+    component [Auth / Users\nTeams] as legAuth
+    component [Tasks / Categories\nInventory] as legOps
+    component [Assets /\nKnowledge] as legAssets
+    component [Alerts /\nReports / KPI] as legMisc
+    component [File Storage\n& Folders] as legFiles
+    component [Leave\nRequests] as legLeave
+    component [Leaderboard\n& Ratings] as legGamefy
+    note right of legRegister
+      Feature Flags:
+      - legacy_v1_routes_enabled (master)
+      - legacy_auth_routes
+      - legacy_ops_routes
+      - legacy_itsm_v1_routes
+      - legacy_forms_routes
+      - legacy_files_routes
+      - legacy_misc_routes
+      ---
+      Sunset / Deprecation headers
+      on every response
+    end note
+  }
+
+  ' ── Shared Kernel (src/shared/) ────────────────────────────
+  package "Shared Kernel (src/shared/)" as SHARED #F0F4C3 {
+
+    package "Event Bus (Kafka / Redpanda)" as eventBus #FFF59D {
+      component [KafkaJS\nProducer] as ebProducer
+      component [KafkaJS\nConsumers] as ebConsumers
+      component [In-Memory\nFallback] as ebInMemory
+      component [SASL / SSL\nConfig] as ebSaslSsl
+      component [Consumer\nGroup Config] as ebConsumerGroup
+
+      package "Topics" as ebTopics {
+        component [servicedesk\n.itsm] as topicItsm
+        component [servicedesk\n.pm] as topicPm
+        component [servicedesk\n.ops] as topicOps
+        component [servicedesk\n.workflow] as topicWf
+        component [servicedesk\n.notifications] as topicNotif
+      }
+
+      package "Event Consumers" as ebConsumersPkg {
+        component [SLA Monitor\nConsumer] as consSla
+        component [WebSocket\nBroadcast] as consWs
+      }
+
+      package "Event Publishers" as ebPublishers {
+        component [ITSM\nPublisher] as pubItsm
+        component [PM\nPublisher] as pubPm
+        component [OPS\nPublisher] as pubOps
+        component [Workflow\nPublisher] as pubWf
+        component [SD\nPublisher] as pubSd
+      }
+    }
+
+    package "Feature Flags" as sharedFeatureFlags #FFE082 {
+      component [FeatureFlag\nService] as shFfService
+      component [FeatureFlag\nModel (Mongo)] as shFfModel
+      component [featureGate()\nMiddleware] as shFfGate
+      component [Feature Flag\nREST API] as shFfApi
+    }
+
+    package "Internal API" as sharedInternalApi #DCEDC8 {
+      component [InternalApi\nRegistry] as shApiRegistry
+      component [IItsmApi\nIPmApi\nIWorkflowApi\nIAnalyticsApi\nINotificationsApi] as shApiInterfaces
+    }
+
+    package "Shared Engines (re-export)" as sharedEngines #F0F4C3 {
+      component [shared/engines/\nindex.ts] as shEnginesBarrel
+    }
+
+    package "Shared Auth" as sharedAuthPkg #F0F4C3 {
+      component [Authorization\nEngine] as shAuthEngine
+      component [Permission\nTypes] as shPermTypes
+      component [Permission\nPolicies] as shPermPolicies
+    }
+
+    package "Database Abstraction" as sharedDb #E0E0E0 {
+      component [IRepository\nInterface] as shDbIRepo
+      component [MongoRepository\nImpl] as shDbMongo
+      component [PostgresRepository\nImpl] as shDbPg
+      component [DatabaseStrategy\nFactory] as shDbStrategy
+      component [PG Connection\nManager (Pool)] as shDbPgPool
+    }
+
+    package "Contracts" as sharedContracts {
+      component [Base Entity\nContracts] as shContracts
+    }
+
+    package "Cache Layer" as sharedCache {
+      component [CacheManager\n(Redis)] as shCacheMgr
+      component [Cache\nDecorator] as shCacheDec
+      component [Invalidation\nStrategy] as shCacheInv
+    }
+
+    package "Shared Patterns" as sharedPatterns {
+      component [DTOs &\nValidation] as shDtos
+      component [Interfaces] as shInterfaces
+    }
+  }
+
+  ' ── Infrastructure (src/infrastructure/) ───────────────────
+  package "Infrastructure" as INFRA #D7CCC8 {
+    component [DI Container\n(Awilix)] as infraDI
+  }
+
+  ' ── Scope Guard Tooling ──────────────────────────────────────
+  package "Scope Guard" as scopeGuard #FFCDD2 {
+    component [MODULE_OWNERS.md\n(ownership registry)] as sgOwners
+    component [moduleHealth.js\n(boundary scanner)] as sgHealth
+    component [ESLint\nimport rules] as sgLint
+  }
+
+  ' ── Integration Layer ──────────────────────────────────────
+  package "Integration Layer" as intLayer #DCEDC8 {
+    component [Adapter\nRegistry] as intRegistry
+    component [Outbound\nRouter] as intRouter
+    component [Webhook\nController] as intWebhook
+    component [Webhook\nService] as intWfWebhook
+
+    package "Channel Adapters" as intChannels {
+      component [Email\n(SMTP)] as adEmail
+      component [Slack\n(Bot API)] as adSlack
+      component [MS Teams\n(Webhook)] as adTeams
+    }
+
+    package "DevOps Adapters" as intDevops {
+      component [GitHub] as adGithub
+      component [GitLab] as adGitlab
+      component [CI/CD\n(Generic)] as adCicd
+    }
+
+    package "Monitoring Adapters" as intMonitoring {
+      component [Alert Webhook\n(Prom/Grafana)] as adAlert
+      component [Heartbeat /\nUptime] as adHeartbeat
+    }
+  }
+
+  ' ── Background Jobs ────────────────────────────────────────
+  package "Background Jobs" as bgJobs #FFCDD2 {
+    component [Task\nScheduler] as jobScheduler
+    component [Workflow\nTimer Job] as jobWfTimer
+    component [SLA Breach\nChecker] as jobSla
+    component [Monthly\nRating Job] as jobRating
+  }
+}
+
+' ============================================================
+' DATA & INFRASTRUCTURE
+' ============================================================
+package "Data & Infrastructure" as DATA #ECEFF1 {
+  database "MongoDB\n(Mongoose ODM)" as mongoDB
+  database "Redis\n(Cache + Pub/Sub)" as redis
+  storage "MinIO\n(Object Storage)" as minio
+  component [Socket.IO\nServer] as socketIO
+  queue "Redpanda\n(Kafka API)" as redpanda
+  database "PostgreSQL 16\n(Hybrid DB Strategy)" as pgDB #E8EAF6
+}
+
+package "Observability" as OBS #F5F5F5 {
+  component [Winston +\nStructured Logging] as logger
+  component [Prometheus\nMetrics] as metrics
+  component [Swagger\nAPI Docs] as swagger
+  component [Correlation ID\nTracing] as tracing
+}
+
+' ============================================================
+' EXTERNAL SYSTEMS
+' ============================================================
+cloud "External Systems" as EXT #F5F5F5 {
+  component [SMTP\nServer] as extSmtp
+  component [Slack\nWorkspace] as extSlack
+  component [MS Teams] as extTeams
+  component [GitHub /\nGitLab] as extGit
+  component [CI/CD\nPipelines] as extCicd
+  component [Monitoring\n(Prom/Grafana)] as extMonitor
+}
+
+cloud "Future Microservice" as FUTURE #F3E5F5 {
+  component [Workflow Engine\n(Remote Mode)] as futureWfRemote
+}
+
+' ============================================================
+' CONNECTIONS — Actors to Frontend
+' ============================================================
+endUser --> feSelfService
+endUser --> feCatalog
+agent --> feAgent
+agent --> feItsm
+admin --> feHome
+admin --> feProjects
+admin --> feFeatureFlags
+extWorker --> modWfExtTask : poll tasks
+
+' ============================================================
+' CONNECTIONS — Frontend shared
+' ============================================================
+dashModules -[hidden]down-> feShared
+feApiClient -down-> MW : HTTP REST
+feSocket -down-> socketIO : WebSocket
+
+' ============================================================
+' CONNECTIONS — Middleware to Backend
+' ============================================================
+MW -down-> modRegistry
+MW -down-> PRES
+MW -down-> legacyV1
+
+' ============================================================
+' CONNECTIONS — Module Registry + Feature Flags
+' ============================================================
+modRegistry --> modItsm
+modRegistry --> modPm
+modRegistry --> modWf
+modRegistry --> modForms
+modRegistry --> modAnalytics
+modRegistry --> modNotifications
+modRegistry ..> shApiRegistry : register\nfacades
+mwFeatureGate ..> shFfService : check\nflag status
+legRegister ..> mwFeatureGate : gate per\nroute group
+
+' ============================================================
+' CONNECTIONS — Internal API (cross-module via facades)
+' ============================================================
+modItsmContract --> shApiRegistry : register
+modPmContract --> shApiRegistry : register
+modWfContract --> shApiRegistry : register
+modAnalytics ..> shApiRegistry : consume\nIPmApi
+modNotifContract --> shApiRegistry : register
+
+' ============================================================
+' CONNECTIONS — Database Abstraction
+' ============================================================
+modItsmInfra ..> shDbMongo : extends
+modPmInfra ..> shDbMongo : extends
+modWfInfra ..> shDbMongo : extends
+shDbMongo -down-> mongoDB
+shDbPg -down-> pgDB
+shDbPgPool -down-> pgDB : pool
+shDbStrategy ..> shDbMongo : mongodb\nstrategy
+shDbStrategy ..> shDbPg : postgresql\nstrategy
+
+' ============================================================
+' CONNECTIONS — Feature Flag Admin
+' ============================================================
+feFeatureFlags -down-> shFfApi : manage\nflags
+shFfService -down-> mongoDB : persist
+shFfService -down-> redis : cache
+
+' ============================================================
+' CONNECTIONS — Backend to Data
+' ============================================================
+MOD -down-> mongoDB
+CORE -down-> mongoDB
+PRES -down-> mongoDB
+legacyV1 -down-> mongoDB
+bgJobs -down-> mongoDB
+shCacheMgr -down-> redis : caching
+socketIO -down-> redis : pub/sub
+ebProducer -down-> redpanda : produce
+redpanda -up-> ebConsumers : consume
+modStorage -right-> minio
+
+' ============================================================
+' CONNECTIONS — Workflow Engine Client Factory
+' ============================================================
+modWfContract ..> modWfInst : local\nmode
+modWfContract ..> futureWfRemote : remote\nmode (future)
+
+' ============================================================
+' CONNECTIONS — Internal Backend
+' ============================================================
+modItsmRequests ..> modWf : trigger\nworkflows
+modItsmAutomation ..> modItsm : execute\nactions
+coreSla ..> modNotifCons : breach\nalerts
+modWfTimer ..> modWfInst : process\ntimers
+modWfExtTask ..> modWfInst : resume\non complete
+jobWfTimer ..> modWfTimer
+jobScheduler ..> legOps
+jobSla ..> coreSla
+PRES ..> CORE : uses services\n& repositories
+modItsm ..> coreItsmOwned : owns via\ncore-re-exports
+modForms ..> coreFormsOwned : owns via\ncore-re-exports
+shEnginesBarrel ..> coreSharedOwned : re-exports\nengines
+shAuthEngine ..> CORE : re-exports\nauthorizationEngine
+
+' ============================================================
+' CONNECTIONS — Event Bus
+' ============================================================
+modItsm ..> pubItsm : emit events
+modPm ..> pubPm : emit events
+legOps ..> pubOps : emit events
+modWf ..> pubWf : emit events
+pubItsm --> ebProducer
+pubPm --> ebProducer
+pubOps --> ebProducer
+pubWf --> ebProducer
+pubSd --> ebProducer
+ebConsumers --> modNotifCons : notification\nevents
+ebConsumers --> modAnalyticsCons : all events\n→ projectors
+ebConsumers --> consSla
+consWs --> socketIO : broadcast\nreal-time
+modAnalyticsCons --> projTask
+modAnalyticsCons --> projKpi
+modAnalyticsCons --> projEventLog
+projTask --> rmTaskSnapshot : upsert
+projKpi --> rmDailyKpi : increment
+projEventLog --> rmEventLog : append
+modAnalyticsKpi ..> rmDailyKpi : CQRS query\n(fallback: PM)
+modAnalyticsPerf ..> rmTaskSnapshot : CQRS query\n(fallback: PM)
+modAnalyticsDash ..> rmTaskSnapshot : CQRS query\n(fallback: PM)
+modNotifCons --> modNotifDispatch : dispatch
+modNotifDispatch --> modNotifService : in-app
+modNotifService --> modNotifModel
+mwItsmAuth ..> shPermPolicies : evaluate\npolicies
+
+' ============================================================
+' CONNECTIONS — Integration Layer
+' ============================================================
+ebConsumers --> intRouter : domain\nevents
+intRouter --> intRegistry : dispatch
+intRegistry --> adEmail
+intRegistry --> adSlack
+intRegistry --> adTeams
+
+adEmail -down-> extSmtp : SMTP
+adSlack -down-> extSlack : Bot API
+adTeams -down-> extTeams : Webhook
+
+extGit -up-> intWebhook : push/PR\nwebhooks
+extCicd -up-> intWebhook : build\nresults
+extMonitor -up-> intWebhook : alerts
+
+intWebhook --> adGithub
+intWebhook --> adGitlab
+intWebhook --> adCicd
+intWebhook --> adAlert
+intWebhook --> adHeartbeat
+
+adAlert ..> ebProducer : publish\nalert events
+adGithub ..> ebProducer : publish\ngit events
+
+intWfWebhook ..> modWfAction : IWFWebhook\nService
+
+' ============================================================
+' CONNECTIONS — Shared Kernel
+' ============================================================
+MOD ..> SHARED : uses shared\nkernel
+PRES ..> SHARED : uses shared\nkernel
+infraDI ..> CORE : injects\nservices
+sgHealth ..> MOD : scan\nboundaries
+sgHealth ..> SHARED : scan\nisolation
+sgLint ..> MOD : enforce\nimport rules
+
+' ============================================================
+' LEGEND
+' ============================================================
+legend right
+  |= Color |= Layer / Domain |
+  | <#E0E0E0> | Module Container (src/modules/) |
+  | <#FFE0B2> | ITSM Module (Catalog, Requests, CMDB, Automation) |
+  | <#C8E6C9> | PM Module (Projects, Sprints, Boards, Roadmap) |
+  | <#FFCCBC> | Workflow Engine Module (Generic BPMN) |
+  | <#B3E5FC> | Core Layer (decomposing — ownership in MODULE_OWNERS.md) |
+  | <#C5CAE9> | Presentation Layer (v2 ITSM Controllers) |
+  | <#CFD8DC> | Legacy v1 Routes (feature-flag gated, sunset 2026-09-01) |
+  | <#F0F4C3> | Shared Kernel (Events, Auth, Cache, Contracts) |
+  | <#FFF59D> | Event Bus (Kafka / Redpanda) |
+  | <#FFE082> | Feature Flags (Service, Model, Gate, REST API) |
+  | <#DCEDC8> | Internal API Registry + Integration Layer |
+  | <#B2DFDB> | Platform Modules (Forms, Storage) |
+  | <#D7CCC8> | Analytics Module + CQRS Read Models |
+  | <#FFECB3> | Notifications Module (standalone) |
+  | <#FFCDD2> | Background Jobs / Scope Guard Tooling |
+  | <#ECEFF1> | Data & Infrastructure |
+  | <#F3E5F5> | Future: WF Engine Microservice (remote mode) |
+endlegend
+
+footer ServiceDesk Platform v5 — Modular Monolith — Generated %date("yyyy-MM-dd")
+
+@enduml

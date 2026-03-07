@@ -121,7 +121,7 @@ export const useFiles = () => {
       if (options?.tags) formData.append('tags', JSON.stringify(options.tags));
       if (options?.isPublic !== undefined) formData.append('isPublic', String(options.isPublic));
 
-      const response = await api.post('/file-storage/upload', formData, {
+      const response = await api.post('/files/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -146,7 +146,7 @@ export const useFiles = () => {
       files.forEach((file) => formData.append('files', file));
       if (folderId) formData.append('folderId', folderId);
 
-      const response = await api.post('/file-storage/upload', formData, {
+      const response = await api.post('/files/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -164,7 +164,7 @@ export const useFiles = () => {
   const getFile = useCallback(async (fileId: string): Promise<FileMetadata | null> => {
     setLoading(true);
     try {
-      const response = await api.get(`/file-storage/${fileId}`);
+      const response = await api.get(`/files/${fileId}`);
       return parseApiResponse<FileMetadata>(response);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || 'Failed to get file');
@@ -176,7 +176,7 @@ export const useFiles = () => {
 
   const downloadFile = useCallback((fileId: string, fileName: string) => {
     const token = localStorage.getItem('token');
-    const url = `${API_BASE_URL}/file-storage/${fileId}/download`;
+    const url = `${API_BASE_URL}/files/${fileId}/download`;
     
     fetch(url, {
       headers: {
@@ -209,7 +209,7 @@ export const useFiles = () => {
   ): Promise<FileMetadata | null> => {
     setLoading(true);
     try {
-      const response = await api.put(`/file-storage/${fileId}`, updates);
+      const response = await api.put(`/files/${fileId}`, updates);
       
       toast.success('File updated successfully');
 
@@ -225,7 +225,7 @@ export const useFiles = () => {
   const moveFile = useCallback(async (fileId: string, folderId?: string): Promise<FileMetadata | null> => {
     setLoading(true);
     try {
-      const response = await api.put(`/file-storage/${fileId}`, {
+      const response = await api.put(`/files/${fileId}`, {
         folder: folderId,
       });
 
@@ -243,7 +243,7 @@ export const useFiles = () => {
   const deleteFile = useCallback(async (fileId: string): Promise<boolean> => {
     setLoading(true);
     try {
-      await api.delete(`/file-storage/${fileId}`);
+      await api.delete(`/files/${fileId}`);
       
       toast.success('File moved to trash');
 

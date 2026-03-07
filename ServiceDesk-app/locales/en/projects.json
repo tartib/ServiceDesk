@@ -887,7 +887,8 @@
       "deleteDescription": "Permanently delete this project and all data",
       "saveChanges": "Save Changes",
       "saving": "Saving...",
-      "integrations": "Integrations"
+      "integrations": "Integrations",
+      "workflows": "Workflows"
     },
 
     "reports": {

@@ -7,7 +7,7 @@ import { useIncidents, useCreateIncident } from '@/hooks/useIncidents';
 import { useMyServiceRequests } from '@/hooks/useServiceRequests';
 import { useAuthStore } from '@/store/authStore';
 import { IIncident, Impact, Urgency, Channel, IncidentStatus, getPriorityColor, getStatusColor } from '@/types/itsm';
-import { ServiceRequest, getStatusColor as getSRStatusColor } from '@/hooks/useServiceRequests';
+import { ServiceRequest, ServiceRequestStatus, getStatusColor as getSRStatusColor } from '@/hooks/useServiceRequests';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   Search,
@@ -302,7 +302,7 @@ export default function SelfServicePortal() {
                 {serviceRequests.map((request: ServiceRequest) => (
                   <div
                     key={request._id}
-                    onClick={() => {}}
+                    onClick={() => router.push(`/itsm-dashboard/service-requests/${request.request_id}`)}
                     className="p-4 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                   >
                     <div className="flex items-start justify-between">
@@ -357,7 +357,7 @@ export default function SelfServicePortal() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <FileText className="w-6 h-6 text-blue-600" />
@@ -384,6 +384,33 @@ export default function SelfServicePortal() {
               {incidents.filter((i: IIncident) => i.status === IncidentStatus.RESOLVED).length}
             </p>
             <p className="text-sm text-gray-500">{t('incidents.stats.resolved')}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+            <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Send className="w-6 h-6 text-indigo-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {serviceRequests.filter((r: ServiceRequest) => r.status === ServiceRequestStatus.SUBMITTED || r.status === ServiceRequestStatus.PENDING_APPROVAL).length}
+            </p>
+            <p className="text-sm text-gray-500">{locale === 'ar' ? 'طلبات معلقة' : 'Pending Requests'}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Clock className="w-6 h-6 text-purple-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {serviceRequests.filter((r: ServiceRequest) => r.status === ServiceRequestStatus.IN_PROGRESS).length}
+            </p>
+            <p className="text-sm text-gray-500">{locale === 'ar' ? 'طلبات قيد التنفيذ' : 'Requests In Progress'}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <CheckCircle className="w-6 h-6 text-emerald-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {serviceRequests.filter((r: ServiceRequest) => r.status === ServiceRequestStatus.FULFILLED).length}
+            </p>
+            <p className="text-sm text-gray-500">{locale === 'ar' ? 'طلبات منجزة' : 'Requests Fulfilled'}</p>
           </div>
         </div>
       </div>

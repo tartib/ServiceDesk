@@ -266,7 +266,7 @@ export default function ReportsPage() {
                       <polyline
                         points="0,150 70,120 140,100 210,80 280,60 350,40 400,30"
                         fill="none"
-                        stroke="#3b82f6"
+                        stroke="#ffffff"
                         strokeWidth="3"
                       />
                       <polyline
@@ -284,7 +284,7 @@ export default function ReportsPage() {
                     <div className="relative w-48 h-48">
                       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                         <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" strokeWidth="20" />
-                        <circle cx="50" cy="50" r="40" fill="none" stroke="#3b82f6" strokeWidth="20" strokeDasharray="150 251.2" />
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="#ffffff" strokeWidth="20" strokeDasharray="150 251.2" />
                         <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="20" strokeDasharray="60 251.2" strokeDashoffset="-150" />
                         <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="20" strokeDasharray="41.2 251.2" strokeDashoffset="-210" />
                       </svg>

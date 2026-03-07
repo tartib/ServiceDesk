@@ -17,7 +17,7 @@ import {
 // ============================================
 export const StateNode = memo(({ data, selected }: NodeProps) => {
   const d = data as Record<string, unknown>;
-  const color = (d.color as string) || '#3B82F6';
+  const color = (d.color as string) || '#ffffff';
   const category = (d.category as string) || 'in_progress';
 
   const categoryColors: Record<string, { bg: string; border: string; text: string }> = {

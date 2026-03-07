@@ -4,12 +4,16 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useNotificationStore } from '@/store/notificationStore';
+import { useNotifications, useMarkNotificationAsRead, useMarkAllAsRead } from '@/hooks/useNotifications';
 import { Bell, CheckCheck } from 'lucide-react';
 import { formatTimeAgo } from '@/lib/utils';
 
 export default function NotificationsPage() {
-  const { notifications, markAsRead, markAllAsRead } = useNotificationStore();
+  const { data: notificationsData, isLoading } = useNotifications();
+  const { mutate: markAsRead } = useMarkNotificationAsRead();
+  const { mutate: markAllAsRead } = useMarkAllAsRead();
+
+  const notifications = notificationsData?.data || [];
 
   const unreadNotifications = notifications.filter((n) => !n.isRead);
   const readNotifications = notifications.filter((n) => n.isRead);
@@ -25,14 +29,23 @@ export default function NotificationsPage() {
             </p>
           </div>
           {unreadNotifications.length > 0 && (
-            <Button onClick={markAllAsRead} variant="outline">
+            <Button onClick={() => markAllAsRead()} variant="outline">
               <CheckCheck className="h-4 w-4 mr-2" />
               Mark All as Read
             </Button>
           )}
         </div>
 
-        {notifications.length === 0 ? (
+          {isLoading ? (
+          <Card>
+            <CardContent className="py-12">
+              <div className="text-center">
+                <div className="animate-spin h-8 w-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-gray-500">Loading notifications...</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : notifications.length === 0 ? (
           <Card>
             <CardContent className="py-12">
               <div className="text-center">
@@ -44,17 +57,16 @@ export default function NotificationsPage() {
               </div>
             </CardContent>
           </Card>
-        ) : (
+          ) : (
           <div className="space-y-6">
             {unreadNotifications.length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3">Unread</h2>
                 <div className="space-y-2">
                   {unreadNotifications.map((notification) => (
-                    <Card
-                      key={notification.id}
+                    <Card key={notification._id}
                       className="hover:shadow-md transition-shadow cursor-pointer bg-blue-50"
-                      onClick={() => notification.id && markAsRead(notification.id)}
+                      onClick={() => notification._id && markAsRead(notification._id)}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
@@ -83,8 +95,7 @@ export default function NotificationsPage() {
                 <h2 className="text-lg font-semibold mb-3">Read</h2>
                 <div className="space-y-2">
                   {readNotifications.map((notification) => (
-                    <Card
-                      key={notification.id}
+                    <Card key={notification._id}
                       className="hover:shadow-sm transition-shadow opacity-75"
                     >
                       <CardContent className="p-4">

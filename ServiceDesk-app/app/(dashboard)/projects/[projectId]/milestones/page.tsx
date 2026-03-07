@@ -20,6 +20,11 @@ import {
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
 
+interface Phase {
+  _id: string;
+  name: string;
+}
+
 interface Milestone {
   id: string;
   name: string;
@@ -72,19 +77,26 @@ export default function MilestonesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showNewMilestoneModal, setShowNewMilestoneModal] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
+  const [phases, setPhases] = useState<Phase[]>([]);
+  const [newMilestone, setNewMilestone] = useState({ name: '', description: '', dueDate: '', phaseId: '' });
+  const [isSaving, setIsSaving] = useState(false);
 
   const getToken = () => localStorage.getItem('token') || localStorage.getItem('accessToken');
 
   const fetchData = useCallback(async (token: string) => {
     try {
-      const [projRes, msRes] = await Promise.all([
+      const [projRes, msRes, phRes] = await Promise.all([
         fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API_URL}/pm/projects/${projectId}/milestones`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/phases`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       const projData = await projRes.json();
       if (projData.success) setProject(projData.data.project);
       const msData = await msRes.json();
       if (msData.success) setMilestones((msData.data.milestones || []).map(mapMilestone));
+      const phData = await phRes.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (phData.success) setPhases((phData.data.phases || []).map((p: Record<string, any>) => ({ _id: p._id, name: p.name })));
     } catch (error) {
       console.error('Failed to fetch milestones:', error);
     } finally {
@@ -97,6 +109,49 @@ export default function MilestonesPage() {
     if (!token) { router.push('/login'); return; }
     fetchData(token);
   }, [projectId, router, fetchData]);
+
+  const handleCreateMilestone = async () => {
+    if (!newMilestone.name || !newMilestone.dueDate) return;
+    const token = getToken();
+    if (!token) return;
+    setIsSaving(true);
+    try {
+      const body: Record<string, string> = { name: newMilestone.name, dueDate: newMilestone.dueDate };
+      if (newMilestone.description) body.description = newMilestone.description;
+      if (newMilestone.phaseId) body.phaseId = newMilestone.phaseId;
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/milestones`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchData(token);
+        setShowNewMilestoneModal(false);
+        setNewMilestone({ name: '', description: '', dueDate: '', phaseId: '' });
+      }
+    } catch (error) {
+      console.error('Failed to create milestone:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleMarkComplete = async (milestoneId: string) => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/pm/milestones/${milestoneId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed', completedAt: new Date().toISOString() }),
+      });
+      const data = await res.json();
+      if (data.success) fetchData(token);
+    } catch (error) {
+      console.error('Failed to mark milestone complete:', error);
+    }
+  };
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -263,7 +318,10 @@ export default function MilestonesPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-2">
                     {milestone.status === 'upcoming' && (
-                      <button className="px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                      <button
+                        onClick={() => handleMarkComplete(milestone.id)}
+                        className="px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                      >
                         Mark Complete
                       </button>
                     )}
@@ -285,9 +343,11 @@ export default function MilestonesPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Add New Milestone</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Milestone Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Milestone Name *</label>
                 <input
                   type="text"
+                  value={newMilestone.name}
+                  onChange={(e) => setNewMilestone(p => ({ ...p, name: e.target.value }))}
                   placeholder="e.g., Beta Release"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -295,38 +355,48 @@ export default function MilestonesPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
+                  value={newMilestone.description}
+                  onChange={(e) => setNewMilestone(p => ({ ...p, description: e.target.value }))}
                   placeholder="Describe the milestone..."
                   rows={2}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
                 <input
                   type="date"
+                  value={newMilestone.dueDate}
+                  onChange={(e) => setNewMilestone(p => ({ ...p, dueDate: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phase</label>
-                <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select
+                  value={newMilestone.phaseId}
+                  onChange={(e) => setNewMilestone(p => ({ ...p, phaseId: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                   <option value="">Select phase...</option>
-                  <option value="requirements">Requirements</option>
-                  <option value="design">Design</option>
-                  <option value="development">Development</option>
-                  <option value="testing">Testing</option>
-                  <option value="deployment">Deployment</option>
+                  {phases.map(ph => (
+                    <option key={ph._id} value={ph._id}>{ph.name}</option>
+                  ))}
                 </select>
               </div>
               <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => setShowNewMilestoneModal(false)}
+                  onClick={() => { setShowNewMilestoneModal(false); setNewMilestone({ name: '', description: '', dueDate: '', phaseId: '' }); }}
                   className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
-                <button className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  Add Milestone
+                <button
+                  onClick={handleCreateMilestone}
+                  disabled={isSaving || !newMilestone.name || !newMilestone.dueDate}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? 'Adding...' : 'Add Milestone'}
                 </button>
               </div>
             </div>

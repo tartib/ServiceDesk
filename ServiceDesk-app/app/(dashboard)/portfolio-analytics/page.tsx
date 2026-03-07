@@ -20,6 +20,12 @@ import {
   WifiOff,
   ArrowUpRight,
   ArrowDownRight,
+  FileText,
+  Shield,
+  Mail,
+  Download,
+  Calendar,
+  Loader2,
 } from 'lucide-react';
 import { useLocale } from '@/hooks/useLocale';
 import { usePortfolioSocket } from '@/hooks/useSocket';
@@ -38,12 +44,26 @@ interface OverviewData {
   teamMembers: number;
 }
 
+interface ProjectOwner {
+  _id: string;
+  name: string;
+  email: string;
+  avatar: string | null;
+}
+
 interface ProjectSummary {
   _id: string;
   name: string;
   key: string;
   methodology: string;
   status: string;
+  health: 'green' | 'yellow' | 'red';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  escalated: boolean;
+  escalationReason: string;
+  startDate: string | null;
+  targetEndDate: string | null;
+  owner: ProjectOwner | null;
   memberCount: number;
   tasks: { total: number; todo: number; inProgress: number; done: number; overdue: number };
   completionPct: number;
@@ -106,6 +126,19 @@ const timelineStatusColors: Record<string, string> = {
   no_deadline: 'bg-gray-100 text-gray-500',
 };
 
+const healthColors: Record<string, { dot: string; bg: string; text: string; label: string }> = {
+  green: { dot: 'bg-green-500', bg: 'bg-green-50', text: 'text-green-700', label: 'Healthy' },
+  yellow: { dot: 'bg-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700', label: 'At Risk' },
+  red: { dot: 'bg-red-500', bg: 'bg-red-50', text: 'text-red-700', label: 'Critical' },
+};
+
+const priorityColors: Record<string, { bg: string; text: string }> = {
+  low: { bg: 'bg-gray-100', text: 'text-gray-600' },
+  medium: { bg: 'bg-blue-100', text: 'text-blue-700' },
+  high: { bg: 'bg-orange-100', text: 'text-orange-700' },
+  critical: { bg: 'bg-red-100', text: 'text-red-700' },
+};
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function PortfolioAnalyticsPage() {
@@ -123,6 +156,30 @@ export default function PortfolioAnalyticsPage() {
   const [drilldownLoading, setDrilldownLoading] = useState<string | null>(null);
   const [sortField, setSortField] = useState<'name' | 'completionPct' | 'velocity' | 'overdue'>('completionPct');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [reportGenerating, setReportGenerating] = useState<string | null>(null);
+
+  const generateReport = useCallback(async (projectId: string, projectName: string) => {
+    setReportGenerating(projectId);
+    try {
+      const res = await fetch(`${API}/pm/analytics/portfolio/projects/${projectId}/report`, { headers: getHeaders() });
+      const data = await res.json();
+      if (data.success) {
+        const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${projectName.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Failed to generate report:', error);
+    } finally {
+      setReportGenerating(null);
+    }
+  }, []);
 
   const fetchAllData = useCallback(async () => {
     const headers = getHeaders();
@@ -286,19 +343,18 @@ export default function PortfolioAnalyticsPage() {
                       <th className="px-6 py-3 text-start font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('name')}>
                         {t('portfolio.projects.name')} {sortField === 'name' && (sortDir === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-start font-medium">{t('portfolio.projects.methodology')}</th>
-                      <th className="px-4 py-3 text-start font-medium">{t('portfolio.projects.tasks')}</th>
+                      <th className="px-4 py-3 text-start font-medium">Health</th>
+                      <th className="px-4 py-3 text-start font-medium">Priority</th>
+                      <th className="px-4 py-3 text-start font-medium">Owner</th>
                       <th className="px-4 py-3 text-start font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('completionPct')}>
                         {t('portfolio.projects.completion')} {sortField === 'completionPct' && (sortDir === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-start font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('velocity')}>
-                        {t('portfolio.projects.velocity')} {sortField === 'velocity' && (sortDir === 'asc' ? '↑' : '↓')}
-                      </th>
+                      <th className="px-4 py-3 text-start font-medium">{t('portfolio.projects.timeline')}</th>
                       <th className="px-4 py-3 text-start font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('overdue')}>
                         {t('portfolio.projects.overdue')} {sortField === 'overdue' && (sortDir === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-start font-medium">{t('portfolio.projects.timeline')}</th>
                       <th className="px-4 py-3 text-start font-medium">{t('portfolio.projects.members')}</th>
+                      <th className="px-4 py-3 text-start font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -310,6 +366,8 @@ export default function PortfolioAnalyticsPage() {
                         onToggle={() => toggleDrilldown(project._id)}
                         drilldown={drilldownData[project._id]}
                         isLoadingDrilldown={drilldownLoading === project._id}
+                        onGenerateReport={() => generateReport(project._id, project.name)}
+                        isGeneratingReport={reportGenerating === project._id}
                         t={t}
                       />
                     ))}
@@ -491,6 +549,8 @@ function ProjectRow({
   onToggle,
   drilldown,
   isLoadingDrilldown,
+  onGenerateReport,
+  isGeneratingReport,
   t,
 }: {
   project: ProjectSummary;
@@ -498,10 +558,19 @@ function ProjectRow({
   onToggle: () => void;
   drilldown?: DrilldownData;
   isLoadingDrilldown: boolean;
+  onGenerateReport: () => void;
+  isGeneratingReport: boolean;
   t: (key: string) => string;
 }) {
   const completionColor = project.completionPct >= 70 ? 'text-green-600' : project.completionPct >= 40 ? 'text-yellow-600' : 'text-red-600';
   const completionBg = project.completionPct >= 70 ? 'bg-green-500' : project.completionPct >= 40 ? 'bg-yellow-500' : 'bg-red-500';
+  const hc = healthColors[project.health] || healthColors.green;
+  const pc = priorityColors[project.priority] || priorityColors.medium;
+
+  const formatDate = (d: string | null) => {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
   return (
     <>
@@ -509,29 +578,72 @@ function ProjectRow({
         className="hover:bg-gray-50 cursor-pointer transition-colors"
         onClick={onToggle}
       >
+        {/* Name + Methodology + Escalation badge */}
         <td className="px-6 py-3">
           <div className="flex items-center gap-2">
             {isExpanded ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
             <div>
-              <p className="font-medium text-gray-900 text-sm">{project.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-medium text-gray-900 text-sm">{project.name}</p>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${methodologyColors[project.methodology] || 'bg-gray-100 text-gray-600'}`}>
+                  {project.methodology}
+                </span>
+                {project.escalated && (
+                  <span className="relative group">
+                    <Shield className="h-3.5 w-3.5 text-red-500" />
+                    {project.escalationReason && (
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-gray-900 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                        {project.escalationReason}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-gray-400">{project.key}</p>
             </div>
           </div>
         </td>
+
+        {/* Health */}
         <td className="px-4 py-3">
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${methodologyColors[project.methodology] || 'bg-gray-100 text-gray-600'}`}>
-            {project.methodology}
-          </span>
-        </td>
-        <td className="px-4 py-3">
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-green-600 font-medium">{project.tasks.done}</span>
-            <span className="text-gray-300">/</span>
-            <span className="text-blue-600">{project.tasks.inProgress}</span>
-            <span className="text-gray-300">/</span>
-            <span className="text-gray-500">{project.tasks.todo}</span>
+          <div className="flex items-center gap-1.5">
+            <div className={`w-2.5 h-2.5 rounded-full ${hc.dot}`} />
+            <span className={`text-xs font-medium ${hc.text}`}>{hc.label}</span>
           </div>
         </td>
+
+        {/* Priority */}
+        <td className="px-4 py-3">
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${pc.bg} ${pc.text}`}>
+            {project.priority}
+          </span>
+        </td>
+
+        {/* Owner */}
+        <td className="px-4 py-3">
+          {project.owner ? (
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-medium text-blue-700 shrink-0">
+                {project.owner.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-700 truncate">{project.owner.name}</p>
+                <a
+                  href={`mailto:${project.owner.email}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-[10px] text-blue-500 hover:underline flex items-center gap-0.5"
+                >
+                  <Mail className="h-2.5 w-2.5" />
+                  Contact
+                </a>
+              </div>
+            </div>
+          ) : (
+            <span className="text-xs text-gray-400">—</span>
+          )}
+        </td>
+
+        {/* Completion */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
             <div className="w-16 bg-gray-200 rounded-full h-1.5">
@@ -540,9 +652,28 @@ function ProjectRow({
             <span className={`text-sm font-medium ${completionColor}`}>{project.completionPct}%</span>
           </div>
         </td>
+
+        {/* Timeline */}
         <td className="px-4 py-3">
-          <span className="text-sm text-gray-700">{project.velocity} {t('portfolio.projects.pts')}</span>
+          <div className="space-y-0.5">
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${timelineStatusColors[project.timeline.status] || 'bg-gray-100 text-gray-500'}`}>
+              {t(`portfolio.projects.status.${project.timeline.status}`)}
+            </span>
+            <div className="flex items-center gap-1 text-[10px] text-gray-400">
+              <Calendar className="h-2.5 w-2.5" />
+              <span>{formatDate(project.startDate)} → {formatDate(project.targetEndDate)}</span>
+            </div>
+            {project.timeline.daysRemaining !== null && (
+              <span className="text-[10px] text-gray-400">
+                {project.timeline.daysRemaining >= 0
+                  ? `${project.timeline.daysRemaining} ${t('portfolio.projects.daysLeft')}`
+                  : `${Math.abs(project.timeline.daysRemaining)} ${t('portfolio.projects.daysOverdue')}`}
+              </span>
+            )}
+          </div>
         </td>
+
+        {/* Overdue */}
         <td className="px-4 py-3">
           {project.tasks.overdue > 0 ? (
             <span className="text-sm font-medium text-red-600">{project.tasks.overdue}</span>
@@ -550,30 +681,37 @@ function ProjectRow({
             <span className="text-sm text-gray-400">0</span>
           )}
         </td>
-        <td className="px-4 py-3">
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${timelineStatusColors[project.timeline.status] || 'bg-gray-100 text-gray-500'}`}>
-            {t(`portfolio.projects.status.${project.timeline.status}`)}
-          </span>
-          {project.timeline.daysRemaining !== null && (
-            <span className="text-[10px] text-gray-400 ms-1">
-              {project.timeline.daysRemaining >= 0
-                ? `${project.timeline.daysRemaining} ${t('portfolio.projects.daysLeft')}`
-                : `${Math.abs(project.timeline.daysRemaining)} ${t('portfolio.projects.daysOverdue')}`}
-            </span>
-          )}
-        </td>
+
+        {/* Members */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-1">
             <Users className="h-3.5 w-3.5 text-gray-400" />
             <span className="text-sm text-gray-600">{project.memberCount}</span>
           </div>
         </td>
+
+        {/* Actions */}
+        <td className="px-4 py-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); onGenerateReport(); }}
+            disabled={isGeneratingReport}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
+            title="Generate Report"
+          >
+            {isGeneratingReport ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            <FileText className="h-3.5 w-3.5" />
+          </button>
+        </td>
       </tr>
 
       {/* Drilldown Panel */}
       {isExpanded && (
         <tr>
-          <td colSpan={8} className="bg-gray-50 px-6 py-4">
+          <td colSpan={9} className="bg-gray-50 px-6 py-4">
             {isLoadingDrilldown ? (
               <div className="flex items-center justify-center py-8">
                 <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />
@@ -598,7 +736,7 @@ function DrilldownPanel({ drilldown, t }: { drilldown: DrilldownData; t: (key: s
   const circumference = 2 * Math.PI * 35;
   const segments = [
     { label: t('portfolio.drilldown.done'), count: tasks.done, color: '#22c55e' },
-    { label: t('portfolio.drilldown.inProgress'), count: tasks.inProgress, color: '#3b82f6' },
+    { label: t('portfolio.drilldown.inProgress'), count: tasks.inProgress, color: '#ffffff' },
     { label: t('portfolio.drilldown.todo'), count: tasks.todo, color: '#f59e0b' },
   ];
   let offset = 0;

@@ -15,7 +15,6 @@ import {
 import {
   ProjectHeader,
   ProjectNavTabs,
-  ProjectToolbar,
   LoadingState,
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
@@ -51,6 +50,7 @@ export default function ProjectSummaryPage() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [activities, setActivities] = useState<{ _id: string; type: string; description: string; createdAt: string; actor?: { profile?: { firstName?: string; lastName?: string }; email?: string } }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProject = useCallback(async (token: string) => {
@@ -74,12 +74,23 @@ export default function ProjectSummaryPage() {
     finally { setIsLoading(false); }
   }, [projectId]);
 
+  const fetchActivities = useCallback(async (token: string) => {
+    try {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/activities?limit=5`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) setActivities(data.data.activities || []);
+    } catch (error) { console.error('Failed to fetch activities:', error); }
+  }, [projectId]);
+
   useEffect(() => {
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     if (!token) { router.push('/login'); return; }
     fetchProject(token);
     fetchTasks(token);
-  }, [projectId, router, fetchProject, fetchTasks]);
+    fetchActivities(token);
+  }, [projectId, router, fetchProject, fetchTasks, fetchActivities]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -121,11 +132,11 @@ export default function ProjectSummaryPage() {
     const colors: Record<string, string> = {
       'To Do': '#84cc16',
       'Idea': '#e879f9',
-      'Done': '#3b82f6',
+      'Done': '#ffffff',
       'In Progress': '#f97316',
       'Testing (Ready for review)': '#0ea5e9',
       'Backlog': '#6b7280',
-      'Ready': '#3b82f6',
+      'Ready': '#ffffff',
       'In Review': '#8b5cf6',
     };
 
@@ -138,19 +149,7 @@ export default function ProjectSummaryPage() {
 
   const totalTasks = tasks.length;
 
-  // Recent activity (simulated from task updates)
-  const recentActivity = useMemo(() => {
-    return tasks
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, 5)
-      .map(task => ({
-        _id: task._id,
-        type: 'update',
-        description: `${task.key} - ${task.title}`,
-        createdAt: task.updatedAt,
-        status: task.status.name,
-      }));
-  }, [tasks]);
+  const recentActivity = useMemo(() => activities, [activities]);
 
   if (isLoading) {
     return <LoadingState />;
@@ -314,19 +313,26 @@ export default function ProjectSummaryPage() {
           <p className="text-xs sm:text-sm text-gray-500 mb-4">{t('projects.summary.activityDescription') || 'Stay up to date with what\'s happening across the space.'}</p>
 
           <div className="space-y-2 sm:space-y-3">
-            {recentActivity.map((activity) => (
-              <div key={activity._id} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-purple-500 flex items-center justify-center text-xs text-white shrink-0">
-                  LS
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-gray-900 text-xs sm:text-sm truncate">{activity.description}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-500">
-                    {new Date(activity.createdAt).toLocaleDateString()} • {activity.status}
+            {recentActivity.map((activity) => {
+              const firstName = activity.actor?.profile?.firstName || '';
+              const lastName = activity.actor?.profile?.lastName || '';
+              const initials = firstName && lastName
+                ? `${firstName[0]}${lastName[0]}`.toUpperCase()
+                : (activity.actor?.email?.[0] || '?').toUpperCase();
+              return (
+                <div key={activity._id} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-purple-500 flex items-center justify-center text-xs text-white shrink-0">
+                    {initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-gray-900 text-xs sm:text-sm truncate">{activity.description}</div>
+                    <div className="text-[10px] sm:text-xs text-gray-500">
+                      {new Date(activity.createdAt).toLocaleDateString()}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {recentActivity.length === 0 && (
               <p className="text-gray-500 text-center py-4 text-sm">{t('projects.summary.noActivity') || 'No recent activity'}</p>
             )}

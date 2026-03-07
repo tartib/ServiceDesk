@@ -17,8 +17,10 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Save, Zap } from 'lucide-react';
+import { Save, Zap, ArrowRightLeft } from 'lucide-react';
+import AddTransitionDialog, { type NewTransition } from './panels/AddTransitionDialog';
 import { wfNodeTypes } from './nodes/BPMNNodes';
+import { wfEdgeTypes } from './edges/TransitionEdge';
 import WFNodePalette from './panels/WFNodePalette';
 import WFPropertiesPanel from './panels/WFPropertiesPanel';
 
@@ -55,7 +57,7 @@ const defaultLabels: Record<string, string> = {
 };
 
 const defaultNodeData: Record<string, Record<string, unknown>> = {
-  wfState: { label: 'New State', code: '', category: 'in_progress', color: '#3B82F6' },
+  wfState: { label: 'New State', code: '', category: 'in_progress', color: '#ffffff' },
   wfApproval: { label: 'Approval', code: '', category: 'in_progress', color: '#8B5CF6' },
   wfCondition: {},
   wfFork: {},
@@ -85,6 +87,7 @@ function WorkflowBuilderInner({
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [name, setName] = useState(definitionName);
+  const [showAddTransition, setShowAddTransition] = useState(false);
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -100,9 +103,11 @@ function WorkflowBuilderInner({
         addEdge(
           {
             ...params,
+            type: 'transition',
             animated: false,
             label: '',
             style: { strokeWidth: 2 },
+            data: { guards: [], validators: [], actions: [], ui: {}, nameAr: '', transitionGroupId: '' },
           },
           eds
         )
@@ -224,6 +229,36 @@ function WorkflowBuilderInner({
   }, [onPublish, nodes, edges, name]);
 
   // ============================================
+  // Add Transition handler
+  // ============================================
+
+  const handleAddTransitions = useCallback(
+    (transitions: NewTransition[]) => {
+      setEdges((eds: Edge[]) => {
+        const newEdges: Edge[] = transitions.map((t) => ({
+          id: `edge_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          source: t.fromNodeId,
+          target: t.toNodeId,
+          type: 'transition',
+          animated: false,
+          label: t.name,
+          style: { strokeWidth: 2 },
+          data: {
+            guards: [],
+            validators: [],
+            actions: [],
+            ui: {},
+            nameAr: t.nameAr || '',
+            transitionGroupId: t.transitionGroupId,
+          },
+        }));
+        return [...eds, ...newEdges];
+      });
+    },
+    [setEdges]
+  );
+
+  // ============================================
   // Render
   // ============================================
 
@@ -248,6 +283,13 @@ function WorkflowBuilderInner({
           >
             <Save className="w-4 h-4" />
             {isAr ? 'حفظ' : 'Save'}
+          </button>
+          <button
+            onClick={() => setShowAddTransition(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <ArrowRightLeft className="w-4 h-4" />
+            {isAr ? 'إضافة انتقال' : 'Add Transition'}
           </button>
           <button
             onClick={handlePublish}
@@ -282,12 +324,13 @@ function WorkflowBuilderInner({
             onEdgeClick={onEdgeClick}
             onPaneClick={onPaneClick}
             nodeTypes={wfNodeTypes}
+            edgeTypes={wfEdgeTypes}
             fitView
             deleteKeyCode={['Backspace', 'Delete']}
             className="bg-gray-50"
             defaultEdgeOptions={{
               style: { strokeWidth: 2, stroke: '#94A3B8' },
-              type: 'smoothstep',
+              type: 'transition',
             }}
           >
             <Controls position="bottom-left" className="!bg-white !border-gray-200 !shadow-sm" />
@@ -307,14 +350,27 @@ function WorkflowBuilderInner({
 
         {/* Right Panel: Properties */}
         <WFPropertiesPanel
+          nodes={nodes}
+          edges={edges}
           selectedNode={selectedNode}
           selectedEdge={selectedEdge}
           onNodeChange={handleNodeChange}
           onEdgeChange={handleEdgeChange}
           onDeleteNode={handleDeleteNode}
           onDeleteEdge={handleDeleteEdge}
+          onAddEdge={(edge) => setEdges((eds: Edge[]) => [...eds, edge])}
         />
       </div>
+
+      {/* Add Transition Dialog */}
+      <AddTransitionDialog
+        open={showAddTransition}
+        onClose={() => setShowAddTransition(false)}
+        nodes={nodes}
+        edges={edges}
+        onAddTransitions={handleAddTransitions}
+        isAr={isAr}
+      />
     </div>
   );
 }

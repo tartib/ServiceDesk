@@ -993,258 +993,148 @@ export default function RoadmapPage() {
         />
       )}
 
-      {/* 9️⃣ Timeline / Roadmap Grid (Core Content) with ARIA */}
+      {/* 9️⃣ Timeline / Roadmap Grid — Single scroll container with sticky left column */}
       <div 
-        className="flex-1 overflow-hidden bg-white flex"
+        className="flex-1 overflow-auto bg-white"
+        ref={timelineRef}
         role="main"
         aria-label="Timeline roadmap"
       >
-        {/* Fixed Left Column - Work Items */}
-        <div className="w-64 sm:w-80 lg:w-96 shrink-0 border-r border-gray-300 bg-white z-20 flex flex-col">
-          {/* Header */}
-          <div className="px-3 sm:px-4 py-1 border-b border-gray-200 bg-gray-50">
-            <span className="text-sm font-semibold text-gray-700">{t('roadmap.columns.workItems')}</span>
+        <div className="relative" style={{ minWidth: `calc(${timelineColumns.length * (zoomLevel === 'day' ? 40 : 120)}px + 24rem)` }}>
+          {/* Today Line */}
+          {getTodayPosition().isVisible && (
+            <div 
+              className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-30 pointer-events-none" 
+              style={{ left: `calc(24rem + ${getTodayPosition().left})` }}
+              aria-label="Today"
+            />
+          )}
+
+          {/* ── Header Row ── */}
+          <div className="sticky top-0 z-40 flex">
+            {/* Sticky corner: Work Items header */}
+            <div className="sticky left-0 z-50 w-96 shrink-0 bg-gray-50 border-b border-r border-gray-200">
+              <div className="px-3 sm:px-4 py-1">
+                <span className="text-sm font-semibold text-gray-700">{t('roadmap.columns.workItems')}</span>
+              </div>
+            </div>
+            {/* Timeline header columns */}
+            <div className="flex flex-1">
+              {zoomLevel === 'day' ? (
+                (() => {
+                  const monthGroups: { month: string; count: number }[] = [];
+                  let currentMonth = '';
+                  let cnt = 0;
+                  timelineColumns.forEach((col, idx) => {
+                    if (col.monthLabel !== currentMonth) {
+                      if (currentMonth) monthGroups.push({ month: currentMonth, count: cnt });
+                      currentMonth = col.monthLabel || '';
+                      cnt = 1;
+                    } else {
+                      cnt++;
+                    }
+                    if (idx === timelineColumns.length - 1) monthGroups.push({ month: currentMonth, count: cnt });
+                  });
+                  return monthGroups.map((group, idx) => (
+                    <div
+                      key={idx}
+                      className="px-2 py-2 text-center text-sm font-semibold text-gray-700 bg-gray-100 border-b border-r border-gray-200 last:border-r-0"
+                      style={{ flex: group.count, minWidth: `${group.count * 40}px` }}
+                    >
+                      {group.month}
+                    </div>
+                  ));
+                })()
+              ) : (
+                timelineColumns.map((col, idx) => (
+                  <div
+                    key={idx}
+                    className={`px-1 py-2 text-center text-xs border-b border-r border-gray-200 last:border-r-0 min-w-[100px] flex-1 ${
+                      col.isCurrent ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-600 bg-gray-50'
+                    }`}
+                  >
+                    <div className="font-medium">{col.label}</div>
+                    {col.sublabel && <div className="text-xs text-gray-400 mt-0.5">{col.sublabel}</div>}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-          
-          {/* Sprints Header in Fixed Column */}
-          <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Sprints</span>
-          </div>
-          
-          {/* Work Items List - Scrollable */}
-          <div className="flex-1 overflow-y-auto" id="work-items-scroll">
-            {groupedTasks.epics.map((epic, epicIndex) => (
-              <div key={epic._id}>
-                {/* Epic Row */}
-                <div 
-                  className={`px-3 sm:px-4 py-3 border-b border-gray-100 hover:bg-blue-50/50 transition-colors cursor-pointer ${
-                    epicIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
-                  }`}
-                  style={{ minHeight: '80px' }}
-                >
+
+          {/* ── Day sub-header (only for day zoom) ── */}
+          {zoomLevel === 'day' && (
+            <div className="sticky top-[37px] z-40 flex">
+              <div className="sticky left-0 z-50 w-96 shrink-0 bg-gray-50 border-b border-r border-gray-200 px-4 py-1">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Sprints</span>
+              </div>
+              <div className="flex flex-1">
+                {timelineColumns.map((col, idx) => (
+                  <div
+                    key={idx}
+                    className={`px-1 py-1.5 text-center text-xs border-b border-r border-gray-200 last:border-r-0 min-w-[40px] ${
+                      col.isCurrent ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-600 bg-gray-50'
+                    }`}
+                  >
+                    {col.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Sprints Row (non-day zoom) ── */}
+          {zoomLevel !== 'day' && (
+            <div className="flex">
+              <div className="sticky left-0 z-30 w-96 shrink-0 bg-gray-50 border-b border-r border-gray-200 px-4 py-2">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Sprints</span>
+              </div>
+              <div className="flex flex-1 border-b border-gray-200 bg-gray-50/50" style={{ height: '41px' }}>
+                {timelineColumns.map((_, idx) => (
+                  <div key={idx} className="border-r border-gray-100 last:border-r-0 min-w-[100px] flex-1" />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Data Rows ── */}
+          {groupedTasks.epics.map((epic, epicIndex) => (
+            <div key={epic._id}>
+              {/* Epic Row */}
+              <div className={`flex border-b border-gray-100 ${epicIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`} style={{ minHeight: '80px' }}>
+                {/* Sticky left cell */}
+                <div className={`sticky left-0 z-20 w-96 shrink-0 border-r border-gray-200 px-3 sm:px-4 py-3 hover:bg-blue-50/50 transition-colors cursor-pointer ${epicIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
                   <div className="flex items-center gap-2">
                     <GripVertical className="h-4 w-4 text-gray-300 cursor-grab hover:text-gray-500" />
-                    <button 
-                      onClick={() => toggleItem(epic._id)} 
-                      className="p-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-                      aria-expanded={expandedItems.has(epic._id)}
-                    >
+                    <button onClick={() => toggleItem(epic._id)} className="p-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" aria-expanded={expandedItems.has(epic._id)}>
                       {expandedItems.has(epic._id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </button>
                     <span className={`${getTypeColor(epic.type)} text-lg`}>{getTypeIcon(epic.type)}</span>
-                    <button 
-                      onClick={() => { setSelectedTask(epic); setShowTaskDetail(true); }}
-                      className="text-blue-600 text-xs sm:text-sm font-mono hover:underline"
-                    >
+                    <button onClick={() => { setSelectedTask(epic); setShowTaskDetail(true); }} className="text-blue-600 text-xs sm:text-sm font-mono hover:underline">
                       {epic.key}
                     </button>
                     <span className="text-gray-900 text-sm font-medium flex-1 break-words">{epic.title || epic.summary}</span>
                   </div>
                   <div className="ms-16 mt-2 flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          getEpicProgress(epic._id) === 100 ? 'bg-green-500' :
-                          getEpicProgress(epic._id) >= 50 ? 'bg-blue-500' :
-                          getEpicProgress(epic._id) > 0 ? 'bg-amber-500' : 'bg-gray-300'
-                        }`}
-                        style={{ width: `${getEpicProgress(epic._id)}%` }}
-                      ></div>
+                      <div className={`h-full rounded-full transition-all duration-500 ${getEpicProgress(epic._id) === 100 ? 'bg-green-500' : getEpicProgress(epic._id) >= 50 ? 'bg-blue-500' : getEpicProgress(epic._id) > 0 ? 'bg-amber-500' : 'bg-gray-300'}`} style={{ width: `${getEpicProgress(epic._id)}%` }}></div>
                     </div>
-                    <span className={`text-xs font-medium ${
-                      getEpicProgress(epic._id) === 100 ? 'text-green-600' :
-                      getEpicProgress(epic._id) >= 50 ? 'text-blue-600' :
-                      getEpicProgress(epic._id) > 0 ? 'text-amber-600' : 'text-gray-400'
-                    }`}>{getEpicProgress(epic._id)}%</span>
+                    <span className={`text-xs font-medium ${getEpicProgress(epic._id) === 100 ? 'text-green-600' : getEpicProgress(epic._id) >= 50 ? 'text-blue-600' : getEpicProgress(epic._id) > 0 ? 'text-amber-600' : 'text-gray-400'}`}>{getEpicProgress(epic._id)}%</span>
                   </div>
                 </div>
-                
-                {/* Child Tasks */}
-                {expandedItems.has(epic._id) && (groupedTasks.childrenMap.get(epic._id) || groupedTasks.childrenMap.get(epic.id || '') || []).map((task, taskIndex) => (
-                  <div 
-                    key={task._id}
-                    className={`ps-10 pe-3 sm:pe-4 py-2.5 border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${
-                      taskIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'
-                    }`}
-                    style={{ minHeight: '44px' }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <GripVertical className="h-3.5 w-3.5 text-gray-300 cursor-grab" />
-                      <span className={`${getTypeColor(task.type)} text-sm`}>{getTypeIcon(task.type)}</span>
-                      <button 
-                        onClick={() => { setSelectedTask(task); setShowTaskDetail(true); }}
-                        className="text-blue-600 text-xs font-mono hover:underline"
-                      >
-                        {task.key}
-                      </button>
-                      <span className="text-gray-800 text-sm flex-1 break-words">{task.title || task.summary}</span>
-                    </div>
-                    <div className="ms-12 mt-1 flex items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            getTaskProgress(task) === 100 ? 'bg-green-500' :
-                            getTaskProgress(task) >= 50 ? 'bg-blue-500' :
-                            getTaskProgress(task) > 0 ? 'bg-amber-500' : 'bg-gray-300'
-                          }`}
-                          style={{ width: `${getTaskProgress(task)}%` }}
-                        ></div>
-                      </div>
-                      <span className={`text-xs font-medium ${
-                        getTaskProgress(task) === 100 ? 'text-green-600' :
-                        getTaskProgress(task) >= 50 ? 'text-blue-600' :
-                        getTaskProgress(task) > 0 ? 'text-amber-600' : 'text-gray-400'
-                      }`}>{getTaskProgress(task)}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-            
-            {/* Standalone tasks (not epics, no parent) */}
-            {groupedTasks.standaloneTasks.map((task, idx) => (
-              <div 
-                key={task._id}
-                className={`px-3 sm:px-4 py-3 border-b border-gray-100 hover:bg-blue-50/30 ${
-                  (groupedTasks.epics.length + idx) % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
-                }`}
-                style={{ minHeight: '44px' }}
-              >
-                <div className="flex items-center gap-2">
-                  <GripVertical className="h-4 w-4 text-gray-300 cursor-grab" />
-                  <span className={`${getTypeColor(task.type)} text-lg`}>{getTypeIcon(task.type)}</span>
-                  <button 
-                    onClick={() => { setSelectedTask(task); setShowTaskDetail(true); }}
-                    className="text-blue-600 text-xs sm:text-sm font-mono hover:underline"
-                  >
-                    {task.key}
-                  </button>
-                  <span className="text-gray-900 text-sm font-medium flex-1 break-words">{task.title || task.summary}</span>
-                </div>
-                <div className="ms-16 mt-1 flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        getTaskProgress(task) === 100 ? 'bg-green-500' :
-                        getTaskProgress(task) >= 50 ? 'bg-blue-500' :
-                        getTaskProgress(task) > 0 ? 'bg-amber-500' : 'bg-gray-300'
-                      }`}
-                      style={{ width: `${getTaskProgress(task)}%` }}
-                    ></div>
-                  </div>
-                  <span className={`text-xs font-medium ${
-                    getTaskProgress(task) === 100 ? 'text-green-600' :
-                    getTaskProgress(task) >= 50 ? 'text-blue-600' :
-                    getTaskProgress(task) > 0 ? 'text-amber-600' : 'text-gray-400'
-                  }`}>{getTaskProgress(task)}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        {/* Scrollable Timeline Area */}
-        <div className="flex-1 overflow-x-auto overflow-y-auto" ref={timelineRef}>
-          <div className="relative min-w-[800px]" style={{ width: `${timelineColumns.length * (zoomLevel === 'day' ? 40 : 120)}px` }}>
-            {/* Today Line - Single instance for entire timeline */}
-            {getTodayPosition().isVisible && (
-              <div 
-                className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20 pointer-events-none" 
-                style={{ left: getTodayPosition().left }}
-                aria-label="Today"
-              />
-            )}
-            
-            {/* Timeline Header - Sticky Top with Month Row + Day Row for 'day' zoom */}
-            <div className="sticky top-0 bg-white z-10">
-              {/* Month Row - Only for 'day' zoom level */}
-              {zoomLevel === 'day' && (
-                <div className="flex border-b border-gray-200">
-                  {(() => {
-                    const monthGroups: { month: string; count: number }[] = [];
-                    let currentMonth = '';
-                    let count = 0;
-                    timelineColumns.forEach((col, idx) => {
-                      if (col.monthLabel !== currentMonth) {
-                        if (currentMonth) monthGroups.push({ month: currentMonth, count });
-                        currentMonth = col.monthLabel || '';
-                        count = 1;
-                      } else {
-                        count++;
-                      }
-                      if (idx === timelineColumns.length - 1) {
-                        monthGroups.push({ month: currentMonth, count });
-                      }
-                    });
-                    return monthGroups.map((group, idx) => (
-                      <div
-                        key={idx}
-                        className="px-2 py-2 text-center text-sm font-semibold text-gray-700 bg-gray-100 border-r border-gray-200 last:border-r-0"
-                        style={{ flex: group.count, minWidth: `${group.count * 40}px` }}
-                      >
-                        {group.month}
-                      </div>
-                    ));
-                  })()}
-                </div>
-              )}
-              
-              {/* Day/Week/Month/Quarter Row */}
-              <div className="flex border-b border-gray-200">
-                {timelineColumns.map((col, idx) => (
-                  <div
-                    key={idx}
-                    className={`px-1 py-2 text-center text-xs border-r border-gray-200 last:border-r-0 ${
-                      zoomLevel === 'day' ? 'min-w-[40px]' : 'min-w-[100px] flex-1'
-                    } ${
-                      col.isCurrent 
-                        ? 'bg-blue-100 text-blue-700 font-bold' 
-                        : 'text-gray-600 bg-gray-50'
-                    }`}
-                  >
-                    <div className={zoomLevel === 'day' ? 'text-xs' : 'font-medium'}>{col.label}</div>
-                    {col.sublabel && <div className="text-xs text-gray-400 mt-0.5">{col.sublabel}</div>}
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Sprints Row */}
-            <div className="flex border-b border-gray-200 bg-gray-50/50 h-[41px]">
-              {timelineColumns.map((_, idx) => (
-                <div key={idx} className={`border-r border-gray-100 last:border-r-0 ${zoomLevel === 'day' ? 'min-w-[40px]' : 'min-w-[100px] flex-1'}`} />
-              ))}
-            </div>
-
-            {/* Timeline Rows for Epics */}
-            {groupedTasks.epics.map((epic, epicIndex) => (
-              <div key={epic._id}>
-                {/* Epic Timeline Row */}
-                <div 
-                  className={`relative flex border-b border-gray-100 ${epicIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
-                  style={{ minHeight: '80px' }}
-                >
+                {/* Timeline cells */}
+                <div className="relative flex flex-1">
                   {timelineColumns.map((col, colIdx) => (
-                    <div 
-                      key={colIdx} 
-                      className={`border-r border-gray-100 last:border-r-0 ${zoomLevel === 'day' ? 'min-w-[40px]' : 'min-w-[100px] flex-1'} ${
-                        col.isCurrent ? 'bg-blue-50/30' : ''
-                      }`}
-                    />
+                    <div key={colIdx} className={`border-r border-gray-100 last:border-r-0 ${zoomLevel === 'day' ? 'min-w-[40px]' : 'min-w-[100px] flex-1'} ${col.isCurrent ? 'bg-blue-50/30' : ''}`} />
                   ))}
-                  
-                  {/* Epic Bar - Positioned absolutely within row */}
+                  {/* Epic Bar */}
                   <div 
-                    className={`absolute h-7 rounded-md shadow-sm cursor-grab active:cursor-grabbing transition-all group/bar ${
-                      hoveredTask === epic._id ? 'shadow-lg scale-[1.02] z-20' : ''
-                    } ${selectedTask?._id === epic._id ? 'ring-2 ring-purple-300 shadow-lg z-20' : ''
-                    } ${isDragging && draggedItem === epic._id ? 'opacity-70 scale-105 z-30' : ''}`}
+                    className={`absolute h-7 rounded-md shadow-sm cursor-grab active:cursor-grabbing transition-all group/bar ${hoveredTask === epic._id ? 'shadow-lg scale-[1.02] z-20' : ''} ${selectedTask?._id === epic._id ? 'ring-2 ring-purple-300 shadow-lg z-20' : ''} ${isDragging && draggedItem === epic._id ? 'opacity-70 scale-105 z-30' : ''}`}
                     style={{
                       ...getTaskBarStyle(epic, timelineColumns.length),
                       top: '50%',
                       transform: 'translateY(-50%)',
                       background: epic.color === 'PURPLE' ? 'linear-gradient(135deg, #9333ea 0%, #7c3aed 100%)' :
-                                 epic.color === 'BLUE' ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' :
+                                 epic.color === 'BLUE' ? 'linear-gradient(135deg, #ffffff 0%, #2563eb 100%)' :
                                  epic.color === 'GREEN' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' :
                                  'linear-gradient(135deg, #9333ea 0%, #7c3aed 100%)'
                     }}
@@ -1252,18 +1142,12 @@ export default function RoadmapPage() {
                     onMouseLeave={() => setHoveredTask(null)}
                     onClick={() => { setSelectedTask(epic); setShowTaskDetail(true); }}
                     draggable
-                    onDragStart={(e) => {
-                      setIsDragging(true);
-                      setDraggedItem(epic._id);
-                      setDragStartX(e.clientX);
-                      e.dataTransfer.effectAllowed = 'move';
-                    }}
+                    onDragStart={(e) => { setIsDragging(true); setDraggedItem(epic._id); setDragStartX(e.clientX); e.dataTransfer.effectAllowed = 'move'; }}
                     onDragEnd={async (e) => {
                       setIsDragging(false);
                       setDraggedItem(null);
                       if (timelineRef.current) {
                         const deltaX = e.clientX - dragStartX;
-                        // Calculate column width based on zoom level
                         const columnWidth = zoomLevel === 'day' ? 40 : 100;
                         const totalWidth = timelineColumns.length * columnWidth;
                         const daysMoved = Math.round((deltaX / totalWidth) * timelineRange.totalDays);
@@ -1272,33 +1156,20 @@ export default function RoadmapPage() {
                           newStart.setDate(newStart.getDate() + daysMoved);
                           const newEnd = epic.dueDate ? new Date(epic.dueDate) : new Date(newStart);
                           if (epic.dueDate) newEnd.setDate(newEnd.getDate() + daysMoved);
-                          await updateTask(epic._id, { 
-                            startDate: newStart.toISOString().split('T')[0],
-                            dueDate: newEnd.toISOString().split('T')[0]
-                          });
+                          await updateTask(epic._id, { startDate: newStart.toISOString().split('T')[0], dueDate: newEnd.toISOString().split('T')[0] });
                         }
                       }
                     }}
                   >
-                    {/* Continuation Arrows */}
                     {getTaskBarStyle(epic, timelineColumns.length).showLeftArrow && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 bg-white rounded-full p-0.5 shadow-sm">
-                        <ArrowLeft className="h-3 w-3 text-purple-600" />
-                      </div>
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 bg-white rounded-full p-0.5 shadow-sm"><ArrowLeft className="h-3 w-3 text-purple-600" /></div>
                     )}
                     {getTaskBarStyle(epic, timelineColumns.length).showRightArrow && (
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 bg-white rounded-full p-0.5 shadow-sm">
-                        <ArrowRight className="h-3 w-3 text-purple-600" />
-                      </div>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 bg-white rounded-full p-0.5 shadow-sm"><ArrowRight className="h-3 w-3 text-purple-600" /></div>
                     )}
-                    
                     <div className="absolute inset-y-0 left-0 bg-white/30 rounded-l-md transition-all duration-500" style={{ width: `${getEpicProgress(epic._id)}%` }} />
                     <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium truncate px-3 drop-shadow-sm">
-                      {getTaskBarStyle(epic, timelineColumns.length).hasMissingDates && (
-                        <span className="inline-flex" title="Missing or invalid dates">
-                          <AlertTriangle className="h-3 w-3 me-1" />
-                        </span>
-                      )}
+                      {getTaskBarStyle(epic, timelineColumns.length).hasMissingDates && <span className="inline-flex" title="Missing or invalid dates"><AlertTriangle className="h-3 w-3 me-1" /></span>}
                       {epic.title || epic.summary}
                     </span>
                     {hoveredTask === epic._id && (
@@ -1312,60 +1183,48 @@ export default function RoadmapPage() {
                     )}
                   </div>
                 </div>
-                
-                {/* Child Task Timeline Rows */}
-                {expandedItems.has(epic._id) && (groupedTasks.childrenMap.get(epic._id) || groupedTasks.childrenMap.get(epic.id || '') || []).map((task, taskIndex) => (
-                  <div 
-                    key={task._id}
-                    className={`relative flex border-b border-gray-100 ${taskIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'}`}
-                    style={{ minHeight: '80px' }}
-                  >
+              </div>
+
+              {/* Child Task Rows */}
+              {expandedItems.has(epic._id) && (groupedTasks.childrenMap.get(epic._id) || groupedTasks.childrenMap.get(epic.id || '') || []).map((task, taskIndex) => (
+                <div key={task._id} className={`flex border-b border-gray-100 ${taskIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'}`} style={{ minHeight: '56px' }}>
+                  {/* Sticky left cell */}
+                  <div className={`sticky left-0 z-20 w-96 shrink-0 border-r border-gray-200 ps-10 pe-3 sm:pe-4 py-2.5 hover:bg-blue-50/30 transition-colors ${taskIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'}`}>
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="h-3.5 w-3.5 text-gray-300 cursor-grab" />
+                      <span className={`${getTypeColor(task.type)} text-sm`}>{getTypeIcon(task.type)}</span>
+                      <button onClick={() => { setSelectedTask(task); setShowTaskDetail(true); }} className="text-blue-600 text-xs font-mono hover:underline">{task.key}</button>
+                      <span className="text-gray-800 text-sm flex-1 break-words">{task.title || task.summary}</span>
+                    </div>
+                    <div className="ms-12 mt-1 flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-500 ${getTaskProgress(task) === 100 ? 'bg-green-500' : getTaskProgress(task) >= 50 ? 'bg-blue-500' : getTaskProgress(task) > 0 ? 'bg-amber-500' : 'bg-gray-300'}`} style={{ width: `${getTaskProgress(task)}%` }}></div>
+                      </div>
+                      <span className={`text-xs font-medium ${getTaskProgress(task) === 100 ? 'text-green-600' : getTaskProgress(task) >= 50 ? 'text-blue-600' : getTaskProgress(task) > 0 ? 'text-amber-600' : 'text-gray-400'}`}>{getTaskProgress(task)}%</span>
+                    </div>
+                  </div>
+                  {/* Timeline cells */}
+                  <div className="relative flex flex-1">
                     {timelineColumns.map((col, colIdx) => (
-                      <div 
-                        key={colIdx} 
-                        className={`border-r border-gray-50 last:border-r-0 ${zoomLevel === 'day' ? 'min-w-[40px]' : 'min-w-[100px] flex-1'} ${
-                          col.isCurrent ? 'bg-blue-50/20' : ''
-                        }`}
-                      />
+                      <div key={colIdx} className={`border-r border-gray-50 last:border-r-0 ${zoomLevel === 'day' ? 'min-w-[40px]' : 'min-w-[100px] flex-1'} ${col.isCurrent ? 'bg-blue-50/20' : ''}`} />
                     ))}
-                    
                     {/* Task Bar */}
                     <div 
-                      className={`absolute h-5 rounded cursor-grab active:cursor-grabbing transition-all ${
-                        hoveredTask === task._id ? 'shadow-lg scale-[1.02] z-20' : ''
-                      } ${selectedTask?._id === task._id ? 'ring-2 ring-green-300 shadow-lg z-20' : ''}`}
+                      className={`absolute h-5 rounded cursor-grab active:cursor-grabbing transition-all ${hoveredTask === task._id ? 'shadow-lg scale-[1.02] z-20' : ''} ${selectedTask?._id === task._id ? 'ring-2 ring-green-300 shadow-lg z-20' : ''}`}
                       style={{
                         ...getTaskBarStyle(task, timelineColumns.length),
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: task.type === 'bug' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' :
-                                   task.type === 'story' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' :
-                                   'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                        top: '50%', transform: 'translateY(-50%)',
+                        background: task.type === 'bug' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : task.type === 'story' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' : 'linear-gradient(135deg, #ffffff 0%, #2563eb 100%)'
                       }}
                       onMouseEnter={() => setHoveredTask(task._id)}
                       onMouseLeave={() => setHoveredTask(null)}
                       onClick={() => { setSelectedTask(task); setShowTaskDetail(true); }}
                     >
-                      {/* Progress overlay */}
                       <div className="absolute inset-y-0 left-0 bg-white/30 rounded-l transition-all duration-500" style={{ width: `${getTaskProgress(task)}%` }} />
-                      {/* Continuation Arrows */}
-                      {getTaskBarStyle(task, timelineColumns.length).showLeftArrow && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 bg-white rounded-full p-0.5 shadow-sm">
-                          <ArrowLeft className="h-2.5 w-2.5 text-blue-600" />
-                        </div>
-                      )}
-                      {getTaskBarStyle(task, timelineColumns.length).showRightArrow && (
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 bg-white rounded-full p-0.5 shadow-sm">
-                          <ArrowRight className="h-2.5 w-2.5 text-blue-600" />
-                        </div>
-                      )}
-                      
+                      {getTaskBarStyle(task, timelineColumns.length).showLeftArrow && <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 bg-white rounded-full p-0.5 shadow-sm"><ArrowLeft className="h-2.5 w-2.5 text-blue-600" /></div>}
+                      {getTaskBarStyle(task, timelineColumns.length).showRightArrow && <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 bg-white rounded-full p-0.5 shadow-sm"><ArrowRight className="h-2.5 w-2.5 text-blue-600" /></div>}
                       <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium truncate px-2 drop-shadow-sm">
-                        {getTaskBarStyle(task, timelineColumns.length).hasMissingDates && (
-                          <span className="inline-flex" title="Missing or invalid dates">
-                            <AlertTriangle className="h-2.5 w-2.5 me-1" />
-                          </span>
-                        )}
+                        {getTaskBarStyle(task, timelineColumns.length).hasMissingDates && <span className="inline-flex" title="Missing or invalid dates"><AlertTriangle className="h-2.5 w-2.5 me-1" /></span>}
                         {task.title || task.summary}
                       </span>
                       {hoveredTask === task._id && (
@@ -1376,63 +1235,51 @@ export default function RoadmapPage() {
                       )}
                     </div>
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+          ))}
+
+          {/* Standalone Tasks */}
+          {groupedTasks.standaloneTasks.map((task, idx) => (
+            <div key={task._id} className={`flex border-b border-gray-100 ${(groupedTasks.epics.length + idx) % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`} style={{ minHeight: '56px' }}>
+              {/* Sticky left cell */}
+              <div className={`sticky left-0 z-20 w-96 shrink-0 border-r border-gray-200 px-3 sm:px-4 py-3 hover:bg-blue-50/30 transition-colors ${(groupedTasks.epics.length + idx) % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+                <div className="flex items-center gap-2">
+                  <GripVertical className="h-4 w-4 text-gray-300 cursor-grab" />
+                  <span className={`${getTypeColor(task.type)} text-lg`}>{getTypeIcon(task.type)}</span>
+                  <button onClick={() => { setSelectedTask(task); setShowTaskDetail(true); }} className="text-blue-600 text-xs sm:text-sm font-mono hover:underline">{task.key}</button>
+                  <span className="text-gray-900 text-sm font-medium flex-1 break-words">{task.title || task.summary}</span>
+                </div>
+                <div className="ms-16 mt-1 flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-500 ${getTaskProgress(task) === 100 ? 'bg-green-500' : getTaskProgress(task) >= 50 ? 'bg-blue-500' : getTaskProgress(task) > 0 ? 'bg-amber-500' : 'bg-gray-300'}`} style={{ width: `${getTaskProgress(task)}%` }}></div>
+                  </div>
+                  <span className={`text-xs font-medium ${getTaskProgress(task) === 100 ? 'text-green-600' : getTaskProgress(task) >= 50 ? 'text-blue-600' : getTaskProgress(task) > 0 ? 'text-amber-600' : 'text-gray-400'}`}>{getTaskProgress(task)}%</span>
+                </div>
               </div>
-            ))}
-            
-            {/* Standalone Tasks Timeline */}
-            {groupedTasks.standaloneTasks.map((task, idx) => (
-              <div 
-                key={task._id}
-                className={`relative flex border-b border-gray-100 ${(groupedTasks.epics.length + idx) % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
-                style={{ minHeight: '44px' }}
-              >
+              {/* Timeline cells */}
+              <div className="relative flex flex-1">
                 {timelineColumns.map((col, colIdx) => (
-                  <div 
-                    key={colIdx} 
-                    className={`border-r border-gray-100 last:border-r-0 ${zoomLevel === 'day' ? 'min-w-[40px]' : 'min-w-[100px] flex-1'} ${
-                      col.isCurrent ? 'bg-blue-50/30' : ''
-                    }`}
-                  />
+                  <div key={colIdx} className={`border-r border-gray-100 last:border-r-0 ${zoomLevel === 'day' ? 'min-w-[40px]' : 'min-w-[100px] flex-1'} ${col.isCurrent ? 'bg-blue-50/30' : ''}`} />
                 ))}
-                
                 {/* Task Bar */}
                 <div 
-                  className={`absolute h-5 rounded cursor-pointer transition-all ${
-                    hoveredTask === task._id ? 'shadow-lg scale-[1.02] z-20' : ''
-                  } ${selectedTask?._id === task._id ? 'ring-2 ring-blue-300 shadow-lg z-20' : ''}`}
+                  className={`absolute h-5 rounded cursor-pointer transition-all ${hoveredTask === task._id ? 'shadow-lg scale-[1.02] z-20' : ''} ${selectedTask?._id === task._id ? 'ring-2 ring-blue-300 shadow-lg z-20' : ''}`}
                   style={{
                     ...getTaskBarStyle(task, timelineColumns.length),
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: task.type === 'bug' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' :
-                               task.type === 'story' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' :
-                               'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                    top: '50%', transform: 'translateY(-50%)',
+                    background: task.type === 'bug' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : task.type === 'story' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' : 'linear-gradient(135deg, #ffffff 0%, #2563eb 100%)'
                   }}
                   onMouseEnter={() => setHoveredTask(task._id)}
                   onMouseLeave={() => setHoveredTask(null)}
                   onClick={() => { setSelectedTask(task); setShowTaskDetail(true); }}
                 >
-                  {/* Progress overlay */}
                   <div className="absolute inset-y-0 left-0 bg-white/30 rounded-l transition-all duration-500" style={{ width: `${getTaskProgress(task)}%` }} />
-                  {/* Continuation Arrows */}
-                  {getTaskBarStyle(task, timelineColumns.length).showLeftArrow && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 bg-white rounded-full p-0.5 shadow-sm">
-                      <ArrowLeft className="h-2.5 w-2.5 text-blue-600" />
-                    </div>
-                  )}
-                  {getTaskBarStyle(task, timelineColumns.length).showRightArrow && (
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 bg-white rounded-full p-0.5 shadow-sm">
-                      <ArrowRight className="h-2.5 w-2.5 text-blue-600" />
-                    </div>
-                  )}
-                  
+                  {getTaskBarStyle(task, timelineColumns.length).showLeftArrow && <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 bg-white rounded-full p-0.5 shadow-sm"><ArrowLeft className="h-2.5 w-2.5 text-blue-600" /></div>}
+                  {getTaskBarStyle(task, timelineColumns.length).showRightArrow && <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 bg-white rounded-full p-0.5 shadow-sm"><ArrowRight className="h-2.5 w-2.5 text-blue-600" /></div>}
                   <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium truncate px-2 drop-shadow-sm">
-                    {getTaskBarStyle(task, timelineColumns.length).hasMissingDates && (
-                      <span className="inline-flex" title="Missing or invalid dates">
-                        <AlertTriangle className="h-2.5 w-2.5 me-1" />
-                      </span>
-                    )}
+                    {getTaskBarStyle(task, timelineColumns.length).hasMissingDates && <span className="inline-flex" title="Missing or invalid dates"><AlertTriangle className="h-2.5 w-2.5 me-1" /></span>}
                     {task.title || task.summary}
                   </span>
                   {hoveredTask === task._id && (
@@ -1443,8 +1290,8 @@ export default function RoadmapPage() {
                   )}
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 

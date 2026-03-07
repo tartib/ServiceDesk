@@ -13,12 +13,14 @@ import {
   Trash2,
   Save,
   ChevronRight,
+  Workflow,
 } from 'lucide-react';
 import {
   ProjectHeader,
   ProjectNavTabs,
   LoadingState,
   ProjectMembersPanel,
+  WorkflowSettingsPanel,
 } from '@/components/projects';
 import ProjectTeamsPanel from '@/components/projects/ProjectTeamsPanel';
 import { useMethodology } from '@/hooks/useMethodology';
@@ -118,10 +120,32 @@ export default function ProjectSettingsPage() {
   }, [projectId, router, fetchProject]);
 
   const handleSave = async () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token) return;
     setIsSaving(true);
-    // Simulate save
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
+    try {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: settings.name,
+          key: settings.key,
+          description: settings.description,
+          methodology: { code: settings.methodology },
+          visibility: settings.visibility,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProject(data.data.project);
+      } else {
+        console.error('Failed to save settings:', data.message);
+      }
+    } catch (error) {
+      console.error('Failed to save project settings:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const tabs = [
@@ -131,6 +155,7 @@ export default function ProjectSettingsPage() {
     { id: 'teams', label: t('projects.settings.teams') || 'Teams', icon: Users },
     { id: 'permissions', label: t('projects.settings.permissions') || 'Permissions', icon: Shield },
     { id: 'notifications', label: t('projects.settings.notifications') || 'Notifications', icon: Bell },
+    { id: 'workflows', label: t('projects.settings.workflows') || 'Workflows', icon: Workflow },
     { id: 'appearance', label: t('projects.settings.appearance') || 'Appearance', icon: Palette },
     { id: 'danger', label: t('projects.settings.dangerZone') || 'Danger Zone', icon: Trash2 },
   ];
@@ -400,6 +425,11 @@ export default function ProjectSettingsPage() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Workflows */}
+            {activeTab === 'workflows' && (
+              <WorkflowSettingsPanel projectId={projectId} />
             )}
 
             {/* Appearance */}

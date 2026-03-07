@@ -106,7 +106,9 @@
     "sla": "SLA",
     "releases": "Releases",
     "cab": "CAB",
-    "portfolioAnalytics": "Portfolio Analytics"
+    "portfolioAnalytics": "Portfolio Analytics",
+    "teamPerformance": "Team Performance",
+    "agentConsole": "Agent Console"
   },
   "tasks": {
     "title": "Tasks",
@@ -131,16 +133,31 @@
   "projects": {
     "title": "Projects",
     "createProject": "Create Project",
+    "createProjectDesc": "Set up your project details and choose a methodology",
     "editProject": "Edit Project",
     "deleteProject": "Delete Project",
     "projectName": "Project Name",
+    "projectNamePlaceholder": "e.g., Mobile App Redesign",
+    "projectKey": "Project Key",
+    "keyHint": "Prefix for task IDs (e.g., PROJ-123)",
     "description": "Description",
+    "descriptionPlaceholder": "Brief description of your project goals and scope...",
     "lead": "Lead",
     "members": "Members",
     "status": "Status",
     "active": "Active",
     "archived": "Archived",
-    "noProjects": "No projects found"
+    "noProjects": "No projects found",
+    "projectDetails": "Project Details",
+    "projectDetailsDesc": "Basic information about your project",
+    "startDate": "Start Date",
+    "endDate": "Target End Date",
+    "methodology": "Methodology",
+    "methodologyDesc": "Choose the framework that best fits your workflow",
+    "creating": "Creating...",
+    "common": {
+      "cancel": "Cancel"
+    }
   },
   "inventory": {
     "title": "Inventory",
@@ -159,7 +176,7 @@
     "invalidEmail": "Invalid email address",
     "passwordMismatch": "Passwords do not match",
     "minLength": "Minimum length is {min} characters",
-    "maxLength": "Maximum length is {max} characters"
+    "optional": "Optional"
   },
   "messages": {
     "deleteConfirm": "Are you sure you want to delete this item?",

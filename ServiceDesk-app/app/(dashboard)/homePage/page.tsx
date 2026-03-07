@@ -36,6 +36,8 @@ import { useLocale } from '@/hooks/useLocale';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/authStore';
 import authService from '@/lib/api/auth-service';
+import { useNotifications, useMarkNotificationAsRead } from '@/hooks/useNotifications';
+import { formatTimeAgo } from '@/lib/utils';
 import { ALL_ROLES } from '@/types';
 
 const ADMIN_ROLES = ['manager', 'product_owner', 'project_manager'];
@@ -242,7 +244,16 @@ export default function HomePage() {
   const user = currentUser || storedUser;
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch notifications
+  const { data: notificationsData, isLoading: notificationsLoading } = useNotifications();
+  const { mutate: markAsRead } = useMarkNotificationAsRead();
+  
+  const notifications = notificationsData?.data || [];
+  const unreadNotifications = notifications.filter((n) => !n.isRead);
+  const recentNotifications = notifications.slice(0, 5);
 
   const handleLogout = async () => {
     await authService.logout();
@@ -348,10 +359,102 @@ export default function HomePage() {
           </div>
 
           {/* Notifications */}
-          <Button variant="outline" size="icon" className="relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-          </Button>
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="icon"
+              className="relative"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <Bell className="h-4 w-4" />
+              {unreadNotifications.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
+                  {unreadNotifications.length > 9 ? '9+' : unreadNotifications.length}
+                </span>
+              )}
+            </Button>
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <h3 className="font-semibold text-sm">
+                    {locale === 'ar' ? 'الإشعارات' : 'Notifications'}
+                  </h3>
+                  {unreadNotifications.length > 0 && (
+                    <button
+                      onClick={() => router.push('/notifications')}
+                      className="text-xs text-blue-600 hover:text-blue-700"
+                    >
+                      {locale === 'ar' ? 'عرض الكل' : 'View all'}
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notificationsLoading ? (
+                    <div className="px-4 py-8 text-center">
+                      <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+                    </div>
+                  ) : recentNotifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center">
+                      <Bell className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">
+                        {locale === 'ar' ? 'لا توجد إشعارات' : 'No notifications'}
+                      </p>
+                    </div>
+                  ) : (
+                    recentNotifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`px-4 py-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
+                          !notification.isRead ? 'bg-blue-50' : ''
+                        }`}
+                        onClick={() => {
+                          if (!notification.isRead && notification.id) {
+                            markAsRead(notification.id);
+                          }
+                          if (notification.actionUrl) {
+                            router.push(notification.actionUrl);
+                            setShowNotifications(false);
+                          } else {
+                            router.push('/notifications');
+                            setShowNotifications(false);
+                          }
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">
+                              {notification.title}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {formatTimeAgo(notification.createdAt)}
+                            </p>
+                          </div>
+                          {!notification.isRead && (
+                            <span className="h-2 w-2 bg-blue-500 rounded-full shrink-0 mt-1"></span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                {/* Footer - View All */}
+                <div className="border-t px-4 py-3">
+                  <button
+                    onClick={() => {
+                      router.push('/notifications');
+                      setShowNotifications(false);
+                    }}
+                    className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    {locale === 'ar' ? 'عرض جميع الإشعارات →' : 'View all notifications →'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Profile Menu */}
           <div className="relative">

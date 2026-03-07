@@ -11,6 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { FileText, Puzzle } from 'lucide-react';
+import { useWorkflows } from '@/hooks/useWorkflows';
 import {
   useCreateServiceCatalogItem,
   useUpdateServiceCatalogItem,
@@ -162,10 +163,16 @@ const FIELDS: SmartField[] = [
   }),
 
   // ── Workflow ──
-  field('sla_id', SmartFieldType.TEXT, 'SLA ID', 'معرف SLA', { required: true, defaultValue: 'default-sla', placeholder: 'e.g. default-sla', sectionId: 'workflow', order: 0 }),
-  field('notification_template', SmartFieldType.TEXT, 'Notification Template', 'قالب الإشعار', { placeholder: 'Template name or ID', sectionId: 'workflow', order: 1 }),
-  field('auto_assign_group', SmartFieldType.TEXT, 'Auto-Assign Group', 'مجموعة التعيين التلقائي', { placeholder: 'Group ID', sectionId: 'workflow', order: 2 }),
-  field('auto_assign_user', SmartFieldType.TEXT, 'Auto-Assign User', 'مستخدم التعيين التلقائي', { placeholder: 'User ID', sectionId: 'workflow', order: 3 }),
+  field('fulfillment_workflow_id', SmartFieldType.SELECT, 'Fulfillment Workflow', 'سير عمل التنفيذ', {
+    sectionId: 'workflow', order: 0, width: 'full',
+    helpText: 'BPMN workflow to drive request fulfillment (loaded dynamically)',
+    helpTextAr: 'سير عمل BPMN لتنفيذ الطلب (يُحمَّل ديناميكياً)',
+    options: [{ value: '__none__', label: 'None (manual fulfillment)' }],
+  }),
+  field('sla_id', SmartFieldType.TEXT, 'SLA ID', 'معرف SLA', { required: true, defaultValue: 'default-sla', placeholder: 'e.g. default-sla', sectionId: 'workflow', order: 1 }),
+  field('notification_template', SmartFieldType.TEXT, 'Notification Template', 'قالب الإشعار', { placeholder: 'Template name or ID', sectionId: 'workflow', order: 2 }),
+  field('auto_assign_group', SmartFieldType.TEXT, 'Auto-Assign Group', 'مجموعة التعيين التلقائي', { placeholder: 'Group ID', sectionId: 'workflow', order: 3 }),
+  field('auto_assign_user', SmartFieldType.TEXT, 'Auto-Assign User', 'مستخدم التعيين التلقائي', { placeholder: 'User ID', sectionId: 'workflow', order: 4 }),
 
   // ── Display & Meta ──
   field('order', SmartFieldType.NUMBER, 'Display Order', 'ترتيب العرض', { defaultValue: 0, min: 0, helpText: 'Lower number = shown first', helpTextAr: 'رقم أقل = يظهر أولاً', sectionId: 'display', order: 0 }),
@@ -214,6 +221,7 @@ function serviceToFormData(service: IServiceCatalogItem): Record<string, unknown
     billing_type: service.pricing?.billing_type || 'free',
     cost: service.pricing?.cost ?? 0,
     currency: service.pricing?.currency || 'SAR',
+    fulfillment_workflow_id: (wf?.fulfillment_workflow_id as string) || '__none__',
     sla_id: (wf?.sla_id as string) || 'default-sla',
     notification_template: (wf?.notification_template as string) || '',
     auto_assign_group: (wf?.auto_assign_group as string) || '',
@@ -260,6 +268,7 @@ function formDataToPayload(
     },
     workflow: {
       approval_chain: (existingService?.workflow as Record<string, unknown>)?.approval_chain as IServiceCatalogItem['workflow']['approval_chain'] || [],
+      ...(String(data.fulfillment_workflow_id || '').trim() && String(data.fulfillment_workflow_id).trim() !== '__none__' ? { fulfillment_workflow_id: String(data.fulfillment_workflow_id).trim() } : {}),
       sla_id: String(data.sla_id || 'default-sla').trim(),
       ...(String(data.auto_assign_group || '').trim() ? { auto_assign_group: String(data.auto_assign_group).trim() } : {}),
       ...(String(data.auto_assign_user || '').trim() ? { auto_assign_user: String(data.auto_assign_user).trim() } : {}),
@@ -378,6 +387,33 @@ export default function ServiceFormModal({ open, onOpenChange, service, onSucces
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('details');
 
+  // Fetch published workflow definitions for the fulfillment workflow picker
+  const { data: wfData } = useWorkflows({ status: 'published', limit: 100 });
+
+  // Build a form template with dynamic workflow options injected
+  const formTemplate = useMemo(() => {
+    const workflowOptions = [
+      { value: '__none__', label: 'None (manual fulfillment)', label_ar: 'بدون (تنفيذ يدوي)' },
+      ...(wfData?.workflows || []).map((wf) => ({
+        value: wf._id,
+        label: wf.name,
+        label_ar: wf.name,
+      })),
+    ];
+
+    const patchedFields = FIELDS.map((f) => {
+      if (f.field_id === 'fulfillment_workflow_id') {
+        return { ...f, options: workflowOptions };
+      }
+      return f;
+    });
+
+    return {
+      ...SERVICE_FORM_TEMPLATE,
+      fields: patchedFields,
+    };
+  }, [wfData]);
+
   // Form builder fields state
   const [formFields, setFormFields] = useState<SmartField[]>([]);
 
@@ -467,7 +503,7 @@ export default function ServiceFormModal({ open, onOpenChange, service, onSucces
 
           <TabsContent value="details" className="mt-0">
             <FormRenderer
-              template={SERVICE_FORM_TEMPLATE}
+              template={formTemplate}
               initialData={detailsData || initialData}
               onSubmit={handleDetailsSubmit}
               onCancel={() => onOpenChange(false)}

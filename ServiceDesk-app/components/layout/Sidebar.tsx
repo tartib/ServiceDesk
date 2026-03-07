@@ -47,6 +47,8 @@ import {
   TrendingUp,
   CheckCircle,
   Map,
+  Headset,
+  Trophy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -110,6 +112,7 @@ const menuItems = [
   { icon: FolderKanban, labelKey: 'nav.projects', href: '/projects', roles: ALL_ROLES },
   { icon: ClipboardList, labelKey: 'nav.projectIntake', href: '/projects/intake', roles: LEAD_ROLES },
   { icon: BarChart3, labelKey: 'nav.portfolioAnalytics', href: '/portfolio-analytics', roles: LEAD_ROLES },
+  { icon: Trophy, labelKey: 'nav.teamPerformance', href: '/team-performance', roles: LEAD_ROLES },
   // { icon: CheckSquare, labelKey: 'nav.myTasks', href: '/tasks/my-tasks', roles: ALL_ROLES },
   // { icon: ClipboardList, labelKey: 'nav.allTasks', href: '/tasks', roles: LEAD_ROLES },
   { icon: HardDrive, labelKey: 'nav.drive', href: '/drive', roles: ALL_ROLES },
@@ -126,6 +129,7 @@ const menuItems = [
 ];
 
 const itsmMenuItems = [
+  { icon: Headset, labelKey: 'nav.agentConsole', href: '/agent-console', roles: LEAD_ROLES },
   { icon: Headphones, labelKey: 'nav.selfService', href: '/self-service', roles: ALL_ROLES },
   { icon: Activity, labelKey: 'nav.itsmDashboard', href: '/itsm-dashboard', roles: ALL_ROLES },
   { icon: AlertTriangle, labelKey: 'nav.incidents', href: '/incidents', roles: ALL_ROLES },

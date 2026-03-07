@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuthStore } from '@/store/authStore';
@@ -14,6 +14,16 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
   ArrowLeft,
   Clock,
   User,
@@ -24,6 +34,7 @@ import {
   FileText,
   Play,
   UserCheck,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useServiceCatalogItem } from '@/hooks/useServiceCatalog';
@@ -62,6 +73,13 @@ export default function ServiceRequestDetailPage() {
   const assignRequest = useAssignServiceRequest();
   const fulfillRequest = useFulfillServiceRequest();
 
+  // Modal state
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showFulfillDialog, setShowFulfillDialog] = useState(false);
+  const [fulfillNotes, setFulfillNotes] = useState('');
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+
   const statusLabels: Record<ServiceRequestStatus, { en: string; ar: string }> = {
     [ServiceRequestStatus.SUBMITTED]: { en: 'Submitted', ar: 'مقدم' },
     [ServiceRequestStatus.PENDING_APPROVAL]: { en: 'Pending Approval', ar: 'بانتظار الموافقة' },
@@ -86,15 +104,15 @@ export default function ServiceRequestDetailPage() {
 
   const handleReject = async () => {
     if (!request || !user) return;
-    const comments = prompt(locale === 'ar' ? 'سبب الرفض:' : 'Rejection reason:');
-    if (comments === null) return;
     await approveRequest.mutateAsync({
       id: request.request_id,
       decision: 'reject',
       approver_id: user.id || '',
       approver_name: user.name || 'Unknown',
-      comments,
+      comments: rejectReason,
     });
+    setShowRejectDialog(false);
+    setRejectReason('');
     refetch();
   };
 
@@ -122,25 +140,26 @@ export default function ServiceRequestDetailPage() {
 
   const handleFulfill = async () => {
     if (!request || !user) return;
-    const notes = prompt(locale === 'ar' ? 'ملاحظات التنفيذ:' : 'Fulfillment notes:');
     await fulfillRequest.mutateAsync({
       id: request.request_id,
       fulfilled_by: user.id || '',
       fulfilled_by_name: user.name || 'Unknown',
-      notes: notes || undefined,
+      notes: fulfillNotes || undefined,
     });
+    setShowFulfillDialog(false);
+    setFulfillNotes('');
     refetch();
   };
 
   const handleCancel = async () => {
     if (!request || !user) return;
-    if (!confirm(locale === 'ar' ? 'هل أنت متأكد من إلغاء هذا الطلب؟' : 'Are you sure you want to cancel this request?')) return;
     await updateStatus.mutateAsync({
       id: request.request_id,
       status: ServiceRequestStatus.CANCELLED,
       user_id: user.id || '',
       user_name: user.name || 'Unknown',
     });
+    setShowCancelDialog(false);
     refetch();
   };
 
@@ -223,7 +242,7 @@ export default function ServiceRequestDetailPage() {
                   <CheckCircle className="h-4 w-4 mr-2" />
                   {locale === 'ar' ? 'موافقة' : 'Approve'}
                 </Button>
-                <Button onClick={handleReject} variant="destructive">
+                <Button onClick={() => { setShowRejectDialog(true); setRejectReason(''); }} variant="destructive">
                   <XCircle className="h-4 w-4 mr-2" />
                   {locale === 'ar' ? 'رفض' : 'Reject'}
                 </Button>
@@ -242,13 +261,13 @@ export default function ServiceRequestDetailPage() {
               </Button>
             )}
             {canFulfill && (
-              <Button onClick={handleFulfill} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={() => { setShowFulfillDialog(true); setFulfillNotes(''); }} className="bg-green-600 hover:bg-green-700">
                 <CheckCircle className="h-4 w-4 mr-2" />
                 {locale === 'ar' ? 'تنفيذ' : 'Fulfill'}
               </Button>
             )}
             {canCancel && (
-              <Button onClick={handleCancel} variant="outline" className="text-destructive">
+              <Button onClick={() => setShowCancelDialog(true)} variant="outline" className="text-destructive">
                 {locale === 'ar' ? 'إلغاء' : 'Cancel'}
               </Button>
             )}
@@ -476,6 +495,119 @@ export default function ServiceRequestDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{locale === 'ar' ? 'رفض الطلب' : 'Reject Request'}</DialogTitle>
+            <DialogDescription>
+              {locale === 'ar'
+                ? `رفض الطلب ${request.request_id}`
+                : `Reject request ${request.request_id}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label>{locale === 'ar' ? 'سبب الرفض' : 'Rejection Reason'}</Label>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder={locale === 'ar' ? 'اشرح سبب الرفض...' : 'Explain why this request is being rejected...'}
+              rows={4}
+              dir={locale === 'ar' ? 'rtl' : 'ltr'}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+              {locale === 'ar' ? 'تراجع' : 'Go Back'}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={approveRequest.isPending}
+            >
+              {approveRequest.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {locale === 'ar' ? 'رفض' : 'Reject'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fulfill Dialog */}
+      <Dialog open={showFulfillDialog} onOpenChange={setShowFulfillDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{locale === 'ar' ? 'تنفيذ الطلب' : 'Fulfill Request'}</DialogTitle>
+            <DialogDescription>
+              {locale === 'ar'
+                ? `تأكيد تنفيذ الطلب ${request.request_id}`
+                : `Confirm fulfillment of request ${request.request_id}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label>{locale === 'ar' ? 'ملاحظات التنفيذ' : 'Fulfillment Notes'}</Label>
+            <Textarea
+              value={fulfillNotes}
+              onChange={(e) => setFulfillNotes(e.target.value)}
+              placeholder={locale === 'ar' ? 'أضف ملاحظات حول التنفيذ...' : 'Add notes about the fulfillment...'}
+              rows={4}
+              dir={locale === 'ar' ? 'rtl' : 'ltr'}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFulfillDialog(false)}>
+              {locale === 'ar' ? 'تراجع' : 'Go Back'}
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleFulfill}
+              disabled={fulfillRequest.isPending}
+            >
+              {fulfillRequest.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {locale === 'ar' ? 'تنفيذ' : 'Fulfill'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <DialogTitle>{locale === 'ar' ? 'إلغاء الطلب' : 'Cancel Request'}</DialogTitle>
+                <DialogDescription>
+                  {locale === 'ar' ? 'هذا الإجراء لا يمكن التراجع عنه' : 'This action cannot be undone'}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              {locale === 'ar'
+                ? `هل أنت متأكد من إلغاء الطلب ${request.request_id}؟`
+                : `Are you sure you want to cancel request ${request.request_id}?`}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+              {locale === 'ar' ? 'تراجع' : 'Go Back'}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancel}
+              disabled={updateStatus.isPending}
+            >
+              {updateStatus.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {locale === 'ar' ? 'إلغاء الطلب' : 'Cancel Request'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

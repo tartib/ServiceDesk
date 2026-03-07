@@ -602,7 +602,7 @@ export default function AnalyticsPage() {
     const circumference = 2 * Math.PI * 40; // ~251.2
     const segments = [
       { label: 'Done', count: stats.done, color: '#22c55e', pct: Math.round((stats.done / total) * 100) },
-      { label: 'In Progress', count: stats.inProgress, color: '#3b82f6', pct: Math.round((stats.inProgress / total) * 100) },
+      { label: 'In Progress', count: stats.inProgress, color: '#ffffff', pct: Math.round((stats.inProgress / total) * 100) },
       { label: 'To Do', count: stats.todo, color: '#f59e0b', pct: Math.round((stats.todo / total) * 100) },
     ];
     let offset = 0;

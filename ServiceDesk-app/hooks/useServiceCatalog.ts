@@ -45,6 +45,7 @@ export interface IServiceCatalogItem {
     auto_assign_user?: string;
     sla_id: string;
     notification_template?: string;
+    fulfillment_workflow_id?: string;
   };
   fulfillment: {
     type: string;

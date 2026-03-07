@@ -89,7 +89,7 @@ interface Sprint {
 
 const defaultStatuses: WorkflowStatus[] = [
   { id: 'backlog', name: 'Backlog', category: 'todo', color: '#6B7280' },
-  { id: 'ready', name: 'Ready', category: 'todo', color: '#3B82F6' },
+  { id: 'ready', name: 'Ready', category: 'todo', color: '#ffffff' },
   { id: 'in-progress', name: 'In Progress', category: 'in_progress', color: '#F59E0B' },
   { id: 'in-review', name: 'In Review', category: 'in_progress', color: '#8B5CF6' },
   { id: 'done', name: 'Done', category: 'done', color: '#10B981' },

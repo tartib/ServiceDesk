@@ -414,7 +414,7 @@ export default function MetricsPage() {
                 {/* In Progress - Blue */}
                 <path
                   d="M0,70 L0,50 L100,48 L200,38 L300,28 L400,15 L400,20 L300,35 L200,50 L100,65 Z"
-                  fill="#3b82f6"
+                  fill="#ffffff"
                   opacity="0.8"
                 />
                 {/* To Do - Gray */}

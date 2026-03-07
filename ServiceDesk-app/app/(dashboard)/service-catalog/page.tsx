@@ -19,17 +19,19 @@ import {
 } from 'lucide-react';
 import { useServiceCatalog, IServiceCatalogItem } from '@/hooks/useServiceCatalog';
 import { useLocale } from '@/hooks/useLocale';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import ServiceFormModal from '@/components/service-catalog/ServiceFormModal';
 import DeleteServiceDialog from '@/components/service-catalog/DeleteServiceDialog';
 
-const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
-  active: { label: 'Active', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-  inactive: { label: 'Inactive', color: 'bg-gray-100 text-gray-600', icon: XCircle },
-  deprecated: { label: 'Deprecated', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
+const statusConfig: Record<string, { en: string; ar: string; color: string; icon: typeof CheckCircle }> = {
+  active: { en: 'Active', ar: 'مفعل', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle },
+  inactive: { en: 'Inactive', ar: 'غير مفعل', color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400', icon: XCircle },
+  deprecated: { en: 'Deprecated', ar: 'مهمل', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
 };
 
 export default function ServiceCatalogStandalonePage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const isAr = locale === 'ar';
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -71,21 +73,24 @@ export default function ServiceCatalogStandalonePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <DashboardLayout>
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Package className="h-6 w-6 text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-900">{t('nav.serviceCatalog')}</h1>
-            <span className="text-sm text-gray-500">({filteredServices.length} services)</span>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t('nav.serviceCatalog')}</h1>
+            <span className="text-sm text-gray-500 dark:text-gray-400">({filteredServices.length} {isAr ? 'خدمة' : 'services'})</span>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -93,16 +98,17 @@ export default function ServiceCatalogStandalonePage() {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Plus className="h-4 w-4" />
-              Add Service
+              {isAr ? 'إضافة خدمة' : 'Add Service'}
             </button>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search services..."
+                placeholder={isAr ? 'بحث عن خدمات...' : 'Search services...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                dir={isAr ? 'rtl' : 'ltr'}
               />
             </div>
             <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
@@ -124,7 +130,7 @@ export default function ServiceCatalogStandalonePage() {
       </div>
 
       {/* Category Filter */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
         <div className="flex items-center gap-2 overflow-x-auto">
           {categories.map((cat) => (
             <button
@@ -154,7 +160,7 @@ export default function ServiceCatalogStandalonePage() {
               return (
                 <div
                   key={service._id}
-                  className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer group"
+                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer group"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
@@ -162,13 +168,13 @@ export default function ServiceCatalogStandalonePage() {
                     </div>
                     <span className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${cfg.color}`}>
                       <StatusIcon className="h-3 w-3" />
-                      {cfg.label}
+                      {isAr ? cfg.ar : cfg.en}
                     </span>
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
-                    {service.name}
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1 group-hover:text-blue-600 transition-colors">
+                    {isAr ? (service.name_ar || service.name) : service.name}
                   </h3>
-                  <p className="text-sm text-gray-500 mb-4 line-clamp-2">{service.description}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">{isAr ? (service.description_ar || service.description) : service.description}</p>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500">{service.category}</span>
                     {renderStars(service.metrics?.satisfaction_score || 0)}
@@ -191,7 +197,7 @@ export default function ServiceCatalogStandalonePage() {
                       }}
                       className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      Request Service
+                      {isAr ? 'طلب الخدمة' : 'Request Service'}
                     </button>
                     <button
                       onClick={(e) => {
@@ -219,14 +225,14 @@ export default function ServiceCatalogStandalonePage() {
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200">
-            <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase">
-              <div className="col-span-3">Service</div>
-              <div className="col-span-2">Category</div>
-              <div className="col-span-2">Status</div>
-              <div className="col-span-1">Est. Time</div>
-              <div className="col-span-2">Rating</div>
-              <div className="col-span-2">Action</div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+              <div className="col-span-3">{isAr ? 'الخدمة' : 'Service'}</div>
+              <div className="col-span-2">{isAr ? 'الفئة' : 'Category'}</div>
+              <div className="col-span-2">{isAr ? 'الحالة' : 'Status'}</div>
+              <div className="col-span-1">{isAr ? 'الوقت' : 'Est. Time'}</div>
+              <div className="col-span-2">{isAr ? 'التقييم' : 'Rating'}</div>
+              <div className="col-span-2">{isAr ? 'إجراء' : 'Action'}</div>
             </div>
             {filteredServices.map((service) => {
               const status = getServiceStatus(service);
@@ -234,29 +240,29 @@ export default function ServiceCatalogStandalonePage() {
               const StatusIcon = cfg.icon;
 
               return (
-                <div key={service._id} className="grid grid-cols-12 gap-4 px-4 py-4 border-b border-gray-100 hover:bg-gray-50 items-center">
+                <div key={service._id} className="grid grid-cols-12 gap-4 px-4 py-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 items-center">
                   <div className="col-span-3 flex items-center gap-3">
                     <Package className="h-5 w-5 text-blue-600" />
                     <div>
-                      <p className="font-medium text-gray-900">{service.name}</p>
-                      <p className="text-xs text-gray-500 truncate max-w-xs">{service.description}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{isAr ? (service.name_ar || service.name) : service.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">{isAr ? (service.description_ar || service.description) : service.description}</p>
                     </div>
                   </div>
-                  <div className="col-span-2 text-sm text-gray-600">{service.category}</div>
+                  <div className="col-span-2 text-sm text-gray-600 dark:text-gray-400">{service.category}</div>
                   <div className="col-span-2">
                     <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${cfg.color}`}>
                       <StatusIcon className="h-3 w-3" />
-                      {cfg.label}
+                      {isAr ? cfg.ar : cfg.en}
                     </span>
                   </div>
-                  <div className="col-span-1 text-sm text-gray-600">{service.fulfillment?.estimated_hours || 0}h</div>
+                  <div className="col-span-1 text-sm text-gray-600 dark:text-gray-400">{service.fulfillment?.estimated_hours || 0}h</div>
                   <div className="col-span-2">{renderStars(service.metrics?.satisfaction_score || 0)}</div>
                   <div className="col-span-2 flex items-center gap-2">
                     <button
                       onClick={() => router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`)}
                       className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      Request
+                      {isAr ? 'طلب' : 'Request'}
                     </button>
                     <button
                       onClick={() => setEditTarget(service)}
@@ -282,13 +288,13 @@ export default function ServiceCatalogStandalonePage() {
         {filteredServices.length === 0 && (
           <div className="text-center py-12">
             <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No services found</p>
+            <p className="text-gray-500 dark:text-gray-400">{isAr ? 'لا توجد خدمات' : 'No services found'}</p>
             <button
               onClick={() => setShowCreateModal(true)}
               className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Plus className="h-4 w-4" />
-              Add First Service
+              {isAr ? 'إضافة أول خدمة' : 'Add First Service'}
             </button>
           </div>
         )}
@@ -311,5 +317,6 @@ export default function ServiceCatalogStandalonePage() {
         serviceName={deleteTarget?.name || ''}
       />
     </div>
+    </DashboardLayout>
   );
 }

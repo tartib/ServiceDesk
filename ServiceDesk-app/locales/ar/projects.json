@@ -887,7 +887,8 @@
       "deleteDescription": "حذف هذا المشروع وجميع البيانات بشكل دائم",
       "saveChanges": "حفظ التغييرات",
       "saving": "جاري الحفظ...",
-      "integrations": "التكاملات"
+      "integrations": "التكاملات",
+      "workflows": "سير العمل"
     },
 
     "reports": {

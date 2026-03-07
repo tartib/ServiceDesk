@@ -12,6 +12,7 @@ import {
   MessageSquare,
   FileText,
   ChevronRight,
+  X,
 } from 'lucide-react';
 import {
   ProjectHeader,
@@ -65,6 +66,11 @@ interface Project {
   key: string;
 }
 
+interface PhaseOption {
+  _id: string;
+  name: string;
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const mapGate = (g: Record<string, any>): GateReview => {
   const getName = (u: any) => u?.profile ? `${u.profile.firstName} ${u.profile.lastName}`.trim() : u?.email || 'Unknown';
@@ -109,19 +115,27 @@ export default function GatesPage() {
   const [gates, setGates] = useState<GateReview[]>([]);
   const [selectedGate, setSelectedGate] = useState<GateReview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [phases, setPhases] = useState<PhaseOption[]>([]);
+  const [newGate, setNewGate] = useState({ name: '', phaseId: '', phaseName: '', criteriaText: '' });
+  const [isSaving, setIsSaving] = useState(false);
 
   const getToken = () => localStorage.getItem('token') || localStorage.getItem('accessToken');
 
   const fetchData = useCallback(async (token: string) => {
     try {
-      const [projRes, gatesRes] = await Promise.all([
+      const [projRes, gatesRes, phRes] = await Promise.all([
         fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API_URL}/pm/projects/${projectId}/gates`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/pm/projects/${projectId}/phases`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       const projData = await projRes.json();
       if (projData.success) setProject(projData.data.project);
       const gatesData = await gatesRes.json();
       if (gatesData.success) setGates((gatesData.data.gates || []).map(mapGate));
+      const phData = await phRes.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (phData.success) setPhases((phData.data.phases || []).map((p: Record<string, any>) => ({ _id: p._id, name: p.name })));
     } catch (error) {
       console.error('Failed to fetch gates:', error);
     } finally {
@@ -134,6 +148,64 @@ export default function GatesPage() {
     if (!token) { router.push('/login'); return; }
     fetchData(token);
   }, [projectId, router, fetchData]);
+
+  const handleCreateGate = async () => {
+    if (!newGate.name) return;
+    const token = getToken();
+    if (!token) return;
+    setIsSaving(true);
+    try {
+      const criteria = newGate.criteriaText
+        .split('\n')
+        .map(c => c.trim())
+        .filter(Boolean)
+        .map(name => ({ name, status: 'not_checked' }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const body: Record<string, any> = { name: newGate.name, criteria };
+      if (newGate.phaseId) {
+        body.phaseId = newGate.phaseId;
+        body.phaseName = phases.find(p => p._id === newGate.phaseId)?.name || '';
+      }
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/gates`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchData(token);
+        setShowCreateModal(false);
+        setNewGate({ name: '', phaseId: '', phaseName: '', criteriaText: '' });
+      }
+    } catch (error) {
+      console.error('Failed to create gate:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateGateStatus = async (gateId: string, status: string) => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const body: Record<string, any> = { status };
+      if (status === 'in_review') body.requestedAt = new Date().toISOString();
+      if (status === 'approved' || status === 'rejected') body.completedAt = new Date().toISOString();
+      const res = await fetch(`${API_URL}/pm/gates/${gateId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchData(token);
+        setSelectedGate(null);
+      }
+    } catch (error) {
+      console.error('Failed to update gate:', error);
+    }
+  };
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '—';
@@ -173,6 +245,10 @@ export default function GatesPage() {
       {/* Toolbar */}
       <ProjectToolbar
         searchPlaceholder="Search gate reviews..."
+        primaryAction={{
+          label: 'Add Gate Review',
+          onClick: () => setShowCreateModal(true),
+        }}
       />
 
       {/* Main Content */}
@@ -181,7 +257,6 @@ export default function GatesPage() {
         <div className={`${selectedGate ? 'w-1/2 border-r border-gray-200' : 'w-full'} overflow-y-auto p-4`}>
           <div className="space-y-3">
             {gates.map((gate) => {
-              const StatusIcon = statusConfig[gate.status].icon;
               const approvalProgress = getApprovalProgress(gate);
               const criteriaProgress = getCriteriaProgress(gate);
 
@@ -366,17 +441,26 @@ export default function GatesPage() {
               {/* Actions */}
               {selectedGate.status === 'in_review' && (
                 <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
-                  <button className="flex-1 px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                  <button
+                    onClick={() => handleUpdateGateStatus(selectedGate.id, 'approved')}
+                    className="flex-1 px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                  >
                     Approve Gate
                   </button>
-                  <button className="flex-1 px-4 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors">
+                  <button
+                    onClick={() => handleUpdateGateStatus(selectedGate.id, 'rejected')}
+                    className="flex-1 px-4 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+                  >
                     Reject Gate
                   </button>
                 </div>
               )}
               {selectedGate.status === 'pending' && (
                 <div className="pt-4 border-t border-gray-200">
-                  <button className="w-full px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                  <button
+                    onClick={() => handleUpdateGateStatus(selectedGate.id, 'in_review')}
+                    className="w-full px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  >
                     Request Gate Review
                   </button>
                 </div>
@@ -385,6 +469,68 @@ export default function GatesPage() {
           </div>
         )}
       </div>
+
+      {/* Create Gate Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Add Gate Review</h2>
+              <button onClick={() => setShowCreateModal(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Gate Name *</label>
+                <input
+                  type="text"
+                  value={newGate.name}
+                  onChange={(e) => setNewGate(g => ({ ...g, name: e.target.value }))}
+                  placeholder="e.g., Design Review Gate"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phase</label>
+                <select
+                  value={newGate.phaseId}
+                  onChange={(e) => setNewGate(g => ({ ...g, phaseId: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select phase...</option>
+                  {phases.map(ph => (
+                    <option key={ph._id} value={ph._id}>{ph.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Criteria (one per line)</label>
+                <textarea
+                  value={newGate.criteriaText}
+                  onChange={(e) => setNewGate(g => ({ ...g, criteriaText: e.target.value }))}
+                  placeholder={"All unit tests passing\nCode review completed\nDocumentation updated"}
+                  rows={4}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => { setShowCreateModal(false); setNewGate({ name: '', phaseId: '', phaseName: '', criteriaText: '' }); }}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateGate}
+                  disabled={isSaving || !newGate.name}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? 'Adding...' : 'Add Gate'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

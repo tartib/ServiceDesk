@@ -30,6 +30,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
   ArrowLeft,
   Search,
   Filter,
@@ -40,6 +50,7 @@ import {
   RefreshCw,
   Eye,
   UserCheck,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -66,6 +77,12 @@ export default function ServiceRequestsManagementPage() {
     search: '',
   });
   const [page, setPage] = useState(1);
+
+  // Modal state
+  const [rejectTarget, setRejectTarget] = useState<ServiceRequest | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [fulfillTarget, setFulfillTarget] = useState<ServiceRequest | null>(null);
+  const [fulfillNotes, setFulfillNotes] = useState('');
 
   const { data: requestsData, isLoading, refetch } = useServiceRequests({
     page,
@@ -105,17 +122,17 @@ export default function ServiceRequestsManagementPage() {
     refetch();
   };
 
-  const handleReject = async (request: ServiceRequest) => {
-    if (!user) return;
-    const comments = prompt(locale === 'ar' ? 'سبب الرفض:' : 'Rejection reason:');
-    if (comments === null) return;
+  const handleReject = async () => {
+    if (!user || !rejectTarget) return;
     await approveRequest.mutateAsync({
-      id: request.request_id,
+      id: rejectTarget.request_id,
       decision: 'reject',
       approver_id: user.id || '',
       approver_name: user.name || 'Unknown',
-      comments,
+      comments: rejectReason,
     });
+    setRejectTarget(null);
+    setRejectReason('');
     refetch();
   };
 
@@ -130,15 +147,16 @@ export default function ServiceRequestsManagementPage() {
     refetch();
   };
 
-  const handleFulfill = async (request: ServiceRequest) => {
-    if (!user) return;
-    const notes = prompt(locale === 'ar' ? 'ملاحظات التنفيذ:' : 'Fulfillment notes:');
+  const handleFulfill = async () => {
+    if (!user || !fulfillTarget) return;
     await fulfillRequest.mutateAsync({
-      id: request.request_id,
+      id: fulfillTarget.request_id,
       fulfilled_by: user.id || '',
       fulfilled_by_name: user.name || 'Unknown',
-      notes: notes || undefined,
+      notes: fulfillNotes || undefined,
     });
+    setFulfillTarget(null);
+    setFulfillNotes('');
     refetch();
   };
 
@@ -362,7 +380,7 @@ export default function ServiceRequestsManagementPage() {
                                 size="icon"
                                 className="text-red-600"
                                 title={locale === 'ar' ? 'رفض' : 'Reject'}
-                                onClick={() => handleReject(request)}
+                                onClick={() => { setRejectTarget(request); setRejectReason(''); }}
                               >
                                 <XCircle className="h-4 w-4" />
                               </Button>
@@ -385,7 +403,7 @@ export default function ServiceRequestsManagementPage() {
                               size="icon"
                               className="text-green-600"
                               title={locale === 'ar' ? 'تنفيذ' : 'Fulfill'}
-                              onClick={() => handleFulfill(request)}
+                              onClick={() => { setFulfillTarget(request); setFulfillNotes(''); }}
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -425,6 +443,80 @@ export default function ServiceRequestsManagementPage() {
           </div>
         )}
       </div>
+
+      {/* Reject Dialog */}
+      <Dialog open={!!rejectTarget} onOpenChange={(open) => { if (!open) setRejectTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{locale === 'ar' ? 'رفض الطلب' : 'Reject Request'}</DialogTitle>
+            <DialogDescription>
+              {locale === 'ar'
+                ? `رفض الطلب ${rejectTarget?.request_id || ''}`
+                : `Reject request ${rejectTarget?.request_id || ''}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label>{locale === 'ar' ? 'سبب الرفض' : 'Rejection Reason'}</Label>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder={locale === 'ar' ? 'اشرح سبب الرفض...' : 'Explain why this request is being rejected...'}
+              rows={4}
+              dir={locale === 'ar' ? 'rtl' : 'ltr'}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectTarget(null)}>
+              {locale === 'ar' ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={approveRequest.isPending}
+            >
+              {approveRequest.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {locale === 'ar' ? 'رفض' : 'Reject'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fulfill Dialog */}
+      <Dialog open={!!fulfillTarget} onOpenChange={(open) => { if (!open) setFulfillTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{locale === 'ar' ? 'تنفيذ الطلب' : 'Fulfill Request'}</DialogTitle>
+            <DialogDescription>
+              {locale === 'ar'
+                ? `تأكيد تنفيذ الطلب ${fulfillTarget?.request_id || ''}`
+                : `Confirm fulfillment of request ${fulfillTarget?.request_id || ''}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label>{locale === 'ar' ? 'ملاحظات التنفيذ' : 'Fulfillment Notes'}</Label>
+            <Textarea
+              value={fulfillNotes}
+              onChange={(e) => setFulfillNotes(e.target.value)}
+              placeholder={locale === 'ar' ? 'أضف ملاحظات حول التنفيذ...' : 'Add notes about the fulfillment...'}
+              rows={4}
+              dir={locale === 'ar' ? 'rtl' : 'ltr'}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFulfillTarget(null)}>
+              {locale === 'ar' ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleFulfill}
+              disabled={fulfillRequest.isPending}
+            >
+              {fulfillRequest.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {locale === 'ar' ? 'تنفيذ' : 'Fulfill'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

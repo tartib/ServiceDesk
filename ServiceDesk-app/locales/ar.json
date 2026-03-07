@@ -106,7 +106,9 @@
     "sla": "اتفاقية مستوى الخدمة",
     "releases": "الإصدارات",
     "cab": "لجنة التغيير",
-    "portfolioAnalytics": "تحليلات المحفظة"
+    "portfolioAnalytics": "تحليلات المحفظة",
+    "teamPerformance": "أداء الفريق",
+    "agentConsole": "وحدة تحكم الوكيل"
   },
   "tasks": {
     "title": "المهام",
@@ -131,16 +133,31 @@
   "projects": {
     "title": "المشاريع",
     "createProject": "إنشاء مشروع",
+    "createProjectDesc": "قم بإعداد تفاصيل مشروعك واختر منهجية العمل",
     "editProject": "تعديل المشروع",
     "deleteProject": "حذف المشروع",
     "projectName": "اسم المشروع",
+    "projectNamePlaceholder": "مثال: إعادة تصميم تطبيق الجوال",
+    "projectKey": "مفتاح المشروع",
+    "keyHint": "بادئة لمعرفات المهام (مثال: PROJ-123)",
     "description": "الوصف",
+    "descriptionPlaceholder": "وصف موجز لأهداف المشروع ونطاقه...",
     "lead": "قائد المشروع",
     "members": "الأعضاء",
     "status": "الحالة",
     "active": "نشط",
     "archived": "مؤرشف",
-    "noProjects": "لم يتم العثور على مشاريع"
+    "noProjects": "لم يتم العثور على مشاريع",
+    "projectDetails": "تفاصيل المشروع",
+    "projectDetailsDesc": "المعلومات الأساسية عن مشروعك",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء المستهدف",
+    "methodology": "المنهجية",
+    "methodologyDesc": "اختر الإطار الذي يناسب سير عملك",
+    "creating": "جاري الإنشاء...",
+    "common": {
+      "cancel": "إلغاء"
+    }
   },
   "inventory": {
     "title": "المخزون",
@@ -159,7 +176,8 @@
     "invalidEmail": "عنوان بريد إلكتروني غير صحيح",
     "passwordMismatch": "كلمات المرور غير متطابقة",
     "minLength": "الحد الأدنى للطول هو {min} أحرف",
-    "maxLength": "الحد الأقصى للطول هو {max} أحرف"
+    "maxLength": "الحد الأقصى للطول هو {max} أحرف",
+    "optional": "اختياري"
   },
   "messages": {
     "deleteConfirm": "هل أنت متأكد من رغبتك في حذف هذا العنصر؟",

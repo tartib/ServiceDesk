@@ -45,7 +45,7 @@ interface Project {
 
 const statusColorMap: Record<string, string> = {
   todo: '#94a3b8',
-  in_progress: '#3b82f6',
+  in_progress: '#ffffff',
   review: '#8b5cf6',
   done: '#10b981',
 };
@@ -84,6 +84,10 @@ export default function GanttPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [zoom, setZoom] = useState<'day' | 'week' | 'month'>('week');
   const [startDate, setStartDate] = useState(new Date());
+  const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
+  const [editStart, setEditStart] = useState('');
+  const [editEnd, setEditEnd] = useState('');
+  const [saving, setSaving] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async (token: string) => {
@@ -126,6 +130,37 @@ export default function GanttPage() {
     }
     fetchData(token);
   }, [projectId, router, fetchData]);
+
+  const openEditModal = (task: GanttTask) => {
+    setEditingTask(task);
+    setEditStart(task.startDate);
+    setEditEnd(task.endDate);
+  };
+
+  const handleSaveDates = async () => {
+    if (!editingTask) return;
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/pm/tasks/${editingTask.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ startDate: editStart, dueDate: editEnd }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTasks(prev => prev.map(t =>
+          t.id === editingTask.id ? { ...t, startDate: editStart, endDate: editEnd } : t
+        ));
+        setEditingTask(null);
+      }
+    } catch (err) {
+      console.error('Failed to update task dates:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const getDaysBetween = (start: Date, end: Date) => {
     return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
@@ -349,6 +384,7 @@ export default function GanttPage() {
                         backgroundColor: task.color || '#94a3b8',
                       }}
                       title={`${task.name} (${task.progress}%)`}
+                      onClick={() => openEditModal(task)}
                     >
                       {/* Progress */}
                       <div
@@ -389,7 +425,7 @@ export default function GanttPage() {
             <span className="text-gray-600">To Do</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-3 rounded" style={{ backgroundColor: '#3b82f6' }} />
+            <div className="w-4 h-3 rounded" style={{ backgroundColor: '#ffffff' }} />
             <span className="text-gray-600">In Progress</span>
           </div>
           <div className="flex items-center gap-2">
@@ -402,6 +438,51 @@ export default function GanttPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Dates Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-80">
+            <h3 className="text-base font-semibold text-gray-900 mb-4">Edit Task Dates</h3>
+            <p className="text-sm text-gray-600 mb-4 truncate">{editingTask.name}</p>
+            <div className="space-y-3 mb-6">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={editStart}
+                  onChange={(e) => setEditStart(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Due Date</label>
+                <input
+                  type="date"
+                  value={editEnd}
+                  onChange={(e) => setEditEnd(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditingTask(null)}
+                className="flex-1 px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveDates}
+                disabled={saving}
+                className="flex-1 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

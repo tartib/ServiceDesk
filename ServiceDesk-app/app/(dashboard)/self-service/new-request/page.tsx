@@ -7,6 +7,7 @@ import { useCreateServiceRequest, Priority } from '@/hooks/useServiceRequests';
 import { useServiceCatalog, useServiceCatalogItem, IServiceCatalogItem } from '@/hooks/useServiceCatalog';
 import { useAuthStore } from '@/store/authStore';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,7 @@ export default function NewServiceRequestPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const createRequest = useCreateServiceRequest();
+  const toast = useToast();
 
   const searchParams = useSearchParams();
   const preServiceId = searchParams.get('service_id');
@@ -159,6 +161,11 @@ export default function NewServiceRequestPage() {
         site_id: selectedService.site_id || 'SITE-001',
       });
 
+      toast.success(
+        locale === 'ar'
+          ? 'تم إرسال الطلب بنجاح'
+          : 'Service request submitted successfully'
+      );
       router.push('/self-service');
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string; error?: string } } };
