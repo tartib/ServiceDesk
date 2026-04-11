@@ -27,6 +27,9 @@ import {
 import api from '@/lib/axios';
 import { useLocale } from '@/hooks/useLocale';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
 
 interface ApiRes<T> {
   data: { success: boolean; data: T } | T;
@@ -134,7 +137,7 @@ export default function AutomationRulesPage() {
       if (selectedStatus !== 'all') params.status = selectedStatus;
       if (selectedTrigger !== 'all') params.triggerType = selectedTrigger;
 
-      const res = await api.get('/itsm/automation/rules', { params }) as ApiRes<{ rules: AutomationRule[]; pagination: { pages: number } }>;
+      const res = await api.get('/api/v2/itsm/automation/rules', { params }) as ApiRes<{ rules: AutomationRule[]; pagination: { pages: number } }>;
       const raw = res.data as Record<string, unknown>;
       const data = (raw?.data || raw) as { rules?: AutomationRule[]; pagination?: { pages: number } };
       setRules(data?.rules || []);
@@ -148,7 +151,7 @@ export default function AutomationRulesPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await api.get('/itsm/automation/stats') as ApiRes<AutomationStats>;
+      const res = await api.get('/api/v2/itsm/automation/stats') as ApiRes<AutomationStats>;
       const raw = res.data as Record<string, unknown>;
       setStats((raw?.data || raw) as AutomationStats || null);
     } catch (err) {
@@ -167,7 +170,7 @@ export default function AutomationRulesPage() {
   const handleActivate = async (ruleId: string) => {
     try {
       setActionLoading(ruleId);
-      await api.post(`/itsm/automation/rules/${ruleId}/activate`);
+      await api.post(`/api/v2/itsm/automation/rules/${ruleId}/activate`);
       await fetchRules();
       await fetchStats();
     } catch (err) {
@@ -180,7 +183,7 @@ export default function AutomationRulesPage() {
   const handleDeactivate = async (ruleId: string) => {
     try {
       setActionLoading(ruleId);
-      await api.post(`/itsm/automation/rules/${ruleId}/deactivate`);
+      await api.post(`/api/v2/itsm/automation/rules/${ruleId}/deactivate`);
       await fetchRules();
       await fetchStats();
     } catch (err) {
@@ -196,128 +199,121 @@ export default function AutomationRulesPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-foreground">
               {isAr ? 'محرك الأتمتة' : 'Automation Rules Engine'}
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {isAr ? 'إنشاء وإدارة قواعد الأتمتة لعمليات ITSM' : 'Create and manage automation rules for ITSM processes'}
             </p>
           </div>
-          <button
-            onClick={() => router.push('/automation-rules/new')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-          >
+          <Button onClick={() => router.push('/automation-rules/new')}>
             <Plus className="w-4 h-4" />
             {isAr ? 'قاعدة جديدة' : 'New Rule'}
-          </button>
+          </Button>
         </div>
 
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <Card className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <Zap className="w-5 h-5 text-blue-500" />
+                <div className="p-2 bg-info/10 rounded-lg">
+                  <Zap className="w-5 h-5 text-info" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-muted-foreground">
                     {isAr ? 'إجمالي القواعد' : 'Total Rules'}
                   </p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.totalRules}</p>
+                  <p className="text-xl font-bold text-foreground">{stats.totalRules}</p>
                 </div>
               </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            </Card>
+            <Card className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <Play className="w-5 h-5 text-green-500" />
+                <div className="p-2 bg-success/10 rounded-lg">
+                  <Play className="w-5 h-5 text-success" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-muted-foreground">
                     {isAr ? 'نشطة' : 'Active'}
                   </p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.activeRules}</p>
+                  <p className="text-xl font-bold text-foreground">{stats.activeRules}</p>
                 </div>
               </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            </Card>
+            <Card className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <div className="p-2 bg-purple-500/10 rounded-lg">
                   <TrendingUp className="w-5 h-5 text-purple-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-muted-foreground">
                     {isAr ? 'عمليات ناجحة' : 'Successful'}
                   </p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">
+                  <p className="text-xl font-bold text-foreground">
                     {stats.executionStats?.find((s) => s._id === 'success')?.count || 0}
                   </p>
                 </div>
               </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            </Card>
+            <Card className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                <div className="p-2 bg-destructive/10 rounded-lg">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-muted-foreground">
                     {isAr ? 'فاشلة' : 'Failed'}
                   </p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">
+                  <p className="text-xl font-bold text-foreground">
                     {stats.executionStats?.find((s) => s._id === 'failed')?.count || 0}
                   </p>
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
         )}
 
         {/* Search & Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <Card className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
                 type="text"
                 placeholder={isAr ? 'بحث عن قواعد الأتمتة...' : 'Search automation rules...'}
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-                className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="pl-9"
               />
             </div>
-            <button
+            <Button
+              variant={showFilters ? 'secondary' : 'outline'}
               onClick={() => setShowFilters(!showFilters)}
-              className={`inline-flex items-center gap-2 px-4 py-2 border rounded-lg text-sm transition-colors ${
-                showFilters
-                  ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400'
-                  : 'border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
             >
               <Filter className="w-4 h-4" />
               {isAr ? 'فلاتر' : 'Filters'}
               <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => { fetchRules(); fetchStats(); }}
-              className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               {isAr ? 'تحديث' : 'Refresh'}
-            </button>
+            </Button>
           </div>
 
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="mt-4 pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
                   {isAr ? 'الحالة' : 'Status'}
                 </label>
                 <select
                   value={selectedStatus}
                   onChange={(e) => { setSelectedStatus(e.target.value); setPage(1); }}
-                  className="w-full py-2 px-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm"
+                  className="w-full py-2 px-3 bg-muted border border-input rounded-lg text-sm"
                 >
                   <option value="all">{isAr ? 'الكل' : 'All Statuses'}</option>
                   {Object.entries(statusConfig).map(([key, cfg]) => (
@@ -326,13 +322,13 @@ export default function AutomationRulesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
                   {isAr ? 'نوع المحفز' : 'Trigger Type'}
                 </label>
                 <select
                   value={selectedTrigger}
                   onChange={(e) => { setSelectedTrigger(e.target.value); setPage(1); }}
-                  className="w-full py-2 px-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm"
+                  className="w-full py-2 px-3 bg-muted border border-input rounded-lg text-sm"
                 >
                   <option value="all">{isAr ? 'الكل' : 'All Triggers'}</option>
                   {Object.entries(triggerLabels).map(([key, cfg]) => (
@@ -342,21 +338,21 @@ export default function AutomationRulesPage() {
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Rules List */}
         <div className="space-y-3">
           {loading ? (
-            <div className="flex items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-              <RefreshCw className="w-6 h-6 text-gray-400 animate-spin" />
-              <span className="ml-2 text-gray-500">{isAr ? 'جاري التحميل...' : 'Loading...'}</span>
-            </div>
+            <Card className="flex items-center justify-center py-20">
+              <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
+              <span className="ml-2 text-muted-foreground">{isAr ? 'جاري التحميل...' : 'Loading...'}</span>
+            </Card>
           ) : rules.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
-              <Zap className="w-12 h-12 mb-3 text-gray-300 dark:text-gray-600" />
+            <Card className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <Zap className="w-12 h-12 mb-3 text-muted-foreground/50" />
               <p className="text-lg font-medium">{isAr ? 'لا توجد قواعد أتمتة' : 'No automation rules found'}</p>
               <p className="text-sm mt-1">{isAr ? 'أنشئ قاعدة للبدء' : 'Create a rule to get started'}</p>
-            </div>
+            </Card>
           ) : (
             rules.map((rule) => {
               const stConf = statusConfig[rule.status] || statusConfig.draft;
@@ -367,15 +363,15 @@ export default function AutomationRulesPage() {
                 : 0;
 
               return (
-                <div
+                <Card
                   key={rule._id}
-                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-200 dark:hover:border-blue-800 transition-colors"
+                  className="p-4 hover:border-primary/30 transition-colors"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     {/* Left: Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-xs text-gray-400">{rule.ruleId}</span>
+                        <span className="font-mono text-xs text-muted-foreground">{rule.ruleId}</span>
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${stConf.color}`}>
                           <StatusIcon className="w-3 h-3" />
                           {isAr ? stConf.labelAr : stConf.label}
@@ -386,15 +382,15 @@ export default function AutomationRulesPage() {
                             {isAr ? 'غير صالح' : 'Invalid'}
                           </span>
                         )}
-                        <span className="text-xs text-gray-400">v{rule.version}</span>
+                        <span className="text-xs text-muted-foreground">v{rule.version}</span>
                       </div>
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                      <h3 className="text-sm font-semibold text-foreground truncate">
                         {isAr && rule.nameAr ? rule.nameAr : rule.name}
                       </h3>
                       {rule.description && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{rule.description}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">{rule.description}</p>
                       )}
-                      <div className="flex items-center gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                           <Zap className="w-3 h-3" />
                           {isAr ? triggerConf.labelAr : triggerConf.label}
@@ -442,21 +438,21 @@ export default function AutomationRulesPage() {
                       ) : null}
                       <button
                         onClick={() => router.push(`/automation-rules/${rule._id}`)}
-                        className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                        className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                         title={isAr ? 'عرض' : 'View'}
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => router.push(`/automation-rules/${rule._id}/edit`)}
-                        className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+                        className="p-1.5 text-muted-foreground hover:text-warning hover:bg-warning/10 rounded-lg transition-colors"
                         title={isAr ? 'تعديل' : 'Edit'}
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
-                </div>
+                </Card>
               );
             })
           )}
@@ -465,62 +461,54 @@ export default function AutomationRulesPage() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
               {isAr ? 'السابق' : 'Previous'}
-            </button>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            </Button>
+            <span className="text-sm text-muted-foreground">
               {isAr ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
             </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
               {isAr ? 'التالي' : 'Next'}
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Recent Executions */}
         {stats && stats.recentExecutions && stats.recentExecutions.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+          <Card className="overflow-hidden p-0">
+            <div className="px-4 py-3 border-b border-border">
+              <h2 className="text-sm font-semibold text-foreground">
                 {isAr ? 'آخر عمليات التنفيذ' : 'Recent Executions'}
               </h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-900/50">
-                    <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <tr className="bg-muted/50">
+                    <th className="text-left px-4 py-2 text-xs font-medium text-muted-foreground">
                       {isAr ? 'القاعدة' : 'Rule'}
                     </th>
-                    <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <th className="text-left px-4 py-2 text-xs font-medium text-muted-foreground">
                       {isAr ? 'المحفز' : 'Trigger'}
                     </th>
-                    <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <th className="text-left px-4 py-2 text-xs font-medium text-muted-foreground">
                       {isAr ? 'الحالة' : 'Status'}
                     </th>
-                    <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <th className="text-left px-4 py-2 text-xs font-medium text-muted-foreground">
                       {isAr ? 'المدة' : 'Duration'}
                     </th>
-                    <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <th className="text-left px-4 py-2 text-xs font-medium text-muted-foreground">
                       {isAr ? 'الوقت' : 'Time'}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                <tbody className="divide-y divide-border">
                   {stats.recentExecutions.map((exec, idx) => {
                     const execTrigger = triggerLabels[exec.triggerType] || { label: exec.triggerType, labelAr: exec.triggerType };
                     return (
-                      <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-900/30">
-                        <td className="px-4 py-2 text-gray-900 dark:text-white font-medium">{exec.ruleName}</td>
-                        <td className="px-4 py-2 text-gray-500 dark:text-gray-400">{isAr ? execTrigger.labelAr : execTrigger.label}</td>
+                      <tr key={idx} className="hover:bg-accent/50">
+                        <td className="px-4 py-2 text-foreground font-medium">{exec.ruleName}</td>
+                        <td className="px-4 py-2 text-muted-foreground">{isAr ? execTrigger.labelAr : execTrigger.label}</td>
                         <td className="px-4 py-2">
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                             exec.status === 'success'
@@ -533,10 +521,10 @@ export default function AutomationRulesPage() {
                             {exec.status}
                           </span>
                         </td>
-                        <td className="px-4 py-2 text-gray-500 dark:text-gray-400 text-xs">
+                        <td className="px-4 py-2 text-muted-foreground text-xs">
                           {exec.durationMs}ms
                         </td>
-                        <td className="px-4 py-2 text-gray-500 dark:text-gray-400 text-xs">
+                        <td className="px-4 py-2 text-muted-foreground text-xs">
                           {new Date(exec.startedAt).toLocaleString(isAr ? 'ar-SA' : 'en-US')}
                         </td>
                       </tr>
@@ -545,7 +533,7 @@ export default function AutomationRulesPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </DashboardLayout>

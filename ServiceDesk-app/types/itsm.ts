@@ -82,6 +82,36 @@ export enum ApprovalStatus {
   REJECTED = 'rejected',
 }
 
+export enum MajorIncidentSeverity {
+  SEV0 = 'sev0',
+  SEV1 = 'sev1',
+  SEV2 = 'sev2',
+}
+
+export enum PIRStatus {
+  DRAFT = 'draft',
+  IN_REVIEW = 'in_review',
+  COMPLETED = 'completed',
+}
+
+export enum RCAMethod {
+  FIVE_WHYS = '5_whys',
+  FISHBONE = 'fishbone',
+  TIMELINE = 'timeline',
+  FAULT_TREE = 'fault_tree',
+}
+
+export enum KnownErrorStatus {
+  IDENTIFIED = 'identified',
+  PUBLISHED = 'published',
+}
+
+export enum ChangeCalendarEventType {
+  FREEZE_WINDOW = 'freeze_window',
+  MAINTENANCE_WINDOW = 'maintenance_window',
+  CAB_MEETING = 'cab_meeting',
+}
+
 // ============================================
 // INTERFACES - Common
 // ============================================
@@ -157,6 +187,23 @@ export interface ISLAConfig {
 // INTERFACES - Incident
 // ============================================
 
+export interface IMajorIncidentCommsUpdate {
+  update_id: string;
+  message: string;
+  posted_by: string;
+  posted_by_name: string;
+  posted_at: string;
+  next_update_at?: string;
+}
+
+export interface IMajorIncidentBridge {
+  bridge_url?: string;
+  bridge_lead?: string;
+  bridge_lead_name?: string;
+  scribe?: string;
+  scribe_name?: string;
+}
+
 export interface IIncident {
   _id: string;
   incident_id: string;
@@ -182,6 +229,12 @@ export interface IIncident {
   site_id: string;
   tags?: string[];
   is_major: boolean;
+  severity?: MajorIncidentSeverity;
+  comms_updates?: IMajorIncidentCommsUpdate[];
+  major_bridge?: IMajorIncidentBridge;
+  pir_id?: string;
+  major_declared_at?: string;
+  major_declared_by?: string;
   reopen_count: number;
   first_response_at?: string;
   created_at: string;
@@ -232,6 +285,12 @@ export interface IProblem {
     group_name: string;
   };
   known_error?: IKnownError;
+  rca_method?: RCAMethod;
+  rca_findings?: string;
+  rca_started_at?: string;
+  rca_completed_at?: string;
+  contributing_factors?: string[];
+  recurring_incidents?: Array<{ incident_id: string; title?: string }>;
   timeline: ITimelineEvent[];
   attachments: IAttachment[];
   site_id: string;
@@ -244,6 +303,171 @@ export interface IProblem {
   // Virtuals
   linked_incidents_count?: number;
   is_known_error?: boolean;
+}
+
+// ============================================
+// INTERFACES - PIR (Post-Incident Review)
+// ============================================
+
+export interface IPIRFollowUpAction {
+  action_id: string;
+  description: string;
+  owner_id?: string;
+  owner_name?: string;
+  due_date?: string;
+  status: 'open' | 'in_progress' | 'completed';
+  completed_at?: string;
+}
+
+export interface IPIR {
+  _id: string;
+  pir_id: string;
+  incident_id: string;
+  incident_title?: string;
+  status: PIRStatus;
+  rca_method?: RCAMethod;
+  rca_findings?: string;
+  root_cause?: string;
+  contributing_factors?: string[];
+  timeline_of_events?: string;
+  impact_summary?: string;
+  what_went_well?: string;
+  what_went_wrong?: string;
+  follow_up_actions: IPIRFollowUpAction[];
+  participants: Array<{ id: string; name: string; role?: string }>;
+  review_date?: string;
+  submitted_at?: string;
+  completed_at?: string;
+  created_by: { id: string; name: string };
+  site_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================
+// INTERFACES - Change Calendar
+// ============================================
+
+export interface IChangeCalendarEvent {
+  _id: string;
+  event_id: string;
+  type: ChangeCalendarEventType;
+  title: string;
+  description?: string;
+  start_date: string;
+  end_date: string;
+  site_id?: string;
+  created_by: { id: string; name: string };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IChangeRiskScore {
+  score: number;
+  level: 'low' | 'medium' | 'high';
+  breakdown: {
+    impact_score: number;
+    type_score: number;
+    ci_score: number;
+    rollback_score: number;
+  };
+}
+
+export interface IScheduleValidation {
+  valid: boolean;
+  conflicts: Array<{
+    event_id: string;
+    title: string;
+    type: ChangeCalendarEventType;
+    start_date: string;
+    end_date: string;
+  }>;
+  freeze_window_conflict: boolean;
+  message: string;
+}
+
+export interface IApprovalRouting {
+  requires_cab: boolean;
+  min_approvers: number;
+  auto_approve: boolean;
+  reason: string;
+}
+
+// ============================================
+// INTERFACES - ITSM Dashboard
+// ============================================
+
+export interface IITSMIncidentKPIs {
+  total_open: number;
+  total_in_progress: number;
+  total_resolved_today: number;
+  total_closed_today: number;
+  total_major_open: number;
+  breached_sla: number;
+  avg_resolution_hours: number;
+  by_priority: Record<string, number>;
+  by_category: { category_id: string; count: number }[];
+}
+
+export interface IITSMProblemKPIs {
+  total_open: number;
+  total_in_rca: number;
+  total_known_errors: number;
+  total_resolved_this_month: number;
+  avg_age_days: number;
+}
+
+export interface IITSMChangeKPIs {
+  total_pending_approval: number;
+  total_scheduled: number;
+  total_implemented_this_month: number;
+  total_failed_this_month: number;
+  success_rate_percent: number;
+  emergency_changes_this_month: number;
+}
+
+export interface ISLACompliancePoint {
+  period: string;
+  total_incidents: number;
+  breached: number;
+  compliant: number;
+  compliance_rate: number;
+}
+
+export interface IIncidentTrendPoint {
+  date: string;
+  created: number;
+  resolved: number;
+  breached: number;
+}
+
+export interface ITSMDashboardData {
+  incidents: IITSMIncidentKPIs;
+  problems: IITSMProblemKPIs;
+  changes: IITSMChangeKPIs;
+  sla_compliance_7d: ISLACompliancePoint[];
+  incident_trend_14d: IIncidentTrendPoint[];
+  generated_at: string;
+}
+
+// ============================================
+// INTERFACES - Knowledge Deflection
+// ============================================
+
+export interface IDeflectionSuggestion {
+  article_id: string;
+  title: string;
+  summary?: string;
+  slug?: string;
+  relevance_score: number;
+  views: number;
+  helpful_count: number;
+}
+
+export interface IDeflectionResult {
+  suggestions: IDeflectionSuggestion[];
+  deflection_possible: boolean;
+  search_terms: string[];
 }
 
 // ============================================
@@ -525,3 +749,58 @@ export const calculatePriority = (impact: Impact, urgency: Urgency): Priority =>
   };
   return matrix[impact][urgency];
 };
+
+// ============================================
+// RELEASE TYPES
+// ============================================
+
+export interface IRelease {
+  _id: string;
+  release_id: string;
+  version: string;
+  name: string;
+  description?: string;
+  type: 'major' | 'minor' | 'patch' | 'emergency';
+  status: 'planning' | 'building' | 'testing' | 'approved' | 'deployed' | 'rolled_back' | 'cancelled';
+  priority: string;
+  owner: { id: string; name: string; email: string };
+  deployment: {
+    planned_date?: string;
+    actual_date?: string;
+    environment: string;
+    method?: string;
+    rollback_plan?: string;
+  };
+  testing: {
+    test_plan?: string;
+    test_results?: string;
+    sign_off_by?: string;
+    sign_off_date?: string;
+  };
+  approval: {
+    required: boolean;
+    approved_by?: Array<{ user_id: string; name: string; approved_at: string }>;
+    status: string;
+  };
+  linked_changes?: string[];
+  linked_incidents?: string[];
+  timeline: Array<{
+    action: string;
+    performed_by: { id: string; name: string };
+    timestamp: string;
+    details?: string;
+  }>;
+  attachments?: Array<{ name: string; url: string; uploaded_by: string; uploaded_at: string }>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IReleaseStats {
+  total: number;
+  planning: number;
+  building: number;
+  testing: number;
+  approved: number;
+  deployed: number;
+  cancelled: number;
+}

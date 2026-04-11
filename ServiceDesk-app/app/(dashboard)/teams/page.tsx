@@ -222,10 +222,10 @@ export default function TeamsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-foreground">
               {isAr ? 'إدارة الفرق' : 'Team Management'}
             </h1>
-            <p className="text-gray-500 mt-1 text-sm">
+            <p className="text-muted-foreground mt-1 text-sm">
               {isAr
                 ? 'إنشاء وإدارة فرق الدعم والأعضاء'
                 : 'Create and manage support teams and members'}
@@ -240,15 +240,15 @@ export default function TeamsPage() {
         {/* Search & Stats Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
           <div className="relative w-full sm:max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={isAr ? 'البحث عن فريق...' : 'Search teams...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white"
+              className="pl-10 bg-card"
             />
           </div>
-          <div className="flex items-center gap-3 text-sm text-gray-500">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
               {teams.length} {isAr ? 'فريق' : 'teams'}
@@ -268,7 +268,7 @@ export default function TeamsPage() {
               const typeConf = teamTypeConfig[team.type] || teamTypeConfig.other;
               const TypeIcon = typeConf.icon;
               return (
-                <Card key={team._id} className="group hover:shadow-lg transition-all duration-200 border-gray-200 overflow-hidden">
+                <Card key={team._id} className="group hover:shadow-lg transition-all duration-200 border-border overflow-hidden">
                   {/* Color strip */}
                   <div className={`h-1 ${typeConf.bg.replace('bg-', 'bg-').replace('-50', '-400')}`} />
 
@@ -279,7 +279,7 @@ export default function TeamsPage() {
                           <TypeIcon className={`h-5 w-5 ${typeConf.color}`} />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900 text-base">
+                          <h3 className="font-semibold text-foreground text-base">
                             {isAr ? team.name_ar : team.name}
                           </h3>
                           <div className="flex items-center gap-2 mt-0.5">
@@ -295,20 +295,20 @@ export default function TeamsPage() {
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openEditDialog(team)}
-                          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
                         >
                           <Edit className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteTeam(team._id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
                     {(isAr ? team.description_ar : team.description) && (
-                      <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                         {isAr ? team.description_ar : team.description}
                       </p>
                     )}
@@ -316,9 +316,9 @@ export default function TeamsPage() {
 
                   <CardContent className="pt-0">
                     {/* Members Section */}
-                    <div className="border-t border-gray-100 pt-3">
+                    <div className="border-t border-border pt-3">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           {isAr ? 'الأعضاء' : 'Members'} ({memberCount})
                         </span>
                       </div>
@@ -328,7 +328,7 @@ export default function TeamsPage() {
                           {team.members.map((member: TeamMember) => (
                             <div
                               key={member.user_id._id}
-                              className="flex items-center justify-between group/member py-1.5 px-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors"
+                              className="flex items-center justify-between group/member py-1.5 px-2 -mx-2 rounded-lg hover:bg-accent transition-colors"
                             >
                               <div className="flex items-center gap-2.5 min-w-0">
                                 <div
@@ -337,20 +337,20 @@ export default function TeamsPage() {
                                   {getInitials(member.user_id.name)}
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-1.5">
+                                  <p className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
                                     {member.user_id.name}
                                     {member.role === 'leader' && (
                                       <Crown className="h-3 w-3 text-amber-500 shrink-0" />
                                     )}
                                   </p>
                                   {member.user_id.email && (
-                                    <p className="text-xs text-gray-400 truncate">{member.user_id.email}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{member.user_id.email}</p>
                                   )}
                                 </div>
                               </div>
                               <button
                                 onClick={() => handleRemoveMember(team._id, member.user_id._id)}
-                                className="p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover/member:opacity-100 transition-all"
+                                className="p-1 text-muted-foreground/50 hover:text-red-500 opacity-0 group-hover/member:opacity-100 transition-all"
                               >
                                 <X className="h-3.5 w-3.5" />
                               </button>
@@ -358,7 +358,7 @@ export default function TeamsPage() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-400 text-center py-3">
+                        <p className="text-sm text-muted-foreground text-center py-3">
                           {isAr ? 'لا يوجد أعضاء بعد' : 'No members yet'}
                         </p>
                       )}
@@ -367,7 +367,7 @@ export default function TeamsPage() {
                     {/* Add Member Button */}
                     <button
                       onClick={() => openAddMemberDialog(team)}
-                      className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50/50 transition-colors"
+                      className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 border border-dashed border-input rounded-lg text-sm text-muted-foreground hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50/50 transition-colors"
                     >
                       <UserPlus className="h-4 w-4" />
                       {isAr ? 'إضافة عضو' : 'Add Member'}
@@ -378,14 +378,14 @@ export default function TeamsPage() {
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-gray-200">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-              <Users className="h-8 w-8 text-gray-400" />
+          <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl border border-border">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Users className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            <h3 className="text-lg font-semibold text-foreground mb-1">
               {isAr ? 'لا توجد فرق' : 'No teams yet'}
             </h3>
-            <p className="text-gray-500 mb-6 text-sm">
+            <p className="text-muted-foreground mb-6 text-sm">
               {isAr ? 'ابدأ بإنشاء فريق جديد' : 'Get started by creating a new team'}
             </p>
             <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
@@ -546,7 +546,7 @@ export default function TeamsPage() {
 
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={isAr ? 'بحث بالاسم أو البريد...' : 'Search by name or email...'}
                 value={memberSearch}
@@ -567,7 +567,7 @@ export default function TeamsPage() {
                         className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
                           justAdded
                             ? 'bg-green-50 border-green-200'
-                            : 'bg-white border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                            : 'bg-card border-border hover:border-border hover:bg-accent'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
@@ -577,8 +577,8 @@ export default function TeamsPage() {
                             {getInitials(user.name)}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-                            <p className="text-xs text-gray-400 truncate flex items-center gap-1">
+                            <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
+                            <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
                               <Mail className="h-3 w-3" />
                               {user.email}
                             </p>
@@ -618,7 +618,7 @@ export default function TeamsPage() {
                   })}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Users className="h-10 w-10 mb-3" />
                   <p className="text-sm font-medium">
                     {memberSearch

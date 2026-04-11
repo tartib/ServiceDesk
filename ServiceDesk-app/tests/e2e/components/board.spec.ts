@@ -15,7 +15,7 @@ test.describe('Project Board', () => {
 
   test.beforeEach(async ({ page }) => {
     // Mock auth API
-    await page.route('**/api/v1/auth/me', async (route) => {
+    await page.route('**/api/v2/auth/me', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -32,7 +32,7 @@ test.describe('Project Board', () => {
       });
     });
 
-    await page.route('**/api/v1/pm/projects/proj-1', async (route) => {
+    await page.route('**/api/v2/pm/projects/proj-1', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -40,7 +40,7 @@ test.describe('Project Board', () => {
       });
     });
 
-    await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+    await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -94,7 +94,7 @@ test.describe('Project Board', () => {
     });
 
     test('should open task detail panel on click', async ({ page }) => {
-      await page.route('**/api/v1/pm/tasks/task-1', async (route) => {
+      await page.route('**/api/v2/pm/tasks/task-1', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -122,7 +122,7 @@ test.describe('Project Board', () => {
     });
 
     test('should create a new task', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/tasks', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/tasks', async (route) => {
         if (route.request().method() === 'POST') {
           await route.fulfill({
             status: 201,
@@ -165,7 +165,7 @@ test.describe('Project Board', () => {
     test('should update task status via API on drop', async ({ page }) => {
       let statusUpdateCalled = false;
 
-      await page.route('**/api/v1/pm/tasks/task-1/status', async (route) => {
+      await page.route('**/api/v2/pm/tasks/task-1/status', async (route) => {
         statusUpdateCalled = true;
         await route.fulfill({
           status: 200,
@@ -216,7 +216,7 @@ test.describe('Project Board', () => {
 
     // Note: Empty board state element not yet implemented
     test.skip('should show empty board state when no tasks', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -231,7 +231,7 @@ test.describe('Project Board', () => {
 
   test.describe('Loading States', () => {
     test('should show loading state while fetching', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await new Promise(resolve => setTimeout(resolve, 1000));
         await route.fulfill({
           status: 200,

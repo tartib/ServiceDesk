@@ -97,17 +97,17 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const productId = typeof task.productId === 'object' ? task.productId._id : task.productId;
 
   const handleStart = () => {
-    startTask(task._id || task.id || '');
+    startTask(task.id || '');
   };
 
   const handleComplete = () => {
-    completeTask({ taskId: task._id || task.id || '' });
+    completeTask({ taskId: task.id || '' });
   };
 
   const handleAssignToMe = () => {
     if (user?.id) {
       assignTask({ 
-        taskId: task._id || task.id || '', 
+        taskId: task.id || '', 
         userId: user.id,
         userName: user.name || user.email || 'Unknown User'
       });
@@ -116,10 +116,10 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   const handleAssignToUser = () => {
     if (selectedUserId) {
-      const selectedUser = users.find(u => u._id === selectedUserId || u.id === selectedUserId);
+      const selectedUser = users.find(u => u.id === selectedUserId);
       if (selectedUser) {
         assignTask({ 
-          taskId: task._id || task.id || '', 
+          taskId: task.id || '', 
           userId: selectedUserId,
           userName: selectedUser.name
         });
@@ -196,7 +196,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 </span>
               </div>
               <span className="text-white/80 text-sm font-mono">
-                TASK-{(task._id || task.id || '').slice(-6).toUpperCase()}
+                TASK-{(task.id || '').slice(-6).toUpperCase()}
               </span>
             </div>
           </div>
@@ -439,7 +439,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                         >
                           <option value="">{t('tasks.selectUser')}</option>
                           {users.map((u) => (
-                            <option key={u._id || u.id} value={u._id || u.id}>
+                            <option key={u.id} value={u.id}>
                               {u.name} ({u.role})
                             </option>
                           ))}

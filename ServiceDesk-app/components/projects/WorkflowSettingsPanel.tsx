@@ -89,6 +89,11 @@ export default function WorkflowSettingsPanel({ projectId }: WorkflowSettingsPan
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
+  // Add transition form state
+  const [showAddTransition, setShowAddTransition] = useState(false);
+  const [newTransition, setNewTransition] = useState<{ name: string; fromStatus: string; toStatus: string }>({ name: '', fromStatus: '', toStatus: '' });
+  const [isSavingTransition, setIsSavingTransition] = useState(false);
+
   // ============================================
   // Fetch workflow
   // ============================================
@@ -213,6 +218,67 @@ export default function WorkflowSettingsPanel({ projectId }: WorkflowSettingsPan
       }
     } catch (err) {
       console.error('Failed to delete status:', err);
+    }
+  };
+
+  // ============================================
+  // Add transition
+  // ============================================
+
+  const handleAddTransition = async () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token || !newTransition.name.trim() || !newTransition.fromStatus || !newTransition.toStatus) return;
+
+    setIsSavingTransition(true);
+    try {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/workflow/transitions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: newTransition.name.trim(),
+          fromStatus: newTransition.fromStatus,
+          toStatus: newTransition.toStatus,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNewTransition({ name: '', fromStatus: '', toStatus: '' });
+        setShowAddTransition(false);
+        fetchWorkflow();
+      } else {
+        setError(data.message || data.error || 'Failed to add transition');
+      }
+    } catch (err) {
+      console.error('Failed to add transition:', err);
+      setError('Failed to add transition');
+    } finally {
+      setIsSavingTransition(false);
+    }
+  };
+
+  // ============================================
+  // Delete transition
+  // ============================================
+
+  const handleDeleteTransition = async (transitionId: string) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token) return;
+    if (!confirm(isAr ? 'هل تريد حذف هذا الانتقال؟' : 'Delete this transition?')) return;
+
+    try {
+      const res = await fetch(`${API_URL}/pm/projects/${projectId}/workflow/transitions/${transitionId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchWorkflow();
+      } else {
+        setError(data.message || data.error || 'Failed to delete transition');
+      }
+    } catch (err) {
+      console.error('Failed to delete transition:', err);
+      setError('Failed to delete transition');
     }
   };
 
@@ -537,32 +603,102 @@ export default function WorkflowSettingsPanel({ projectId }: WorkflowSettingsPan
               <span className="text-gray-400 font-normal ms-1.5">({workflow.transitions.length})</span>
             )}
           </h4>
-          <Link
-            href="/workflow-builder"
-            className="flex items-center gap-1 text-xs font-medium text-purple-600 hover:text-purple-700"
+          <button
+            onClick={() => setShowAddTransition(!showAddTransition)}
+            className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
-            {isAr ? 'تعديل في المحرر' : 'Edit in Builder'}
-          </Link>
+            <Plus className="h-3.5 w-3.5" />
+            {isAr ? 'إضافة انتقال' : 'Add Transition'}
+          </button>
         </div>
+
+        {/* Add transition form */}
+        {showAddTransition && workflow && (
+          <div className="mb-3 p-3 bg-blue-50/50 border border-blue-100 rounded-lg space-y-2">
+            <div>
+              <label className="block text-[10px] text-gray-500 mb-0.5">
+                {isAr ? 'الاسم' : 'Name'}
+              </label>
+              <input
+                type="text"
+                value={newTransition.name}
+                onChange={(e) => setNewTransition((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder={isAr ? 'مثال: ابدأ العمل' : 'e.g. Start Work'}
+                className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-0.5">
+                  {isAr ? 'من' : 'From Status'}
+                </label>
+                <select
+                  value={newTransition.fromStatus}
+                  onChange={(e) => setNewTransition((prev) => ({ ...prev, fromStatus: e.target.value }))}
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">{isAr ? 'اختر...' : 'Select...'}</option>
+                  {workflow.statuses.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-0.5">
+                  {isAr ? 'إلى' : 'To Status'}
+                </label>
+                <select
+                  value={newTransition.toStatus}
+                  onChange={(e) => setNewTransition((prev) => ({ ...prev, toStatus: e.target.value }))}
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">{isAr ? 'اختر...' : 'Select...'}</option>
+                  {workflow.statuses.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                onClick={handleAddTransition}
+                disabled={!newTransition.name.trim() || !newTransition.fromStatus || !newTransition.toStatus || isSavingTransition}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40 transition-colors"
+              >
+                {isSavingTransition
+                  ? (isAr ? 'جاري الحفظ...' : 'Saving...')
+                  : (isAr ? 'إضافة' : 'Add')}
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddTransition(false);
+                  setNewTransition({ name: '', fromStatus: '', toStatus: '' });
+                }}
+                className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
+              >
+                {isAr ? 'إلغاء' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {workflow && workflow.transitions.length > 0 ? (
           <div className="space-y-1">
             {workflow.transitions.map((tr) => (
               <div
                 key={tr.id}
-                className="flex items-center gap-2 p-2.5 bg-white border border-gray-200 rounded-lg"
+                className="flex items-center gap-2 p-2.5 bg-white border border-gray-200 rounded-lg group hover:border-gray-300 transition-colors"
               >
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <span className="text-xs text-gray-500 truncate max-w-[80px]">
+                  <span className="text-xs text-gray-500 truncate max-w-[90px]">
                     {resolveStatusName(tr.fromStatus)}
                   </span>
                   <ArrowRight className="h-3 w-3 text-gray-300 shrink-0" />
-                  <span className="text-xs text-gray-500 truncate max-w-[80px]">
+                  <span className="text-xs text-gray-500 truncate max-w-[90px]">
                     {resolveStatusName(tr.toStatus)}
                   </span>
                 </div>
-                <span className="text-xs font-medium text-gray-800 truncate">
+                <span className="text-xs font-medium text-gray-800 truncate flex-1">
                   {tr.name}
                 </span>
                 {tr.conditions?.requireComment && (
@@ -570,6 +706,13 @@ export default function WorkflowSettingsPanel({ projectId }: WorkflowSettingsPan
                     {isAr ? 'تعليق مطلوب' : 'Comment req.'}
                   </span>
                 )}
+                <button
+                  onClick={() => handleDeleteTransition(tr.id)}
+                  className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                  title={isAr ? 'حذف' : 'Delete'}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
             ))}
           </div>

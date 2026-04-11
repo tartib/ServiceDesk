@@ -193,9 +193,9 @@ export default function FilePreviewPage() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-gray-50 flex items-center justify-center">
+      <div className="h-screen bg-muted/50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Loading file preview...</p>
+          <p className="text-muted-foreground">Loading file preview...</p>
         </div>
       </div>
     );
@@ -203,7 +203,7 @@ export default function FilePreviewPage() {
 
   if (error || !file) {
     return (
-      <div className="h-screen bg-gray-50 flex items-center justify-center">
+      <div className="h-screen bg-muted/50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error || 'File not found'}</p>
           <Link href="/drive">
@@ -218,9 +218,9 @@ export default function FilePreviewPage() {
   }
 
   return (
-    <div className="bg-gray-50">
+    <div className="bg-muted/50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-card border-b border-border sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -230,8 +230,8 @@ export default function FilePreviewPage() {
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{file.fileName}</h1>
-                <p className="text-sm text-gray-500">
+                <h1 className="text-2xl font-bold text-foreground">{file.fileName}</h1>
+                <p className="text-sm text-muted-foreground">
                   {formatFileSize(file.size)} • {formatDate(file.createdAt)}
                 </p>
               </div>
@@ -286,7 +286,7 @@ export default function FilePreviewPage() {
                     <ChevronLeft className="h-4 w-4" />
                     Previous
                   </Button>
-                  <span className="text-sm text-gray-600 min-w-[120px] text-center">
+                  <span className="text-sm text-muted-foreground min-w-[120px] text-center">
                     Page {currentPdfPage} of {pdfPages.length}
                   </span>
                   <Button
@@ -302,20 +302,20 @@ export default function FilePreviewPage() {
             )}
           </div>
         ) : file.fileName?.endsWith('.docx') && file.mimeType?.includes('word') ? (
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
+          <div className="bg-card rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
             {docxHtmlContent ? (
               <div className="prose prose-sm max-w-none">
                 <div
                   dangerouslySetInnerHTML={{ __html: docxHtmlContent }}
-                  className="text-gray-800"
+                  className="text-foreground"
                 />
               </div>
             ) : (
-              <p className="text-gray-600">Loading document...</p>
+              <p className="text-muted-foreground">Loading document...</p>
             )}
           </div>
         ) : file.fileName?.endsWith('.json') ? (
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto overflow-auto max-h-[80vh]">
+          <div className="bg-card rounded-lg shadow-lg p-8 max-w-4xl mx-auto overflow-auto max-h-[80vh]">
             {jsonData ? (
               <JsonView
                 value={jsonData}
@@ -324,18 +324,18 @@ export default function FilePreviewPage() {
                 displayObjectSize={true}
               />
             ) : (
-              <p className="text-gray-600">Loading JSON...</p>
+              <p className="text-muted-foreground">Loading JSON...</p>
             )}
           </div>
         ) : file.mimeType?.startsWith('text/') ? (
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto font-mono text-sm overflow-auto max-h-[80vh]">
-            <pre className="whitespace-pre-wrap break-words text-gray-800">
+          <div className="bg-card rounded-lg shadow-lg p-8 max-w-4xl mx-auto font-mono text-sm overflow-auto max-h-[80vh]">
+            <pre className="whitespace-pre-wrap break-words text-foreground">
               {textContent}
             </pre>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <p className="text-gray-600 mb-4">This file type cannot be previewed</p>
+          <div className="bg-card rounded-lg shadow-lg p-8 text-center">
+            <p className="text-muted-foreground mb-4">This file type cannot be previewed</p>
             <Button onClick={handleDownload}>
               <Download className="mr-2 h-4 w-4" />
               Download to View

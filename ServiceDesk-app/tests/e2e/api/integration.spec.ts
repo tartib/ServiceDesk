@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 test.describe('API Integration', () => {
   test.beforeEach(async ({ page }) => {
     // Mock auth API
-    await page.route('**/api/v1/auth/me', async (route) => {
+    await page.route('**/api/v2/auth/me', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -24,7 +24,7 @@ test.describe('API Integration', () => {
 
   test.describe('Projects API', () => {
     test('should fetch projects list', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -46,7 +46,7 @@ test.describe('API Integration', () => {
 
     // Note: Error state element not yet implemented in projects list
     test.skip('should handle projects API error gracefully', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         await route.fulfill({
           status: 500,
           contentType: 'application/json',
@@ -69,7 +69,7 @@ test.describe('API Integration', () => {
 
   test.describe('Tasks API', () => {
     test.beforeEach(async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -79,7 +79,7 @@ test.describe('API Integration', () => {
     });
 
     test('should fetch tasks for board', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -101,7 +101,7 @@ test.describe('API Integration', () => {
 
     // Note: Status update requires drag-drop which is complex to test
     test.skip('should update task status', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -124,7 +124,7 @@ test.describe('API Integration', () => {
     test('should create task with required fields', async ({ page }) => {
       let createPayload: Record<string, unknown> = {};
 
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -132,7 +132,7 @@ test.describe('API Integration', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/projects/proj-1/tasks', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/tasks', async (route) => {
         createPayload = route.request().postDataJSON();
         await route.fulfill({
           status: 201,
@@ -157,7 +157,7 @@ test.describe('API Integration', () => {
     test('should fetch sprints with X-Organization-ID header', async ({ page }) => {
       let headersReceived: Record<string, string> = {};
 
-      await page.route('**/api/v1/pm/projects/proj-1', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -165,7 +165,7 @@ test.describe('API Integration', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/projects/proj-1/sprints', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/sprints', async (route) => {
         headersReceived = route.request().headers();
         await route.fulfill({
           status: 200,
@@ -174,7 +174,7 @@ test.describe('API Integration', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/projects/proj-1/backlog', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/backlog', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -200,7 +200,7 @@ test.describe('API Integration', () => {
   test.describe('Error Handling', () => {
     // Note: Error state elements not yet implemented
     test.skip('should show network error message', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         await route.abort('failed');
       });
       await page.goto('/projects');
@@ -208,7 +208,7 @@ test.describe('API Integration', () => {
     });
 
     test.skip('should handle 401 Unauthorized', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         await route.fulfill({
           status: 401,
           contentType: 'application/json',
@@ -220,7 +220,7 @@ test.describe('API Integration', () => {
     });
 
     test.skip('should handle 403 Forbidden', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1', async (route) => {
         await route.fulfill({
           status: 403,
           contentType: 'application/json',
@@ -232,7 +232,7 @@ test.describe('API Integration', () => {
     });
 
     test.skip('should handle 404 Not Found', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/invalid-id', async (route) => {
+      await page.route('**/api/v2/pm/projects/invalid-id', async (route) => {
         await route.fulfill({
           status: 404,
           contentType: 'application/json',
@@ -247,7 +247,7 @@ test.describe('API Integration', () => {
     test('should retry failed requests', async ({ page }) => {
       let attemptCount = 0;
 
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         attemptCount++;
         if (attemptCount < 3) {
           await route.fulfill({
@@ -271,7 +271,7 @@ test.describe('API Integration', () => {
 
   test.describe('Loading States', () => {
     test('should show loading indicator during API call', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         await new Promise(resolve => setTimeout(resolve, 1000));
         await route.fulfill({
           status: 200,
@@ -285,7 +285,7 @@ test.describe('API Integration', () => {
     });
 
     test('should hide loading indicator after API response', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -300,7 +300,7 @@ test.describe('API Integration', () => {
 
   test.describe('Data Caching', () => {
     test('should preserve data on back navigation', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -311,7 +311,7 @@ test.describe('API Integration', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/projects/proj-1**', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1**', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',

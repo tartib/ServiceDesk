@@ -33,7 +33,7 @@ const TEST_SPRINTS = [
 test.describe('Project Management System', () => {
   test.beforeEach(async ({ page }) => {
     // Mock auth API
-    await page.route('**/api/v1/auth/me', async (route) => {
+    await page.route('**/api/v2/auth/me', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -55,7 +55,7 @@ test.describe('Project Management System', () => {
 
   test.describe('Scenario 1: Create a New Project', () => {
     test('should display projects page with create button', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         if (route.request().method() === 'GET') {
           await route.fulfill({
             status: 200,
@@ -70,7 +70,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should open project creation wizard', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         if (route.request().method() === 'GET') {
           await route.fulfill({
             status: 200,
@@ -90,7 +90,7 @@ test.describe('Project Management System', () => {
     test('should create project with name and methodology', async ({ page }) => {
       let createProjectCalled = false;
       
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         if (route.request().method() === 'GET') {
           await route.fulfill({
             status: 200,
@@ -138,7 +138,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should redirect to project dashboard after creation', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         if (route.request().method() === 'GET') {
           await route.fulfill({
             status: 200,
@@ -165,7 +165,7 @@ test.describe('Project Management System', () => {
       });
 
       // Mock the project board page
-      await page.route('**/api/v1/pm/projects/proj-new', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-new', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -183,7 +183,7 @@ test.describe('Project Management System', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/projects/proj-new/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-new/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -205,7 +205,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should show project in project list after creation', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects', async (route) => {
+      await page.route('**/api/v2/pm/projects', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -234,7 +234,7 @@ test.describe('Project Management System', () => {
   test.describe('Scenario 2: Add Teams', () => {
     test.beforeEach(async ({ page }) => {
       // Mock project API
-      await page.route('**/api/v1/pm/projects/proj-1', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -259,7 +259,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should display teams section in settings', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/teams', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/teams', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -274,7 +274,7 @@ test.describe('Project Management System', () => {
     test('should add Frontend team', async ({ page }) => {
       let addTeamCalled = false;
 
-      await page.route('**/api/v1/pm/projects/proj-1/teams', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/teams', async (route) => {
         if (route.request().method() === 'GET') {
           await route.fulfill({
             status: 200,
@@ -306,7 +306,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should display all teams after adding', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/teams', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/teams', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -329,7 +329,7 @@ test.describe('Project Management System', () => {
 
   test.describe('Scenario 3: Add Members to Teams', () => {
     test.beforeEach(async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -347,7 +347,7 @@ test.describe('Project Management System', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/projects/proj-1/members', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/members', async (route) => {
         if (route.request().method() === 'GET') {
           await route.fulfill({
             status: 200,
@@ -373,7 +373,7 @@ test.describe('Project Management System', () => {
     test('should add member to project', async ({ page }) => {
       let inviteCalled = false;
 
-      await page.route('**/api/v1/pm/projects/proj-1/members/invite', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/members/invite', async (route) => {
         inviteCalled = true;
         const body = route.request().postDataJSON();
         expect(body.email).toBe('ahmed@example.com');
@@ -412,7 +412,7 @@ test.describe('Project Management System', () => {
 
   test.describe('Scenario 4: Create Task in Backlog', () => {
     test.beforeEach(async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -431,7 +431,7 @@ test.describe('Project Management System', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/projects/proj-1/backlog', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/backlog', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -457,7 +457,7 @@ test.describe('Project Management System', () => {
     test('should create task with title, description, and priority', async ({ page }) => {
       let createTaskCalled = false;
 
-      await page.route('**/api/v1/pm/projects/proj-1/tasks', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/tasks', async (route) => {
         if (route.request().method() === 'POST') {
           createTaskCalled = true;
           const body = route.request().postDataJSON();
@@ -496,7 +496,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should display task in backlog after creation', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/backlog', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/backlog', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -525,7 +525,7 @@ test.describe('Project Management System', () => {
 
   test.describe('Scenario 5: Create Sprints', () => {
     test.beforeEach(async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -546,7 +546,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should navigate to sprints page', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/sprints', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/sprints', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -559,7 +559,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should open create sprint modal', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/sprints', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/sprints', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -575,7 +575,7 @@ test.describe('Project Management System', () => {
     test('should create Sprint 1 with 2 weeks duration', async ({ page }) => {
       let createSprintCalled = false;
 
-      await page.route('**/api/v1/pm/projects/proj-1/sprints', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/sprints', async (route) => {
         if (route.request().method() === 'GET') {
           await route.fulfill({
             status: 200,
@@ -616,7 +616,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should display all sprints in order', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/sprints', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/sprints', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -645,7 +645,7 @@ test.describe('Project Management System', () => {
 
   test.describe('Scenario 6: Start Sprint 1', () => {
     test.beforeEach(async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -668,7 +668,7 @@ test.describe('Project Management System', () => {
     test('should move task to sprint from backlog', async ({ page }) => {
       let updateTaskCalled = false;
 
-      await page.route('**/api/v1/pm/projects/proj-1/backlog', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/backlog', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -686,7 +686,7 @@ test.describe('Project Management System', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/tasks/task-1', async (route) => {
+      await page.route('**/api/v2/pm/tasks/task-1', async (route) => {
         if (route.request().method() === 'PUT' || route.request().method() === 'PATCH') {
           updateTaskCalled = true;
           const body = route.request().postDataJSON();
@@ -713,7 +713,7 @@ test.describe('Project Management System', () => {
     test('should start sprint', async ({ page }) => {
       let startSprintCalled = false;
 
-      await page.route('**/api/v1/pm/projects/proj-1/sprints', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/sprints', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -734,7 +734,7 @@ test.describe('Project Management System', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/sprints/sprint-1/start', async (route) => {
+      await page.route('**/api/v2/pm/sprints/sprint-1/start', async (route) => {
         startSprintCalled = true;
         await route.fulfill({
           status: 200,
@@ -763,7 +763,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should show sprint as active after starting', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/sprints', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/sprints', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -807,7 +807,7 @@ test.describe('Project Management System', () => {
     };
 
     test.beforeEach(async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -825,7 +825,7 @@ test.describe('Project Management System', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -850,7 +850,7 @@ test.describe('Project Management System', () => {
     test('should move task from To Do to In Progress', async ({ page }) => {
       let statusUpdateCalled = false;
 
-      await page.route('**/api/v1/pm/tasks/task-1/status', async (route) => {
+      await page.route('**/api/v2/pm/tasks/task-1/status', async (route) => {
         statusUpdateCalled = true;
         const body = route.request().postDataJSON();
         expect(body.status).toBe('in-progress');
@@ -881,7 +881,7 @@ test.describe('Project Management System', () => {
     test('should move task from In Progress to Done', async ({ page }) => {
       let statusUpdateCalled = false;
 
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -908,7 +908,7 @@ test.describe('Project Management System', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/tasks/task-1/status', async (route) => {
+      await page.route('**/api/v2/pm/tasks/task-1/status', async (route) => {
         statusUpdateCalled = true;
         const body = route.request().postDataJSON();
         expect(body.status).toBe('done');
@@ -930,7 +930,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should persist status change after refresh', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -966,7 +966,7 @@ test.describe('Project Management System', () => {
 
   test.describe('Scenario 8: Complete Sprint', () => {
     test.beforeEach(async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -987,7 +987,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should show complete sprint button for active sprint', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -1012,7 +1012,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should open complete sprint modal', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -1033,7 +1033,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should display sprint summary in completion modal', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -1065,7 +1065,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should allow selecting destination for incomplete tasks', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -1085,7 +1085,7 @@ test.describe('Project Management System', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/projects/proj-1/sprints', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/sprints', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -1112,7 +1112,7 @@ test.describe('Project Management System', () => {
     test('should complete sprint and update status', async ({ page }) => {
       let completeSprintCalled = false;
 
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -1132,7 +1132,7 @@ test.describe('Project Management System', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/sprints/sprint-1/complete', async (route) => {
+      await page.route('**/api/v2/pm/sprints/sprint-1/complete', async (route) => {
         completeSprintCalled = true;
         await route.fulfill({
           status: 200,
@@ -1158,7 +1158,7 @@ test.describe('Project Management System', () => {
     });
 
     test('should show Sprint 2 as ready to start after completing Sprint 1', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/sprints', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/sprints', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',

@@ -1,0 +1,178 @@
+{
+  "intake": {
+    "title": "Réception de projets",
+    "subtitle": "Gérez les demandes de projets dans le pipeline de gouvernance",
+    "newRequest": "Nouvelle demande",
+    "searchPlaceholder": "Rechercher des demandes...",
+    "allStages": "Toutes les étapes",
+    "allPriorities": "Toutes les priorités",
+    "refresh": "Actualiser",
+    "noRequests": "Aucune demande",
+    "noIntakeRequests": "Aucune demande trouvée",
+    "createFirst": "Créez votre première demande",
+    "stats": {
+      "totalRequests": "Total des demandes",
+      "inReview": "En revue",
+      "approved": "Approuvées",
+      "avgApprovalTime": "Temps d'approbation moyen"
+    },
+    "stages": {
+      "draft": "Brouillon",
+      "screening": "Triage",
+      "business_case": "Analyse de rentabilité",
+      "prioritization": "Priorisation",
+      "approved": "Approuvé",
+      "rejected": "Rejeté",
+      "cancelled": "Annulé"
+    },
+    "priorities": {
+      "critical": "Critique",
+      "high": "Haute",
+      "medium": "Moyenne",
+      "low": "Basse"
+    },
+    "categories": {
+      "new_product": "Nouveau produit",
+      "improvement": "Amélioration",
+      "maintenance": "Maintenance",
+      "research": "Recherche",
+      "infrastructure": "Infrastructure"
+    },
+    "categoryDescriptions": {
+      "new_product": "Créer un nouveau produit ou service",
+      "improvement": "Améliorer les capacités existantes",
+      "maintenance": "Corriger ou maintenir les systèmes existants",
+      "research": "Explorer de nouvelles technologies ou approches",
+      "infrastructure": "Infrastructure et outillage"
+    },
+    "methodologies": {
+      "scrum": "Scrum",
+      "kanban": "Kanban",
+      "waterfall": "Cascade",
+      "itil": "ITIL",
+      "lean": "Lean",
+      "okr": "OKR"
+    },
+    "methodologyDescriptions": {
+      "scrum": "Sprints itératifs avec cérémonies",
+      "kanban": "Flux continu avec limites de travail en cours",
+      "waterfall": "Phases séquentielles avec jalons",
+      "itil": "Cadre de gestion des services informatiques",
+      "lean": "Minimiser le gaspillage, maximiser la valeur",
+      "okr": "Objectifs et Résultats Clés"
+    },
+    "table": {
+      "title": "Titre",
+      "stage": "Étape",
+      "priority": "Priorité",
+      "category": "Catégorie",
+      "requester": "Demandeur",
+      "created": "Créé"
+    },
+    "new": {
+      "title": "Nouvelle demande de projet",
+      "subtitle": "Soumettez un nouveau projet pour revue et approbation",
+      "steps": {
+        "projectInfo": "Informations du projet",
+        "businessCase": "Analyse de rentabilité",
+        "details": "Détails",
+        "review": "Revue"
+      },
+      "projectTitle": "Titre du projet",
+      "projectTitlePlaceholder": "ex. : Refonte du portail client",
+      "description": "Description",
+      "descriptionPlaceholder": "Décrivez l'objectif de ce projet...",
+      "categoryLabel": "Catégorie",
+      "priorityLabel": "Priorité",
+      "businessJustification": "Justification métier",
+      "businessJustificationPlaceholder": "Pourquoi ce projet est-il nécessaire ? Quel problème résout-il ?",
+      "expectedBenefits": "Bénéfices attendus",
+      "expectedBenefitsPlaceholder": "Quels bénéfices ce projet apportera-t-il ?",
+      "estimatedBudget": "Budget estimé",
+      "estimatedBudgetPlaceholder": "ex. : 50000",
+      "estimatedTimeline": "Calendrier estimé",
+      "estimatedTimelinePlaceholder": "ex. : 3 mois",
+      "riskLevel": "Niveau de risque",
+      "strategicAlignment": "Alignement stratégique",
+      "strategicAlignmentPlaceholder": "En quoi cela s'aligne-t-il avec la stratégie de l'organisation ?",
+      "preferredMethodology": "Méthodologie préférée",
+      "suggestedTeam": "Équipe / Ressources suggérées",
+      "suggestedTeamPlaceholder": "Décrivez l'équipe ou les ressources nécessaires...",
+      "reviewNotice": "Vérifiez votre demande ci-dessous. Une fois soumise, elle entrera au stade <strong>Brouillon</strong>. Vous pourrez l'avancer au stade <strong>Triage</strong> quand vous serez prêt.",
+      "back": "Retour",
+      "cancel": "Annuler",
+      "next": "Suivant",
+      "submitting": "Envoi en cours...",
+      "submitRequest": "Soumettre la demande",
+      "successMessage": "Demande de réception créée avec succès !",
+      "budget": "Budget",
+      "timeline": "Calendrier",
+      "risk": "Risque",
+      "methodology": "Méthodologie"
+    },
+    "detail": {
+      "notFound": "Demande introuvable",
+      "backToIntake": "Retour à la réception",
+      "requestedBy": "Demandé par",
+      "on": "le",
+      "projectCreated": "Projet créé avec succès",
+      "openProject": "Ouvrir le projet",
+      "description": "Description",
+      "businessCase": "Analyse de rentabilité",
+      "justification": "Justification",
+      "expectedBenefits": "Bénéfices attendus",
+      "strategicAlignment": "Alignement stratégique",
+      "scoring": "Évaluation",
+      "avgLabel": "Moy.",
+      "scoreCriteria": {
+        "strategicValue": "Valeur stratégique",
+        "roiPotential": "Potentiel de ROI",
+        "technicalFeasibility": "Faisabilité technique",
+        "resourceAvailability": "Disponibilité des ressources",
+        "riskLevel": "Niveau de risque"
+      },
+      "comments": "Commentaires",
+      "noComments": "Aucun commentaire",
+      "addComment": "Ajouter un commentaire...",
+      "actions": "Actions",
+      "advanceStage": "Avancer l'étape",
+      "approveCreate": "Approuver et créer le projet",
+      "reject": "Rejeter",
+      "cancelRequest": "Annuler la demande",
+      "details": "Détails",
+      "category": "Catégorie",
+      "methodology": "Méthodologie",
+      "budget": "Budget",
+      "timeline": "Calendrier",
+      "risk": "Risque",
+      "avgScore": "Score moyen",
+      "timelineSection": "Chronologie",
+      "by": "par",
+      "modal": {
+        "advanceTitle": "Avancer à l'étape suivante",
+        "rejectTitle": "Rejeter la demande",
+        "approveTitle": "Approuver et créer le projet",
+        "projectKey": "Clé du projet (2-10 car.)",
+        "projectKeyPlaceholder": "ex. : PROJ",
+        "commentRequired": "Commentaire (requis)",
+        "commentOptional": "Commentaire (facultatif)",
+        "commentPlaceholder": "Ajouter un commentaire...",
+        "cancel": "Annuler",
+        "advance": "Avancer",
+        "approve": "Approuver",
+        "processing": "Traitement en cours..."
+      },
+      "unknown": "Inconnu",
+      "failedComment": "Échec de l'ajout du commentaire",
+      "failedScore": "Échec de l'enregistrement du score",
+      "actionFailed": "L'action a échoué"
+    },
+    "card": {
+      "timeAgo": {
+        "days": "j",
+        "hours": "h",
+        "minutes": "min"
+      }
+    }
+  }
+}

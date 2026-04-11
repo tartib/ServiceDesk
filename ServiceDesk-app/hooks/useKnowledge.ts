@@ -147,7 +147,7 @@ export function useKnowledgeArticles(filters?: {
       if (filters?.page) params.append('page', String(filters.page));
       if (filters?.limit) params.append('limit', String(filters.limit));
 
-      const response = await api.get(`/knowledge?${params.toString()}`) as {
+      const response = await api.get(`/itsm/knowledge?${params.toString()}`) as {
         data?: KnowledgeArticle[];
         pagination?: { page: number; limit: number; total: number; pages: number };
       };
@@ -170,7 +170,7 @@ export function useSearchArticles(query: string, options?: { category_id?: strin
       if (options?.category_id) params.append('category_id', options.category_id);
       if (options?.limit) params.append('limit', String(options.limit));
 
-      const response = await api.get(`/knowledge/search?${params.toString()}`) as {
+      const response = await api.get(`/itsm/knowledge/search?${params.toString()}`) as {
         data?: KnowledgeArticle[];
       };
       return response.data || [];
@@ -187,7 +187,7 @@ export function useKnowledgeArticle(id: string, incrementViews = false) {
     queryKey: knowledgeKeys.detail(id),
     queryFn: async () => {
       const params = incrementViews ? '?increment_views=true' : '';
-      const response = await api.get(`/knowledge/${id}${params}`) as { data?: KnowledgeArticle };
+      const response = await api.get(`/itsm/knowledge/${id}${params}`) as { data?: KnowledgeArticle };
       return (response.data || response) as KnowledgeArticle;
     },
     enabled: !!id,
@@ -201,7 +201,7 @@ export function useFeaturedArticles(limit = 5) {
   return useQuery({
     queryKey: knowledgeKeys.featured(),
     queryFn: async () => {
-      const response = await api.get(`/knowledge/featured?limit=${limit}`) as {
+      const response = await api.get(`/itsm/knowledge/featured?limit=${limit}`) as {
         data?: KnowledgeArticle[];
       };
       return response.data || [];
@@ -216,7 +216,7 @@ export function usePopularArticles(limit = 10) {
   return useQuery({
     queryKey: knowledgeKeys.popular(),
     queryFn: async () => {
-      const response = await api.get(`/knowledge/popular?limit=${limit}`) as {
+      const response = await api.get(`/itsm/knowledge/popular?limit=${limit}`) as {
         data?: KnowledgeArticle[];
       };
       return response.data || [];
@@ -231,7 +231,7 @@ export function useKnowledgeStats() {
   return useQuery({
     queryKey: knowledgeKeys.stats(),
     queryFn: async () => {
-      const response = await api.get('/knowledge/stats') as { data?: KnowledgeStats };
+      const response = await api.get('/itsm/knowledge/stats') as { data?: KnowledgeStats };
       return (response.data || response) as KnowledgeStats;
     },
   });
@@ -245,7 +245,7 @@ export function useCreateArticle() {
 
   return useMutation({
     mutationFn: async (data: CreateArticleDTO) => {
-      const response = await api.post('/knowledge', data) as { data?: KnowledgeArticle };
+      const response = await api.post('/itsm/knowledge', data) as { data?: KnowledgeArticle };
       return (response.data || response) as KnowledgeArticle;
     },
     onSuccess: () => {
@@ -263,7 +263,7 @@ export function useUpdateArticle() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateArticleDTO }) => {
-      const response = await api.put(`/knowledge/${id}`, data) as { data?: KnowledgeArticle };
+      const response = await api.put(`/itsm/knowledge/${id}`, data) as { data?: KnowledgeArticle };
       return response.data || response;
     },
     onSuccess: (_, variables) => {
@@ -281,7 +281,7 @@ export function usePublishArticle() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await api.post(`/knowledge/${id}/publish`) as { data?: KnowledgeArticle };
+      const response = await api.post(`/itsm/knowledge/${id}/publish`) as { data?: KnowledgeArticle };
       return response.data || response;
     },
     onSuccess: (_, id) => {
@@ -300,7 +300,7 @@ export function useArchiveArticle() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await api.post(`/knowledge/${id}/archive`) as { data?: KnowledgeArticle };
+      const response = await api.post(`/itsm/knowledge/${id}/archive`) as { data?: KnowledgeArticle };
       return response.data || response;
     },
     onSuccess: (_, id) => {
@@ -319,7 +319,7 @@ export function useDeleteArticle() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/knowledge/${id}`);
+      await api.delete(`/itsm/knowledge/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: knowledgeKeys.lists() });
@@ -336,7 +336,7 @@ export function useSubmitFeedback() {
 
   return useMutation({
     mutationFn: async ({ id, helpful, rating }: { id: string; helpful?: boolean; rating?: number }) => {
-      const response = await api.post(`/knowledge/${id}/feedback`, { helpful, rating });
+      const response = await api.post(`/itsm/knowledge/${id}/feedback`, { helpful, rating });
       return response;
     },
     onSuccess: (_, variables) => {

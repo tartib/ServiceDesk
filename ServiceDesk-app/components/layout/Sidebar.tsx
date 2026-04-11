@@ -49,6 +49,8 @@ import {
   Map,
   Headset,
   Trophy,
+  Award,
+  Gamepad2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -136,6 +138,8 @@ const itsmMenuItems = [
   { icon: Send, labelKey: 'nav.serviceRequests', href: '/itsm-dashboard/service-requests', roles: LEAD_ROLES },
   { icon: FileQuestion, labelKey: 'nav.problems', href: '/problems', roles: LEAD_ROLES },
   { icon: GitPullRequest, labelKey: 'nav.changes', href: '/changes', roles: LEAD_ROLES },
+  { icon: CalendarDays, labelKey: 'nav.changeCalendar', href: '/change-calendar', roles: LEAD_ROLES },
+  { icon: ClipboardList, labelKey: 'nav.pirs', href: '/pirs', roles: LEAD_ROLES },
   { icon: Package, labelKey: 'nav.serviceCatalog', href: '/service-catalog', roles: ALL_ROLES },
   { icon: Timer, labelKey: 'nav.sla', href: '/sla', roles: LEAD_ROLES },
   { icon: Rocket, labelKey: 'nav.releases', href: '/releases', roles: LEAD_ROLES },
@@ -323,6 +327,34 @@ export default function Sidebar() {
                 >
                   <Icon className="h-5 w-5 shrink-0" />
                   <span className="truncate">{t(item.labelKey)}</span>
+                </div>
+              </Link>
+            );
+          })}
+
+          {/* Gamification Section */}
+          <div className="pt-4 pb-2">
+            <span className="px-2 sm:px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('nav.gamification') || 'Gamification'}</span>
+          </div>
+          {[
+            { icon: Gamepad2, labelKey: 'nav.gamificationDashboard', href: '/gamification', fallback: 'Dashboard' },
+            { icon: Trophy, labelKey: 'nav.leaderboard', href: '/gamification/leaderboard', fallback: 'Leaderboard' },
+            { icon: Award, labelKey: 'nav.achievements', href: '/gamification/achievements', fallback: 'Achievements' },
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            return (
+              <Link key={item.href} href={item.href}>
+                <div
+                  className={cn(
+                    'flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg transition-colors text-sm sm:text-base',
+                    isActive
+                      ? 'bg-blue-100 text-blue-700 font-medium'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  )}
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span className="truncate">{t(item.labelKey) || item.fallback}</span>
                 </div>
               </Link>
             );

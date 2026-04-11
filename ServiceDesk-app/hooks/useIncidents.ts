@@ -7,10 +7,13 @@ import {
   UpdateIncidentDTO,
   IncidentStatus,
   Priority,
+  MajorIncidentSeverity,
+  IMajorIncidentBridge,
   IApiResponse,
   IApiListResponse,
 } from '@/types/itsm';
 
+const ITSM_BASE = '/api/v2/itsm';
 const INCIDENTS_KEY = 'incidents';
 
 // ============================================
@@ -45,7 +48,7 @@ export const useIncidents = (filters?: {
   return useQuery({
     queryKey: [INCIDENTS_KEY, 'list', filters],
     queryFn: async () => {
-      const response = await api.get(`/incidents?${params.toString()}`) as IApiListResponse<IIncident>;
+      const response = await api.get(`${ITSM_BASE}/incidents?${params.toString()}`) as IApiListResponse<IIncident>;
       return response;
     },
   });
@@ -55,7 +58,7 @@ export const useIncident = (incidentId: string) => {
   return useQuery({
     queryKey: [INCIDENTS_KEY, incidentId],
     queryFn: async () => {
-      const response = await api.get(`/incidents/${incidentId}`) as IApiResponse<{ incident: IIncident }>;
+      const response = await api.get(`${ITSM_BASE}/incidents/${incidentId}`) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
     enabled: !!incidentId,
@@ -67,7 +70,7 @@ export const useIncidentStats = (siteId?: string) => {
     queryKey: [INCIDENTS_KEY, 'stats', siteId],
     queryFn: async () => {
       const params = siteId ? `?site_id=${siteId}` : '';
-      const response = await api.get(`/incidents/stats${params}`) as IApiResponse<IIncidentStats>;
+      const response = await api.get(`${ITSM_BASE}/incidents/stats${params}`) as IApiResponse<IIncidentStats>;
       return response.data;
     },
   });
@@ -77,7 +80,7 @@ export const useOpenIncidents = () => {
   return useQuery({
     queryKey: [INCIDENTS_KEY, 'open'],
     queryFn: async () => {
-      const response = await api.get('/incidents/open') as IApiResponse<IIncident[]>;
+      const response = await api.get(`${ITSM_BASE}/incidents/open`) as IApiResponse<IIncident[]>;
       return response.data;
     },
   });
@@ -87,7 +90,7 @@ export const useBreachedIncidents = () => {
   return useQuery({
     queryKey: [INCIDENTS_KEY, 'breached'],
     queryFn: async () => {
-      const response = await api.get('/incidents/breached') as IApiResponse<IIncident[]>;
+      const response = await api.get(`${ITSM_BASE}/incidents/breached`) as IApiResponse<IIncident[]>;
       return response.data;
     },
   });
@@ -97,7 +100,7 @@ export const useUnassignedIncidents = () => {
   return useQuery({
     queryKey: [INCIDENTS_KEY, 'unassigned'],
     queryFn: async () => {
-      const response = await api.get('/incidents/unassigned') as IApiResponse<IIncident[]>;
+      const response = await api.get(`${ITSM_BASE}/incidents/unassigned`) as IApiResponse<IIncident[]>;
       return response.data;
     },
   });
@@ -107,7 +110,7 @@ export const useMajorIncidents = () => {
   return useQuery({
     queryKey: [INCIDENTS_KEY, 'major'],
     queryFn: async () => {
-      const response = await api.get('/incidents/major') as IApiResponse<IIncident[]>;
+      const response = await api.get(`${ITSM_BASE}/incidents/major`) as IApiResponse<IIncident[]>;
       return response.data;
     },
   });
@@ -120,7 +123,7 @@ export const useMyIncidentRequests = (page?: number, limit?: number) => {
       const params = new URLSearchParams();
       if (page) params.append('page', String(page));
       if (limit) params.append('limit', String(limit));
-      const response = await api.get(`/incidents/my-requests?${params.toString()}`) as IApiListResponse<IIncident>;
+      const response = await api.get(`${ITSM_BASE}/incidents/my-requests?${params.toString()}`) as IApiListResponse<IIncident>;
       return response;
     },
   });
@@ -133,7 +136,7 @@ export const useMyAssignedIncidents = (page?: number, limit?: number) => {
       const params = new URLSearchParams();
       if (page) params.append('page', String(page));
       if (limit) params.append('limit', String(limit));
-      const response = await api.get(`/incidents/my-assignments?${params.toString()}`) as IApiListResponse<IIncident>;
+      const response = await api.get(`${ITSM_BASE}/incidents/my-assignments?${params.toString()}`) as IApiListResponse<IIncident>;
       return response;
     },
   });
@@ -143,7 +146,7 @@ export const useSearchIncidents = (query: string) => {
   return useQuery({
     queryKey: [INCIDENTS_KEY, 'search', query],
     queryFn: async () => {
-      const response = await api.get(`/incidents/search?q=${encodeURIComponent(query)}`) as IApiResponse<IIncident[]>;
+      const response = await api.get(`${ITSM_BASE}/incidents/search?q=${encodeURIComponent(query)}`) as IApiResponse<IIncident[]>;
       return response.data;
     },
     enabled: query.length >= 2,
@@ -159,7 +162,7 @@ export const useCreateIncident = () => {
 
   return useMutation({
     mutationFn: async (data: CreateIncidentDTO) => {
-      const response = await api.post('/incidents', data) as IApiResponse<{ incident: IIncident }>;
+      const response = await api.post(`${ITSM_BASE}/incidents`, data) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
     onSuccess: () => {
@@ -179,7 +182,7 @@ export const useUpdateIncident = () => {
       incidentId: string;
       data: UpdateIncidentDTO;
     }) => {
-      const response = await api.patch(`/incidents/${incidentId}`, data) as IApiResponse<{ incident: IIncident }>;
+      const response = await api.patch(`${ITSM_BASE}/incidents/${incidentId}`, data) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
     onSuccess: (_, variables) => {
@@ -204,7 +207,7 @@ export const useUpdateIncidentStatus = () => {
       status: IncidentStatus;
       resolution?: { code: string; notes: string };
     }) => {
-      const response = await api.patch(`/incidents/${incidentId}/status`, { status, resolution }) as IApiResponse<{ incident: IIncident }>;
+      const response = await api.patch(`${ITSM_BASE}/incidents/${incidentId}/status`, { status, resolution }) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
     onSuccess: (_, variables) => {
@@ -233,7 +236,7 @@ export const useAssignIncident = () => {
         group_name?: string;
       };
     }) => {
-      const response = await api.patch(`/incidents/${incidentId}/assign`, assignee) as IApiResponse<{ incident: IIncident }>;
+      const response = await api.patch(`${ITSM_BASE}/incidents/${incidentId}/assign`, assignee) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
     onSuccess: (_, variables) => {
@@ -260,7 +263,7 @@ export const useAddWorklog = () => {
         is_internal?: boolean;
       };
     }) => {
-      const response = await api.post(`/incidents/${incidentId}/worklogs`, worklog) as IApiResponse<{ incident: IIncident }>;
+      const response = await api.post(`${ITSM_BASE}/incidents/${incidentId}/worklogs`, worklog) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
     onSuccess: (_, variables) => {
@@ -282,7 +285,7 @@ export const useEscalateIncident = () => {
       incidentId: string;
       reason: string;
     }) => {
-      const response = await api.post(`/incidents/${incidentId}/escalate`, { reason }) as IApiResponse<{ incident: IIncident }>;
+      const response = await api.post(`${ITSM_BASE}/incidents/${incidentId}/escalate`, { reason }) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
     onSuccess: (_, variables) => {
@@ -305,13 +308,75 @@ export const useLinkIncidentToProblem = () => {
       incidentId: string;
       problemId: string;
     }) => {
-      const response = await api.post(`/incidents/${incidentId}/link-problem`, { problem_id: problemId }) as IApiResponse<{ incident: IIncident }>;
+      const response = await api.post(`${ITSM_BASE}/incidents/${incidentId}/link-problem`, { problem_id: problemId }) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: [INCIDENTS_KEY, variables.incidentId],
       });
+    },
+  });
+};
+
+export const useDeclareMajorIncident = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      incidentId,
+      severity,
+      bridge,
+    }: {
+      incidentId: string;
+      severity: MajorIncidentSeverity;
+      bridge?: Partial<IMajorIncidentBridge>;
+    }) => {
+      const response = await api.post(`${ITSM_BASE}/incidents/${incidentId}/declare-major`, { severity, bridge }) as IApiResponse<{ incident: IIncident }>;
+      return response.data.incident;
+    },
+    onSuccess: (_, { incidentId }) => {
+      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY, incidentId] });
+      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY, 'major'] });
+    },
+  });
+};
+
+export const useAddCommsUpdate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      incidentId,
+      message,
+      next_update_at,
+    }: {
+      incidentId: string;
+      message: string;
+      next_update_at?: string;
+    }) => {
+      const response = await api.post(`${ITSM_BASE}/incidents/${incidentId}/comms-update`, { message, next_update_at }) as IApiResponse<{ incident: IIncident }>;
+      return response.data.incident;
+    },
+    onSuccess: (_, { incidentId }) => {
+      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY, incidentId] });
+    },
+  });
+};
+
+export const useUpdateBridge = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      incidentId,
+      bridge,
+    }: {
+      incidentId: string;
+      bridge: Partial<IMajorIncidentBridge>;
+    }) => {
+      const response = await api.patch(`${ITSM_BASE}/incidents/${incidentId}/bridge`, bridge) as IApiResponse<{ incident: IIncident }>;
+      return response.data.incident;
+    },
+    onSuccess: (_, { incidentId }) => {
+      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY, incidentId] });
     },
   });
 };

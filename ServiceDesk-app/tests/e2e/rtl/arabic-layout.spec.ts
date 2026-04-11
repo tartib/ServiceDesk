@@ -11,7 +11,7 @@ test.describe('RTL (Arabic) Layout Support', () => {
     });
 
     // Mock auth API
-    await page.route('**/api/v1/auth/me', async (route) => {
+    await page.route('**/api/v2/auth/me', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -34,7 +34,7 @@ test.describe('RTL (Arabic) Layout Support', () => {
     });
 
     // Mock projects API
-    await page.route('**/api/v1/pm/projects/**', async (route) => {
+    await page.route('**/api/v2/pm/projects/**', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -115,7 +115,7 @@ test.describe('RTL (Arabic) Layout Support', () => {
 
   test.describe('Board Layout in RTL', () => {
     test('should display board columns in RTL mode', async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/board', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/board', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',

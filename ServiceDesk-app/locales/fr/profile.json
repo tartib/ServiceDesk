@@ -1,0 +1,23 @@
+{
+  "profile": {
+    "title": "Paramètres du profil",
+    "subtitle": "Gérez les informations de votre compte et vos préférences",
+    "profileInfo": "Informations du profil",
+    "fullName": "Nom complet",
+    "email": "E-mail",
+    "role": "Rôle",
+    "updateProfile": "Mettre à jour le profil",
+    "updating": "Mise à jour en cours...",
+    "profileUpdated": "Profil mis à jour avec succès !",
+    "changePassword": "Changer le mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmNewPassword": "Confirmer le nouveau mot de passe",
+    "changing": "Changement en cours...",
+    "passwordChanged": "Mot de passe changé avec succès !",
+    "nameMinLength": "Le nom doit contenir au moins 2 caractères",
+    "invalidEmail": "Adresse e-mail invalide",
+    "passwordMinLength": "Le mot de passe doit contenir au moins 6 caractères",
+    "passwordMismatch": "Les mots de passe ne correspondent pas"
+  }
+}

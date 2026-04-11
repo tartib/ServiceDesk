@@ -436,7 +436,7 @@ export default function DrivePage() {
     if (file.isPDF) return <FileText className="h-5 w-5 text-red-500" />;
     if (file.isVideo) return <Video className="h-5 w-5 text-purple-500" />;
     if (file.isDocument) return <FileText className="h-5 w-5 text-blue-600" />;
-    return <File className="h-5 w-5 text-gray-500" />;
+    return <File className="h-5 w-5 text-muted-foreground" />;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -458,9 +458,9 @@ export default function DrivePage() {
 
   return (
     <DashboardLayout>
-    <div className="flex h-full bg-gray-50">
+    <div className="flex h-full bg-muted/50">
       {/* Sidebar */}
-      <div className="w-64 bg-white border-e border-gray-200 flex flex-col">
+      <div className="w-64 bg-card border-e border-border flex flex-col">
         <div className="p-4">
           <Button
             onClick={() => setUploadDialogOpen(true)}
@@ -476,8 +476,8 @@ export default function DrivePage() {
           <button
             onClick={() => { setActiveView('my-drive'); handleBreadcrumbClick(-1); }}
             className={cn(
-              'w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-gray-100',
-              activeView === 'my-drive' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+              'w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-accent',
+              activeView === 'my-drive' ? 'bg-blue-50 text-blue-700' : 'text-muted-foreground'
             )}
           >
             <Home className="me-3 h-5 w-5" />
@@ -487,8 +487,8 @@ export default function DrivePage() {
           <button
             onClick={() => { setActiveView('shared'); setSearchResults(null); setSearchQuery(''); }}
             className={cn(
-              'w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-gray-100',
-              activeView === 'shared' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+              'w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-accent',
+              activeView === 'shared' ? 'bg-blue-50 text-blue-700' : 'text-muted-foreground'
             )}
           >
             <Users className="me-3 h-5 w-5" />
@@ -498,8 +498,8 @@ export default function DrivePage() {
           <button
             onClick={() => { setActiveView('recent'); setSearchResults(null); setSearchQuery(''); }}
             className={cn(
-              'w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-gray-100',
-              activeView === 'recent' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+              'w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-accent',
+              activeView === 'recent' ? 'bg-blue-50 text-blue-700' : 'text-muted-foreground'
             )}
           >
             <Clock className="me-3 h-5 w-5" />
@@ -509,8 +509,8 @@ export default function DrivePage() {
           <button
             onClick={() => { setActiveView('starred'); setSearchResults(null); setSearchQuery(''); }}
             className={cn(
-              'w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-gray-100',
-              activeView === 'starred' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+              'w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-accent',
+              activeView === 'starred' ? 'bg-blue-50 text-blue-700' : 'text-muted-foreground'
             )}
           >
             <Star className="me-3 h-5 w-5" />
@@ -520,8 +520,8 @@ export default function DrivePage() {
           <button
             onClick={() => { setActiveView('trash'); setSearchResults(null); setSearchQuery(''); }}
             className={cn(
-              'w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-gray-100',
-              activeView === 'trash' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+              'w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-accent',
+              activeView === 'trash' ? 'bg-blue-50 text-blue-700' : 'text-muted-foreground'
             )}
           >
             <Trash2 className="me-3 h-5 w-5" />
@@ -530,12 +530,12 @@ export default function DrivePage() {
         </nav>
 
         {storageStats && (
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-border">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">{t('drive.storage')}</span>
-              <HardDrive className="h-4 w-4 text-gray-400" />
+              <span className="text-sm text-muted-foreground">{t('drive.storage')}</span>
+              <HardDrive className="h-4 w-4 text-muted-foreground" />
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div className="w-full bg-muted rounded-full h-2 mb-2">
               <div
                 className="bg-blue-600 h-2 rounded-full"
                 style={{
@@ -543,7 +543,7 @@ export default function DrivePage() {
                 }}
               />
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               {t('drive.storageUsed').replace('{used}', formatFileSize(storageStats.totalSize))}
             </p>
           </div>
@@ -553,7 +553,7 @@ export default function DrivePage() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-card border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 flex-1">
               {/* Breadcrumbs / View Title */}
@@ -562,16 +562,16 @@ export default function DrivePage() {
                   <>
                     <button
                       onClick={() => handleBreadcrumbClick(-1)}
-                      className="text-gray-600 hover:text-gray-900 font-medium"
+                      className="text-muted-foreground hover:text-foreground font-medium"
                     >
                       {t('drive.title')}
                     </button>
                     {folderPath.map((folder, index) => (
                       <div key={folder._id} className="flex items-center gap-2">
-                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         <button
                           onClick={() => handleBreadcrumbClick(index)}
-                          className="text-gray-600 hover:text-gray-900 font-medium"
+                          className="text-muted-foreground hover:text-foreground font-medium"
                         >
                           {folder.name}
                         </button>
@@ -579,7 +579,7 @@ export default function DrivePage() {
                     ))}
                   </>
                 ) : (
-                  <span className="text-gray-900 font-medium">
+                  <span className="text-foreground font-medium">
                     {activeView === 'shared' && t('drive.sharedWithMe')}
                     {activeView === 'recent' && t('drive.recent')}
                     {activeView === 'starred' && t('drive.starred')}
@@ -605,7 +605,7 @@ export default function DrivePage() {
               </div>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center border border-gray-200 rounded-lg">
+              <div className="flex items-center border border-border rounded-lg">
                 <Button
                   variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                   size="icon"
@@ -637,7 +637,7 @@ export default function DrivePage() {
 
         {/* Toolbar - only for My Drive */}
         {activeView === 'my-drive' && (
-          <div className="bg-white border-b border-gray-200 px-6 py-3">
+          <div className="bg-card border-b border-border px-6 py-3">
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -655,17 +655,17 @@ export default function DrivePage() {
         <div className="flex-1 overflow-auto p-6">
           {activeView !== 'my-drive' && !searchResults ? (
             <div className="text-center py-20">
-              {activeView === 'shared' && <Users className="mx-auto h-16 w-16 text-gray-300" />}
-              {activeView === 'recent' && <Clock className="mx-auto h-16 w-16 text-gray-300" />}
-              {activeView === 'starred' && <Star className="mx-auto h-16 w-16 text-gray-300" />}
-              {activeView === 'trash' && <Trash2 className="mx-auto h-16 w-16 text-gray-300" />}
-              <h3 className="mt-4 text-lg font-medium text-gray-900">
+              {activeView === 'shared' && <Users className="mx-auto h-16 w-16 text-muted-foreground" />}
+              {activeView === 'recent' && <Clock className="mx-auto h-16 w-16 text-muted-foreground" />}
+              {activeView === 'starred' && <Star className="mx-auto h-16 w-16 text-muted-foreground" />}
+              {activeView === 'trash' && <Trash2 className="mx-auto h-16 w-16 text-muted-foreground" />}
+              <h3 className="mt-4 text-lg font-medium text-foreground">
                 {activeView === 'shared' && t('drive.sharedEmpty')}
                 {activeView === 'recent' && t('drive.recentEmpty')}
                 {activeView === 'starred' && t('drive.starredEmpty')}
                 {activeView === 'trash' && t('drive.trashEmpty')}
               </h3>
-              <p className="mt-2 text-gray-500">
+              <p className="mt-2 text-muted-foreground">
                 {activeView === 'shared' && t('drive.sharedEmptyDescription')}
                 {activeView === 'recent' && t('drive.recentEmptyDescription')}
                 {activeView === 'starred' && t('drive.starredEmptyDescription')}
@@ -685,21 +685,21 @@ export default function DrivePage() {
               </h2>
               {searchResults.length === 0 ? (
                 <div className="text-center py-12">
-                  <Search className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-4 text-gray-600">{t('drive.noFilesFound')}</p>
+                  <Search className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <p className="mt-4 text-muted-foreground">{t('drive.noFilesFound')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {searchResults.map((file) => (
                     <div
                       key={file._id}
-                      className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                      className="flex items-center justify-between p-4 bg-card rounded-lg border border-border hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-center gap-4">
                         {getFileIcon(file)}
                         <div>
-                          <p className="font-medium text-gray-900">{file.fileName}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="font-medium text-foreground">{file.fileName}</p>
+                          <p className="text-sm text-muted-foreground">
                             {formatFileSize(file.size)} • {formatDate(file.createdAt)}
                           </p>
                         </div>
@@ -743,13 +743,13 @@ export default function DrivePage() {
               {/* Folders */}
               {contents?.folders && contents.folders.length > 0 && (
                 <div className="mb-8">
-                  <h3 className="text-sm font-medium text-gray-700 mb-3">{t('drive.folders')}</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">{t('drive.folders')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {contents.folders.map((folder) => (
                       <div
                         key={folder._id}
                         onClick={() => handleFolderClick(folder)}
-                        className="group p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-all cursor-pointer"
+                        className="group p-4 bg-card rounded-lg border border-border hover:shadow-md transition-all cursor-pointer"
                       >
                         <div className="flex items-center justify-between mb-2">
                           <FolderIcon className="h-10 w-10 text-blue-500" />
@@ -776,9 +776,9 @@ export default function DrivePage() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                        <p className="font-medium text-gray-900 truncate">{folder.name}</p>
+                        <p className="font-medium text-foreground truncate">{folder.name}</p>
                         {folder.description && (
-                          <p className="text-xs text-gray-500 truncate mt-1">{folder.description}</p>
+                          <p className="text-xs text-muted-foreground truncate mt-1">{folder.description}</p>
                         )}
                       </div>
                     ))}
@@ -789,16 +789,16 @@ export default function DrivePage() {
               {/* Files */}
               {contents?.files && contents.files.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-4">{t('drive.files')}</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-4">{t('drive.files')}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {contents.files.map((file) => (
                       <div
                         key={file._id}
-                        className="group bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer"
+                        className="group bg-card rounded-xl border border-border hover:border-blue-300 hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer"
                         onClick={() => handlePreviewFile(file)}
                       >
                         {/* File Preview */}
-                        <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden relative">
+                        <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden relative">
                           {file.isImage ? (
                             <div
                               className="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-200"
@@ -825,8 +825,8 @@ export default function DrivePage() {
                             </div>
                           ) : (
                             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                              <div className="text-gray-400 mb-2">{getFileIcon(file)}</div>
-                              <p className="text-xs text-gray-600 font-semibold">{file.fileName.split('.').pop()?.toUpperCase()}</p>
+                              <div className="text-muted-foreground mb-2">{getFileIcon(file)}</div>
+                              <p className="text-xs text-muted-foreground font-semibold">{file.fileName.split('.').pop()?.toUpperCase()}</p>
                             </div>
                           )}
                           {/* Hover overlay */}
@@ -837,10 +837,10 @@ export default function DrivePage() {
                         <div className="p-4">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                              <p className="font-semibold text-sm text-foreground truncate group-hover:text-blue-600 transition-colors">
                                 {file.fileName}
                               </p>
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 {formatFileSize(file.size)}
                               </p>
                             </div>
@@ -894,9 +894,9 @@ export default function DrivePage() {
               {(!contents?.folders || contents.folders.length === 0) &&
                 (!contents?.files || contents.files.length === 0) && (
                   <div className="text-center py-12">
-                    <FolderIcon className="mx-auto h-16 w-16 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">{t('drive.noFilesOrFolders')}</h3>
-                    <p className="mt-2 text-gray-500">
+                    <FolderIcon className="mx-auto h-16 w-16 text-muted-foreground" />
+                    <h3 className="mt-4 text-lg font-medium text-foreground">{t('drive.noFilesOrFolders')}</h3>
+                    <p className="mt-2 text-muted-foreground">
                       {t('drive.emptyStateDescription')}
                     </p>
                     <div className="mt-6 flex justify-center gap-3">
@@ -914,47 +914,47 @@ export default function DrivePage() {
             </div>
           ) : (
             // List View
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="bg-card rounded-lg border border-border">
               <table className="w-full">
-                <thead className="border-b border-gray-200">
+                <thead className="border-b border-border">
                   <tr>
-                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-start text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('drive.name')}
                     </th>
-                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-start text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('drive.owner')}
                     </th>
-                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-start text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('drive.modified')}
                     </th>
-                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-start text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('drive.size')}
                     </th>
-                    <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-end text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('drive.actions')}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-border">
                   {contents?.folders.map((folder) => (
                     <tr
                       key={folder._id}
                       onClick={() => handleFolderClick(folder)}
-                      className="hover:bg-gray-50 cursor-pointer"
+                      className="hover:bg-accent cursor-pointer"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <FolderIcon className="h-5 w-5 text-blue-500 me-3" />
-                          <span className="font-medium text-gray-900">{folder.name}</span>
+                          <span className="font-medium text-foreground">{folder.name}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {folder.owner.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {formatDate(folder.updatedAt)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">—</td>
                       <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -982,20 +982,20 @@ export default function DrivePage() {
                     </tr>
                   ))}
                   {contents?.files.map((file) => (
-                    <tr key={file._id} className="hover:bg-gray-50">
+                    <tr key={file._id} className="hover:bg-accent">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {getFileIcon(file)}
-                          <span className="ms-3 font-medium text-gray-900">{file.fileName}</span>
+                          <span className="ms-3 font-medium text-foreground">{file.fileName}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {file.owner.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {formatDate(file.updatedAt)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {formatFileSize(file.size)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
@@ -1048,9 +1048,9 @@ export default function DrivePage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-2 text-sm text-gray-600">
+            <div className="border-2 border-dashed border-input rounded-lg p-8 text-center">
+              <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+              <p className="mt-2 text-sm text-muted-foreground">
                 {t('drive.dragAndDrop')}
               </p>
               <Input
@@ -1119,7 +1119,7 @@ export default function DrivePage() {
               <Input value={shareLink} readOnly className="flex-1" />
               <Button onClick={copyShareLink}>{t('drive.copy')}</Button>
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {t('drive.linkExpiry')}
             </p>
           </div>

@@ -85,7 +85,7 @@ export default function SelfServicePortal() {
     limit: 5,
   });
 
-  const userId = user?._id || user?.id || '';
+  const userId = user?.id || '';
   const { data: myRequests, isLoading: loadingRequests } = useMyServiceRequests(userId, { limit: 5 });
 
   const createIncident = useCreateIncident();
@@ -149,10 +149,10 @@ export default function SelfServicePortal() {
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center py-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             {t('selfService.subtitle')}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-muted-foreground">
             {user?.name || 'User'}
           </p>
         </div>
@@ -160,13 +160,13 @@ export default function SelfServicePortal() {
         {/* Search Bar */}
         <div className="max-w-2xl mx-auto">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               type="text"
               placeholder={t('selfService.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 text-lg border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+              className="w-full pl-12 pr-4 py-4 text-lg border border-input rounded-xl bg-card text-foreground focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
             />
           </div>
         </div>
@@ -179,15 +179,15 @@ export default function SelfServicePortal() {
               <button
                 key={action.action}
                 onClick={() => handleQuickAction(action.action)}
-                className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all text-left group"
+                className="p-6 bg-card rounded-xl border border-border hover:shadow-lg transition-all text-left group"
               >
                 <div className={`w-12 h-12 rounded-lg ${action.color} flex items-center justify-center mb-4`}>
                   <Icon className="w-6 h-6" />
                 </div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1 group-hover:text-blue-600">
+                <h3 className="font-semibold text-foreground mb-1 group-hover:text-blue-600">
                   {t(action.titleKey)}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   {t(action.descKey)}
                 </p>
               </button>
@@ -198,9 +198,9 @@ export default function SelfServicePortal() {
         {/* Two Column Layout */}
         <div className="grid md:grid-cols-2 gap-8">
           {/* My Recent Tickets */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-card rounded-xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <FileText className="w-5 h-5" />
                 {t('selfService.myTickets')}
               </h2>
@@ -215,11 +215,11 @@ export default function SelfServicePortal() {
             {loadingIncidents ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-pulse h-16 bg-gray-100 dark:bg-gray-700 rounded-lg" />
+                  <div key={i} className="animate-pulse h-16 bg-muted rounded-lg" />
                 ))}
               </div>
             ) : incidents.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
                 <p>{t('selfService.noTickets')}</p>
                 <button
@@ -235,14 +235,14 @@ export default function SelfServicePortal() {
                   <div
                     key={incident._id}
                     onClick={() => router.push(`/incidents/${incident.incident_id}`)}
-                    className="p-4 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                    className="p-4 border border-border rounded-lg hover:bg-accent cursor-pointer transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 dark:text-white truncate">
+                        <p className="font-medium text-foreground truncate">
                           {incident.title}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm text-muted-foreground">
                           {incident.incident_id}
                         </p>
                       </div>
@@ -250,7 +250,7 @@ export default function SelfServicePortal() {
                         {incident.status.replace('_', ' ')}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {new Date(incident.created_at).toLocaleDateString()}
@@ -266,9 +266,9 @@ export default function SelfServicePortal() {
           </div>
 
           {/* My Service Requests */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-card rounded-xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <Send className="w-5 h-5" />
                 {t('selfService.myRequests') || (locale === 'ar' ? 'طلباتي' : 'My Requests')}
               </h2>
@@ -283,11 +283,11 @@ export default function SelfServicePortal() {
             {loadingRequests ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-pulse h-16 bg-gray-100 dark:bg-gray-700 rounded-lg" />
+                  <div key={i} className="animate-pulse h-16 bg-muted rounded-lg" />
                 ))}
               </div>
             ) : serviceRequests.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 <Clipboard className="w-12 h-12 mx-auto mb-2 opacity-50" />
                 <p>{locale === 'ar' ? 'لا توجد طلبات' : 'No requests yet'}</p>
                 <button
@@ -303,14 +303,14 @@ export default function SelfServicePortal() {
                   <div
                     key={request._id}
                     onClick={() => router.push(`/itsm-dashboard/service-requests/${request.request_id}`)}
-                    className="p-4 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                    className="p-4 border border-border rounded-lg hover:bg-accent cursor-pointer transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 dark:text-white truncate">
+                        <p className="font-medium text-foreground truncate">
                           {request.service_name}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm text-muted-foreground">
                           {request.request_id}
                         </p>
                       </div>
@@ -318,7 +318,7 @@ export default function SelfServicePortal() {
                         {request.status.replace('_', ' ')}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {new Date(request.created_at).toLocaleDateString()}
@@ -332,8 +332,8 @@ export default function SelfServicePortal() {
         </div>
 
         {/* Common Issues */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
             <HelpCircle className="w-5 h-5" />
             {t('selfService.commonIssues')}
           </h2>
@@ -342,15 +342,15 @@ export default function SelfServicePortal() {
               <button
                 key={index}
                 onClick={() => handleCommonIssue(issue)}
-                className="p-3 text-left border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between group"
+                className="p-3 text-left border border-border rounded-lg hover:bg-accent transition-colors flex items-center justify-between group"
               >
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white group-hover:text-blue-600">
+                  <p className="font-medium text-foreground group-hover:text-blue-600">
                     {t(issue.titleKey)}
                   </p>
-                  <p className="text-sm text-gray-500">{t(issue.categoryKey)}</p>
+                  <p className="text-sm text-muted-foreground">{t(issue.categoryKey)}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-blue-600" />
               </button>
             ))}
           </div>
@@ -358,59 +358,59 @@ export default function SelfServicePortal() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+          <div className="bg-card rounded-xl border border-border p-6 text-center">
             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <FileText className="w-6 h-6 text-blue-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-2xl font-bold text-foreground">
               {incidents.filter((i: IIncident) => i.status === IncidentStatus.OPEN).length}
             </p>
-            <p className="text-sm text-gray-500">{t('incidents.stats.open')}</p>
+            <p className="text-sm text-muted-foreground">{t('incidents.stats.open')}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+          <div className="bg-card rounded-xl border border-border p-6 text-center">
             <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <Clock className="w-6 h-6 text-yellow-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-2xl font-bold text-foreground">
               {incidents.filter((i: IIncident) => i.status === IncidentStatus.IN_PROGRESS).length}
             </p>
-            <p className="text-sm text-gray-500">{t('incidents.stats.inProgress')}</p>
+            <p className="text-sm text-muted-foreground">{t('incidents.stats.inProgress')}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+          <div className="bg-card rounded-xl border border-border p-6 text-center">
             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-2xl font-bold text-foreground">
               {incidents.filter((i: IIncident) => i.status === IncidentStatus.RESOLVED).length}
             </p>
-            <p className="text-sm text-gray-500">{t('incidents.stats.resolved')}</p>
+            <p className="text-sm text-muted-foreground">{t('incidents.stats.resolved')}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+          <div className="bg-card rounded-xl border border-border p-6 text-center">
             <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <Send className="w-6 h-6 text-indigo-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-2xl font-bold text-foreground">
               {serviceRequests.filter((r: ServiceRequest) => r.status === ServiceRequestStatus.SUBMITTED || r.status === ServiceRequestStatus.PENDING_APPROVAL).length}
             </p>
-            <p className="text-sm text-gray-500">{locale === 'ar' ? 'طلبات معلقة' : 'Pending Requests'}</p>
+            <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'طلبات معلقة' : 'Pending Requests'}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+          <div className="bg-card rounded-xl border border-border p-6 text-center">
             <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <Clock className="w-6 h-6 text-purple-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-2xl font-bold text-foreground">
               {serviceRequests.filter((r: ServiceRequest) => r.status === ServiceRequestStatus.IN_PROGRESS).length}
             </p>
-            <p className="text-sm text-gray-500">{locale === 'ar' ? 'طلبات قيد التنفيذ' : 'Requests In Progress'}</p>
+            <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'طلبات قيد التنفيذ' : 'Requests In Progress'}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+          <div className="bg-card rounded-xl border border-border p-6 text-center">
             <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <CheckCircle className="w-6 h-6 text-emerald-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-2xl font-bold text-foreground">
               {serviceRequests.filter((r: ServiceRequest) => r.status === ServiceRequestStatus.FULFILLED).length}
             </p>
-            <p className="text-sm text-gray-500">{locale === 'ar' ? 'طلبات منجزة' : 'Requests Fulfilled'}</p>
+            <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'طلبات منجزة' : 'Requests Fulfilled'}</p>
           </div>
         </div>
       </div>
@@ -418,14 +418,14 @@ export default function SelfServicePortal() {
       {/* New Ticket Modal - kept for common issues quick create */}
       {showNewTicketModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <div className="bg-card rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-border flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-foreground">
                 {t('selfService.submitTicket')}
               </h2>
               <button
                 onClick={() => setShowNewTicketModal(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                className="p-2 hover:bg-accent rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -433,7 +433,7 @@ export default function SelfServicePortal() {
             
             <form onSubmit={handleSubmitTicket} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   {t('selfService.form.subject')} *
                 </label>
                 <input
@@ -442,12 +442,12 @@ export default function SelfServicePortal() {
                   value={ticketForm.title}
                   onChange={(e) => setTicketForm({ ...ticketForm, title: e.target.value })}
                   placeholder={t('selfService.form.subjectPlaceholder')}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-input rounded-lg bg-muted text-foreground focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   {t('selfService.form.description')} *
                 </label>
                 <textarea
@@ -456,19 +456,19 @@ export default function SelfServicePortal() {
                   value={ticketForm.description}
                   onChange={(e) => setTicketForm({ ...ticketForm, description: e.target.value })}
                   placeholder={t('selfService.form.descriptionPlaceholder')}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-input rounded-lg bg-muted text-foreground focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">
                     {t('incidents.form.impact')}
                   </label>
                   <select
                     value={ticketForm.impact}
                     onChange={(e) => setTicketForm({ ...ticketForm, impact: e.target.value as Impact })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-input rounded-lg bg-muted text-foreground focus:ring-2 focus:ring-blue-500"
                   >
                     <option value={Impact.LOW}>{t('incidents.form.impactLow')}</option>
                     <option value={Impact.MEDIUM}>{t('incidents.form.impactMedium')}</option>
@@ -477,13 +477,13 @@ export default function SelfServicePortal() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">
                     {t('incidents.form.urgency')}
                   </label>
                   <select
                     value={ticketForm.urgency}
                     onChange={(e) => setTicketForm({ ...ticketForm, urgency: e.target.value as Urgency })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-input rounded-lg bg-muted text-foreground focus:ring-2 focus:ring-blue-500"
                   >
                     <option value={Urgency.LOW}>{t('incidents.form.urgencyLow')}</option>
                     <option value={Urgency.MEDIUM}>{t('incidents.form.urgencyMedium')}</option>
@@ -496,7 +496,7 @@ export default function SelfServicePortal() {
                 <button
                   type="button"
                   onClick={() => setShowNewTicketModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="flex-1 px-4 py-2 border border-input rounded-lg text-muted-foreground hover:bg-accent"
                 >
                   {t('common.cancel')}
                 </button>

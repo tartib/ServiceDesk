@@ -24,7 +24,7 @@ export default function NotificationsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Notifications</h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               {unreadNotifications.length} unread notification{unreadNotifications.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -41,7 +41,7 @@ export default function NotificationsPage() {
             <CardContent className="py-12">
               <div className="text-center">
                 <div className="animate-spin h-8 w-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-gray-500">Loading notifications...</p>
+                <p className="text-muted-foreground">Loading notifications...</p>
               </div>
             </CardContent>
           </Card>
@@ -49,9 +49,9 @@ export default function NotificationsPage() {
           <Card>
             <CardContent className="py-12">
               <div className="text-center">
-                <Bell className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg">No notifications yet</p>
-                <p className="text-sm text-gray-400 mt-1">
+                <Bell className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground text-lg">No notifications yet</p>
+                <p className="text-sm text-muted-foreground mt-1">
                   You&apos;ll see task reminders, alerts, and updates here
                 </p>
               </div>
@@ -77,8 +77,8 @@ export default function NotificationsPage() {
                                 {notification.type.replace('_', ' ')}
                               </Badge>
                             </div>
-                            <p className="text-sm text-gray-600">{notification.message}</p>
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-sm text-muted-foreground">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground mt-2">
                               {formatTimeAgo(notification.createdAt)}
                             </p>
                           </div>
@@ -107,8 +107,8 @@ export default function NotificationsPage() {
                                 {notification.type.replace('_', ' ')}
                               </Badge>
                             </div>
-                            <p className="text-sm text-gray-600">{notification.message}</p>
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-sm text-muted-foreground">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground mt-2">
                               {formatTimeAgo(notification.createdAt)}
                             </p>
                           </div>

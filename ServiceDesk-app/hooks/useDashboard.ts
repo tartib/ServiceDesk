@@ -21,7 +21,7 @@ export const useDashboard = (params?: DashboardParams) => {
       if (params?.dateFrom) queryParams.append('dateFrom', params.dateFrom);
       if (params?.dateTo) queryParams.append('dateTo', params.dateTo);
       
-      const url = `/dashboard${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const url = `/analytics/reports/dashboard${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response: ApiResponse<DashboardData> = await api.get(url);
       return response.data;
     },
@@ -36,7 +36,7 @@ export const useDashboardKPIs = (params?: DashboardParams) => {
       if (params?.dateFrom) queryParams.append('dateFrom', params.dateFrom);
       if (params?.dateTo) queryParams.append('dateTo', params.dateTo);
       
-      const url = `/dashboard/kpis${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const url = `/analytics/kpis${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response: ApiResponse<DashboardKPIs> = await api.get(url);
       return response.data;
     },
@@ -47,7 +47,7 @@ export const useTeamPerformance = () => {
   return useQuery({
     queryKey: ['dashboard', 'team-performance'],
     queryFn: async () => {
-      const response: ApiResponse<TeamPerformance> = await api.get('/dashboard/team-performance');
+      const response: ApiResponse<TeamPerformance> = await api.get('/analytics/performance/team');
       return response.data;
     },
   });
@@ -57,7 +57,7 @@ export const useCriticalAlerts = () => {
   return useQuery({
     queryKey: ['dashboard', 'alerts'],
     queryFn: async () => {
-      const response: ApiResponse<CriticalAlert[]> = await api.get('/dashboard/alerts');
+      const response: ApiResponse<CriticalAlert[]> = await api.get('/notifications/alerts');
       return response.data || [];
     },
   });

@@ -1,0 +1,135 @@
+{
+  "agentConsole": {
+    "title": "Console Agent",
+    "welcome": "Bienvenue, {name}",
+    "activeTickets": "{count} ticket(s) actif(s)",
+    "refresh": "Actualiser",
+    "dataRefreshed": "Données actualisées",
+    "noTickets": "Aucun ticket dans cette file d'attente",
+
+    "tabs": {
+      "myQueue": "Ma file",
+      "unassigned": "Non assigné",
+      "pendingApproval": "En attente d'approbation",
+      "allOpen": "Tous ouverts"
+    },
+
+    "stats": {
+      "openIncidents": "Incidents ouverts",
+      "slaBreached": "SLA dépassé",
+      "pendingApproval": "En attente d'approbation",
+      "unassigned": "Non assigné"
+    },
+
+    "table": {
+      "id": "ID",
+      "type": "Type",
+      "title": "Titre",
+      "status": "Statut",
+      "priority": "Priorité",
+      "requester": "Demandeur",
+      "assigned": "Assigné",
+      "created": "Créé"
+    },
+
+    "ticketType": {
+      "incident": "Incident",
+      "incidentShort": "INC",
+      "serviceRequest": "DS",
+      "serviceRequestShort": "DS"
+    },
+
+    "incidentStatus": {
+      "open": "Ouvert",
+      "in_progress": "En cours",
+      "pending": "En attente",
+      "resolved": "Résolu",
+      "closed": "Fermé",
+      "cancelled": "Annulé"
+    },
+
+    "srStatus": {
+      "submitted": "Soumis",
+      "pending_approval": "En attente d'approbation",
+      "approved": "Approuvé",
+      "rejected": "Rejeté",
+      "in_progress": "En cours",
+      "on_hold": "En suspens",
+      "fulfilled": "Exécuté",
+      "cancelled": "Annulé"
+    },
+
+    "priority": {
+      "critical": "Critique",
+      "high": "Élevée",
+      "medium": "Moyenne",
+      "low": "Faible"
+    },
+
+    "detail": {
+      "description": "Description",
+      "formData": "Données du formulaire",
+      "requester": "Demandeur",
+      "department": "Service",
+      "assignedTo": "Assigné à",
+      "unassigned": "Non assigné",
+      "slaBreached": "Dépassé",
+      "approvals": "Approbations",
+      "created": "Créé",
+      "timeline": "Chronologie"
+    },
+
+    "actions": {
+      "assignToMe": "M'assigner",
+      "startWork": "Démarrer le travail",
+      "pending": "En attente",
+      "resolve": "Résoudre",
+      "resume": "Reprendre",
+      "close": "Fermer",
+      "worklog": "Journal de travail",
+      "escalate": "Escalader",
+      "approve": "Approuver",
+      "reject": "Rejeter",
+      "fulfill": "Exécuter",
+      "save": "Enregistrer",
+      "cancel": "Annuler"
+    },
+
+    "worklog": {
+      "timeSpent": "Temps passé (minutes)",
+      "notes": "Notes",
+      "notesPlaceholder": "Saisissez les notes du journal..."
+    },
+
+    "dialogs": {
+      "rejectRequest": "Rejeter la demande",
+      "rejectionReason": "Motif du rejet",
+      "rejectionPlaceholder": "Saisissez le motif du rejet...",
+      "fulfillRequest": "Exécuter la demande",
+      "fulfillmentNotes": "Notes d'exécution",
+      "fulfillmentPlaceholder": "Saisissez les notes...",
+      "escalateIncident": "Escalader l'incident",
+      "escalationReason": "Motif d'escalade",
+      "escalationPlaceholder": "Saisissez le motif d'escalade..."
+    },
+
+    "toast": {
+      "ticketAssigned": "Ticket assigné à vous",
+      "assignmentFailed": "Échec de l'assignation",
+      "statusUpdated": "Statut mis à jour",
+      "statusUpdateFailed": "Échec de la mise à jour du statut",
+      "requestApproved": "Demande approuvée",
+      "approvalFailed": "Échec de l'approbation",
+      "requestRejected": "Demande rejetée",
+      "rejectionFailed": "Échec du rejet",
+      "requestFulfilled": "Demande exécutée",
+      "fulfillmentFailed": "Échec de l'exécution",
+      "workStarted": "Travail démarré",
+      "workStartFailed": "Échec du démarrage du travail",
+      "escalated": "Escaladé",
+      "escalationFailed": "Échec de l'escalade",
+      "worklogAdded": "Journal de travail ajouté",
+      "worklogFailed": "Échec de l'ajout du journal"
+    }
+  }
+}

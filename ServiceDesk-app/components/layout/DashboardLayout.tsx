@@ -12,7 +12,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, allowedRoles }: DashboardLayoutProps) {
   return (
     <ProtectedRoute allowedRoles={allowedRoles}>
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <div className="flex h-screen bg-muted/50 overflow-hidden">
         <Sidebar />
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Main content area with proper scrolling */}

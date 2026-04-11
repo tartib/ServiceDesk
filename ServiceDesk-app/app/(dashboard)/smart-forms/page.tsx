@@ -369,7 +369,7 @@ export default function SmartFormsPage() {
           {/* View Mode Toggle */}
           {templates && templates.length > 0 && (
             <div className="flex justify-end mb-4">
-              <div className="flex items-center border border-gray-200 rounded-lg">
+              <div className="flex items-center border border-border rounded-lg">
                 <Button
                   variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                   size="icon"
@@ -464,12 +464,11 @@ export default function SmartFormsPage() {
             </div>
             ) : (
             /* List View */
-            <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
+            <div className="bg-card rounded-lg border border-border divide-y divide-border">
               {templates.map((template: FormTemplate) => (
                 <div
                   key={template._id || template.form_id}
-                  className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors"
-                >
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-accent transition-colors">
                   {/* Icon */}
                   <div className="shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
                     <FileText className="h-5 w-5 text-blue-600" />
@@ -478,7 +477,7 @@ export default function SmartFormsPage() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-900 truncate">
+                      <span className="text-sm font-semibold text-foreground truncate">
                         {locale === 'ar' ? template.name_ar || template.name : template.name}
                       </span>
                       <span className={`text-xs px-2 py-0.5 rounded shrink-0 ${

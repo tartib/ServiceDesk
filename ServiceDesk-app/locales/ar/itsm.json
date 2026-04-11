@@ -253,5 +253,149 @@
       "rollbackPlaceholder": "كيف ستتراجع إذا حدث خطأ؟",
       "addService": "أضف اسم خدمة"
     }
+  },
+  "pir": {
+    "title": "مراجعات ما بعد الحوادث",
+    "subtitle": "تحليل الحوادث الكبرى للحيلولة دون تكرارها",
+    "newPIR": "مراجعة جديدة",
+    "pirId": "رقم المراجعة",
+    "incidentRef": "الحادثة المرجعية",
+    "facilitator": "قائد الجلسة",
+    "scheduledDate": "تاريخ الجلسة",
+    "notFound": "المراجعة غير موجودة",
+    "notFoundDesc": "مراجعة ما بعد الحادثة التي تبحث عنها غير موجودة.",
+    "backToPIRs": "العودة إلى المراجعات",
+    "tabs": {
+      "overview": "نظرة عامة",
+      "rca": "تحليل السبب الجذري",
+      "actions": "إجراءات المتابعة",
+      "participants": "المشاركون"
+    },
+    "status": {
+      "draft": "مسودة",
+      "scheduled": "مجدولة",
+      "in_progress": "جارية",
+      "completed": "مكتملة",
+      "closed": "مغلقة"
+    },
+    "rcaMethods": {
+      "five_whys": "لماذا الخمس",
+      "fishbone": "مخطط عظمة السمكة",
+      "timeline": "تحليل الجدول الزمني",
+      "fault_tree": "تحليل شجرة الأعطال"
+    },
+    "form": {
+      "incidentId": "رقم الحادثة",
+      "incidentIdPlaceholder": "مثال: INC-2025-00001",
+      "rcaMethod": "أسلوب التحليل",
+      "scheduledDate": "تاريخ الجلسة",
+      "facilitator": "اسم قائد الجلسة",
+      "facilitatorPlaceholder": "اسم الشخص المسؤول عن إدارة الجلسة",
+      "participants": "المشاركون",
+      "addParticipant": "إضافة مشارك",
+      "participantName": "الاسم",
+      "participantRole": "الدور",
+      "submit": "إنشاء المراجعة"
+    },
+    "actions": {
+      "addAction": "إضافة إجراء",
+      "actionDescription": "وصف الإجراء",
+      "assignee": "المسؤول",
+      "dueDate": "تاريخ الاستحقاق",
+      "markDone": "تحديد كمنجز"
+    },
+    "noActions": "لم تُضَف أي إجراءات متابعة بعد",
+    "noParticipants": "لم يُضَف أي مشاركون بعد"
+  },
+  "changeCalendar": {
+    "title": "تقويم التغييرات",
+    "subtitle": "عرض التغييرات المجدولة ونوافذ التجميد واجتماعات لجنة التغيير",
+    "today": "اليوم",
+    "upcoming": "الأحداث القادمة",
+    "noEvents": "لا توجد أحداث في هذا اليوم",
+    "noUpcoming": "لا توجد أحداث قادمة",
+    "filterAll": "جميع الأحداث",
+    "eventTypes": {
+      "freeze_window": "نافذة التجميد",
+      "maintenance_window": "نافذة الصيانة",
+      "cab_meeting": "اجتماع لجنة التغيير",
+      "change": "تغيير"
+    },
+    "eventDetail": {
+      "type": "النوع",
+      "start": "البداية",
+      "end": "النهاية",
+      "description": "الوصف",
+      "createdBy": "أنشأه"
+    },
+    "newEvent": "حدث جديد"
+  },
+  "rca": {
+    "workflowTitle": "سير عمل التحليل الجذري",
+    "steps": {
+      "logged": "مسجلة",
+      "rcaInProgress": "تحليل جاري",
+      "knownError": "خطأ معروف",
+      "resolved": "محلولة",
+      "closed": "مغلقة"
+    },
+    "startRCA": "بدء التحليل",
+    "completeRCA": "إكمال التحليل",
+    "publishKE": "نشر الخطأ المعروف",
+    "selectMethod": "اختر أسلوب التحليل",
+    "methods": {
+      "five_whys": "لماذا الخمس — اسأل لماذا خمس مرات",
+      "fishbone": "مخطط عظمة السمكة — مخطط السبب والأثر",
+      "timeline": "تحليل الجدول الزمني — تسلسل زمني للأحداث",
+      "fault_tree": "شجرة الأعطال — مخطط منطقي"
+    },
+    "findings": "نتائج التحليل",
+    "findingsPlaceholder": "وثّق نتائج تحليلك...",
+    "rootCause": "السبب الجذري",
+    "rootCausePlaceholder": "ما هو السبب الجذري النهائي؟",
+    "contributingFactors": "العوامل المساهمة",
+    "addFactor": "إضافة عامل",
+    "factorPlaceholder": "مثال: تنبيهات مراقبة غير كافية",
+    "workaround": "الحل المؤقت",
+    "workaroundPlaceholder": "صف الحل المؤقت للمستخدمين المتأثرين...",
+    "keTitle": "عنوان الخطأ المعروف",
+    "keTitlePlaceholder": "عنوان مختصر لإدخال الخطأ المعروف",
+    "symptoms": "الأعراض",
+    "symptomsPlaceholder": "صف الأعراض الملحوظة...",
+    "recurringBanner": "تم اكتشاف حوادث متكررة",
+    "recurringDesc": "تبدو الحوادث التالية مرتبطة بهذه المشكلة:",
+    "startedAt": "بدأ التحليل",
+    "completedAt": "اكتمل التحليل",
+    "method": "الأسلوب"
+  },
+  "majorIncident": {
+    "title": "حادثة كبرى",
+    "declare": "إعلان حادثة كبرى",
+    "severity": "مستوى الخطورة",
+    "bridge": "جسر الحادثة",
+    "bridgeUrl": "رابط الجسر",
+    "bridgePin": "رمز الدخول",
+    "commsUpdates": "تحديثات التواصل",
+    "addCommsUpdate": "إضافة تحديث",
+    "updatePlaceholder": "اكتب تحديث تواصل...",
+    "noCommsUpdates": "لا توجد تحديثات تواصل بعد",
+    "createPIR": "إنشاء مراجعة ما بعد الحادثة",
+    "pirCreated": "تم إنشاء المراجعة",
+    "severityLevels": {
+      "sev1": "SEV-1 — حرجة",
+      "sev2": "SEV-2 — كبرى",
+      "sev3": "SEV-3 — مهمة"
+    }
+  },
+  "knowledgeDeflection": {
+    "title": "اقتراحات الخدمة الذاتية",
+    "searching": "جاري البحث في قاعدة المعرفة...",
+    "noResults": "لا توجد مقالات مطابقة",
+    "dismiss": "تجاهل",
+    "helpful": "هل أفادتك؟",
+    "markedHelpful": "✓ مفيدة",
+    "thanksForFeedback": "شكرًا على ملاحظتك",
+    "readArticle": "اقرأ المقالة",
+    "resolvedBanner": "هل حلّت المقالات أعلاه مشكلتك؟ يمكنك العودة إذا تم الحل."
   }
 }

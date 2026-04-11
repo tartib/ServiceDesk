@@ -39,7 +39,7 @@ export default function NewWorkflowPage() {
     <DashboardLayout>
       <div className="container mx-auto py-6 max-w-lg">
         {/* Back link */}
-        <Link href="/workflows" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-gray-900 mb-6">
+        <Link href="/workflows" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="h-4 w-4" />
           {locale === 'ar' ? 'رجوع إلى سير العمل' : 'Back to Workflows'}
         </Link>

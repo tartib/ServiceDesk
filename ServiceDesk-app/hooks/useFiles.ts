@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import api from '@/lib/axios';
-import { useToast } from '@/components/ui/Toast';
-import { parseApiResponse, getErrorMessage } from '@/lib/api/response-parser';
+import { toast } from 'sonner';
+import { normalizeEntity, getErrorMessage } from '@/lib/api/normalize';
 import { API_BASE_URL } from '@/lib/api/config';
+
+const STORAGE_BASE = '/api/v2/storage';
 
 export interface FileMetadata {
   _id: string;
@@ -101,7 +103,6 @@ interface ApiResponse<T> {
 
 export const useFiles = () => {
   const [loading, setLoading] = useState(false);
-  const toast = useToast();
 
   const uploadFile = useCallback(async (
     file: File,
@@ -121,20 +122,20 @@ export const useFiles = () => {
       if (options?.tags) formData.append('tags', JSON.stringify(options.tags));
       if (options?.isPublic !== undefined) formData.append('isPublic', String(options.isPublic));
 
-      const response = await api.post('/files/upload', formData, {
+      const response = await api.post(`${STORAGE_BASE}/files/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       toast.success('File uploaded successfully');
 
-      return parseApiResponse<FileMetadata>(response);
+      return normalizeEntity<FileMetadata>(response);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || 'Failed to upload file');
       return null;
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const uploadMultipleFiles = useCallback(async (
     files: File[],
@@ -146,37 +147,37 @@ export const useFiles = () => {
       files.forEach((file) => formData.append('files', file));
       if (folderId) formData.append('folderId', folderId);
 
-      const response = await api.post('/files/upload', formData, {
+      const response = await api.post(`${STORAGE_BASE}/files/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       toast.success(`${files.length} files uploaded successfully`);
 
-      return parseApiResponse<FileMetadata[]>(response);
+      return normalizeEntity<FileMetadata[]>(response);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || 'Failed to upload files');
       return null;
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const getFile = useCallback(async (fileId: string): Promise<FileMetadata | null> => {
     setLoading(true);
     try {
-      const response = await api.get(`/files/${fileId}`);
-      return parseApiResponse<FileMetadata>(response);
+      const response = await api.get(`${STORAGE_BASE}/files/${fileId}`);
+      return normalizeEntity<FileMetadata>(response);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || 'Failed to get file');
       return null;
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const downloadFile = useCallback((fileId: string, fileName: string) => {
     const token = localStorage.getItem('token');
-    const url = `${API_BASE_URL}/files/${fileId}/download`;
+    const url = `${API_BASE_URL}${STORAGE_BASE}/files/${fileId}/download`;
     
     fetch(url, {
       headers: {
@@ -197,7 +198,7 @@ export const useFiles = () => {
       .catch(() => {
         toast.error('Failed to download file');
       });
-  }, [toast]);
+  }, []);
 
   const updateFileMetadata = useCallback(async (
     fileId: string,
@@ -209,41 +210,41 @@ export const useFiles = () => {
   ): Promise<FileMetadata | null> => {
     setLoading(true);
     try {
-      const response = await api.put(`/files/${fileId}`, updates);
+      const response = await api.put(`${STORAGE_BASE}/files/${fileId}`, updates);
       
       toast.success('File updated successfully');
 
-      return parseApiResponse<FileMetadata>(response);
+      return normalizeEntity<FileMetadata>(response);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || 'Failed to update file');
       return null;
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const moveFile = useCallback(async (fileId: string, folderId?: string): Promise<FileMetadata | null> => {
     setLoading(true);
     try {
-      const response = await api.put(`/files/${fileId}`, {
+      const response = await api.put(`${STORAGE_BASE}/files/${fileId}`, {
         folder: folderId,
       });
 
       toast.success('File moved successfully');
 
-      return parseApiResponse<FileMetadata>(response);
+      return normalizeEntity<FileMetadata>(response);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || 'Failed to move file');
       return null;
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const deleteFile = useCallback(async (fileId: string): Promise<boolean> => {
     setLoading(true);
     try {
-      await api.delete(`/files/${fileId}`);
+      await api.delete(`${STORAGE_BASE}/files/${fileId}`);
       
       toast.success('File moved to trash');
 
@@ -254,12 +255,12 @@ export const useFiles = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const permanentlyDeleteFile = useCallback(async (fileId: string): Promise<boolean> => {
     setLoading(true);
     try {
-      await api.delete<ApiResponse<void>>(`/files/${fileId}/permanent`);
+      await api.delete<ApiResponse<void>>(`${STORAGE_BASE}/files/${fileId}/permanent`);
       
       toast.success('File permanently deleted');
 
@@ -270,12 +271,12 @@ export const useFiles = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const restoreFile = useCallback(async (fileId: string): Promise<FileMetadata | null> => {
     setLoading(true);
     try {
-      const response = await api.post<ApiResponse<FileMetadata>>(`/files/${fileId}/restore`);
+      const response = await api.post<ApiResponse<FileMetadata>>(`${STORAGE_BASE}/files/${fileId}/restore`);
       
       toast.success('File restored successfully');
 
@@ -286,12 +287,12 @@ export const useFiles = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const searchFiles = useCallback(async (query: string): Promise<FileMetadata[]> => {
     setLoading(true);
     try {
-      const response = await api.get<ApiResponse<FileMetadata[]>>(`/files/search?q=${encodeURIComponent(query)}`);
+      const response = await api.get<ApiResponse<FileMetadata[]>>(`${STORAGE_BASE}/files/search?q=${encodeURIComponent(query)}`);
       return response.data;
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || 'Failed to search files');
@@ -299,12 +300,12 @@ export const useFiles = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const getStorageStats = useCallback(async (): Promise<StorageStats | null> => {
     setLoading(true);
     try {
-      const response = await api.get<ApiResponse<StorageStats>>('/files/stats');
+      const response = await api.get<ApiResponse<StorageStats>>(`${STORAGE_BASE}/files/stats`);
       return response.data;
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || 'Failed to get storage stats');
@@ -312,7 +313,7 @@ export const useFiles = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const createFolder = useCallback(async (
     name: string,
@@ -324,7 +325,7 @@ export const useFiles = () => {
   ): Promise<Folder | null> => {
     setLoading(true);
     try {
-      const response = await api.post<ApiResponse<Folder>>('/folders', {
+      const response = await api.post<ApiResponse<Folder>>(`${STORAGE_BASE}/folders`, {
         name,
         description: options?.description,
         parentId: options?.parentId,
@@ -340,12 +341,12 @@ export const useFiles = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const getFolderContents = useCallback(async (folderId?: string): Promise<FolderContents | null> => {
     setLoading(true);
     try {
-      const url = folderId ? `/folders/${folderId}` : '/folders';
+      const url = folderId ? `${STORAGE_BASE}/folders/${folderId}` : `${STORAGE_BASE}/folders`;
       const response = await api.get<ApiResponse<FolderContents>>(url);
       return response.data;
     } catch (error: unknown) {
@@ -354,7 +355,7 @@ export const useFiles = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const createShareLink = useCallback(async (
     fileId: string,
@@ -369,7 +370,7 @@ export const useFiles = () => {
   ): Promise<ShareLink | null> => {
     setLoading(true);
     try {
-      const response = await api.post<ApiResponse<ShareLink>>(`/files/${fileId}/share`, options);
+      const response = await api.post<ApiResponse<ShareLink>>(`${STORAGE_BASE}/files/${fileId}/share`, options);
 
       toast.success('Share link created successfully');
 
@@ -380,7 +381,7 @@ export const useFiles = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   return {
     loading,

@@ -1,0 +1,56 @@
+{
+  "vacations": {
+    "title": "Suivi des congés",
+    "subtitle": "Calendrier d'équipe et gestion des absences",
+    "requestLeave": "Demander un congé",
+    "myRequests": "Mes demandes",
+    "teamCalendar": "Calendrier d'équipe",
+    "pendingRequests": "Demandes en attente",
+    "allRequests": "Toutes les demandes",
+    "selectTeam": "Sélectionner une équipe",
+    "noTeamSelected": "Sélectionnez une équipe pour voir le calendrier",
+    "noRequests": "Aucune demande de congé",
+    "noRequestsDesc": "Soumettez une demande de congé pour commencer",
+    "noPending": "Aucune demande en attente",
+    "types": {
+      "vacation": "Congé",
+      "wfh": "Télétravail",
+      "sick": "Maladie",
+      "holiday": "Jour férié",
+      "blackout": "Période bloquée"
+    },
+    "statuses": {
+      "pending": "En attente",
+      "approved": "Approuvé",
+      "rejected": "Rejeté"
+    },
+    "form": {
+      "leaveType": "Type de congé",
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "reason": "Raison (facultatif)",
+      "reasonPlaceholder": "Entrez la raison du congé...",
+      "submit": "Soumettre la demande",
+      "creating": "Envoi en cours...",
+      "selectType": "Sélectionner le type de congé",
+      "teamWideNote": "Cela s'appliquera à toute l'équipe"
+    },
+    "actions": {
+      "approve": "Approuver",
+      "reject": "Rejeter",
+      "delete": "Annuler la demande",
+      "edit": "Modifier",
+      "approving": "Approbation...",
+      "rejecting": "Rejet...",
+      "rejectReason": "Raison du rejet :"
+    },
+    "calendar": {
+      "today": "Aujourd'hui",
+      "prevMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "legend": "Légende",
+      "dayOff": "congé"
+    },
+    "confirmDelete": "Êtes-vous sûr de vouloir annuler cette demande de congé ?"
+  }
+}

@@ -16,7 +16,7 @@ export async function setupAuth(page: Page) {
   });
 
   // Mock auth verification API
-  await page.route('**/api/v1/auth/me', async (route) => {
+  await page.route('**/api/v2/auth/me', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -62,7 +62,7 @@ export async function login(page: Page, email = 'test@example.com', password = '
  * Setup mock for projects API
  */
 export async function mockProjectsAPI(page: Page) {
-  await page.route('**/api/v1/pm/projects', async (route) => {
+  await page.route('**/api/v2/pm/projects', async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,
@@ -87,7 +87,7 @@ export async function mockProjectsAPI(page: Page) {
  * Setup mock for single project API
  */
 export async function mockProjectAPI(page: Page, projectId = 'proj-1') {
-  await page.route(`**/api/v1/pm/projects/${projectId}`, async (route) => {
+  await page.route(`**/api/v2/pm/projects/${projectId}`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -111,7 +111,7 @@ export async function mockProjectAPI(page: Page, projectId = 'proj-1') {
  * Setup mock for board API
  */
 export async function mockBoardAPI(page: Page, projectId = 'proj-1') {
-  await page.route(`**/api/v1/pm/projects/${projectId}/board`, async (route) => {
+  await page.route(`**/api/v2/pm/projects/${projectId}/board`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

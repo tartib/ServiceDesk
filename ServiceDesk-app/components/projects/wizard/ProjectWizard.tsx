@@ -123,7 +123,7 @@ export default function ProjectWizard({ onClose, onSuccess }: ProjectWizardProps
         throw new Error(errMsg);
       }
 
-      const projectId = data.data.project?._id || data.data._id || data.data.id;
+      const projectId = data.data.project?.id || data.data.id;
 
       if (!projectId) {
         console.error('Project creation response:', data);

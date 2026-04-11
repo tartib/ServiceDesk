@@ -92,7 +92,7 @@ export default function ProfilePage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold">{t('profile.title')}</h1>
-          <p className="text-gray-500 mt-1">{t('profile.subtitle')}</p>
+          <p className="text-muted-foreground mt-1">{t('profile.subtitle')}</p>
         </div>
 
         {/* Profile Information */}
@@ -139,7 +139,7 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 <Label>{t('profile.role')}</Label>
                 <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-gray-500" />
+                  <Shield className="h-4 w-4 text-muted-foreground" />
                   <Badge variant="secondary">{getRoleLabel(user.role)}</Badge>
                 </div>
               </div>

@@ -110,6 +110,8 @@ export interface ServiceRequestFilters {
   sort_order?: 'asc' | 'desc';
 }
 
+const ITSM_BASE = '/api/v2/itsm';
+
 const requestKeys = {
   all: ['service-requests'] as const,
   lists: () => [...requestKeys.all, 'list'] as const,
@@ -130,7 +132,7 @@ export function useServiceRequests(filters: ServiceRequestFilters = {}) {
           params.append(key, String(value));
         }
       });
-      const response = await api.get(`/service-requests?${params.toString()}`) as {
+      const response = await api.get(`${ITSM_BASE}/service-requests?${params.toString()}`) as {
         data?: ServiceRequest[];
         pagination?: { total: number; pages: number; page: number };
       };
@@ -143,7 +145,7 @@ export function useServiceRequest(id: string) {
   return useQuery({
     queryKey: requestKeys.detail(id),
     queryFn: async () => {
-      const response = await api.get(`/service-requests/${id}`) as { data?: ServiceRequest };
+      const response = await api.get(`${ITSM_BASE}/service-requests/${id}`) as { data?: ServiceRequest };
       return (response.data || response) as ServiceRequest;
     },
     enabled: !!id,
@@ -154,7 +156,7 @@ export function useServiceRequestStats() {
   return useQuery({
     queryKey: requestKeys.stats(),
     queryFn: async () => {
-      const response = await api.get('/service-requests/stats') as { data?: ServiceRequestStats };
+      const response = await api.get(`${ITSM_BASE}/service-requests/stats`) as { data?: ServiceRequestStats };
       return (response.data || response) as ServiceRequestStats;
     },
   });
@@ -170,7 +172,7 @@ export function useMyServiceRequests(userId: string, filters: { page?: number; l
           params.append(key, String(value));
         }
       });
-      const response = await api.get(`/service-requests/my/${userId}?${params.toString()}`) as {
+      const response = await api.get(`${ITSM_BASE}/service-requests/my/${userId}?${params.toString()}`) as {
         data?: ServiceRequest[];
         pagination?: { total: number; pages: number; page: number };
       };
@@ -185,7 +187,7 @@ export function useCreateServiceRequest() {
 
   return useMutation({
     mutationFn: async (data: CreateServiceRequestDTO) => {
-      const response = await api.post('/service-requests', data) as { data?: ServiceRequest };
+      const response = await api.post(`${ITSM_BASE}/service-requests`, data) as { data?: ServiceRequest };
       return (response.data || response) as ServiceRequest;
     },
     onSuccess: () => {
@@ -206,7 +208,7 @@ export function useUpdateServiceRequestStatus() {
       user_id?: string;
       user_name?: string;
     }) => {
-      const response = await api.post(`/service-requests/${id}/status`, {
+      const response = await api.post(`${ITSM_BASE}/service-requests/${id}/status`, {
         status,
         notes,
         user_id,
@@ -233,7 +235,7 @@ export function useApproveServiceRequest() {
       approver_name: string;
       comments?: string;
     }) => {
-      const response = await api.post(`/service-requests/${id}/approve`, {
+      const response = await api.post(`${ITSM_BASE}/service-requests/${id}/approve`, {
         decision,
         approver_id,
         approver_name,
@@ -262,7 +264,7 @@ export function useAssignServiceRequest() {
       assigned_by?: string;
       assigned_by_name?: string;
     }) => {
-      const response = await api.post(`/service-requests/${id}/assign`, {
+      const response = await api.post(`${ITSM_BASE}/service-requests/${id}/assign`, {
         technician_id,
         name,
         email,
@@ -290,7 +292,7 @@ export function useFulfillServiceRequest() {
       fulfilled_by_name: string;
       notes?: string;
     }) => {
-      const response = await api.post(`/service-requests/${id}/fulfill`, {
+      const response = await api.post(`${ITSM_BASE}/service-requests/${id}/fulfill`, {
         fulfilled_by,
         fulfilled_by_name,
         notes,

@@ -8,7 +8,7 @@ import {
   Star, MessageSquare, Clock, ExternalLink,
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Person {

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { Category } from '@/types';
+import { normalizeList, normalizeEntity } from '@/lib/api/normalize';
 
 interface CategoriesResponse {
   success: boolean;
@@ -33,17 +34,11 @@ export function useCategories(isActiveOnly = false) {
   return useQuery<Category[]>({
     queryKey: ['categories', isActiveOnly],
     queryFn: async () => {
-      const url = isActiveOnly ? '/categories?isActive=true' : '/categories';
+      const url = isActiveOnly ? '/ops/categories?isActive=true' : '/ops/categories';
       const response = await api.get(url);
-      // Axios interceptor unwraps response.data, so response is the API response body
       const apiResponse = response as unknown as CategoriesResponse;
       const categories = apiResponse.data?.categories || [];
-      
-      // Transform _id to id for frontend compatibility
-      return categories.map((cat: Category & { _id?: string }) => ({
-        ...cat,
-        id: cat._id || cat.id,
-      }));
+      return normalizeList<Category>(categories);
     },
   });
 }
@@ -53,13 +48,9 @@ export function useCategory(id: string) {
   return useQuery<Category>({
     queryKey: ['categories', id],
     queryFn: async () => {
-      const response = await api.get(`/categories/${id}`);
+      const response = await api.get(`/ops/categories/${id}`);
       const apiResponse = response as unknown as CategoryResponse;
-      const category = apiResponse.data?.category;
-      return {
-        ...category,
-        id: category._id || category.id,
-      };
+      return normalizeEntity<Category>(apiResponse.data?.category);
     },
     enabled: !!id,
   });
@@ -71,13 +62,9 @@ export function useCreateCategory() {
 
   return useMutation({
     mutationFn: async (data: CreateCategoryInput) => {
-      const response = await api.post('/categories', data);
+      const response = await api.post('/ops/categories', data);
       const apiResponse = response as unknown as CategoryResponse;
-      const category = apiResponse.data?.category;
-      return {
-        ...category,
-        id: category._id || category.id,
-      };
+      return normalizeEntity<Category>(apiResponse.data?.category);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -91,13 +78,9 @@ export function useUpdateCategory() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateCategoryInput }) => {
-      const response = await api.put(`/categories/${id}`, data);
+      const response = await api.put(`/ops/categories/${id}`, data);
       const apiResponse = response as unknown as CategoryResponse;
-      const category = apiResponse.data?.category;
-      return {
-        ...category,
-        id: category._id || category.id,
-      };
+      return normalizeEntity<Category>(apiResponse.data?.category);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -111,7 +94,7 @@ export function useDeleteCategory() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/categories/${id}`);
+      await api.delete(`/ops/categories/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });

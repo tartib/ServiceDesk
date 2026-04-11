@@ -97,10 +97,10 @@ export default function ExternalTasksPage() {
               <Cog className="h-5 w-5 text-orange-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-foreground">
                 {isAr ? 'المهام الخارجية' : 'External Tasks'}
               </h1>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 {isAr ? 'مراقبة المهام المفوضة للعمال الخارجيين' : 'Monitor tasks delegated to external workers'}
               </p>
             </div>
@@ -124,8 +124,8 @@ export default function ExternalTasksPage() {
                 <Clock className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{availableCount}</p>
-                <p className="text-xs text-gray-500">{isAr ? 'متاح للتنفيذ' : 'Available'}</p>
+                <p className="text-2xl font-bold text-foreground">{availableCount}</p>
+                <p className="text-xs text-muted-foreground">{isAr ? 'متاح للتنفيذ' : 'Available'}</p>
               </div>
             </CardContent>
           </Card>
@@ -135,8 +135,8 @@ export default function ExternalTasksPage() {
                 <Lock className="h-4 w-4 text-orange-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{lockedCount}</p>
-                <p className="text-xs text-gray-500">{isAr ? 'قيد التنفيذ' : 'Locked'}</p>
+                <p className="text-2xl font-bold text-foreground">{lockedCount}</p>
+                <p className="text-xs text-muted-foreground">{isAr ? 'قيد التنفيذ' : 'Locked'}</p>
               </div>
             </CardContent>
           </Card>
@@ -146,8 +146,8 @@ export default function ExternalTasksPage() {
                 <XCircle className="h-4 w-4 text-red-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{failedCount}</p>
-                <p className="text-xs text-gray-500">{isAr ? 'فشل' : 'Failed'}</p>
+                <p className="text-2xl font-bold text-foreground">{failedCount}</p>
+                <p className="text-xs text-muted-foreground">{isAr ? 'فشل' : 'Failed'}</p>
               </div>
             </CardContent>
           </Card>
@@ -163,7 +163,7 @@ export default function ExternalTasksPage() {
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={topicFilter}
                   onChange={(e) => { setTopicFilter(e.target.value); setPage(1); }}
@@ -192,12 +192,12 @@ export default function ExternalTasksPage() {
             {/* Table */}
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : tasks.length === 0 ? (
               <div className="text-center py-12">
-                <Cog className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-sm text-gray-400">
+                <Cog className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
                   {isAr ? 'لا توجد مهام خارجية' : 'No external tasks found'}
                 </p>
               </div>
@@ -205,26 +205,26 @@ export default function ExternalTasksPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase">
+                    <tr className="border-b border-border">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground uppercase">
                         {isAr ? 'الموضوع' : 'Topic'}
                       </th>
-                      <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground uppercase">
                         {isAr ? 'الحالة' : 'Status'}
                       </th>
-                      <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground uppercase">
                         {isAr ? 'العامل' : 'Worker'}
                       </th>
-                      <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground uppercase">
                         {isAr ? 'المحاولات' : 'Retries'}
                       </th>
-                      <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground uppercase">
                         {isAr ? 'الأولوية' : 'Priority'}
                       </th>
-                      <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground uppercase">
                         {isAr ? 'تم الإنشاء' : 'Created'}
                       </th>
-                      <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground uppercase">
                         {isAr ? 'الخطأ' : 'Error'}
                       </th>
                     </tr>
@@ -236,7 +236,7 @@ export default function ExternalTasksPage() {
                       return (
                         <tr
                           key={task._id}
-                          className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                          className="border-b border-border hover:bg-accent transition-colors"
                         >
                           <td className="py-2.5 px-3">
                             <span className="font-mono text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded">
@@ -251,21 +251,21 @@ export default function ExternalTasksPage() {
                           </td>
                           <td className="py-2.5 px-3">
                             {task.workerId ? (
-                              <span className="text-xs font-mono text-gray-600">{task.workerId}</span>
+                              <span className="text-xs font-mono text-muted-foreground">{task.workerId}</span>
                             ) : (
-                              <span className="text-xs text-gray-300">—</span>
+                              <span className="text-xs text-muted-foreground">—</span>
                             )}
                           </td>
                           <td className="py-2.5 px-3">
-                            <span className={`text-xs ${task.retriesLeft === 0 && task.status === 'failed' ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+                            <span className={`text-xs ${task.retriesLeft === 0 && task.status === 'failed' ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
                               {task.retriesLeft}/{task.retries}
                             </span>
                           </td>
                           <td className="py-2.5 px-3">
-                            <span className="text-xs text-gray-600">{task.priority}</span>
+                            <span className="text-xs text-muted-foreground">{task.priority}</span>
                           </td>
                           <td className="py-2.5 px-3">
-                            <span className="text-xs text-gray-500" title={formatDate(task.createdAt)}>
+                            <span className="text-xs text-muted-foreground" title={formatDate(task.createdAt)}>
                               {timeAgo(task.createdAt)}
                             </span>
                           </td>
@@ -275,7 +275,7 @@ export default function ExternalTasksPage() {
                                 {task.errorMessage}
                               </span>
                             ) : (
-                              <span className="text-xs text-gray-300">—</span>
+                              <span className="text-xs text-muted-foreground">—</span>
                             )}
                           </td>
                         </tr>
@@ -288,8 +288,8 @@ export default function ExternalTasksPage() {
 
             {/* Pagination */}
             {pagination && pagination.pages > 1 && (
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-4">
-                <p className="text-xs text-gray-500">
+              <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
+                <p className="text-xs text-muted-foreground">
                   {isAr
                     ? `${pagination.total} مهمة`
                     : `${pagination.total} task${pagination.total !== 1 ? 's' : ''}`}
@@ -318,7 +318,7 @@ export default function ExternalTasksPage() {
         </Card>
 
         {/* Auto-refresh indicator */}
-        <p className="text-center text-[10px] text-gray-400">
+        <p className="text-center text-[10px] text-muted-foreground">
           {isAr ? 'يتم التحديث تلقائياً كل 10 ثوانٍ' : 'Auto-refreshes every 10 seconds'}
         </p>
       </div>

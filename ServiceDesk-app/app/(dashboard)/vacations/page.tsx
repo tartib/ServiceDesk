@@ -366,8 +366,8 @@ export default function VacationsPage() {
                             <button
                               key={key}
                               onClick={() => setSelectedDay(day)}
-                              className={`relative p-1 min-h-[72px] border border-gray-100 text-start transition-colors
-                                ${!inMonth ? 'bg-gray-50 text-gray-300' : 'hover:bg-gray-50'}
+                              className={`relative p-1 min-h-[72px] border border-border text-start transition-colors
+                                ${!inMonth ? 'bg-muted/50 text-muted-foreground/40' : 'hover:bg-accent'}
                                 ${isWeekend && inMonth && !isHoliday && !today ? 'bg-red-50/50' : ''}
                                 ${today ? 'bg-blue-50' : ''}
                                 ${isHoliday && inMonth ? 'bg-green-50' : ''}
@@ -401,7 +401,7 @@ export default function VacationsPage() {
                                 </div>
                               )}
                               {dayLeaves.length > 0 && (
-                                <span className="text-[10px] text-gray-400 mt-0.5 block">
+                                <span className="text-[10px] text-muted-foreground mt-0.5 block">
                                   {dayLeaves.length} {locale === 'ar' ? 'إجازة' : 'off'}
                                 </span>
                               )}
@@ -417,7 +417,7 @@ export default function VacationsPage() {
                           return (
                             <div key={type} className="flex items-center gap-1.5">
                               <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
-                              <span className="text-xs text-gray-600">
+                              <span className="text-xs text-muted-foreground">
                                 {locale === 'ar' ? cfg.labelAr : cfg.labelEn}
                               </span>
                             </div>
@@ -425,13 +425,13 @@ export default function VacationsPage() {
                         })}
                         <div className="flex items-center gap-1.5">
                           <Flag className="w-2.5 h-2.5 text-green-600" />
-                          <span className="text-xs text-gray-600">
+                          <span className="text-xs text-muted-foreground">
                             {locale === 'ar' ? 'عطلة رسمية (السعودية)' : 'Public Holiday (SA)'}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className="w-2.5 h-2.5 rounded-sm bg-red-50 border border-red-200" />
-                          <span className="text-xs text-gray-600">
+                          <span className="text-xs text-muted-foreground">
                             {locale === 'ar' ? 'عطلة نهاية الأسبوع (جمعة - سبت)' : 'Weekend (Fri - Sat)'}
                           </span>
                         </div>
@@ -482,8 +482,8 @@ export default function VacationsPage() {
                             {selectedDayLeaves.map((req) => {
                               const cfg = leaveTypeConfig[req.type];
                               return (
-                                <div key={req._id} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
-                                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${cfg?.dot || 'bg-gray-400'}`} />
+                                <div key={req._id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${cfg?.dot || 'bg-muted-foreground'}`} />
                                   <div className="min-w-0">
                                     <p className="text-xs font-medium truncate">{getUserName(req.userId)}</p>
                                     <p className="text-[10px] text-muted-foreground">
@@ -563,7 +563,7 @@ export default function VacationsPage() {
                 <CardContent>
                   {memberBalances.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <Users className="h-10 w-10 text-gray-300 mb-3" />
+                      <Users className="h-10 w-10 text-muted-foreground/50 mb-3" />
                       <p className="text-sm text-muted-foreground">
                         {locale === 'ar' ? 'لا يوجد أعضاء في الفريق' : 'No team members found'}
                       </p>
@@ -584,7 +584,7 @@ export default function VacationsPage() {
                       {memberBalances.map((member) => (
                         <div
                           key={member.id}
-                          className="grid grid-cols-1 md:grid-cols-[1fr_repeat(3,minmax(0,120px))] gap-4 p-4 rounded-lg border bg-white hover:bg-gray-50 transition-colors"
+                          className="grid grid-cols-1 md:grid-cols-[1fr_repeat(3,minmax(0,120px))] gap-4 p-4 rounded-lg border bg-card hover:bg-accent transition-colors"
                         >
                           {/* Member info */}
                           <div className="flex items-center gap-3">
@@ -617,7 +617,7 @@ export default function VacationsPage() {
                                   {locale === 'ar' ? ent.labelAr : ent.labelEn}
                                 </span>
                                 {/* Progress bar */}
-                                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                                   <div
                                     className={`h-full rounded-full transition-all ${
                                       isOver ? 'bg-red-500' : pct > 75 ? 'bg-amber-500' : leaveTypeConfig[type]?.dot || 'bg-blue-500'
@@ -627,11 +627,11 @@ export default function VacationsPage() {
                                 </div>
                                 {/* Numbers */}
                                 <div className="flex items-center gap-1 text-[11px]">
-                                  <span className={`font-semibold ${isOver ? 'text-red-600' : 'text-gray-700'}`}>
+                                  <span className={`font-semibold ${isOver ? 'text-red-600' : 'text-foreground'}`}>
                                     {used}
                                   </span>
-                                  <span className="text-gray-400">/</span>
-                                  <span className="text-gray-500">{total}</span>
+                                  <span className="text-muted-foreground/50">/</span>
+                                  <span className="text-muted-foreground">{total}</span>
                                   <span className="text-muted-foreground ms-1">
                                     ({locale === 'ar' ? `${remaining} متبقي` : `${remaining} left`})
                                   </span>
@@ -685,13 +685,13 @@ export default function VacationsPage() {
                                   return (
                                     <div
                                       key={h.id}
-                                      className={`flex items-start gap-3 p-4 rounded-lg border ${isPast ? 'bg-gray-50 opacity-60' : 'bg-green-50 border-green-200'}`}
+                                      className={`flex items-start gap-3 p-4 rounded-lg border ${isPast ? 'bg-muted opacity-60' : 'bg-green-50 border-green-200'}`}
                                     >
-                                      <div className={`flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${isPast ? 'bg-gray-200' : 'bg-green-100'}`}>
-                                        <Flag className={`h-5 w-5 ${isPast ? 'text-gray-400' : 'text-green-600'}`} />
+                                      <div className={`flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${isPast ? 'bg-muted' : 'bg-green-100'}`}>
+                                        <Flag className={`h-5 w-5 ${isPast ? 'text-muted-foreground' : 'text-green-600'}`} />
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <p className={`text-sm font-semibold ${isPast ? 'text-gray-500' : 'text-green-800'}`}>
+                                        <p className={`text-sm font-semibold ${isPast ? 'text-muted-foreground' : 'text-green-800'}`}>
                                           {locale === 'ar' ? h.nameAr : h.nameEn}
                                         </p>
                                         <p className="text-xs text-muted-foreground mt-0.5">

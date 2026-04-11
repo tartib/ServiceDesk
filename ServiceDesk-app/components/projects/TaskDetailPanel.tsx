@@ -36,7 +36,7 @@ import {
   Heading,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useTaskComments, useAddComment, useUpdateComment, useDeleteComment } from '@/hooks/useComments';
 
 interface TaskAssignee {

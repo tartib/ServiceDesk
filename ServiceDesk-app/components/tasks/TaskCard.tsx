@@ -43,12 +43,12 @@ export default function TaskCard({ task, showActions = true, onClick }: TaskCard
 
   const handleStart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    startTask(task._id || task.id || '');
+    startTask(task.id || '');
   };
 
   const handleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    completeTask({ taskId: task._id || task.id || '' });
+    completeTask({ taskId: task.id || '' });
   };
 
   // Get border color and animation based on priority

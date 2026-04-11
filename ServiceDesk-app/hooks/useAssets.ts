@@ -141,7 +141,7 @@ export function useAssets(filters: AssetsFilters = {}) {
           params.append(key, String(value));
         }
       });
-      const response = await api.get(`/assets?${params.toString()}`) as {
+      const response = await api.get(`/ops/assets?${params.toString()}`) as {
         data?: Asset[];
         pagination?: { total: number; pages: number; page: number };
       };
@@ -154,7 +154,7 @@ export function useAsset(id: string) {
   return useQuery({
     queryKey: assetKeys.detail(id),
     queryFn: async () => {
-      const response = await api.get(`/assets/${id}`) as { data?: Asset };
+      const response = await api.get(`/ops/assets/${id}`) as { data?: Asset };
       return (response.data || response) as Asset;
     },
     enabled: !!id,
@@ -165,7 +165,7 @@ export function useAssetStats() {
   return useQuery({
     queryKey: assetKeys.stats(),
     queryFn: async () => {
-      const response = await api.get('/assets/stats') as { data?: AssetStats };
+      const response = await api.get('/ops/assets/stats') as { data?: AssetStats };
       return (response.data || response) as AssetStats;
     },
   });
@@ -175,7 +175,7 @@ export function useUserAssets(userId: string) {
   return useQuery({
     queryKey: assetKeys.userAssets(userId),
     queryFn: async () => {
-      const response = await api.get(`/assets/user/${userId}`) as { data?: Asset[] };
+      const response = await api.get(`/ops/assets/user/${userId}`) as { data?: Asset[] };
       return (response.data || response) as Asset[];
     },
     enabled: !!userId,
@@ -187,7 +187,7 @@ export function useCreateAsset() {
 
   return useMutation({
     mutationFn: async (data: CreateAssetDTO) => {
-      const response = await api.post('/assets', data) as { data?: Asset };
+      const response = await api.post('/ops/assets', data) as { data?: Asset };
       return (response.data || response) as Asset;
     },
     onSuccess: () => {
@@ -202,7 +202,7 @@ export function useUpdateAsset() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<CreateAssetDTO> }) => {
-      const response = await api.put(`/assets/${id}`, data) as { data?: Asset };
+      const response = await api.put(`/ops/assets/${id}`, data) as { data?: Asset };
       return (response.data || response) as Asset;
     },
     onSuccess: (_, variables) => {
@@ -218,7 +218,7 @@ export function useDeleteAsset() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/assets/${id}`);
+      await api.delete(`/ops/assets/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assetKeys.lists() });
@@ -237,7 +237,7 @@ export function useAssignAsset() {
       user_name: string;
       department?: string;
     }) => {
-      const response = await api.post(`/assets/${id}/assign`, {
+      const response = await api.post(`/ops/assets/${id}/assign`, {
         user_id,
         user_name,
         department,
@@ -257,7 +257,7 @@ export function useUnassignAsset() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await api.post(`/assets/${id}/unassign`) as { data?: Asset };
+      const response = await api.post(`/ops/assets/${id}/unassign`) as { data?: Asset };
       return (response.data || response) as Asset;
     },
     onSuccess: (_, id) => {
@@ -273,7 +273,7 @@ export function useChangeAssetStatus() {
 
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: AssetStatus }) => {
-      const response = await api.post(`/assets/${id}/status`, { status }) as { data?: Asset };
+      const response = await api.post(`/ops/assets/${id}/status`, { status }) as { data?: Asset };
       return (response.data || response) as Asset;
     },
     onSuccess: (_, variables) => {

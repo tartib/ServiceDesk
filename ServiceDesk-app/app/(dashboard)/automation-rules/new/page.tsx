@@ -159,15 +159,15 @@ export default function NewAutomationRulePage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-accent rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-500" />
+            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-foreground">
               {isAr ? 'قاعدة أتمتة جديدة' : 'New Automation Rule'}
             </h1>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {isAr ? 'حدد المحفز والشروط والإجراءات' : 'Define trigger, conditions, and actions'}
             </p>
           </div>
@@ -183,14 +183,14 @@ export default function NewAutomationRulePage() {
         )}
 
         {/* Basic Info */}
-        <section className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+        <section className="bg-card border border-border rounded-xl p-5 space-y-4">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Settings className="w-4 h-4" />
             {isAr ? 'معلومات أساسية' : 'Basic Info'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs text-gray-500">{isAr ? 'الاسم (EN)' : 'Name (EN)'} *</Label>
+              <Label className="text-xs text-muted-foreground">{isAr ? 'الاسم (EN)' : 'Name (EN)'} *</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -199,7 +199,7 @@ export default function NewAutomationRulePage() {
               />
             </div>
             <div>
-              <Label className="text-xs text-gray-500">{isAr ? 'الاسم (AR)' : 'Name (AR)'}</Label>
+              <Label className="text-xs text-muted-foreground">{isAr ? 'الاسم (AR)' : 'Name (AR)'}</Label>
               <Input
                 value={nameAr}
                 onChange={(e) => setNameAr(e.target.value)}
@@ -210,28 +210,28 @@ export default function NewAutomationRulePage() {
             </div>
           </div>
           <div>
-            <Label className="text-xs text-gray-500">{isAr ? 'الوصف' : 'Description'}</Label>
+            <Label className="text-xs text-muted-foreground">{isAr ? 'الوصف' : 'Description'}</Label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={isAr ? 'وصف ما تفعله هذه القاعدة...' : 'Describe what this rule does...'}
-              className="mt-1 w-full h-16 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="mt-1 w-full h-16 rounded-md border border-input bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
         </section>
 
         {/* Trigger */}
-        <section className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+        <section className="bg-card border border-border rounded-xl p-5 space-y-4">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Zap className="w-4 h-4" />
             {isAr ? 'المحفز' : 'Trigger'}
           </h2>
           <div>
-            <Label className="text-xs text-gray-500">{isAr ? 'نوع المحفز' : 'Trigger Type'}</Label>
+            <Label className="text-xs text-muted-foreground">{isAr ? 'نوع المحفز' : 'Trigger Type'}</Label>
             <select
               value={triggerType}
               onChange={(e) => setTriggerType(e.target.value as RuleTriggerType)}
-              className="mt-1 w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 w-full h-9 rounded-md border border-input bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {TRIGGER_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -243,7 +243,7 @@ export default function NewAutomationRulePage() {
         </section>
 
         {/* Conditions */}
-        <section className="bg-white border border-gray-200 rounded-xl p-5">
+        <section className="bg-card border border-border rounded-xl p-5">
           <ConditionBuilder
             rootOperator={rootOperator}
             groups={conditionGroups}
@@ -254,9 +254,9 @@ export default function NewAutomationRulePage() {
         </section>
 
         {/* Actions */}
-        <section className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+        <section className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Play className="w-4 h-4" />
               {isAr ? 'الإجراءات' : 'Actions'}
             </h2>
@@ -270,7 +270,7 @@ export default function NewAutomationRulePage() {
           </div>
 
           {actions.length === 0 && (
-            <p className="text-xs text-gray-400 italic">
+            <p className="text-xs text-muted-foreground italic">
               {isAr ? 'لا توجد إجراءات' : 'No actions configured yet'}
             </p>
           )}
@@ -278,7 +278,7 @@ export default function NewAutomationRulePage() {
           {actions.map((action, idx) => (
             <div
               key={idx}
-              className="border border-gray-200 rounded-lg p-3 space-y-3 bg-gray-50/50"
+              className="border border-border rounded-lg p-3 space-y-3 bg-muted/50"
             >
               <div className="flex items-center gap-2">
                 <span className="shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">
@@ -287,7 +287,7 @@ export default function NewAutomationRulePage() {
                 <select
                   value={action.type}
                   onChange={(e) => updateAction(idx, { type: e.target.value as RuleActionType, config: {} })}
-                  className="flex-1 h-8 rounded border border-gray-300 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="flex-1 h-8 rounded border border-input bg-card px-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   {ACTION_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -309,7 +309,7 @@ export default function NewAutomationRulePage() {
                 {action.type === 'assign_ticket' && (
                   <>
                     <div>
-                      <Label className="text-[10px] text-gray-400">{isAr ? 'المعين إليه' : 'Assignee ID'}</Label>
+                      <Label className="text-[10px] text-muted-foreground">{isAr ? 'المعين إليه' : 'Assignee ID'}</Label>
                       <Input
                         value={String(action.config.assigneeId || '')}
                         onChange={(e) => updateAction(idx, { config: { ...action.config, assigneeId: e.target.value } })}
@@ -318,7 +318,7 @@ export default function NewAutomationRulePage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-[10px] text-gray-400">{isAr ? 'الفريق' : 'Team ID'}</Label>
+                      <Label className="text-[10px] text-muted-foreground">{isAr ? 'الفريق' : 'Team ID'}</Label>
                       <Input
                         value={String(action.config.teamId || '')}
                         onChange={(e) => updateAction(idx, { config: { ...action.config, teamId: e.target.value } })}
@@ -330,12 +330,11 @@ export default function NewAutomationRulePage() {
                 )}
                 {action.type === 'set_priority' && (
                   <div className="col-span-2">
-                    <Label className="text-[10px] text-gray-400">{isAr ? 'الأولوية' : 'Priority'}</Label>
+                    <Label className="text-[10px] text-muted-foreground">{isAr ? 'الأولوية' : 'Priority'}</Label>
                     <select
                       value={String(action.config.priority || 'medium')}
                       onChange={(e) => updateAction(idx, { config: { ...action.config, priority: e.target.value } })}
-                      className="w-full h-7 rounded border border-gray-300 bg-white px-2 text-xs mt-0.5"
-                    >
+                      className="w-full h-7 rounded border border-input bg-card px-2 text-xs mt-0.5">
                       <option value="critical">Critical</option>
                       <option value="high">High</option>
                       <option value="medium">Medium</option>
@@ -345,7 +344,7 @@ export default function NewAutomationRulePage() {
                 )}
                 {action.type === 'set_status' && (
                   <div className="col-span-2">
-                    <Label className="text-[10px] text-gray-400">{isAr ? 'الحالة' : 'Status'}</Label>
+                    <Label className="text-[10px] text-muted-foreground">{isAr ? 'الحالة' : 'Status'}</Label>
                     <Input
                       value={String(action.config.status || '')}
                       onChange={(e) => updateAction(idx, { config: { ...action.config, status: e.target.value } })}
@@ -356,7 +355,7 @@ export default function NewAutomationRulePage() {
                 )}
                 {(action.type === 'add_tag' || action.type === 'remove_tag') && (
                   <div className="col-span-2">
-                    <Label className="text-[10px] text-gray-400">{isAr ? 'الوسم' : 'Tag'}</Label>
+                    <Label className="text-[10px] text-muted-foreground">{isAr ? 'الوسم' : 'Tag'}</Label>
                     <Input
                       value={String(action.config.tag || '')}
                       onChange={(e) => updateAction(idx, { config: { ...action.config, tag: e.target.value } })}
@@ -367,19 +366,19 @@ export default function NewAutomationRulePage() {
                 )}
                 {action.type === 'add_comment' && (
                   <div className="col-span-2">
-                    <Label className="text-[10px] text-gray-400">{isAr ? 'التعليق' : 'Comment'}</Label>
+                    <Label className="text-[10px] text-muted-foreground">{isAr ? 'التعليق' : 'Comment'}</Label>
                     <textarea
                       value={String(action.config.comment || '')}
                       onChange={(e) => updateAction(idx, { config: { ...action.config, comment: e.target.value } })}
                       placeholder={isAr ? 'نص التعليق...' : 'Comment text...'}
-                      className="w-full h-14 rounded border border-gray-300 bg-white px-2 py-1 text-xs mt-0.5 resize-none"
+                      className="w-full h-14 rounded border border-input bg-card px-2 py-1 text-xs mt-0.5 resize-none"
                     />
                   </div>
                 )}
                 {(action.type === 'notify_user' || action.type === 'notify_team') && (
                   <>
                     <div>
-                      <Label className="text-[10px] text-gray-400">{isAr ? 'المعرف' : 'Target ID'}</Label>
+                      <Label className="text-[10px] text-muted-foreground">{isAr ? 'المعرف' : 'Target ID'}</Label>
                       <Input
                         value={String(action.config.targetId || '')}
                         onChange={(e) => updateAction(idx, { config: { ...action.config, targetId: e.target.value } })}
@@ -387,7 +386,7 @@ export default function NewAutomationRulePage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-[10px] text-gray-400">{isAr ? 'الرسالة' : 'Message'}</Label>
+                      <Label className="text-[10px] text-muted-foreground">{isAr ? 'الرسالة' : 'Message'}</Label>
                       <Input
                         value={String(action.config.message || '')}
                         onChange={(e) => updateAction(idx, { config: { ...action.config, message: e.target.value } })}
@@ -399,7 +398,7 @@ export default function NewAutomationRulePage() {
                 {action.type === 'send_email' && (
                   <>
                     <div>
-                      <Label className="text-[10px] text-gray-400">{isAr ? 'إلى' : 'To'}</Label>
+                      <Label className="text-[10px] text-muted-foreground">{isAr ? 'إلى' : 'To'}</Label>
                       <Input
                         value={String(action.config.to || '')}
                         onChange={(e) => updateAction(idx, { config: { ...action.config, to: e.target.value } })}
@@ -408,7 +407,7 @@ export default function NewAutomationRulePage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-[10px] text-gray-400">{isAr ? 'الموضوع' : 'Subject'}</Label>
+                      <Label className="text-[10px] text-muted-foreground">{isAr ? 'الموضوع' : 'Subject'}</Label>
                       <Input
                         value={String(action.config.subject || '')}
                         onChange={(e) => updateAction(idx, { config: { ...action.config, subject: e.target.value } })}
@@ -420,7 +419,7 @@ export default function NewAutomationRulePage() {
                 {action.type === 'execute_webhook' && (
                   <>
                     <div>
-                      <Label className="text-[10px] text-gray-400">URL</Label>
+                      <Label className="text-[10px] text-muted-foreground">URL</Label>
                       <Input
                         value={String(action.config.url || '')}
                         onChange={(e) => updateAction(idx, { config: { ...action.config, url: e.target.value } })}
@@ -429,12 +428,11 @@ export default function NewAutomationRulePage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-[10px] text-gray-400">Method</Label>
+                      <Label className="text-[10px] text-muted-foreground">Method</Label>
                       <select
                         value={String(action.config.method || 'POST')}
                         onChange={(e) => updateAction(idx, { config: { ...action.config, method: e.target.value } })}
-                        className="w-full h-7 rounded border border-gray-300 bg-white px-2 text-xs mt-0.5"
-                      >
+                        className="w-full h-7 rounded border border-input bg-card px-2 text-xs mt-0.5">
                         <option value="GET">GET</option>
                         <option value="POST">POST</option>
                         <option value="PUT">PUT</option>
@@ -446,7 +444,7 @@ export default function NewAutomationRulePage() {
                 {action.type === 'set_field' && (
                   <>
                     <div>
-                      <Label className="text-[10px] text-gray-400">{isAr ? 'الحقل' : 'Field'}</Label>
+                      <Label className="text-[10px] text-muted-foreground">{isAr ? 'الحقل' : 'Field'}</Label>
                       <Input
                         value={String(action.config.fieldPath || '')}
                         onChange={(e) => updateAction(idx, { config: { ...action.config, fieldPath: e.target.value } })}
@@ -455,7 +453,7 @@ export default function NewAutomationRulePage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-[10px] text-gray-400">{isAr ? 'القيمة' : 'Value'}</Label>
+                      <Label className="text-[10px] text-muted-foreground">{isAr ? 'القيمة' : 'Value'}</Label>
                       <Input
                         value={String(action.config.value || '')}
                         onChange={(e) => updateAction(idx, { config: { ...action.config, value: e.target.value } })}
@@ -472,9 +470,9 @@ export default function NewAutomationRulePage() {
                   type="checkbox"
                   checked={action.stopOnFailure}
                   onChange={(e) => updateAction(idx, { stopOnFailure: e.target.checked })}
-                  className="h-3 w-3 rounded border-gray-300"
+                  className="h-3 w-3 rounded border-input"
                 />
-                <span className="text-[10px] text-gray-500">
+                <span className="text-[10px] text-muted-foreground">
                   {isAr ? 'إيقاف عند الفشل' : 'Stop on failure'}
                 </span>
               </label>

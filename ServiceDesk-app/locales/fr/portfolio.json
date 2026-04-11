@@ -1,0 +1,89 @@
+{
+  "portfolio": {
+    "title": "Analytique du portefeuille",
+    "subtitle": "Performance en temps réel de tous les projets",
+    "connected": "En direct",
+    "disconnected": "Hors ligne",
+    "lastUpdated": "Dernière mise à jour",
+    "refresh": "Actualiser",
+    "loading": "Chargement de l'analytique...",
+    "noData": "Aucune donnée disponible",
+    "kpi": {
+      "totalProjects": "Total des projets",
+      "activeProjects": "Projets actifs",
+      "totalTasks": "Total des tâches",
+      "completionRate": "Taux d'achèvement",
+      "overdueTasks": "Tâches en retard",
+      "activeSprints": "Sprints actifs",
+      "teamMembers": "Membres de l'équipe",
+      "storyPoints": "Points d'effort"
+    },
+    "projects": {
+      "title": "Santé des projets",
+      "name": "Projet",
+      "methodology": "Méthodologie",
+      "completion": "Achèvement",
+      "velocity": "Vélocité",
+      "overdue": "En retard",
+      "timeline": "Calendrier",
+      "members": "Membres",
+      "tasks": "Tâches",
+      "noProjects": "Aucun projet trouvé",
+      "viewDetails": "Voir les détails",
+      "activeSprint": "Sprint actif",
+      "daysLeft": "jours restants",
+      "daysOverdue": "jours de retard",
+      "pts": "pts",
+      "status": {
+        "on_track": "Dans les temps",
+        "at_risk": "À risque",
+        "overdue": "En retard",
+        "no_deadline": "Pas d'échéance"
+      }
+    },
+    "drilldown": {
+      "taskBreakdown": "Répartition des tâches",
+      "priorityDistribution": "Distribution des priorités",
+      "velocityHistory": "Historique de vélocité",
+      "topMembers": "Meilleurs membres",
+      "recentActivity": "Activité récente",
+      "todo": "À faire",
+      "inProgress": "En cours",
+      "done": "Terminé",
+      "critical": "Critique",
+      "high": "Haute",
+      "medium": "Moyenne",
+      "low": "Basse",
+      "planned": "Planifié",
+      "completed": "Terminé",
+      "completionRate": "Taux d'achèvement",
+      "noActivity": "Aucune activité récente",
+      "noVelocity": "Aucune donnée de vélocité",
+      "noMembers": "Aucune donnée de membres"
+    },
+    "trends": {
+      "title": "Tendances hebdomadaires",
+      "created": "Créées",
+      "completed": "Terminées",
+      "tasksCreated": "Tâches créées",
+      "tasksCompleted": "Tâches terminées",
+      "noTrends": "Aucune donnée de tendance disponible"
+    },
+    "workload": {
+      "title": "Charge de travail de l'équipe",
+      "member": "Membre",
+      "assigned": "Assignées",
+      "inProgress": "En cours",
+      "completed": "Terminées",
+      "overdue": "En retard",
+      "points": "Points",
+      "noMembers": "Aucune donnée de charge de travail disponible"
+    },
+    "timeline": {
+      "title": "Santé du calendrier",
+      "onTime": "Dans les temps",
+      "overdue": "En retard",
+      "noDeadline": "Pas d'échéance"
+    }
+  }
+}

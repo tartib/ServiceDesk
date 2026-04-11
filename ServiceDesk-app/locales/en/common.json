@@ -35,6 +35,11 @@
     "sla": "SLA Management",
     "releases": "Releases",
     "cab": "CAB",
+    "changeCalendar": "Change Calendar",
+    "pirs": "Post-Incident Reviews",
+    "agentConsole": "Agent Console",
+    "portfolioAnalytics": "Portfolio Analytics",
+    "teamPerformance": "Team Performance",
     "loggedInAs": "Logged in as"
   },
   "common": {
@@ -115,7 +120,22 @@
     "createAccount": "Create Account",
     "fullName": "Full Name",
     "role": "Role",
-    "phone": "Phone Number"
+    "phone": "Phone Number",
+    "joinServiceDesk": "Join ServiceDesk to get started",
+    "namePlaceholder": "John Doe",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "••••••••",
+    "selectRole": "Select role",
+    "creatingAccount": "Creating account...",
+    "loginFailed": "Login failed. Please try again.",
+    "registerError": "Registration failed. Please try again.",
+    "devTestAccounts": "Development Test Accounts"
+  },
+  "validation": {
+    "invalidEmail": "Invalid email address",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "nameMinLength": "Name must be at least 2 characters",
+    "passwordsDontMatch": "Passwords don't match"
   },
   "roles": {
     "prep": "Prep Staff",

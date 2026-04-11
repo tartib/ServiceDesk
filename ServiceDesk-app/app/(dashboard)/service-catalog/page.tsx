@@ -20,6 +20,9 @@ import {
 import { useServiceCatalog, IServiceCatalogItem } from '@/hooks/useServiceCatalog';
 import { useLocale } from '@/hooks/useLocale';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
 import ServiceFormModal from '@/components/service-catalog/ServiceFormModal';
 import DeleteServiceDialog from '@/components/service-catalog/DeleteServiceDialog';
 
@@ -67,7 +70,7 @@ export default function ServiceCatalogStandalonePage() {
           className={`h-3.5 w-3.5 ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
         />
       ))}
-      <span className="ml-1 text-xs text-gray-500">{rating.toFixed(1)}</span>
+      <span className="ml-1 text-xs text-muted-foreground">{rating.toFixed(1)}</span>
     </div>
   );
 
@@ -75,7 +78,7 @@ export default function ServiceCatalogStandalonePage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       </DashboardLayout>
     );
@@ -83,44 +86,41 @@ export default function ServiceCatalogStandalonePage() {
 
   return (
     <DashboardLayout>
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-muted/50">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Package className="h-6 w-6 text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t('nav.serviceCatalog')}</h1>
-            <span className="text-sm text-gray-500 dark:text-gray-400">({filteredServices.length} {isAr ? 'خدمة' : 'services'})</span>
+            <Package className="h-6 w-6 text-primary" />
+            <h1 className="text-xl font-bold text-foreground">{t('nav.serviceCatalog')}</h1>
+            <span className="text-sm text-muted-foreground">({filteredServices.length} {isAr ? 'خدمة' : 'services'})</span>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
+            <Button onClick={() => setShowCreateModal(true)}>
               <Plus className="h-4 w-4" />
               {isAr ? 'إضافة خدمة' : 'Add Service'}
-            </button>
+            </Button>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
                 type="text"
                 placeholder={isAr ? 'بحث عن خدمات...' : 'Search services...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                className="pl-9 w-64"
                 dir={isAr ? 'rtl' : 'ltr'}
               />
             </div>
-            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+            <div className="flex items-center border border-border rounded-lg overflow-hidden">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}
+                className={`p-2 ${viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent'}`}
               >
                 <Grid className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}
+                className={`p-2 ${viewMode === 'list' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent'}`}
               >
                 <List className="h-4 w-4" />
               </button>
@@ -130,7 +130,7 @@ export default function ServiceCatalogStandalonePage() {
       </div>
 
       {/* Category Filter */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
+      <div className="bg-card border-b border-border px-6 py-3">
         <div className="flex items-center gap-2 overflow-x-auto">
           {categories.map((cat) => (
             <button
@@ -138,8 +138,8 @@ export default function ServiceCatalogStandalonePage() {
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1.5 text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
                 selectedCategory === cat
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-accent'
               }`}
             >
               {cat}
@@ -160,26 +160,26 @@ export default function ServiceCatalogStandalonePage() {
               return (
                 <div
                   key={service._id}
-                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer group"
+                  className="bg-card border border-border rounded-xl p-5 hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer group"
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                      <Package className="h-6 w-6 text-blue-600" />
+                    <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                      <Package className="h-6 w-6 text-primary" />
                     </div>
                     <span className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${cfg.color}`}>
                       <StatusIcon className="h-3 w-3" />
                       {isAr ? cfg.ar : cfg.en}
                     </span>
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1 group-hover:text-blue-600 transition-colors">
+                  <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
                     {isAr ? (service.name_ar || service.name) : service.name}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">{isAr ? (service.description_ar || service.description) : service.description}</p>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{isAr ? (service.description_ar || service.description) : service.description}</p>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">{service.category}</span>
+                    <span className="text-muted-foreground">{service.category}</span>
                     {renderStars(service.metrics?.satisfaction_score || 0)}
                   </div>
-                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Zap className="h-3.5 w-3.5" />
                       Est: {service.fulfillment?.estimated_hours || 0}h
@@ -190,21 +190,22 @@ export default function ServiceCatalogStandalonePage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
+                    <Button
+                      size="sm"
+                      className="flex-1"
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`);
                       }}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       {isAr ? 'طلب الخدمة' : 'Request Service'}
-                    </button>
+                    </Button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditTarget(service);
                       }}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                       title="Edit service"
                     >
                       <Pencil className="h-4 w-4" />
@@ -214,7 +215,7 @@ export default function ServiceCatalogStandalonePage() {
                         e.stopPropagation();
                         setDeleteTarget({ id: service.service_id, name: service.name });
                       }}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                       title="Delete service"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -225,8 +226,8 @@ export default function ServiceCatalogStandalonePage() {
             })}
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-            <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+          <Card className="p-0">
+            <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-border text-xs font-medium text-muted-foreground uppercase">
               <div className="col-span-3">{isAr ? 'الخدمة' : 'Service'}</div>
               <div className="col-span-2">{isAr ? 'الفئة' : 'Category'}</div>
               <div className="col-span-2">{isAr ? 'الحالة' : 'Status'}</div>
@@ -240,40 +241,40 @@ export default function ServiceCatalogStandalonePage() {
               const StatusIcon = cfg.icon;
 
               return (
-                <div key={service._id} className="grid grid-cols-12 gap-4 px-4 py-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 items-center">
+                <div key={service._id} className="grid grid-cols-12 gap-4 px-4 py-4 border-b border-border hover:bg-accent/50 items-center">
                   <div className="col-span-3 flex items-center gap-3">
-                    <Package className="h-5 w-5 text-blue-600" />
+                    <Package className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{isAr ? (service.name_ar || service.name) : service.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">{isAr ? (service.description_ar || service.description) : service.description}</p>
+                      <p className="font-medium text-foreground">{isAr ? (service.name_ar || service.name) : service.name}</p>
+                      <p className="text-xs text-muted-foreground truncate max-w-xs">{isAr ? (service.description_ar || service.description) : service.description}</p>
                     </div>
                   </div>
-                  <div className="col-span-2 text-sm text-gray-600 dark:text-gray-400">{service.category}</div>
+                  <div className="col-span-2 text-sm text-muted-foreground">{service.category}</div>
                   <div className="col-span-2">
                     <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${cfg.color}`}>
                       <StatusIcon className="h-3 w-3" />
                       {isAr ? cfg.ar : cfg.en}
                     </span>
                   </div>
-                  <div className="col-span-1 text-sm text-gray-600 dark:text-gray-400">{service.fulfillment?.estimated_hours || 0}h</div>
+                  <div className="col-span-1 text-sm text-muted-foreground">{service.fulfillment?.estimated_hours || 0}h</div>
                   <div className="col-span-2">{renderStars(service.metrics?.satisfaction_score || 0)}</div>
                   <div className="col-span-2 flex items-center gap-2">
-                    <button
+                    <Button
+                      size="sm"
                       onClick={() => router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`)}
-                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       {isAr ? 'طلب' : 'Request'}
-                    </button>
+                    </Button>
                     <button
                       onClick={() => setEditTarget(service)}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                       title="Edit service"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => setDeleteTarget({ id: service.service_id, name: service.name })}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                       title="Delete service"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -282,20 +283,20 @@ export default function ServiceCatalogStandalonePage() {
                 </div>
               );
             })}
-          </div>
+          </Card>
         )}
 
         {filteredServices.length === 0 && (
           <div className="text-center py-12">
-            <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">{isAr ? 'لا توجد خدمات' : 'No services found'}</p>
-            <button
+            <Package className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+            <p className="text-muted-foreground">{isAr ? 'لا توجد خدمات' : 'No services found'}</p>
+            <Button
               onClick={() => setShowCreateModal(true)}
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="mt-4"
             >
               <Plus className="h-4 w-4" />
               {isAr ? 'إضافة أول خدمة' : 'Add First Service'}
-            </button>
+            </Button>
           </div>
         )}
       </div>

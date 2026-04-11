@@ -6,10 +6,12 @@ import {
   CreateProblemDTO,
   ProblemStatus,
   Priority,
+  RCAMethod,
   IApiResponse,
   IApiListResponse,
 } from '@/types/itsm';
 
+const ITSM_BASE = '/api/v2/itsm';
 const PROBLEMS_KEY = 'problems';
 
 // ============================================
@@ -39,7 +41,7 @@ export const useProblems = (filters?: {
     queryKey: [PROBLEMS_KEY, 'list', filters],
     queryFn: async () => {
       const response = await api.get<IApiListResponse<IProblem>>(
-        `/problems?${params.toString()}`
+        `${ITSM_BASE}/problems?${params.toString()}`
       );
       return response;
     },
@@ -51,7 +53,7 @@ export const useProblem = (problemId: string) => {
     queryKey: [PROBLEMS_KEY, problemId],
     queryFn: async () => {
       const response = await api.get<IApiResponse<{ problem: IProblem }>>(
-        `/problems/${problemId}`
+        `${ITSM_BASE}/problems/${problemId}`
       );
       return response.data.problem;
     },
@@ -65,7 +67,7 @@ export const useProblemStats = (siteId?: string) => {
     queryFn: async () => {
       const params = siteId ? `?site_id=${siteId}` : '';
       const response = await api.get<IApiResponse<IProblemStats>>(
-        `/problems/stats${params}`
+        `${ITSM_BASE}/problems/stats${params}`
       );
       return response.data;
     },
@@ -76,7 +78,7 @@ export const useOpenProblems = () => {
   return useQuery({
     queryKey: [PROBLEMS_KEY, 'open'],
     queryFn: async () => {
-      const response = await api.get<IApiResponse<IProblem[]>>('/problems/open');
+      const response = await api.get<IApiResponse<IProblem[]>>(`${ITSM_BASE}/problems/open`);
       return response.data;
     },
   });
@@ -86,7 +88,7 @@ export const useKnownErrors = () => {
   return useQuery({
     queryKey: [PROBLEMS_KEY, 'known-errors'],
     queryFn: async () => {
-      const response = await api.get<IApiResponse<IProblem[]>>('/problems/known-errors');
+      const response = await api.get<IApiResponse<IProblem[]>>(`${ITSM_BASE}/problems/known-errors`);
       return response.data;
     },
   });
@@ -102,7 +104,7 @@ export const useCreateProblem = () => {
   return useMutation({
     mutationFn: async (data: CreateProblemDTO) => {
       const response = await api.post<IApiResponse<{ problem: IProblem }>>(
-        '/problems',
+        `${ITSM_BASE}/problems`,
         data
       );
       return response.data.problem;
@@ -119,7 +121,7 @@ export const useCreateProblemFromIncident = () => {
   return useMutation({
     mutationFn: async (incidentId: string) => {
       const response = await api.post<IApiResponse<{ problem: IProblem }>>(
-        `/problems/from-incident/${incidentId}`
+        `${ITSM_BASE}/problems/from-incident/${incidentId}`
       );
       return response.data.problem;
     },
@@ -142,7 +144,7 @@ export const useUpdateProblem = () => {
       data: Partial<CreateProblemDTO>;
     }) => {
       const response = await api.patch<IApiResponse<{ problem: IProblem }>>(
-        `/problems/${problemId}`,
+        `${ITSM_BASE}/problems/${problemId}`,
         data
       );
       return response.data.problem;
@@ -170,7 +172,7 @@ export const useUpdateRootCause = () => {
       workaround: string;
     }) => {
       const response = await api.patch<IApiResponse<{ problem: IProblem }>>(
-        `/problems/${problemId}/rca`,
+        `${ITSM_BASE}/problems/${problemId}/rca`,
         { root_cause, workaround }
       );
       return response.data.problem;
@@ -201,7 +203,7 @@ export const useMarkAsKnownError = () => {
       };
     }) => {
       const response = await api.post<IApiResponse<{ problem: IProblem }>>(
-        `/problems/${problemId}/known-error`,
+        `${ITSM_BASE}/problems/${problemId}/known-error`,
         knownError
       );
       return response.data.problem;
@@ -227,7 +229,7 @@ export const useLinkIncidentToProblem = () => {
       incidentId: string;
     }) => {
       const response = await api.post<IApiResponse<{ problem: IProblem }>>(
-        `/problems/${problemId}/link-incident`,
+        `${ITSM_BASE}/problems/${problemId}/link-incident`,
         { incident_id: incidentId }
       );
       return response.data.problem;
@@ -253,7 +255,7 @@ export const useUpdateProblemStatus = () => {
       status: ProblemStatus;
     }) => {
       const response = await api.patch<IApiResponse<{ problem: IProblem }>>(
-        `/problems/${problemId}/status`,
+        `${ITSM_BASE}/problems/${problemId}/status`,
         { status }
       );
       return response.data.problem;
@@ -279,7 +281,7 @@ export const useResolveProblem = () => {
       permanent_fix: string;
     }) => {
       const response = await api.post<IApiResponse<{ problem: IProblem }>>(
-        `/problems/${problemId}/resolve`,
+        `${ITSM_BASE}/problems/${problemId}/resolve`,
         { permanent_fix }
       );
       return response.data.problem;
@@ -290,5 +292,89 @@ export const useResolveProblem = () => {
         queryKey: [PROBLEMS_KEY, variables.problemId],
       });
     },
+  });
+};
+
+export const useStartRCA = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ problemId, rca_method }: { problemId: string; rca_method: RCAMethod }) => {
+      const response = await api.post<IApiResponse<{ problem: IProblem }>>(
+        `${ITSM_BASE}/problems/${problemId}/start-rca`,
+        { rca_method }
+      );
+      return response.data.problem;
+    },
+    onSuccess: (_, { problemId }) => {
+      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, problemId] });
+      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, 'list'] });
+    },
+  });
+};
+
+export const useCompleteRCA = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      problemId,
+      rca_findings,
+      root_cause,
+      contributing_factors,
+    }: {
+      problemId: string;
+      rca_findings: string;
+      root_cause: string;
+      contributing_factors?: string[];
+    }) => {
+      const response = await api.post<IApiResponse<{ problem: IProblem }>>(
+        `${ITSM_BASE}/problems/${problemId}/complete-rca`,
+        { rca_findings, root_cause, contributing_factors }
+      );
+      return response.data.problem;
+    },
+    onSuccess: (_, { problemId }) => {
+      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, problemId] });
+      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, 'list'] });
+    },
+  });
+};
+
+export const usePublishKnownError = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      problemId,
+      title,
+      symptoms,
+      workaround,
+    }: {
+      problemId: string;
+      title: string;
+      symptoms: string;
+      workaround: string;
+    }) => {
+      const response = await api.post<IApiResponse<{ problem: IProblem }>>(
+        `${ITSM_BASE}/problems/${problemId}/publish-known-error`,
+        { title, symptoms, workaround }
+      );
+      return response.data.problem;
+    },
+    onSuccess: (_, { problemId }) => {
+      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, problemId] });
+      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, 'known-errors'] });
+    },
+  });
+};
+
+export const useDetectRecurring = () => {
+  return useQuery({
+    queryKey: [PROBLEMS_KEY, 'recurring'],
+    queryFn: async () => {
+      const response = await api.get<IApiResponse<{ suggestions: Array<{ incident_ids: string[]; count: number; title: string }> }>>(
+        `${ITSM_BASE}/problems/detect-recurring`
+      );
+      return response.data;
+    },
+    staleTime: 300_000,
   });
 };

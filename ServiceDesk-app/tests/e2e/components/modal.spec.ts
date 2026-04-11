@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Modals', () => {
   test.beforeEach(async ({ page }) => {
     // Mock auth API
-    await page.route('**/api/v1/auth/me', async (route) => {
+    await page.route('**/api/v2/auth/me', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -21,7 +21,7 @@ test.describe('Modals', () => {
       });
     });
 
-    await page.route('**/api/v1/pm/projects/**', async (route) => {
+    await page.route('**/api/v2/pm/projects/**', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -106,7 +106,7 @@ test.describe('Modals', () => {
 
   test.describe('Complete Sprint Modal', () => {
     test.beforeEach(async ({ page }) => {
-      await page.route('**/api/v1/pm/projects/proj-1/sprints', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/sprints', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -119,7 +119,7 @@ test.describe('Modals', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/projects/proj-1/backlog', async (route) => {
+      await page.route('**/api/v2/pm/projects/proj-1/backlog', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -127,7 +127,7 @@ test.describe('Modals', () => {
         });
       });
 
-      await page.route('**/api/v1/pm/sprints/sprint-1', async (route) => {
+      await page.route('**/api/v2/pm/sprints/sprint-1', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',

@@ -7,7 +7,7 @@
 Create a `.env.local` file in the root directory with the following variables:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:5000/api/v2
 NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
 ```
 
@@ -32,29 +32,29 @@ The application will be available at `http://localhost:3000`
 This frontend application requires a backend API with the following endpoints:
 
 ### Authentication Endpoints
-- `POST /api/v1/auth/register` - Register new user
-- `POST /api/v1/auth/login` - User login
-- `GET /api/v1/auth/me` - Get current user info
-- `PATCH /api/v1/auth/profile` - Update user profile
-- `PATCH /api/v1/auth/password` - Change password
+- `POST /api/v2/auth/register` - Register new user
+- `POST /api/v2/auth/login` - User login
+- `GET /api/v2/auth/me` - Get current user info
+- `PATCH /api/v2/auth/profile` - Update user profile
+- `PATCH /api/v2/auth/password` - Change password
 
 ### Task Endpoints
-- `GET /api/v1/tasks/today` - Get today's tasks
-- `GET /api/v1/tasks/my-tasks` - Get user's assigned tasks
-- `GET /api/v1/tasks/status/:status` - Get tasks by status
-- `GET /api/v1/tasks/:id` - Get task details
-- `PATCH /api/v1/tasks/:id/assign` - Assign task to user
-- `PATCH /api/v1/tasks/:id/start` - Start a task
-- `PATCH /api/v1/tasks/:id/complete` - Complete a task
-- `PATCH /api/v1/tasks/:id/usage` - Update inventory usage
+- `GET /api/v2/tasks/today` - Get today's tasks
+- `GET /api/v2/tasks/my-tasks` - Get user's assigned tasks
+- `GET /api/v2/tasks/status/:status` - Get tasks by status
+- `GET /api/v2/tasks/:id` - Get task details
+- `PATCH /api/v2/tasks/:id/assign` - Assign task to user
+- `PATCH /api/v2/tasks/:id/start` - Start a task
+- `PATCH /api/v2/tasks/:id/complete` - Complete a task
+- `PATCH /api/v2/tasks/:id/usage` - Update inventory usage
 
 ### Inventory Endpoints
-- `GET /api/v1/inventory` - Get all inventory items
-- `GET /api/v1/inventory/low-stock` - Get low stock items
-- `GET /api/v1/inventory/:id` - Get inventory item details
-- `POST /api/v1/inventory` - Create inventory item
-- `PATCH /api/v1/inventory/:id` - Update inventory item
-- `PATCH /api/v1/inventory/:id/restock` - Restock item
+- `GET /api/v2/inventory` - Get all inventory items
+- `GET /api/v2/inventory/low-stock` - Get low stock items
+- `GET /api/v2/inventory/:id` - Get inventory item details
+- `POST /api/v2/inventory` - Create inventory item
+- `PATCH /api/v2/inventory/:id` - Update inventory item
+- `PATCH /api/v2/inventory/:id/restock` - Restock item
 
 ## Authentication Flow
 

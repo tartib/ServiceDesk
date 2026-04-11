@@ -21,14 +21,14 @@ const riskConfig: Record<string, { label: string; color: string }> = {
 };
 
 const changeStatusConfig: Record<string, { label: string; color: string }> = {
-  draft: { label: 'Draft', color: 'bg-gray-100 text-gray-700' },
+  draft: { label: 'Draft', color: 'bg-muted text-muted-foreground' },
   pending_approval: { label: 'Pending Approval', color: 'bg-yellow-100 text-yellow-700' },
   approved: { label: 'Approved', color: 'bg-green-100 text-green-700' },
   rejected: { label: 'Rejected', color: 'bg-red-100 text-red-700' },
   scheduled: { label: 'Scheduled', color: 'bg-blue-100 text-blue-700' },
   implementing: { label: 'Implementing', color: 'bg-purple-100 text-purple-700' },
   completed: { label: 'Completed', color: 'bg-teal-100 text-teal-700' },
-  cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-500' },
+  cancelled: { label: 'Cancelled', color: 'bg-muted text-muted-foreground' },
 };
 
 export default function CabStandalonePage() {
@@ -62,18 +62,18 @@ export default function CabStandalonePage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Users className="h-6 w-6 text-purple-600" />
-            <h1 className="text-xl font-bold text-gray-900">{t('nav.cab')}</h1>
+            <h1 className="text-xl font-bold text-foreground">{t('nav.cab')}</h1>
             <span className="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-700">
               {cabChanges.length} Pending Review
             </span>
           </div>
-          <span className="text-sm text-gray-500 flex items-center gap-1">
+          <span className="text-sm text-muted-foreground flex items-center gap-1">
             <Calendar className="h-4 w-4" />
             {formatDate(new Date().toISOString())}
           </span>
@@ -83,12 +83,12 @@ export default function CabStandalonePage() {
       {/* Main Content */}
       <div className="flex-1 overflow-hidden flex">
         {/* Changes List */}
-        <div className={`${selectedChange ? 'w-2/3 border-r border-gray-200' : 'w-full'} overflow-y-auto p-4`}>
-          <h3 className="font-semibold text-gray-900 mb-4">Changes Pending CAB Review ({cabChanges.length})</h3>
+        <div className={`${selectedChange ? 'w-2/3 border-r border-border' : 'w-full'} overflow-y-auto p-4`}>
+          <h3 className="font-semibold text-foreground mb-4">Changes Pending CAB Review ({cabChanges.length})</h3>
           {cabChanges.length === 0 ? (
             <div className="text-center py-12">
-              <CheckCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No changes pending CAB review</p>
+              <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No changes pending CAB review</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -101,16 +101,16 @@ export default function CabStandalonePage() {
                   <div
                     key={change._id}
                     onClick={() => setSelectedChange(change)}
-                    className={`bg-white border rounded-xl p-4 cursor-pointer transition-all ${
+                    className={`bg-card border rounded-xl p-4 cursor-pointer transition-all ${
                       selectedChange?._id === change._id
                         ? 'border-purple-500 ring-2 ring-purple-100'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                        : 'border-border hover:border-muted-foreground hover:shadow-md'
                     }`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-mono text-gray-500">{change.change_id}</span>
+                          <span className="text-sm font-mono text-muted-foreground">{change.change_id}</span>
                           <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${rCfg.color}`}>
                             {rCfg.label} Risk
                           </span>
@@ -118,25 +118,25 @@ export default function CabStandalonePage() {
                             {sCfg.label}
                           </span>
                         </div>
-                        <h4 className="font-medium text-gray-900">{change.title}</h4>
-                        <p className="text-sm text-gray-500 mt-1">Requested by {change.requested_by?.name || 'Unknown'}</p>
+                        <h4 className="font-medium text-foreground">{change.title}</h4>
+                        <p className="text-sm text-muted-foreground mt-1">Requested by {change.requested_by?.name || 'Unknown'}</p>
                       </div>
                     </div>
 
                     <div className="mt-4">
                       <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="text-gray-500">Approval Progress</span>
+                        <span className="text-muted-foreground">Approval Progress</span>
                         <span className="font-medium">{approvalPct}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-muted rounded-full h-2">
                         <div
-                          className={`h-2 rounded-full ${approvalPct >= 100 ? 'bg-green-500' : approvalPct > 0 ? 'bg-yellow-500' : 'bg-gray-300'}`}
+                          className={`h-2 rounded-full ${approvalPct >= 100 ? 'bg-green-500' : approvalPct > 0 ? 'bg-yellow-500' : 'bg-muted-foreground'}`}
                           style={{ width: `${Math.min(approvalPct, 100)}%` }}
                         />
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
                       <button
                         onClick={(e) => { e.stopPropagation(); }}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
@@ -161,43 +161,43 @@ export default function CabStandalonePage() {
 
         {/* Change Detail Panel */}
         {selectedChange && (
-          <div className="w-1/3 overflow-y-auto bg-white p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Change Details</h3>
+          <div className="w-1/3 overflow-y-auto bg-card p-4">
+            <h3 className="font-semibold text-foreground mb-4">Change Details</h3>
             <div className="space-y-4">
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Change ID</p>
-                <p className="text-sm font-mono font-medium text-gray-900">{selectedChange.change_id}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Change ID</p>
+                <p className="text-sm font-mono font-medium text-foreground">{selectedChange.change_id}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Title</p>
-                <p className="text-sm font-medium text-gray-900">{selectedChange.title}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Title</p>
+                <p className="text-sm font-medium text-foreground">{selectedChange.title}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Description</p>
-                <p className="text-sm text-gray-600">{selectedChange.description || 'No description'}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Description</p>
+                <p className="text-sm text-muted-foreground">{selectedChange.description || 'No description'}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">Type</p>
-                  <p className="text-sm font-medium text-gray-900 capitalize">{selectedChange.type}</p>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground">Type</p>
+                  <p className="text-sm font-medium text-foreground capitalize">{selectedChange.type}</p>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">Priority</p>
-                  <p className="text-sm font-medium text-gray-900 capitalize">{selectedChange.priority}</p>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground">Priority</p>
+                  <p className="text-sm font-medium text-foreground capitalize">{selectedChange.priority}</p>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">Risk</p>
-                  <p className="text-sm font-medium text-gray-900 capitalize">{selectedChange.risk}</p>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground">Risk</p>
+                  <p className="text-sm font-medium text-foreground capitalize">{selectedChange.risk}</p>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">Impact</p>
-                  <p className="text-sm font-medium text-gray-900 capitalize">{selectedChange.impact}</p>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground">Impact</p>
+                  <p className="text-sm font-medium text-foreground capitalize">{selectedChange.impact}</p>
                 </div>
               </div>
               {selectedChange.implementation_plan && (
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Implementation Plan</p>
-                  <p className="text-sm text-gray-600 mt-1">{selectedChange.implementation_plan}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Implementation Plan</p>
+                  <p className="text-sm text-muted-foreground mt-1">{selectedChange.implementation_plan}</p>
                 </div>
               )}
               {selectedChange.rollback_plan && (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,19 +13,19 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  rememberMe: z.boolean().optional(),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = { email: string; password: string; rememberMe?: boolean };
 
 export default function LoginPage() {
   const [error, setError] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const { mutate: login, isPending } = useLogin();
   const { t } = useLanguage();
+
+  const loginSchema = useMemo(() => z.object({
+    email: z.string().email(t('validation.invalidEmail')),
+    password: z.string().min(6, t('validation.passwordMinLength')),
+    rememberMe: z.boolean().optional(),
+  }), [t]);
 
   const {
     register,
@@ -45,7 +45,7 @@ export default function LoginPage() {
     };
     login(trimmedData, {
       onError: (err: Error & { response?: { data?: { message?: string } } }) => {
-        setError(err.response?.data?.message || 'Login failed. Please try again.');
+        setError(err.response?.data?.message || t('auth.loginFailed'));
       },
     });
   };
@@ -87,7 +87,7 @@ export default function LoginPage() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">{t('auth.password')}</Label>
                 <Link data-testid="forgot-password-link" href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                  {t('auth.forgotPassword') || 'Forgot password?'}
+                  {t('auth.forgotPassword')}
                 </Link>
               </div>
               <div className="relative">
@@ -148,7 +148,7 @@ export default function LoginPage() {
           {/* Development Credentials */}
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm font-semibold text-amber-800 mb-3">🔧 Development Test Accounts</p>
+              <p className="text-sm font-semibold text-amber-800 mb-3">🔧 {t('auth.devTestAccounts')}</p>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-amber-700">
                   <thead>

@@ -138,11 +138,11 @@ export default function FeatureFlagsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <Flag className="w-7 h-7 text-indigo-600" />
               {isAr ? 'أعلام الميزات' : 'Feature Flags'}
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {isAr
                 ? 'تحكم في تفعيل وإيقاف الميزات عبر النظام'
                 : 'Control feature rollouts across the system'}
@@ -150,7 +150,7 @@ export default function FeatureFlagsPage() {
           </div>
           <button
             onClick={fetchFlags}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-card border border-input rounded-lg hover:bg-accent text-sm font-medium"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             {isAr ? 'تحديث' : 'Refresh'}
@@ -159,40 +159,40 @@ export default function FeatureFlagsPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg border p-4">
-            <div className="text-sm text-gray-500">{isAr ? 'إجمالي الأعلام' : 'Total Flags'}</div>
-            <div className="text-2xl font-bold text-gray-900">{flags.length}</div>
+          <div className="bg-card rounded-lg border p-4">
+            <div className="text-sm text-muted-foreground">{isAr ? 'إجمالي الأعلام' : 'Total Flags'}</div>
+            <div className="text-2xl font-bold text-foreground">{flags.length}</div>
           </div>
-          <div className="bg-white rounded-lg border p-4">
-            <div className="text-sm text-gray-500">{isAr ? 'مفعّلة' : 'Enabled'}</div>
+          <div className="bg-card rounded-lg border p-4">
+            <div className="text-sm text-muted-foreground">{isAr ? 'مفعّلة' : 'Enabled'}</div>
             <div className="text-2xl font-bold text-green-600">{enabledCount}</div>
           </div>
-          <div className="bg-white rounded-lg border p-4">
-            <div className="text-sm text-gray-500">{isAr ? 'معطّلة' : 'Disabled'}</div>
+          <div className="bg-card rounded-lg border p-4">
+            <div className="text-sm text-muted-foreground">{isAr ? 'معطّلة' : 'Disabled'}</div>
             <div className="text-2xl font-bold text-red-600">{disabledCount}</div>
           </div>
-          <div className="bg-white rounded-lg border p-4">
-            <div className="text-sm text-gray-500">{isAr ? 'تجريبية' : 'Experimental'}</div>
-            <div className="text-2xl font-bold text-gray-600">{experimentalCount}</div>
+          <div className="bg-card rounded-lg border p-4">
+            <div className="text-sm text-muted-foreground">{isAr ? 'تجريبية' : 'Experimental'}</div>
+            <div className="text-2xl font-bold text-muted-foreground">{experimentalCount}</div>
           </div>
         </div>
 
         {/* Search + Filter */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               placeholder={isAr ? 'بحث في الأعلام...' : 'Search flags...'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-10 pr-4 py-2 border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div className="relative">
             <button
               onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50 min-w-[160px] justify-between"
+              className="flex items-center gap-2 px-4 py-2 bg-card border border-input rounded-lg text-sm hover:bg-accent min-w-[160px] justify-between"
             >
               <span>
                 {categoryFilter === 'all'
@@ -204,7 +204,7 @@ export default function FeatureFlagsPage() {
               <ChevronDown className="w-4 h-4" />
             </button>
             {showCategoryDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+              <div className="absolute z-10 mt-1 w-full bg-card border border-input rounded-lg shadow-lg">
                 {categories.map((cat) => (
                   <button
                     key={cat}
@@ -212,7 +212,7 @@ export default function FeatureFlagsPage() {
                       setCategoryFilter(cat);
                       setShowCategoryDropdown(false);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-accent ${
                       cat === categoryFilter ? 'bg-indigo-50 text-indigo-700' : ''
                     }`}
                   >
@@ -231,10 +231,10 @@ export default function FeatureFlagsPage() {
         {/* Flags List */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
+            <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
           </div>
         ) : filteredFlags.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-muted-foreground">
             {isAr ? 'لا توجد أعلام مطابقة' : 'No matching flags found'}
           </div>
         ) : (
@@ -247,7 +247,7 @@ export default function FeatureFlagsPage() {
               return (
                 <div
                   key={flag.name}
-                  className={`bg-white rounded-lg border p-4 transition-all ${
+                  className={`bg-card rounded-lg border p-4 transition-all ${
                     isUpdating ? 'opacity-60' : ''
                   }`}
                 >
@@ -258,17 +258,17 @@ export default function FeatureFlagsPage() {
                           <CatIcon className="w-3 h-3" />
                           {isAr ? catConf.labelAr : catConf.label}
                         </span>
-                        <code className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded font-mono">
+                        <code className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded font-mono">
                           {flag.name}
                         </code>
                       </div>
-                      <p className="text-sm text-gray-700">
+                      <p className="text-sm text-muted-foreground">
                         {isAr && flag.descriptionAr ? flag.descriptionAr : flag.description}
                       </p>
                       {/* Rollout percentage */}
                       {flag.enabled && (
                         <div className="mt-2 flex items-center gap-3">
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground">
                             {isAr ? 'نسبة التفعيل:' : 'Rollout:'}
                           </span>
                           <input
@@ -292,13 +292,13 @@ export default function FeatureFlagsPage() {
                             }}
                             className="w-32 h-1.5 accent-indigo-600"
                           />
-                          <span className="text-xs font-medium text-gray-700 w-10">
+                          <span className="text-xs font-medium text-foreground w-10">
                             {flag.rolloutPercentage}%
                           </span>
                         </div>
                       )}
                       {flag.updatedAt && (
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {isAr ? 'آخر تحديث: ' : 'Updated: '}
                           {new Date(flag.updatedAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', {
                             year: 'numeric',
@@ -316,7 +316,7 @@ export default function FeatureFlagsPage() {
                       className={`flex-shrink-0 p-1 rounded-lg transition-colors ${
                         flag.enabled
                           ? 'text-green-600 hover:bg-green-50'
-                          : 'text-gray-400 hover:bg-gray-50'
+                          : 'text-muted-foreground hover:bg-accent'
                       }`}
                       title={flag.enabled ? (isAr ? 'إيقاف' : 'Disable') : (isAr ? 'تفعيل' : 'Enable')}
                     >

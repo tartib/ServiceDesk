@@ -30,7 +30,7 @@ import {
   LoadingState,
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface User {
   _id: string;

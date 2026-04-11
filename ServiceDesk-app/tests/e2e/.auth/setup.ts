@@ -6,7 +6,7 @@ import { test as setup, expect } from '@playwright/test';
  */
 setup('authenticate', async ({ page }) => {
   // Mock the login API for testing
-  await page.route('**/api/v1/auth/login', async (route) => {
+  await page.route('**/api/v2/auth/login', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -27,7 +27,7 @@ setup('authenticate', async ({ page }) => {
   });
 
   // Mock auth verification for subsequent requests
-  await page.route('**/api/v1/auth/me', async (route) => {
+  await page.route('**/api/v2/auth/me', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

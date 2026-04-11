@@ -1,0 +1,135 @@
+{
+  "agentConsole": {
+    "title": "وحدة تحكم الوكيل",
+    "welcome": "مرحباً {name}",
+    "activeTickets": "{count} تذكرة نشطة",
+    "refresh": "تحديث",
+    "dataRefreshed": "تم تحديث البيانات",
+    "noTickets": "لا توجد تذاكر في هذا الطابور",
+
+    "tabs": {
+      "myQueue": "طابوري",
+      "unassigned": "غير مسنَد",
+      "pendingApproval": "بانتظار الموافقة",
+      "allOpen": "الكل مفتوح"
+    },
+
+    "stats": {
+      "openIncidents": "حوادث مفتوحة",
+      "slaBreached": "تجاوز SLA",
+      "pendingApproval": "بانتظار الموافقة",
+      "unassigned": "غير مسنَد"
+    },
+
+    "table": {
+      "id": "المعرف",
+      "type": "النوع",
+      "title": "العنوان",
+      "status": "الحالة",
+      "priority": "الأولوية",
+      "requester": "مقدم الطلب",
+      "assigned": "مسند إلى",
+      "created": "تاريخ الإنشاء"
+    },
+
+    "ticketType": {
+      "incident": "حادثة",
+      "incidentShort": "حادثة",
+      "serviceRequest": "طلب خدمة",
+      "serviceRequestShort": "طلب"
+    },
+
+    "incidentStatus": {
+      "open": "مفتوح",
+      "in_progress": "قيد التنفيذ",
+      "pending": "معلق",
+      "resolved": "تم الحل",
+      "closed": "مغلق",
+      "cancelled": "ملغي"
+    },
+
+    "srStatus": {
+      "submitted": "مقدم",
+      "pending_approval": "بانتظار الموافقة",
+      "approved": "موافق عليه",
+      "rejected": "مرفوض",
+      "in_progress": "قيد التنفيذ",
+      "on_hold": "معلق",
+      "fulfilled": "منجز",
+      "cancelled": "ملغي"
+    },
+
+    "priority": {
+      "critical": "حرج",
+      "high": "مرتفع",
+      "medium": "متوسط",
+      "low": "منخفض"
+    },
+
+    "detail": {
+      "description": "الوصف",
+      "formData": "بيانات النموذج",
+      "requester": "مقدم الطلب",
+      "department": "القسم",
+      "assignedTo": "مسند إلى",
+      "unassigned": "غير مسنَد",
+      "slaBreached": "متجاوز",
+      "approvals": "الموافقات",
+      "created": "تاريخ الإنشاء",
+      "timeline": "السجل الزمني"
+    },
+
+    "actions": {
+      "assignToMe": "إسناد إليّ",
+      "startWork": "بدء العمل",
+      "pending": "معلق",
+      "resolve": "حل",
+      "resume": "استئناف",
+      "close": "إغلاق",
+      "worklog": "سجل عمل",
+      "escalate": "تصعيد",
+      "approve": "موافقة",
+      "reject": "رفض",
+      "fulfill": "تنفيذ",
+      "save": "حفظ",
+      "cancel": "إلغاء"
+    },
+
+    "worklog": {
+      "timeSpent": "الوقت المستغرق (دقائق)",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "اكتب ملاحظات..."
+    },
+
+    "dialogs": {
+      "rejectRequest": "رفض الطلب",
+      "rejectionReason": "سبب الرفض",
+      "rejectionPlaceholder": "اكتب سبب الرفض...",
+      "fulfillRequest": "تنفيذ الطلب",
+      "fulfillmentNotes": "ملاحظات التنفيذ",
+      "fulfillmentPlaceholder": "اكتب ملاحظات...",
+      "escalateIncident": "تصعيد الحادثة",
+      "escalationReason": "سبب التصعيد",
+      "escalationPlaceholder": "اكتب سبب التصعيد..."
+    },
+
+    "toast": {
+      "ticketAssigned": "تم إسناد التذكرة إليك",
+      "assignmentFailed": "فشل الإسناد",
+      "statusUpdated": "تم تحديث الحالة",
+      "statusUpdateFailed": "فشل تحديث الحالة",
+      "requestApproved": "تمت الموافقة على الطلب",
+      "approvalFailed": "فشلت الموافقة",
+      "requestRejected": "تم رفض الطلب",
+      "rejectionFailed": "فشل الرفض",
+      "requestFulfilled": "تم تنفيذ الطلب",
+      "fulfillmentFailed": "فشل التنفيذ",
+      "workStarted": "تم بدء العمل",
+      "workStartFailed": "فشل بدء العمل",
+      "escalated": "تم التصعيد",
+      "escalationFailed": "فشل التصعيد",
+      "worklogAdded": "تمت إضافة سجل العمل",
+      "worklogFailed": "فشلت الإضافة"
+    }
+  }
+}

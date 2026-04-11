@@ -91,7 +91,7 @@ export function useTeams(filters?: { type?: string; is_active?: boolean; search?
       if (filters?.is_active !== undefined) params.append('is_active', String(filters.is_active));
       if (filters?.search) params.append('search', filters.search);
       
-      const response = await api.get(`/teams?${params.toString()}`) as { data?: Team[] } | Team[];
+      const response = await api.get(`/core/teams?${params.toString()}`) as { data?: Team[] } | Team[];
       return Array.isArray(response) ? response : (response.data || []);
     },
   });
@@ -104,7 +104,7 @@ export function useTeam(id: string) {
   return useQuery({
     queryKey: teamKeys.detail(id),
     queryFn: async () => {
-      const response = await api.get(`/teams/${id}`) as { data?: Team };
+      const response = await api.get(`/core/teams/${id}`) as { data?: Team };
       return response.data || response;
     },
     enabled: !!id,
@@ -119,7 +119,7 @@ export function useCreateTeam() {
 
   return useMutation({
     mutationFn: async (data: CreateTeamDTO) => {
-      const response = await api.post('/teams', data) as { data?: Team };
+      const response = await api.post('/core/teams', data) as { data?: Team };
       return response.data || response;
     },
     onSuccess: () => {
@@ -136,7 +136,7 @@ export function useUpdateTeam() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateTeamDTO }) => {
-      const response = await api.put(`/teams/${id}`, data) as { data?: Team };
+      const response = await api.put(`/core/teams/${id}`, data) as { data?: Team };
       return response.data || response;
     },
     onSuccess: (_, variables) => {
@@ -154,7 +154,7 @@ export function useDeleteTeam() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/teams/${id}`);
+      await api.delete(`/core/teams/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
@@ -170,7 +170,7 @@ export function useAddTeamMember() {
 
   return useMutation({
     mutationFn: async ({ teamId, data }: { teamId: string; data: AddMemberDTO }) => {
-      const response = await api.post(`/teams/${teamId}/members`, data) as { data?: Team };
+      const response = await api.post(`/core/teams/${teamId}/members`, data) as { data?: Team };
       return response.data || response;
     },
     onSuccess: (_, variables) => {
@@ -188,7 +188,7 @@ export function useRemoveTeamMember() {
 
   return useMutation({
     mutationFn: async ({ teamId, userId }: { teamId: string; userId: string }) => {
-      const response = await api.delete(`/teams/${teamId}/members/${userId}`) as { data?: Team };
+      const response = await api.delete(`/core/teams/${teamId}/members/${userId}`) as { data?: Team };
       return response.data || response;
     },
     onSuccess: (_, variables) => {
@@ -206,7 +206,7 @@ export function useUpdateMemberRole() {
 
   return useMutation({
     mutationFn: async ({ teamId, userId, role }: { teamId: string; userId: string; role: 'leader' | 'member' }) => {
-      const response = await api.patch(`/teams/${teamId}/members/${userId}`, { role }) as { data?: Team };
+      const response = await api.patch(`/core/teams/${teamId}/members/${userId}`, { role }) as { data?: Team };
       return response.data || response;
     },
     onSuccess: (_, variables) => {

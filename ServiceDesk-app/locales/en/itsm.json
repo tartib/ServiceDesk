@@ -253,5 +253,149 @@
       "rollbackPlaceholder": "How will you revert if something goes wrong?",
       "addService": "Add a service name"
     }
+  },
+  "pir": {
+    "title": "Post-Incident Reviews",
+    "subtitle": "Analyze major incidents to prevent recurrence",
+    "newPIR": "New PIR",
+    "pirId": "PIR ID",
+    "incidentRef": "Incident Reference",
+    "facilitator": "Facilitator",
+    "scheduledDate": "Scheduled Date",
+    "notFound": "PIR not found",
+    "notFoundDesc": "The post-incident review you are looking for does not exist.",
+    "backToPIRs": "Back to PIRs",
+    "tabs": {
+      "overview": "Overview",
+      "rca": "Root Cause Analysis",
+      "actions": "Follow-up Actions",
+      "participants": "Participants"
+    },
+    "status": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "closed": "Closed"
+    },
+    "rcaMethods": {
+      "five_whys": "5 Whys",
+      "fishbone": "Fishbone / Ishikawa",
+      "timeline": "Timeline Analysis",
+      "fault_tree": "Fault Tree Analysis"
+    },
+    "form": {
+      "incidentId": "Incident ID",
+      "incidentIdPlaceholder": "e.g. INC-2025-00001",
+      "rcaMethod": "RCA Method",
+      "scheduledDate": "Scheduled Date",
+      "facilitator": "Facilitator Name",
+      "facilitatorPlaceholder": "Name of the person leading the review",
+      "participants": "Participants",
+      "addParticipant": "Add Participant",
+      "participantName": "Name",
+      "participantRole": "Role",
+      "submit": "Create PIR"
+    },
+    "actions": {
+      "addAction": "Add Action",
+      "actionDescription": "Action Description",
+      "assignee": "Assignee",
+      "dueDate": "Due Date",
+      "markDone": "Mark Done"
+    },
+    "noActions": "No follow-up actions added yet",
+    "noParticipants": "No participants added yet"
+  },
+  "changeCalendar": {
+    "title": "Change Calendar",
+    "subtitle": "View scheduled changes, freeze windows, and CAB meetings",
+    "today": "Today",
+    "upcoming": "Upcoming Events",
+    "noEvents": "No events this day",
+    "noUpcoming": "No upcoming events",
+    "filterAll": "All Events",
+    "eventTypes": {
+      "freeze_window": "Freeze Window",
+      "maintenance_window": "Maintenance",
+      "cab_meeting": "CAB Meeting",
+      "change": "Change"
+    },
+    "eventDetail": {
+      "type": "Type",
+      "start": "Start",
+      "end": "End",
+      "description": "Description",
+      "createdBy": "Created By"
+    },
+    "newEvent": "New Event"
+  },
+  "rca": {
+    "workflowTitle": "RCA Workflow",
+    "steps": {
+      "logged": "Logged",
+      "rcaInProgress": "RCA In Progress",
+      "knownError": "Known Error",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "startRCA": "Start RCA",
+    "completeRCA": "Complete RCA",
+    "publishKE": "Publish Known Error",
+    "selectMethod": "Select RCA Method",
+    "methods": {
+      "five_whys": "5 Whys — Ask 'why' five times",
+      "fishbone": "Fishbone / Ishikawa — Cause & effect diagram",
+      "timeline": "Timeline Analysis — Chronological breakdown",
+      "fault_tree": "Fault Tree Analysis — Logic diagram"
+    },
+    "findings": "RCA Findings",
+    "findingsPlaceholder": "Document your analysis findings...",
+    "rootCause": "Root Cause",
+    "rootCausePlaceholder": "What is the definitive root cause?",
+    "contributingFactors": "Contributing Factors",
+    "addFactor": "Add Factor",
+    "factorPlaceholder": "e.g. Insufficient monitoring alerts",
+    "workaround": "Workaround",
+    "workaroundPlaceholder": "Describe the workaround for affected users...",
+    "keTitle": "Known Error Title",
+    "keTitlePlaceholder": "Brief title for the known error entry",
+    "symptoms": "Symptoms",
+    "symptomsPlaceholder": "Describe the observable symptoms...",
+    "recurringBanner": "Recurring Incidents Detected",
+    "recurringDesc": "The following incidents appear to be related to this problem:",
+    "startedAt": "RCA started",
+    "completedAt": "RCA completed",
+    "method": "Method"
+  },
+  "majorIncident": {
+    "title": "Major Incident",
+    "declare": "Declare Major Incident",
+    "severity": "Severity",
+    "bridge": "Incident Bridge",
+    "bridgeUrl": "Bridge URL",
+    "bridgePin": "PIN",
+    "commsUpdates": "Communications Updates",
+    "addCommsUpdate": "Add Update",
+    "updatePlaceholder": "Write a communications update...",
+    "noCommsUpdates": "No communications updates yet",
+    "createPIR": "Create Post-Incident Review",
+    "pirCreated": "PIR has been created",
+    "severityLevels": {
+      "sev1": "SEV-1 — Critical",
+      "sev2": "SEV-2 — Major",
+      "sev3": "SEV-3 — Significant"
+    }
+  },
+  "knowledgeDeflection": {
+    "title": "Self-Help Suggestions",
+    "searching": "Searching knowledge base...",
+    "noResults": "No matching articles found",
+    "dismiss": "Dismiss",
+    "helpful": "Helpful?",
+    "markedHelpful": "Marked helpful",
+    "thanksForFeedback": "Thanks for your feedback",
+    "readArticle": "Read article",
+    "resolvedBanner": "Did any of the above resolve your issue? You can go back if it did."
   }
 }

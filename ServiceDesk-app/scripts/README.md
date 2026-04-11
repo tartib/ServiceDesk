@@ -95,7 +95,7 @@ You'll see progress logs like:
 ### "Login failed"
 - Make sure you have a manager account with the credentials above
 - Check that your backend server is running
-- Verify the API URL is correct (`http://localhost:5000/api/v1`)
+- Verify the API URL is correct (`http://localhost:5000/api/v2`)
 
 ### "Failed to create..."
 - Check backend logs for specific errors

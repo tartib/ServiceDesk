@@ -78,7 +78,7 @@ export function useLeaveRequests(filters?: {
       if (filters?.page) params.append('page', String(filters.page));
       if (filters?.limit) params.append('limit', String(filters.limit));
 
-      const response = await api.get(`/leave-requests?${params.toString()}`) as {
+      const response = await api.get(`/core/leave-requests?${params.toString()}`) as {
         data?: {
           requests: LeaveRequest[];
           pagination: { page: number; limit: number; total: number; pages: number };
@@ -102,7 +102,7 @@ export function useMyLeaveRequests(filters?: { status?: LeaveStatus; page?: numb
       if (filters?.page) params.append('page', String(filters.page));
       if (filters?.limit) params.append('limit', String(filters.limit));
 
-      const response = await api.get(`/leave-requests/my?${params.toString()}`) as {
+      const response = await api.get(`/core/leave-requests/my?${params.toString()}`) as {
         data?: {
           requests: LeaveRequest[];
           pagination: { page: number; limit: number; total: number; pages: number };
@@ -120,7 +120,7 @@ export function useCreateLeaveRequest() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: CreateLeaveRequestDTO) => {
-      const response = await api.post('/leave-requests', data) as {
+      const response = await api.post('/core/leave-requests', data) as {
         data?: { request: LeaveRequest };
       };
       return (response.data?.request || response) as LeaveRequest;
@@ -135,7 +135,7 @@ export function useUpdateLeaveRequest() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateLeaveRequestDTO }) => {
-      const response = await api.put(`/leave-requests/${id}`, data) as {
+      const response = await api.put(`/core/leave-requests/${id}`, data) as {
         data?: { request: LeaveRequest };
       };
       return (response.data?.request || response) as LeaveRequest;
@@ -150,7 +150,7 @@ export function useDeleteLeaveRequest() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/leave-requests/${id}`);
+      await api.delete(`/core/leave-requests/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leaveRequestKeys.all });
@@ -162,7 +162,7 @@ export function useApproveLeaveRequest() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await api.patch(`/leave-requests/${id}/approve`) as {
+      const response = await api.patch(`/core/leave-requests/${id}/approve`) as {
         data?: { request: LeaveRequest };
       };
       return (response.data?.request || response) as LeaveRequest;
@@ -177,7 +177,7 @@ export function useRejectLeaveRequest() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, reviewNote }: { id: string; reviewNote?: string }) => {
-      const response = await api.patch(`/leave-requests/${id}/reject`, { reviewNote }) as {
+      const response = await api.patch(`/core/leave-requests/${id}/reject`, { reviewNote }) as {
         data?: { request: LeaveRequest };
       };
       return (response.data?.request || response) as LeaveRequest;

@@ -13,7 +13,7 @@ export interface ISlaPolicy {
   descriptionAr?: string;
   entityType: string;
   priority: number;
-  matchConditions: Array<{ field: string; operator: string; value: any }>;
+  matchConditions: Array<{ field: string; operator: string; value: string | number | boolean | string[] }>;
   isActive: boolean;
   createdBy?: string;
   createdAt: string;
@@ -41,7 +41,7 @@ export interface ISlaEscalationRule {
   triggerType: string;
   offsetMinutes: number;
   actionType: string;
-  actionConfig: Record<string, any>;
+  actionConfig: Record<string, unknown>;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -151,7 +151,7 @@ export const useSlaPolicies = (filters?: {
         data: ISlaPolicy[];
         pagination: { page: number; limit: number; total: number; totalPages: number };
       }>(`${BASE}/policies?${params.toString()}`);
-      return res;
+      return res.data;
     },
   });
 };
@@ -277,7 +277,7 @@ export const useTicketSla = (ticketId: string) => {
 export const useSlaStats = () => {
   return useQuery({
     queryKey: [SLA_STATS_KEY],
-    queryFn: async () => {
+    queryFn: async (): Promise<ISlaStats> => {
       const res = await api.get<{ success: boolean; data: ISlaStats }>(`${BASE}/reports/stats`);
       return res.data;
     },
@@ -291,10 +291,8 @@ export const useSlaComplianceReport = (from?: string, to?: string) => {
 
   return useQuery({
     queryKey: [SLA_COMPLIANCE_KEY, from, to],
-    queryFn: async () => {
-      const res = await api.get<{ success: boolean; data: ISlaComplianceReport }>(
-        `${BASE}/reports/compliance?${params.toString()}`
-      );
+    queryFn: async (): Promise<ISlaComplianceReport> => {
+      const res = await api.get<{ success: boolean; data: ISlaComplianceReport }>(`${BASE}/reports/compliance?${params.toString()}`);
       return res.data;
     },
   });

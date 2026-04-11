@@ -128,7 +128,7 @@ export default function WorkflowEditorPage() {
   if (isLoading) {
     return (
       <ProtectedRoute>
-        <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex h-screen items-center justify-center bg-muted/50">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       </ProtectedRoute>
@@ -138,9 +138,9 @@ export default function WorkflowEditorPage() {
   if (!workflow && !isLoading) {
     return (
       <ProtectedRoute>
-        <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex h-screen items-center justify-center bg-muted/50">
           <div className="text-center">
-            <p className="text-lg text-gray-500 mb-4">
+            <p className="text-lg text-muted-foreground mb-4">
               {locale === 'ar' ? 'سير العمل غير موجود' : 'Workflow not found'}
             </p>
             <Link href="/workflows">
@@ -157,9 +157,9 @@ export default function WorkflowEditorPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex flex-col h-screen bg-gray-50">
+      <div className="flex flex-col h-screen bg-muted/50">
         {/* Top Bar */}
-        <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 shrink-0">
+        <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center gap-3">
             <Link href="/workflows">
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -169,7 +169,7 @@ export default function WorkflowEditorPage() {
             <Input
               value={workflowName}
               onChange={(e) => setWorkflowName(e.target.value)}
-              className="h-8 w-64 text-sm font-medium border-transparent hover:border-gray-300 focus:border-blue-500"
+              className="h-8 w-64 text-sm font-medium border-transparent hover:border-input focus:border-blue-500"
               placeholder={locale === 'ar' ? 'اسم سير العمل' : 'Workflow name'}
             />
             {workflow && (

@@ -1,30 +1,36 @@
 /**
  * Organization Context Management
- * Handles organization ID validation for PM operations
+ * 
+ * Reads organizationId from the Zustand auth store (persisted).
+ * Falls back to localStorage for backwards compatibility with raw fetch callers.
  */
 
+import { useAuthStore } from '@/store/authStore';
+
 /**
- * Get organization ID from localStorage
+ * Get organization ID — prefers Zustand store, falls back to localStorage
  */
 export function getOrganizationId(): string | null {
+  // Try Zustand store first (works even outside React components)
+  const storeOrgId = useAuthStore.getState().organizationId;
+  if (storeOrgId) return storeOrgId;
+  // Fallback to localStorage for legacy callers
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('organizationId');
 }
 
 /**
- * Set organization ID in localStorage
+ * Set organization ID — updates both store and localStorage
  */
 export function setOrganizationId(orgId: string): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('organizationId', orgId);
+  useAuthStore.getState().setOrganizationId(orgId);
 }
 
 /**
- * Clear organization ID from localStorage
+ * Clear organization ID
  */
 export function clearOrganizationId(): void {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem('organizationId');
+  useAuthStore.getState().setOrganizationId(null);
 }
 
 /**
@@ -47,7 +53,7 @@ export function validatePMOperation(operationName: string): string {
   try {
     return requireOrganizationId();
   } catch (error) {
-    console.error(`❌ PM Operation "${operationName}" failed: Organization context missing`);
+    console.error(`PM Operation "${operationName}" failed: Organization context missing`);
     throw error;
   }
 }

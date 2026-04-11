@@ -1,5 +1,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { API_URL } from './api/config';
+import { getCsrfToken } from './api/csrf';
+import { getOrganizationId } from './api/organization-context';
 
 // Type override for axios instance that returns data directly (due to response interceptor)
 interface ApiInstance {
@@ -12,13 +14,14 @@ interface ApiInstance {
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor - add auth token and organization context
-axiosInstance.interceptors.request.use((config) => {
+// Request interceptor - add auth token, organization context, and CSRF token
+axiosInstance.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     if (token) {
@@ -26,24 +29,37 @@ axiosInstance.interceptors.request.use((config) => {
     }
     
     // Add organization context for PM module
-    const organizationId = localStorage.getItem('organizationId');
+    const organizationId = getOrganizationId();
     if (organizationId) {
       config.headers['X-Organization-ID'] = organizationId;
     }
   }
+
+  // Add CSRF token for state-changing requests
+  if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+    try {
+      const csrfToken = await getCsrfToken();
+      config.headers['X-CSRF-Token'] = csrfToken;
+    } catch {
+      // Don't block request if CSRF fetch fails
+    }
+  }
+
   return config;
 });
 
-// Response interceptor - handle errors
+// Response interceptor - unwrap data and handle errors
 axiosInstance.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
-      // Redirect to login
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         window.location.href = '/login';
       }
+    }
+    if (error.response?.status === 403 && error.response?.data?.message?.includes('CSRF')) {
+      console.error('CSRF token validation failed:', error.response.data);
     }
     return Promise.reject(error);
   }
@@ -53,3 +69,6 @@ axiosInstance.interceptors.response.use(
 const api = axiosInstance as unknown as ApiInstance;
 
 export default api;
+
+// Also export the raw axios instance for cases that need full response (e.g. auth)
+export const rawAxiosInstance = axiosInstance;

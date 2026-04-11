@@ -60,25 +60,25 @@ export default function ReleasesStandalonePage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-muted/50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Rocket className="h-6 w-6 text-teal-600" />
-            <h1 className="text-xl font-bold text-gray-900">{t('nav.releases')}</h1>
+            <h1 className="text-xl font-bold text-foreground">{t('nav.releases')}</h1>
           </div>
           <div className="flex items-center gap-3">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 border border-input rounded-lg text-sm text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="all">All Status</option>
               <option value="planning">Planning</option>
@@ -94,34 +94,34 @@ export default function ReleasesStandalonePage() {
       </div>
 
       {/* Stats Bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3">
+      <div className="bg-card border-b border-border px-6 py-3">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <Package className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-600">{stats?.total || 0} Total</span>
+            <Package className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">{stats?.total || 0} Total</span>
           </div>
           <div className="flex items-center gap-2">
             <Rocket className="h-4 w-4 text-teal-500" />
-            <span className="text-sm text-gray-600">{stats?.deployed || 0} Deployed</span>
+            <span className="text-sm text-muted-foreground">{stats?.deployed || 0} Deployed</span>
           </div>
           <div className="flex items-center gap-2">
-            <GitBranch className="h-4 w-4 text-blue-500" />
-            <span className="text-sm text-gray-600">{(stats?.building || 0) + (stats?.testing || 0)} In Progress</span>
+            <GitBranch className="h-4 w-4 text-info" />
+            <span className="text-sm text-muted-foreground">{(stats?.building || 0) + (stats?.testing || 0)} In Progress</span>
           </div>
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-600">{stats?.planning || 0} Planning</span>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">{stats?.planning || 0} Planning</span>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden flex">
-        <div className={`${selectedRelease ? 'w-1/2 border-r border-gray-200' : 'w-full'} overflow-y-auto p-4`}>
+        <div className={`${selectedRelease ? 'w-1/2 border-r border-border' : 'w-full'} overflow-y-auto p-4`}>
           {releases.length === 0 ? (
             <div className="text-center py-12">
-              <Rocket className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No releases found</p>
+              <Rocket className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+              <p className="text-muted-foreground">No releases found</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -136,25 +136,25 @@ export default function ReleasesStandalonePage() {
                   <div
                     key={release._id}
                     onClick={() => setSelectedRelease(release)}
-                    className={`bg-white border rounded-xl p-4 cursor-pointer transition-all ${
+                    className={`bg-card border rounded-xl p-4 cursor-pointer transition-all ${
                       selectedRelease?._id === release._id
-                        ? 'border-blue-500 ring-2 ring-blue-100'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                        ? 'border-primary ring-2 ring-primary/20'
+                        : 'border-border hover:border-accent-foreground/20 hover:shadow-md'
                     }`}
                   >
                     <div className="flex items-start gap-4">
                       <div className={`p-2 rounded-lg ${
-                        release.status === 'deployed' ? 'bg-teal-100' :
-                        release.status === 'rolled_back' ? 'bg-red-100' : 'bg-blue-100'
+                        release.status === 'deployed' ? 'bg-teal-100 dark:bg-teal-900/30' :
+                        release.status === 'rolled_back' ? 'bg-destructive/10' : 'bg-primary/10'
                       }`}>
                         <Rocket className={`h-5 w-5 ${
                           release.status === 'deployed' ? 'text-teal-600' :
-                          release.status === 'rolled_back' ? 'text-red-600' : 'text-blue-600'
+                          release.status === 'rolled_back' ? 'text-destructive' : 'text-primary'
                         }`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-mono font-bold text-gray-900">{release.version}</span>
+                          <span className="text-sm font-mono font-bold text-foreground">{release.version}</span>
                           <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${tCfg.color}`}>
                             {tCfg.label}
                           </span>
@@ -163,8 +163,8 @@ export default function ReleasesStandalonePage() {
                             {stCfg.label}
                           </span>
                         </div>
-                        <h3 className="font-medium text-gray-900 mb-1">{release.name}</h3>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <h3 className="font-medium text-foreground mb-1">{release.name}</h3>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           {release.deployment?.planned_date && (
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3.5 w-3.5" />
@@ -177,10 +177,10 @@ export default function ReleasesStandalonePage() {
                         </div>
                       </div>
                       <div className="text-center">
-                        <p className="text-lg font-bold text-gray-900">{release.linked_changes?.length || 0}</p>
-                        <p className="text-xs text-gray-500">changes</p>
+                        <p className="text-lg font-bold text-foreground">{release.linked_changes?.length || 0}</p>
+                        <p className="text-xs text-muted-foreground">changes</p>
                       </div>
-                      <button className="p-1 text-gray-400 hover:text-gray-600 rounded">
+                      <button className="p-1 text-muted-foreground hover:text-foreground rounded">
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                     </div>
@@ -193,16 +193,16 @@ export default function ReleasesStandalonePage() {
 
         {/* Detail Panel */}
         {selectedRelease && (
-          <div className="w-1/2 overflow-y-auto bg-white p-6">
+          <div className="w-1/2 overflow-y-auto bg-card p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xl font-mono font-bold text-gray-900">{selectedRelease.version}</span>
+                  <span className="text-xl font-mono font-bold text-foreground">{selectedRelease.version}</span>
                   <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${(typeConfig[selectedRelease.type] || typeConfig.minor).color}`}>
                     {(typeConfig[selectedRelease.type] || typeConfig.minor).label}
                   </span>
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">{selectedRelease.name}</h2>
+                <h2 className="text-lg font-semibold text-foreground">{selectedRelease.name}</h2>
               </div>
               <span className={`px-3 py-1 text-sm font-medium rounded-full ${(statusConfig[selectedRelease.status] || statusConfig.planning).color}`}>
                 {(statusConfig[selectedRelease.status] || statusConfig.planning).label}
@@ -210,35 +210,35 @@ export default function ReleasesStandalonePage() {
             </div>
 
             {selectedRelease.description && (
-              <p className="text-gray-600 mb-6">{selectedRelease.description}</p>
+              <p className="text-muted-foreground mb-6">{selectedRelease.description}</p>
             )}
 
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Environment</p>
-                <p className="text-sm font-medium text-gray-900 mt-1 capitalize">{selectedRelease.deployment?.environment || 'development'}</p>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Environment</p>
+                <p className="text-sm font-medium text-foreground mt-1 capitalize">{selectedRelease.deployment?.environment || 'development'}</p>
               </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Owner</p>
-                <p className="text-sm font-medium text-gray-900 mt-1">{selectedRelease.owner?.name || 'Unassigned'}</p>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Owner</p>
+                <p className="text-sm font-medium text-foreground mt-1">{selectedRelease.owner?.name || 'Unassigned'}</p>
               </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Planned Date</p>
-                <p className="text-sm font-medium text-gray-900 mt-1">{selectedRelease.deployment?.planned_date ? formatDate(selectedRelease.deployment.planned_date) : 'Not set'}</p>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Planned Date</p>
+                <p className="text-sm font-medium text-foreground mt-1">{selectedRelease.deployment?.planned_date ? formatDate(selectedRelease.deployment.planned_date) : 'Not set'}</p>
               </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Linked Changes</p>
-                <p className="text-sm font-medium text-blue-600 mt-1">{selectedRelease.linked_changes?.length || 0} change requests</p>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Linked Changes</p>
+                <p className="text-sm font-medium text-primary mt-1">{selectedRelease.linked_changes?.length || 0} change requests</p>
               </div>
             </div>
 
             {selectedRelease.deployment?.rollback_plan && (
-              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="mb-6 p-4 bg-warning/10 border border-warning/30 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                  <h3 className="font-semibold text-yellow-900">Rollback Plan</h3>
+                  <AlertTriangle className="h-5 w-5 text-warning" />
+                  <h3 className="font-semibold text-foreground">Rollback Plan</h3>
                 </div>
-                <p className="text-sm text-yellow-700">{selectedRelease.deployment.rollback_plan}</p>
+                <p className="text-sm text-muted-foreground">{selectedRelease.deployment.rollback_plan}</p>
               </div>
             )}
           </div>

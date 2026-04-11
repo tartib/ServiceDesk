@@ -31,7 +31,7 @@ import {
   useDroppable,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-import toast, { Toaster } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface Task {
   _id: string;
@@ -660,8 +660,6 @@ export default function BacklogPage() {
         }}
       />
 
-      {/* Toast notifications */}
-      <Toaster position="bottom-right" />
 
       {/* Backlog + Detail Panel Container */}
       <div className="flex-1 flex min-h-0">

@@ -89,7 +89,7 @@ test.describe('Project Management - Real API Tests', () => {
     expect(token).toBeTruthy();
     
     // Get user info to find organization
-    const userResponse = await apiCall(token, 'GET', '/api/v1/auth/me');
+    const userResponse = await apiCall(token, 'GET', '/api/v2/auth/me');
     if (userResponse.success && userResponse.data?.user?.organizations?.length > 0) {
       organizationId = userResponse.data.user.organizations[0];
     }
@@ -234,7 +234,7 @@ test.describe('Project Management - Real API Tests', () => {
       const response = await apiCall(
         token,
         'POST',
-        `/api/v1/pm/projects/${projectId}/tasks`,
+        `/api/v2/pm/projects/${projectId}/tasks`,
         {
           title: TEST_TASK.title,
           description: TEST_TASK.description,
@@ -293,7 +293,7 @@ test.describe('Project Management - Real API Tests', () => {
       const response = await apiCall(
         token,
         'POST',
-        `/api/v1/pm/projects/${projectId}/sprints`,
+        `/api/v2/pm/projects/${projectId}/sprints`,
         {
           name: 'Sprint 1',
           goal: 'Complete login feature',
@@ -329,7 +329,7 @@ test.describe('Project Management - Real API Tests', () => {
       const response = await apiCall(
         token,
         'POST',
-        `/api/v1/pm/projects/${projectId}/sprints`,
+        `/api/v2/pm/projects/${projectId}/sprints`,
         {
           name: 'Sprint 2',
           goal: 'Complete dashboard feature',
@@ -374,7 +374,7 @@ test.describe('Project Management - Real API Tests', () => {
       const response = await apiCall(
         token,
         'PUT',
-        `/api/v1/pm/tasks/${taskId}`,
+        `/api/v2/pm/tasks/${taskId}`,
         {
           sprint: sprintIds[0],
         },
@@ -398,7 +398,7 @@ test.describe('Project Management - Real API Tests', () => {
       const response = await apiCall(
         token,
         'POST',
-        `/api/v1/pm/sprints/${sprintIds[0]}/start`,
+        `/api/v2/pm/sprints/${sprintIds[0]}/start`,
         {},
         headers
       );
@@ -441,7 +441,7 @@ test.describe('Project Management - Real API Tests', () => {
       const response = await apiCall(
         token,
         'PUT',
-        `/api/v1/pm/tasks/${taskId}`,
+        `/api/v2/pm/tasks/${taskId}`,
         {
           status: 'in-progress',
         },
@@ -482,7 +482,7 @@ test.describe('Project Management - Real API Tests', () => {
       const response = await apiCall(
         token,
         'PUT',
-        `/api/v1/pm/tasks/${taskId}`,
+        `/api/v2/pm/tasks/${taskId}`,
         {
           status: 'done',
         },
@@ -508,7 +508,7 @@ test.describe('Project Management - Real API Tests', () => {
       const response = await apiCall(
         token,
         'POST',
-        `/api/v1/pm/sprints/${sprintIds[0]}/complete`,
+        `/api/v2/pm/sprints/${sprintIds[0]}/complete`,
         {
           moveIncompleteTo: sprintIds.length > 1 ? sprintIds[1] : 'backlog',
         },
@@ -552,7 +552,7 @@ test.describe('Project Management - Real API Tests', () => {
       const response = await apiCall(
         token,
         'DELETE',
-        `/api/v1/pm/projects/${projectId}`,
+        `/api/v2/pm/projects/${projectId}`,
         undefined,
         headers
       );

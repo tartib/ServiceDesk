@@ -1,0 +1,59 @@
+{
+  "roadmap": {
+    "title": "Feuille de route",
+    "zoom": {
+      "in": "Zoom avant",
+      "out": "Zoom arrière",
+      "days": "Jours",
+      "weeks": "Semaines",
+      "months": "Mois",
+      "quarters": "Trimestres"
+    },
+    "filters": {
+      "search": "Rechercher dans la chronologie...",
+      "assignee": "Responsable",
+      "type": "Type",
+      "status": "Statut",
+      "clearAll": "Effacer tous les filtres"
+    },
+    "types": {
+      "epic": "Epic",
+      "story": "Story",
+      "task": "Tâche",
+      "bug": "Bug"
+    },
+    "status": {
+      "todo": "À faire",
+      "inProgress": "En cours",
+      "done": "Terminé"
+    },
+    "create": {
+      "button": "Créer un Epic",
+      "placeholder": "Que faut-il faire ?",
+      "creating": "Création en cours...",
+      "success": "Créé avec succès !",
+      "error": "Échec de la création. Veuillez réessayer."
+    },
+    "columns": {
+      "workItems": "Éléments de travail",
+      "timeline": "Chronologie"
+    },
+    "progress": {
+      "label": "Progression",
+      "completed": "terminé"
+    },
+    "dates": {
+      "noStart": "Pas de début",
+      "noEnd": "Pas de fin",
+      "startDate": "Date de début",
+      "dueDate": "Date d'échéance"
+    },
+    "warnings": {
+      "missingDates": "Dates manquantes ou invalides",
+      "noTasks": "Aucune tâche trouvée",
+      "unauthorized": "Non autorisé - redirection vers la connexion"
+    },
+    "loading": "Chargement de la feuille de route...",
+    "today": "Aujourd'hui"
+  }
+}

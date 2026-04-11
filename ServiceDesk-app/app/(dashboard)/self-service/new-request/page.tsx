@@ -7,7 +7,7 @@ import { useCreateServiceRequest, Priority } from '@/hooks/useServiceRequests';
 import { useServiceCatalog, useServiceCatalogItem, IServiceCatalogItem } from '@/hooks/useServiceCatalog';
 import { useAuthStore } from '@/store/authStore';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -34,7 +34,6 @@ export default function NewServiceRequestPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const createRequest = useCreateServiceRequest();
-  const toast = useToast();
 
   const searchParams = useSearchParams();
   const preServiceId = searchParams.get('service_id');
@@ -152,7 +151,7 @@ export default function NewServiceRequestPage() {
         service_name: serviceName,
         priority,
         requester: {
-          id: user._id || user.id || 'unknown',
+          id: user.id || 'unknown',
           name: user.name || 'Unknown',
           email: user.email || 'unknown@example.com',
           department: (user as { department?: string }).department || 'IT',

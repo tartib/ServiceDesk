@@ -42,7 +42,7 @@ export default function SettingsPage() {
             <Settings className="h-7 w-7" />
             {t('settings.title')}
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-muted-foreground mt-1">
             {t('settings.subtitle')}
           </p>
         </div>
@@ -118,7 +118,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="font-medium">{t('settings.emailNotifications')}</div>
-                <div className="text-sm text-gray-500">{t('settings.emailNotificationsDesc')}</div>
+                <div className="text-sm text-muted-foreground">{t('settings.emailNotificationsDesc')}</div>
               </div>
               <Switch
                 checked={notifications.email}
@@ -129,7 +129,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="font-medium">{t('settings.browserNotifications')}</div>
-                <div className="text-sm text-gray-500">{t('settings.browserNotificationsDesc')}</div>
+                <div className="text-sm text-muted-foreground">{t('settings.browserNotificationsDesc')}</div>
               </div>
               <Switch
                 checked={notifications.browser}
@@ -138,13 +138,13 @@ export default function SettingsPage() {
             </div>
 
             <div className="border-t pt-4 mt-4">
-              <p className="text-sm font-medium text-gray-700 mb-3">{t('settings.notificationTypes')}</p>
+              <p className="text-sm font-medium text-foreground mb-3">{t('settings.notificationTypes')}</p>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="font-medium">{t('settings.incidents')}</div>
-                <div className="text-sm text-gray-500">{t('settings.incidentsDesc')}</div>
+                <div className="text-sm text-muted-foreground">{t('settings.incidentsDesc')}</div>
               </div>
               <Switch
                 checked={notifications.incidents}
@@ -155,7 +155,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="font-medium">{t('settings.tasks')}</div>
-                <div className="text-sm text-gray-500">{t('settings.tasksDesc')}</div>
+                <div className="text-sm text-muted-foreground">{t('settings.tasksDesc')}</div>
               </div>
               <Switch
                 checked={notifications.tasks}
@@ -166,7 +166,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="font-medium">{t('settings.mentions')}</div>
-                <div className="text-sm text-gray-500">{t('settings.mentionsDesc')}</div>
+                <div className="text-sm text-muted-foreground">{t('settings.mentionsDesc')}</div>
               </div>
               <Switch
                 checked={notifications.mentions}

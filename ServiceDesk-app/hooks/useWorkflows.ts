@@ -91,16 +91,17 @@ export function useWorkflows(filters?: {
       if (filters?.page) params.append('page', String(filters.page));
       if (filters?.limit) params.append('limit', String(filters.limit));
 
-      const response = await api.get(`/workflows?${params.toString()}`) as {
-        data?: {
-          workflows: WorkflowDiagram[];
-          pagination: { page: number; limit: number; total: number; pages: number };
-        };
+      const response = await api.get(`/workflow-engine/definitions?${params.toString()}`) as {
+        data?: WorkflowDiagram[] | { workflows?: WorkflowDiagram[] };
+        pagination?: { page: number; limit: number; total: number; pages?: number };
       };
-      return {
-        workflows: response.data?.workflows || [],
-        pagination: response.data?.pagination,
-      };
+      // Module returns { data: [...], pagination }, legacy returned { data: { workflows, pagination } }
+      const workflows = Array.isArray(response.data)
+        ? response.data
+        : (response.data as { workflows?: WorkflowDiagram[] })?.workflows || [];
+      const pagination = response.pagination
+        || (response.data && !Array.isArray(response.data) ? (response.data as Record<string, unknown>).pagination as typeof response.pagination : undefined);
+      return { workflows, pagination };
     },
   });
 }
@@ -110,10 +111,14 @@ export function useWorkflow(id: string) {
   return useQuery({
     queryKey: workflowKeys.detail(id),
     queryFn: async () => {
-      const response = await api.get(`/workflows/${id}`) as {
-        data?: { workflow: WorkflowDiagram };
+      const response = await api.get(`/workflow-engine/definitions/${id}`) as {
+        data?: WorkflowDiagram | { workflow?: WorkflowDiagram };
       };
-      return (response.data?.workflow || response) as WorkflowDiagram;
+      // Module returns { data: definition }, legacy returned { data: { workflow } }
+      const result = response.data && typeof response.data === 'object' && 'workflow' in response.data
+        ? (response.data as { workflow: WorkflowDiagram }).workflow
+        : response.data;
+      return (result || response) as WorkflowDiagram;
     },
     enabled: !!id,
   });
@@ -125,10 +130,13 @@ export function useCreateWorkflow() {
 
   return useMutation({
     mutationFn: async (data: CreateWorkflowDTO) => {
-      const response = await api.post('/workflows', data) as {
-        data?: { workflow: WorkflowDiagram };
+      const response = await api.post('/workflow-engine/definitions', data) as {
+        data?: WorkflowDiagram | { workflow?: WorkflowDiagram };
       };
-      return (response.data?.workflow || response) as WorkflowDiagram;
+      const result = response.data && typeof response.data === 'object' && 'workflow' in response.data
+        ? (response.data as { workflow: WorkflowDiagram }).workflow
+        : response.data;
+      return (result || response) as WorkflowDiagram;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: workflowKeys.lists() });
@@ -142,10 +150,13 @@ export function useUpdateWorkflow() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateWorkflowDTO }) => {
-      const response = await api.put(`/workflows/${id}`, data) as {
-        data?: { workflow: WorkflowDiagram };
+      const response = await api.put(`/workflow-engine/definitions/${id}`, data) as {
+        data?: WorkflowDiagram | { workflow?: WorkflowDiagram };
       };
-      return (response.data?.workflow || response) as WorkflowDiagram;
+      const result = response.data && typeof response.data === 'object' && 'workflow' in response.data
+        ? (response.data as { workflow: WorkflowDiagram }).workflow
+        : response.data;
+      return (result || response) as WorkflowDiagram;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: workflowKeys.detail(variables.id) });
@@ -160,7 +171,7 @@ export function useDeleteWorkflow() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/workflows/${id}`);
+      await api.delete(`/workflow-engine/definitions/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: workflowKeys.lists() });
@@ -174,10 +185,13 @@ export function usePublishWorkflow() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await api.patch(`/workflows/${id}/publish`) as {
-        data?: { workflow: WorkflowDiagram };
+      const response = await api.post(`/workflow-engine/definitions/${id}/publish`) as {
+        data?: WorkflowDiagram | { workflow?: WorkflowDiagram };
       };
-      return (response.data?.workflow || response) as WorkflowDiagram;
+      const result = response.data && typeof response.data === 'object' && 'workflow' in response.data
+        ? (response.data as { workflow: WorkflowDiagram }).workflow
+        : response.data;
+      return (result || response) as WorkflowDiagram;
     },
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: workflowKeys.detail(id) });
@@ -192,10 +206,13 @@ export function useArchiveWorkflow() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await api.patch(`/workflows/${id}/archive`) as {
-        data?: { workflow: WorkflowDiagram };
+      const response = await api.post(`/workflow-engine/definitions/${id}/deprecate`) as {
+        data?: WorkflowDiagram | { workflow?: WorkflowDiagram };
       };
-      return (response.data?.workflow || response) as WorkflowDiagram;
+      const result = response.data && typeof response.data === 'object' && 'workflow' in response.data
+        ? (response.data as { workflow: WorkflowDiagram }).workflow
+        : response.data;
+      return (result || response) as WorkflowDiagram;
     },
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: workflowKeys.detail(id) });

@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { AlertCircle, ArrowLeft, Loader2, UserPlus, Shield } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCreateUser } from '@/hooks/useUsers';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { ALL_ROLES, ROLE_LABELS, UserRole } from '@/types';
 
 const userSchema = z.object({
@@ -33,7 +33,6 @@ type UserFormData = z.infer<typeof userSchema>;
 export default function AddUserPage() {
   const router = useRouter();
   const { t } = useLanguage();
-  const toast = useToast();
   const [error, setError] = useState('');
   const createUserMutation = useCreateUser();
 
@@ -86,7 +85,7 @@ export default function AddUserPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold">{t('users.addUser')}</h1>
-            <p className="text-gray-500 mt-1">{t('users.createAccount')}</p>
+            <p className="text-muted-foreground mt-1">{t('users.createAccount')}</p>
           </div>
         </div>
 
@@ -151,7 +150,7 @@ export default function AddUserPage() {
                   {errors.password && (
                     <p className="text-sm text-red-600">{errors.password.message}</p>
                   )}
-                  <p className="text-xs text-gray-500">{t('users.minimumChars')}</p>
+                  <p className="text-xs text-muted-foreground">{t('users.minimumChars')}</p>
                 </div>
 
                 <div className="space-y-2">
@@ -191,7 +190,7 @@ export default function AddUserPage() {
                   id="role"
                   {...register('role')}
                   disabled={createUserMutation.isPending}
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {ALL_ROLES.map((role) => (
                     <option key={role} value={role}>

@@ -146,15 +146,14 @@ export default function ExecutionLogsPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/automation-rules')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              className="p-2 hover:bg-accent rounded-lg transition">
+              <ArrowLeft className="w-5 h-5 text-muted-foreground" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-foreground">
                 {isAr ? 'سجل التنفيذ' : 'Execution Logs'}
               </h1>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {isAr
                   ? 'عرض سجلات تنفيذ قواعد الأتمتة'
                   : 'View automation rule execution history'}
@@ -163,7 +162,7 @@ export default function ExecutionLogsPage() {
           </div>
           <button
             onClick={() => refetch()}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-card border border-border rounded-lg hover:bg-accent transition"
           >
             <RefreshCw className="w-4 h-4" />
             {isAr ? 'تحديث' : 'Refresh'}
@@ -173,21 +172,21 @@ export default function ExecutionLogsPage() {
         {/* Filters */}
         <div className="flex flex-wrap gap-3">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder={isAr ? 'بحث بالقاعدة أو التذكرة...' : 'Search by rule or ticket...'}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2.5 border border-input rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
+            <Filter className="w-4 h-4 text-muted-foreground" />
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2.5 border border-input rounded-lg text-sm bg-card focus:ring-2 focus:ring-blue-500"
             >
               <option value="">{isAr ? 'كل الحالات' : 'All Statuses'}</option>
               <option value="success">{isAr ? 'ناجح' : 'Success'}</option>
@@ -199,14 +198,14 @@ export default function ExecutionLogsPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
           {isLoading ? (
-            <div className="p-12 text-center text-gray-500">
+            <div className="p-12 text-center text-muted-foreground">
               <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
               {isAr ? 'جار التحميل...' : 'Loading...'}
             </div>
           ) : logs.length === 0 ? (
-            <div className="p-12 text-center text-gray-400">
+            <div className="p-12 text-center text-muted-foreground">
               <Activity className="w-10 h-10 mx-auto mb-3 opacity-50" />
               <p className="text-lg font-medium">
                 {isAr ? 'لا توجد سجلات تنفيذ' : 'No execution logs found'}
@@ -220,7 +219,7 @@ export default function ExecutionLogsPage() {
           ) : (
             <>
               {/* Table header */}
-              <div className="grid grid-cols-[40px_1fr_150px_120px_100px_100px_80px] gap-3 px-4 py-3 bg-gray-50 border-b text-xs font-medium text-gray-500 uppercase">
+              <div className="grid grid-cols-[40px_1fr_150px_120px_100px_100px_80px] gap-3 px-4 py-3 bg-muted border-b text-xs font-medium text-muted-foreground uppercase">
                 <div></div>
                 <div>{isAr ? 'القاعدة' : 'Rule'}</div>
                 <div>{isAr ? 'المحفز' : 'Trigger'}</div>
@@ -240,29 +239,29 @@ export default function ExecutionLogsPage() {
                 const failedActions = log.actionsExecuted?.filter((a) => a.status === 'failed').length || 0;
 
                 return (
-                  <div key={log._id} className="border-b border-gray-100 last:border-b-0">
+                  <div key={log._id} className="border-b border-border last:border-b-0">
                     {/* Main row */}
                     <div
-                      className="grid grid-cols-[40px_1fr_150px_120px_100px_100px_80px] gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer items-center text-sm"
+                      className="grid grid-cols-[40px_1fr_150px_120px_100px_100px_80px] gap-3 px-4 py-3 hover:bg-accent cursor-pointer items-center text-sm"
                       onClick={() => toggleExpand(log._id)}
                     >
                       <div>
                         {isExpanded ? (
-                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
                         ) : (
-                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 truncate">{log.ruleName}</p>
+                        <p className="font-medium text-foreground truncate">{log.ruleName}</p>
                         {log.triggerTicketId && (
-                          <p className="text-xs text-gray-400 mt-0.5">
+                          <p className="text-xs text-muted-foreground mt-0.5">
                             {isAr ? 'تذكرة:' : 'Ticket:'} {log.triggerTicketId}
                           </p>
                         )}
                       </div>
                       <div>
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-muted text-foreground">
                           <Zap className="w-3 h-3" />
                           {triggerLabel ? (isAr ? triggerLabel.ar : triggerLabel.en) : log.triggerType}
                         </span>
@@ -273,14 +272,14 @@ export default function ExecutionLogsPage() {
                           {isAr ? statusCfg.labelAr : statusCfg.labelEn}
                         </span>
                       </div>
-                      <div className="text-gray-600 text-xs font-mono">
+                      <div className="text-muted-foreground text-xs font-mono">
                         {formatDuration(log.durationMs)}
                       </div>
-                      <div className="text-gray-500 text-xs">
+                      <div className="text-muted-foreground text-xs">
                         {formatDate(log.startedAt)}
                       </div>
                       <div className="text-xs">
-                        <span className="text-gray-700">{actionCount}</span>
+                        <span className="text-foreground">{actionCount}</span>
                         {failedActions > 0 && (
                           <span className="text-red-500 ml-1">({failedActions} ✗)</span>
                         )}
@@ -289,32 +288,32 @@ export default function ExecutionLogsPage() {
 
                     {/* Expanded detail */}
                     {isExpanded && (
-                      <div className="px-6 pb-4 pt-1 bg-gray-50 border-t border-gray-100">
+                      <div className="px-6 pb-4 pt-1 bg-muted border-t border-border">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {/* Execution info */}
                           <div>
-                            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
                               {isAr ? 'تفاصيل التنفيذ' : 'Execution Details'}
                             </h4>
                             <div className="space-y-1 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-gray-500">{isAr ? 'معرف التنفيذ' : 'Execution ID'}:</span>
-                                <span className="font-mono text-xs text-gray-700">{log.executionId}</span>
+                                <span className="text-muted-foreground">{isAr ? 'معرف التنفيذ' : 'Execution ID'}:</span>
+                                <span className="font-mono text-xs text-foreground">{log.executionId}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-500">{isAr ? 'الشروط مطابقة' : 'Conditions Matched'}:</span>
+                                <span className="text-muted-foreground">{isAr ? 'الشروط مطابقة' : 'Conditions Matched'}:</span>
                                 <span className={log.conditionsResult ? 'text-green-600' : 'text-red-600'}>
                                   {log.conditionsResult ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-500">{isAr ? 'إعادة المحاولة' : 'Retries'}:</span>
-                                <span className="text-gray-700">{log.retryCount}</span>
+                                <span className="text-muted-foreground">{isAr ? 'إعادة المحاولة' : 'Retries'}:</span>
+                                <span className="text-foreground">{log.retryCount}</span>
                               </div>
                               {log.completedAt && (
                                 <div className="flex justify-between">
-                                  <span className="text-gray-500">{isAr ? 'انتهى في' : 'Completed At'}:</span>
-                                  <span className="text-gray-700">{formatDate(log.completedAt)}</span>
+                                  <span className="text-muted-foreground">{isAr ? 'انتهى في' : 'Completed At'}:</span>
+                                  <span className="text-foreground">{formatDate(log.completedAt)}</span>
                                 </div>
                               )}
                               {log.error && (
@@ -328,7 +327,7 @@ export default function ExecutionLogsPage() {
 
                           {/* Actions executed */}
                           <div>
-                            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
                               {isAr ? 'الإجراءات المنفذة' : 'Actions Executed'}
                             </h4>
                             {log.actionsExecuted && log.actionsExecuted.length > 0 ? (
@@ -338,22 +337,22 @@ export default function ExecutionLogsPage() {
                                     action.status === 'success'
                                       ? { color: 'text-green-600', icon: CheckCircle }
                                       : action.status === 'skipped'
-                                      ? { color: 'text-gray-400', icon: Clock }
+                                      ? { color: 'text-muted-foreground', icon: Clock }
                                       : { color: 'text-red-600', icon: XCircle };
                                   const ActIcon = actStatusCfg.icon;
                                   return (
                                     <div
                                       key={i}
-                                      className="flex items-center gap-2 text-sm p-1.5 bg-white rounded border border-gray-100"
+                                      className="flex items-center gap-2 text-sm p-1.5 bg-card rounded border border-border"
                                     >
                                       <ActIcon className={`w-3.5 h-3.5 ${actStatusCfg.color}`} />
-                                      <span className="text-gray-800 font-medium text-xs">
+                                      <span className="text-foreground font-medium text-xs">
                                         #{action.order}
                                       </span>
-                                      <span className="text-gray-600 text-xs flex-1">
+                                      <span className="text-muted-foreground text-xs flex-1">
                                         {action.type.replace(/_/g, ' ')}
                                       </span>
-                                      <span className="text-gray-400 text-xs font-mono">
+                                      <span className="text-muted-foreground text-xs font-mono">
                                         {formatDuration(action.durationMs)}
                                       </span>
                                       {action.error && (
@@ -366,7 +365,7 @@ export default function ExecutionLogsPage() {
                                 })}
                               </div>
                             ) : (
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-muted-foreground">
                                 {isAr ? 'لم يتم تنفيذ إجراءات' : 'No actions executed'}
                               </p>
                             )}
@@ -376,7 +375,7 @@ export default function ExecutionLogsPage() {
                         {/* Conditions evaluated */}
                         {log.conditionsEvaluated && log.conditionsEvaluated.length > 0 && (
                           <div className="mt-4">
-                            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
                               {isAr ? 'تقييم الشروط' : 'Conditions Evaluated'}
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
@@ -394,7 +393,7 @@ export default function ExecutionLogsPage() {
                                   ) : (
                                     <XCircle className="w-3 h-3 text-red-500 shrink-0" />
                                   )}
-                                  <span className="text-gray-700 font-mono truncate">
+                                  <span className="text-foreground font-mono truncate">
                                     {cond.field} {cond.operator}
                                   </span>
                                 </div>
@@ -413,7 +412,7 @@ export default function ExecutionLogsPage() {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between text-sm text-gray-600">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
               {isAr
                 ? `عرض ${(page - 1) * limit + 1}-${Math.min(page * limit, pagination.total)} من ${pagination.total}`
@@ -423,14 +422,14 @@ export default function ExecutionLogsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 border border-border rounded-lg hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isAr ? 'السابق' : 'Previous'}
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
                 disabled={page >= pagination.totalPages}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 border border-border rounded-lg hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isAr ? 'التالي' : 'Next'}
               </button>

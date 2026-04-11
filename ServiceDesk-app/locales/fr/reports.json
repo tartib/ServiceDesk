@@ -1,0 +1,27 @@
+{
+  "reports": {
+    "title": "Rapports",
+    "subtitle": "Consultez les analyses et rapports détaillés de vos tâches",
+    "totalTasks": "Total des tâches",
+    "completionRate": "Taux d'achèvement",
+    "avgPrepTime": "Temps de préparation moyen",
+    "onTimeTasks": "Tâches dans les délais",
+    "fromLastWeek": "par rapport à la semaine dernière",
+    "detailedReports": "Rapports détaillés",
+    "daily": "Quotidien",
+    "weekly": "Hebdomadaire",
+    "monthly": "Mensuel",
+    "completed": "Terminé",
+    "pending": "En attente",
+    "overdue": "En retard",
+    "tasks": "tâches",
+    "tasksByUser": "Tâches par utilisateur",
+    "dailyBreakdown": "Ventilation quotidienne",
+    "weeklyBreakdown": "Ventilation hebdomadaire",
+    "week": "Semaine",
+    "noData": "Aucune donnée disponible pour la période sélectionnée",
+    "comingSoon": "Bientôt disponible",
+    "advancedAnalytics": "Analytique avancée",
+    "comingSoonDescription": "Les graphiques et analyses détaillés seront bientôt disponibles."
+  }
+}

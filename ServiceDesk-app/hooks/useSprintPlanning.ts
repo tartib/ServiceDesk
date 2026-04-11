@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import api from '@/lib/axios';
-import { parseApiResponse, getErrorMessage } from '@/lib/api/response-parser';
+import { normalizeEntity, getErrorMessage } from '@/lib/api/normalize';
 
 interface ApiError {
   response?: {
@@ -99,7 +99,7 @@ export const useSprintPlanning = (projectId: string) => {
       setLoading(true);
       setError(null);
       const response = await api.post(`/pm/sprints/${sprintId}/start`);
-      return parseApiResponse<SprintPlanningData>(response);
+      return normalizeEntity<SprintPlanningData>(response);
     } catch (err: unknown) {
       const message = getErrorMessage(err);
       setError(message || 'Failed to start sprint');
@@ -114,7 +114,7 @@ export const useSprintPlanning = (projectId: string) => {
       setLoading(true);
       setError(null);
       const response = await api.post(`/pm/sprints/${sprintId}/complete`, { moveIncompleteToBacklog });
-      return parseApiResponse<SprintPlanningData>(response);
+      return normalizeEntity<SprintPlanningData>(response);
     } catch (err: unknown) {
       const message = getErrorMessage(err);
       setError(message || 'Failed to complete sprint');

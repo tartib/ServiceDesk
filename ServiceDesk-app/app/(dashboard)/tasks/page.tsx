@@ -52,7 +52,7 @@ export default function AllTasksPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">{t('tasks.allTasks')}</h1>
-            <p className="text-gray-500 mt-1">{t('tasks.manageAllTasks')}</p>
+            <p className="text-muted-foreground mt-1">{t('tasks.manageAllTasks')}</p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -98,7 +98,7 @@ export default function AllTasksPage() {
           
           {/* Status Filters */}
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-gray-700">{t('tasks.filterByStatus')}:</span>
+            <span className="text-sm font-medium text-foreground">{t('tasks.filterByStatus')}:</span>
             <div className="flex gap-2 flex-wrap">
               <Badge
                 variant={statusFilter === 'all' ? 'default' : 'outline'}
@@ -147,7 +147,7 @@ export default function AllTasksPage() {
 
           {/* Category Filters */}
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-gray-700">{t('tasks.filterByCategory')}:</span>
+            <span className="text-sm font-medium text-foreground">{t('tasks.filterByCategory')}:</span>
             <div className="flex gap-2 flex-wrap">
               <Badge
                 variant={categoryFilter === 'all' ? 'default' : 'outline'}
@@ -172,7 +172,7 @@ export default function AllTasksPage() {
                 <TaskKanbanJira tasks={filteredTasks} />
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-gray-500 text-lg">{t('tasks.noTasks')}</p>
+                  <p className="text-muted-foreground text-lg">{t('tasks.noTasks')}</p>
                 </div>
               )
             ) : viewMode === 'calendar' ? (
@@ -193,7 +193,7 @@ export default function AllTasksPage() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-gray-500 text-lg">
+                  <p className="text-muted-foreground text-lg">
                     {searchTerm || statusFilter !== 'all' 
                       ? t('tasks.noTasksMatch')
                       : t('tasks.noTasks')}

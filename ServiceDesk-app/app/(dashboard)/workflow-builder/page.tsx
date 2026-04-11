@@ -4,8 +4,9 @@ import { useCallback, useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { API_BASE_URL, API_URL } from '@/lib/api/config';
+import { getOrganizationId, setOrganizationId } from '@/lib/api/organization-context';
 
 const WF_API = `${API_BASE_URL}/api/v2/workflow-engine/definitions`;
 
@@ -108,7 +109,7 @@ function serializeDefinition(nodes: RFNode[], edges: RFEdge[], name: string) {
 
   return {
     name,
-    organizationId: (typeof window !== 'undefined' ? localStorage.getItem('organizationId') : null) || undefined,
+    organizationId: getOrganizationId() || undefined,
     entityType: 'ticket',
     states,
     transitions,
@@ -123,7 +124,6 @@ function serializeDefinition(nodes: RFNode[], edges: RFEdge[], name: string) {
 
 export default function WorkflowBuilderPage() {
   const { locale } = useLanguage();
-  const toast = useToast();
   const router = useRouter();
   const isAr = locale === 'ar';
 
@@ -131,11 +131,11 @@ export default function WorkflowBuilderPage() {
   const [definitionId, setDefinitionId] = useState<string | null>(null);
   const busyRef = useRef(false);
 
-  // Resolve organizationId: check localStorage first, then fetch /me
+  // Resolve organizationId via centralized context, fallback to /me fetch
   const orgPromiseRef = useRef<Promise<string | null> | null>(null);
 
   const ensureOrgId = useCallback(async (): Promise<string | null> => {
-    const cached = localStorage.getItem('organizationId');
+    const cached = getOrganizationId();
     if (cached) return cached;
 
     if (!orgPromiseRef.current) {
@@ -153,7 +153,7 @@ export default function WorkflowBuilderPage() {
               ? orgs[0].organizationId._id
               : orgs[0].organizationId;
             if (id) {
-              localStorage.setItem('organizationId', id);
+              setOrganizationId(id);
               return id as string;
             }
           }
@@ -235,7 +235,7 @@ export default function WorkflowBuilderPage() {
         busyRef.current = false;
       }
     },
-    [definitionId, isAr, toast, getAuthHeaders]
+    [definitionId, isAr, getAuthHeaders]
   );
 
   // -----------------------------------------------
@@ -315,7 +315,7 @@ export default function WorkflowBuilderPage() {
         busyRef.current = false;
       }
     },
-    [definitionId, isAr, toast, router, getAuthHeaders]
+    [definitionId, isAr, router, getAuthHeaders]
   );
 
   return (

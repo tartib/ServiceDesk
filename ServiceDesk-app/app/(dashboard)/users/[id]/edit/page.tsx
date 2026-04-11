@@ -130,8 +130,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     return (
       <DashboardLayout>
         <div className="text-center py-12">
-          <UserCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-500 text-lg">{t('users.userNotFound')}</p>
+          <UserCircle className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground text-lg">{t('users.userNotFound')}</p>
           <Button onClick={() => router.push('/users')} className="mt-4">
             {t('users.backToUsers')}
           </Button>
@@ -156,7 +156,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           </Button>
           <div>
             <h1 className="text-3xl font-bold">{t('users.editUser')}</h1>
-            <p className="text-gray-500 mt-1">{t('users.updateUserDetails')}</p>
+            <p className="text-muted-foreground mt-1">{t('users.updateUserDetails')}</p>
           </div>
         </div>
 
@@ -229,7 +229,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   id="role"
                   {...register('role')}
                   disabled={isSubmitting}
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {ALL_ROLES.map((role) => (
                     <option key={role} value={role}>
@@ -248,7 +248,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   type="checkbox"
                   id="isActive"
                   {...register('isActive')}
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded border-input"
                   disabled={isSubmitting}
                 />
                 <Label htmlFor="isActive" className="text-sm font-normal">

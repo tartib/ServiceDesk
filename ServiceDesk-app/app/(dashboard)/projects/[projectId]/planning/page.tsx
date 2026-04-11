@@ -180,7 +180,7 @@ export default function SprintPlanningPage() {
         
         // Map API tasks to BacklogItem format
         const backlogItems: BacklogItem[] = backlogTasks.map((task: ApiTask) => ({
-          id: task._id || task.id,
+          id: task.id,
           key: task.key || `${project?.key}-${task.number || ''}`,
           title: task.title || task.summary,
           type: (task.type?.toLowerCase() || 'task') as 'story' | 'bug' | 'task',
@@ -211,7 +211,7 @@ export default function SprintPlanningPage() {
       if (data.success) {
         const tasks = data.data?.tasks || data.data || [];
         const items: BacklogItem[] = tasks.map((task: ApiTask) => ({
-          id: task._id || task.id,
+          id: task.id,
           key: task.key || `${project?.key}-${task.number || ''}`,
           title: task.title || task.summary,
           type: task.type?.toLowerCase() || 'task',
@@ -228,7 +228,7 @@ export default function SprintPlanningPage() {
   }, [projectId, project?.key]);
 
   const selectSprint = useCallback((sprintData: ApiSprint, token: string) => {
-    const sprintId = sprintData._id || sprintData.id || '';
+    const sprintId = sprintData.id || '';
     setSprint({
       id: sprintId,
       name: sprintData.name,
@@ -555,7 +555,7 @@ export default function SprintPlanningPage() {
                     <div className="px-4 py-3 text-sm text-gray-500">No sprints found</div>
                   ) : (
                     allSprints.map((s) => {
-                      const sId = s._id || s.id || '';
+                      const sId = s.id || '';
                       const isActive = sId === sprint.id;
                       const statusColors: Record<string, string> = {
                         planning: 'bg-blue-100 text-blue-700',

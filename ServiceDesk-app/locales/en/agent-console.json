@@ -1,0 +1,135 @@
+{
+  "agentConsole": {
+    "title": "Agent Console",
+    "welcome": "Welcome, {name}",
+    "activeTickets": "{count} active ticket(s)",
+    "refresh": "Refresh",
+    "dataRefreshed": "Data refreshed",
+    "noTickets": "No tickets in this queue",
+
+    "tabs": {
+      "myQueue": "My Queue",
+      "unassigned": "Unassigned",
+      "pendingApproval": "Pending Approval",
+      "allOpen": "All Open"
+    },
+
+    "stats": {
+      "openIncidents": "Open Incidents",
+      "slaBreached": "SLA Breached",
+      "pendingApproval": "Pending Approval",
+      "unassigned": "Unassigned"
+    },
+
+    "table": {
+      "id": "ID",
+      "type": "Type",
+      "title": "Title",
+      "status": "Status",
+      "priority": "Priority",
+      "requester": "Requester",
+      "assigned": "Assigned",
+      "created": "Created"
+    },
+
+    "ticketType": {
+      "incident": "Incident",
+      "incidentShort": "INC",
+      "serviceRequest": "SR",
+      "serviceRequestShort": "SR"
+    },
+
+    "incidentStatus": {
+      "open": "Open",
+      "in_progress": "In Progress",
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "cancelled": "Cancelled"
+    },
+
+    "srStatus": {
+      "submitted": "Submitted",
+      "pending_approval": "Pending Approval",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "in_progress": "In Progress",
+      "on_hold": "On Hold",
+      "fulfilled": "Fulfilled",
+      "cancelled": "Cancelled"
+    },
+
+    "priority": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+
+    "detail": {
+      "description": "Description",
+      "formData": "Form Data",
+      "requester": "Requester",
+      "department": "Department",
+      "assignedTo": "Assigned To",
+      "unassigned": "Unassigned",
+      "slaBreached": "Breached",
+      "approvals": "Approvals",
+      "created": "Created",
+      "timeline": "Timeline"
+    },
+
+    "actions": {
+      "assignToMe": "Assign to Me",
+      "startWork": "Start Work",
+      "pending": "Pending",
+      "resolve": "Resolve",
+      "resume": "Resume",
+      "close": "Close",
+      "worklog": "Worklog",
+      "escalate": "Escalate",
+      "approve": "Approve",
+      "reject": "Reject",
+      "fulfill": "Fulfill",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+
+    "worklog": {
+      "timeSpent": "Time spent (minutes)",
+      "notes": "Notes",
+      "notesPlaceholder": "Enter worklog notes..."
+    },
+
+    "dialogs": {
+      "rejectRequest": "Reject Request",
+      "rejectionReason": "Rejection Reason",
+      "rejectionPlaceholder": "Enter rejection reason...",
+      "fulfillRequest": "Fulfill Request",
+      "fulfillmentNotes": "Fulfillment Notes",
+      "fulfillmentPlaceholder": "Enter notes...",
+      "escalateIncident": "Escalate Incident",
+      "escalationReason": "Escalation Reason",
+      "escalationPlaceholder": "Enter escalation reason..."
+    },
+
+    "toast": {
+      "ticketAssigned": "Ticket assigned to you",
+      "assignmentFailed": "Assignment failed",
+      "statusUpdated": "Status updated",
+      "statusUpdateFailed": "Status update failed",
+      "requestApproved": "Request approved",
+      "approvalFailed": "Approval failed",
+      "requestRejected": "Request rejected",
+      "rejectionFailed": "Rejection failed",
+      "requestFulfilled": "Request fulfilled",
+      "fulfillmentFailed": "Fulfillment failed",
+      "workStarted": "Work started",
+      "workStartFailed": "Failed to start work",
+      "escalated": "Escalated",
+      "escalationFailed": "Escalation failed",
+      "worklogAdded": "Worklog added",
+      "worklogFailed": "Failed to add worklog"
+    }
+  }
+}

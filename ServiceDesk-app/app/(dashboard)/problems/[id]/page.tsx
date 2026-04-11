@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useProblem, useUpdateProblemStatus, useUpdateRootCause } from '@/hooks/useProblems';
-import { IProblem, ProblemStatus, getPriorityColor } from '@/types/itsm';
+import { useProblem, useUpdateProblemStatus, useUpdateRootCause, useStartRCA, useCompleteRCA, usePublishKnownError } from '@/hooks/useProblems';
+import { IProblem, ProblemStatus, RCAMethod, getPriorityColor } from '@/types/itsm';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   ArrowLeft, 
@@ -14,9 +16,22 @@ import {
   AlertTriangle,
   Lightbulb,
   History,
-  FileQuestion
+  FileQuestion,
+  Play,
+  CheckCircle,
+  BookOpen,
+  ChevronRight,
+  Search,
 } from 'lucide-react';
 import Link from 'next/link';
+
+const RCA_STEPS: { status: ProblemStatus; label: string; desc: string }[] = [
+  { status: ProblemStatus.LOGGED, label: 'Logged', desc: 'Problem recorded' },
+  { status: ProblemStatus.RCA_IN_PROGRESS, label: 'RCA', desc: 'Root cause analysis' },
+  { status: ProblemStatus.KNOWN_ERROR, label: 'Known Error', desc: 'Published to KB' },
+  { status: ProblemStatus.RESOLVED, label: 'Resolved', desc: 'Permanent fix applied' },
+  { status: ProblemStatus.CLOSED, label: 'Closed', desc: 'Problem closed' },
+];
 
 const getStatusColor = (status: ProblemStatus): string => {
   const colors: Record<ProblemStatus, string> = {
@@ -38,40 +53,77 @@ export default function ProblemDetailPage() {
   const { data: problem, isLoading, error } = useProblem(problemId);
   const updateStatus = useUpdateProblemStatus();
   const updateRootCause = useUpdateRootCause();
+  const startRCA = useStartRCA();
+  const completeRCA = useCompleteRCA();
+  const publishKnownError = usePublishKnownError();
 
   const [showRCAForm, setShowRCAForm] = useState(false);
-  const [rcaData, setRcaData] = useState({
-    root_cause: '',
-    workaround: '',
-  });
+  const [rcaData, setRcaData] = useState({ root_cause: '', workaround: '' });
+
+  const [showStartRCAModal, setShowStartRCAModal] = useState(false);
+  const [selectedRCAMethod, setSelectedRCAMethod] = useState<RCAMethod>(RCAMethod.FIVE_WHYS);
+  const RCA_METHODS: { value: RCAMethod; label: string }[] = [
+    { value: RCAMethod.FIVE_WHYS, label: '5 Whys' },
+    { value: RCAMethod.FISHBONE, label: 'Fishbone (Ishikawa)' },
+    { value: RCAMethod.TIMELINE, label: 'Timeline Analysis' },
+    { value: RCAMethod.FAULT_TREE, label: 'Fault Tree Analysis' },
+  ];
+
+  const [showCompleteRCAPanel, setShowCompleteRCAPanel] = useState(false);
+  const [completeRCAData, setCompleteRCAData] = useState({ rca_findings: '', root_cause: '', contributing_factors: '' });
+
+  const [showPublishKEPanel, setShowPublishKEPanel] = useState(false);
+  const [keData, setKEData] = useState({ title: '', symptoms: '', workaround: '' });
 
   const handleStatusChange = (newStatus: ProblemStatus) => {
     if (!problem) return;
-    updateStatus.mutate({
-      problemId: problem.problem_id,
-      status: newStatus,
-    });
+    updateStatus.mutate({ problemId: problem.problem_id, status: newStatus });
   };
 
   const handleUpdateRCA = () => {
     if (!problem || !rcaData.root_cause.trim()) return;
-    updateRootCause.mutate({
-      problemId: problem.problem_id,
-      root_cause: rcaData.root_cause,
-      workaround: rcaData.workaround,
-    }, {
-      onSuccess: () => {
-        setRcaData({ root_cause: '', workaround: '' });
-        setShowRCAForm(false);
+    updateRootCause.mutate(
+      { problemId: problem.problem_id, root_cause: rcaData.root_cause, workaround: rcaData.workaround },
+      { onSuccess: () => { setRcaData({ root_cause: '', workaround: '' }); setShowRCAForm(false); } }
+    );
+  };
+
+  const handleStartRCA = () => {
+    if (!problem) return;
+    startRCA.mutate(
+      { problemId: problem.problem_id, rca_method: selectedRCAMethod },
+      { onSuccess: () => { setShowStartRCAModal(false); } }
+    );
+  };
+
+  const handleCompleteRCA = () => {
+    if (!problem || !completeRCAData.rca_findings.trim() || !completeRCAData.root_cause.trim()) return;
+    completeRCA.mutate(
+      {
+        problemId: problem.problem_id,
+        rca_findings: completeRCAData.rca_findings,
+        root_cause: completeRCAData.root_cause,
+        contributing_factors: completeRCAData.contributing_factors
+          ? completeRCAData.contributing_factors.split('\n').filter(Boolean)
+          : undefined,
       },
-    });
+      { onSuccess: () => setShowCompleteRCAPanel(false) }
+    );
+  };
+
+  const handlePublishKE = () => {
+    if (!problem || !keData.title.trim()) return;
+    publishKnownError.mutate(
+      { problemId: problem.problem_id, title: keData.title, symptoms: keData.symptoms, workaround: keData.workaround },
+      { onSuccess: () => setShowPublishKEPanel(false) }
+    );
   };
 
   if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       </DashboardLayout>
     );
@@ -81,10 +133,10 @@ export default function ProblemDetailPage() {
     return (
       <DashboardLayout>
         <div className="text-center py-12">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('problems.notFound')}</h2>
-          <p className="text-gray-500 mt-2">{t('problems.notFoundDesc')}</p>
-          <Link href="/problems" className="mt-4 inline-block text-blue-600 hover:underline">
+          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-foreground">{t('problems.notFound')}</h2>
+          <p className="text-muted-foreground mt-2">{t('problems.notFoundDesc')}</p>
+          <Link href="/problems" className="mt-4 inline-block text-primary hover:underline">
             {t('problems.backToProblems')}
           </Link>
         </div>
@@ -93,32 +145,27 @@ export default function ProblemDetailPage() {
   }
 
   const problemData = problem as IProblem;
+  const currentStepIdx = RCA_STEPS.findIndex((s) => s.status === problemData.status);
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between flex-wrap gap-4">
           <div className="flex items-start gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
+            <button onClick={() => router.back()} className="p-2 hover:bg-accent rounded-lg">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {problemData.problem_id}
-                </h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl font-bold text-foreground">{problemData.problem_id}</h1>
                 {problemData.known_error && (
-                  <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full flex items-center gap-1">
-                    <Lightbulb className="w-3 h-3" />
-                    {t('problems.knownError')}
+                  <span className="px-2 py-1 text-xs font-bold bg-purple-100 text-purple-700 rounded-full flex items-center gap-1">
+                    <Lightbulb className="w-3 h-3" /> {t('problems.knownError')}
                   </span>
                 )}
               </div>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">{problemData.title}</p>
+              <p className="text-muted-foreground mt-1">{problemData.title}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -131,73 +178,79 @@ export default function ProblemDetailPage() {
           </div>
         </div>
 
+        {/* RCA Status Stepper */}
+        <Card className="p-5">
+          <div className="flex items-center">
+            {RCA_STEPS.map((step, idx) => {
+              const done = idx < currentStepIdx;
+              const active = idx === currentStepIdx;
+              return (
+                <div key={step.status} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                      done ? 'bg-success text-white' :
+                      active ? 'bg-primary text-primary-foreground ring-4 ring-primary/20' :
+                      'bg-muted text-muted-foreground'
+                    }`}>
+                      {done ? <CheckCircle className="w-4 h-4" /> : idx + 1}
+                    </div>
+                    <p className={`text-xs font-medium mt-1 whitespace-nowrap ${active ? 'text-primary' : done ? 'text-success' : 'text-muted-foreground'}`}>{step.label}</p>
+                  </div>
+                  {idx < RCA_STEPS.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-1 ${idx < currentStepIdx ? 'bg-success' : 'bg-muted'}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Description */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('incidents.form.description')}</h2>
-              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                {problemData.description}
-              </p>
-            </div>
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold text-foreground mb-4">{t('incidents.form.description')}</h2>
+              <p className="text-muted-foreground whitespace-pre-wrap">{problemData.description}</p>
+            </Card>
 
-            {/* Root Cause Analysis */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('problems.rootCause')}</h2>
-                {!problemData.root_cause && (
-                  <button
-                    onClick={() => setShowRCAForm(!showRCAForm)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    + {t('common.add')}
+            {/* RCA Workflow Panel */}
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Search className="w-5 h-5 text-yellow-500" /> Root Cause Analysis
+                </h2>
+                {problemData.status === ProblemStatus.RCA_IN_PROGRESS && !showCompleteRCAPanel && (
+                  <button onClick={() => setShowCompleteRCAPanel(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-sm hover:bg-yellow-600">
+                    <CheckCircle className="w-4 h-4" /> Complete RCA
                   </button>
+                )}
+                {problemData.status === ProblemStatus.RCA_IN_PROGRESS && !problemData.root_cause && !showCompleteRCAPanel && (
+                  <button onClick={() => setShowRCAForm(!showRCAForm)} className="text-sm text-blue-600 hover:underline">+ {t('common.add')}</button>
                 )}
               </div>
 
+              {/* Inline Complete RCA Form */}
+              {showCompleteRCAPanel && (
+                <div className="mb-5 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-700 space-y-3">
+                  <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">Complete RCA — document findings</p>
+                  <textarea value={completeRCAData.rca_findings} onChange={(e) => setCompleteRCAData((d) => ({ ...d, rca_findings: e.target.value }))} rows={3} placeholder="Summary of RCA findings..." className="w-full px-3 py-2 border border-input rounded-lg text-sm bg-card" />
+                  <textarea value={completeRCAData.root_cause} onChange={(e) => setCompleteRCAData((d) => ({ ...d, root_cause: e.target.value }))} rows={2} placeholder="Root cause statement..." className="w-full px-3 py-2 border border-input rounded-lg text-sm bg-card" />
+                  <textarea value={completeRCAData.contributing_factors} onChange={(e) => setCompleteRCAData((d) => ({ ...d, contributing_factors: e.target.value }))} rows={2} placeholder="Contributing factors (one per line)..." className="w-full px-3 py-2 border border-input rounded-lg text-sm bg-card" />
+                  <div className="flex gap-2">
+                    <button onClick={handleCompleteRCA} disabled={completeRCA.isPending || !completeRCAData.rca_findings.trim() || !completeRCAData.root_cause.trim()} className="px-4 py-2 bg-warning text-white rounded-lg text-sm disabled:opacity-50">{completeRCA.isPending ? 'Saving...' : 'Save & Complete RCA'}</button>
+                    <Button variant="outline" size="sm" onClick={() => setShowCompleteRCAPanel(false)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
+
               {showRCAForm && (
-                <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {t('problems.rootCause')}
-                      </label>
-                      <textarea
-                        value={rcaData.root_cause}
-                        onChange={(e) => setRcaData({ ...rcaData, root_cause: e.target.value })}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-                        placeholder={t('problems.form.rootCausePlaceholder')}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {t('problems.workaround')}
-                      </label>
-                      <textarea
-                        value={rcaData.workaround}
-                        onChange={(e) => setRcaData({ ...rcaData, workaround: e.target.value })}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-                        placeholder={t('problems.form.workaroundPlaceholder')}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleUpdateRCA}
-                        disabled={updateRootCause.isPending}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        {updateRootCause.isPending ? t('common.loading') : t('common.save')}
-                      </button>
-                      <button
-                        onClick={() => setShowRCAForm(false)}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                      >
-                        {t('common.cancel')}
-                      </button>
-                    </div>
+                <div className="mb-4 p-4 bg-muted rounded-lg space-y-3">
+                  <textarea value={rcaData.root_cause} onChange={(e) => setRcaData({ ...rcaData, root_cause: e.target.value })} rows={3} className="w-full px-3 py-2 border border-input rounded-lg bg-card text-sm" placeholder={t('problems.form.rootCausePlaceholder')} />
+                  <textarea value={rcaData.workaround} onChange={(e) => setRcaData({ ...rcaData, workaround: e.target.value })} rows={2} className="w-full px-3 py-2 border border-input rounded-lg bg-card text-sm" placeholder={t('problems.form.workaroundPlaceholder')} />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleUpdateRCA} disabled={updateRootCause.isPending}>{updateRootCause.isPending ? t('common.loading') : t('common.save')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => setShowRCAForm(false)}>{t('common.cancel')}</Button>
                   </div>
                 </div>
               )}
@@ -205,136 +258,249 @@ export default function ProblemDetailPage() {
               {problemData.root_cause ? (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t('problems.rootCause')}</h3>
-                    <p className="text-gray-700 dark:text-gray-300">{problemData.root_cause}</p>
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">{t('problems.rootCause')}</h3>
+                    <p className="text-muted-foreground text-sm">{problemData.root_cause}</p>
                   </div>
+                  {problemData.rca_findings && (
+                    <div>
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">RCA Findings</h3>
+                      <p className="text-muted-foreground text-sm">{problemData.rca_findings}</p>
+                    </div>
+                  )}
+                  {problemData.contributing_factors && problemData.contributing_factors.length > 0 && (
+                    <div>
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Contributing Factors</h3>
+                      <ul className="space-y-1">
+                        {problemData.contributing_factors.map((f, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <ChevronRight className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" /> {f}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   {problemData.workaround && (
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t('problems.workaround')}</h3>
-                      <p className="text-gray-700 dark:text-gray-300">{problemData.workaround}</p>
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">{t('problems.workaround')}</h3>
+                      <p className="text-muted-foreground text-sm">{problemData.workaround}</p>
                     </div>
                   )}
                   {problemData.permanent_fix && (
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Permanent Fix</h3>
-                      <p className="text-gray-700 dark:text-gray-300">{problemData.permanent_fix}</p>
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Permanent Fix</h3>
+                      <p className="text-muted-foreground text-sm">{problemData.permanent_fix}</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">{t('problems.noRootCause')}</p>
+                <p className="text-muted-foreground text-center py-4 text-sm">{t('problems.noRootCause')}</p>
               )}
-            </div>
+            </Card>
 
-            {/* Timeline */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <History className="w-5 h-5" />
-                {t('incidents.timeline')}
-              </h2>
-              {problemData.timeline && problemData.timeline.length > 0 ? (
-                <div className="space-y-4">
-                  {problemData.timeline.map((event, index) => (
-                    <div key={index} className="flex gap-4">
-                      <div className="flex-shrink-0 w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
-                      <div>
-                        <p className="text-gray-900 dark:text-white">{event.event}</p>
-                        <p className="text-sm text-gray-500">
-                          {event.by_name || event.by} • {new Date(event.time).toLocaleString()}
-                        </p>
-                      </div>
+            {/* Publish Known Error Panel */}
+            {problemData.status === ProblemStatus.RCA_IN_PROGRESS && problemData.root_cause && (
+              <div className="bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-200 dark:border-purple-700 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-purple-900 dark:text-purple-200 flex items-center gap-2">
+                    <BookOpen className="w-5 h-5" /> Publish as Known Error
+                  </h2>
+                  {!showPublishKEPanel && (
+                    <button onClick={() => setShowPublishKEPanel(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">
+                      <BookOpen className="w-4 h-4" /> Publish to KB
+                    </button>
+                  )}
+                </div>
+                {showPublishKEPanel && (
+                  <div className="space-y-3">
+                    <input type="text" value={keData.title} onChange={(e) => setKEData((d) => ({ ...d, title: e.target.value }))} placeholder="Known Error title..." className="w-full px-3 py-2 border border-input rounded-lg text-sm bg-card" />
+                    <textarea value={keData.symptoms} onChange={(e) => setKEData((d) => ({ ...d, symptoms: e.target.value }))} rows={2} placeholder="Symptoms / how to identify..." className="w-full px-3 py-2 border border-input rounded-lg text-sm bg-card" />
+                    <textarea value={keData.workaround} onChange={(e) => setKEData((d) => ({ ...d, workaround: e.target.value }))} rows={2} placeholder="Workaround steps..." className="w-full px-3 py-2 border border-input rounded-lg text-sm bg-card" />
+                    <div className="flex gap-2">
+                      <button onClick={handlePublishKE} disabled={publishKnownError.isPending || !keData.title.trim()} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm disabled:opacity-50">{publishKnownError.isPending ? 'Publishing...' : 'Publish'}</button>
+                      <Button variant="outline" size="sm" onClick={() => setShowPublishKEPanel(false)}>Cancel</Button>
                     </div>
+                  </div>
+                )}
+                {!showPublishKEPanel && (
+                  <p className="text-sm text-purple-700 dark:text-purple-300">Root cause identified — publish a Known Error record to the KB so support teams can reference it.</p>
+                )}
+              </div>
+            )}
+
+            {/* Recurring Incidents Banner */}
+            {problemData.recurring_incidents && problemData.recurring_incidents.length > 0 && (
+              <div className="bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-700 p-5">
+                <h3 className="font-semibold text-red-800 dark:text-red-300 flex items-center gap-2 mb-3">
+                  <AlertTriangle className="w-5 h-5" /> Recurring Incidents ({problemData.recurring_incidents.length})
+                </h3>
+                <div className="space-y-2">
+                  {problemData.recurring_incidents.map((inc) => (
+                    <Link key={inc.incident_id} href={`/incidents/${inc.incident_id}`} className="flex items-center justify-between p-3 bg-card rounded-lg border border-red-200 dark:border-red-700 hover:border-red-400 transition-colors">
+                      <div>
+                        <span className="font-medium text-sm text-primary">{inc.incident_id}</span>
+                        {inc.title && <span className="text-xs text-muted-foreground ml-2 truncate">{inc.title}</span>}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </Link>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Timeline */}
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                <History className="w-5 h-5" /> {t('incidents.timeline')}
+              </h2>
+              {problemData.timeline && problemData.timeline.length > 0 ? (
+                <div className="relative">
+                  <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-border" />
+                  <div className="space-y-5 pl-8">
+                    {problemData.timeline.map((event, index) => (
+                      <div key={index} className="relative">
+                        <div className="absolute -left-5 top-1 w-3 h-3 bg-primary rounded-full border-2 border-card" />
+                        <p className="text-foreground text-sm font-medium">{event.event}</p>
+                        <p className="text-xs text-muted-foreground">{event.by_name || event.by} • {new Date(event.time).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">{t('incidents.noTimeline')}</p>
+                <p className="text-muted-foreground text-center py-4 text-sm">{t('incidents.noTimeline')}</p>
               )}
-            </div>
+            </Card>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-5">
             {/* Details */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-4">{t('common.details')}</h3>
-              <div className="space-y-4">
+            <Card className="p-5">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-4">{t('common.details')}</h3>
+              <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
-                  <User className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <User className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-500">{t('problems.owner')}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{problemData.owner.name}</p>
-                    <p className="text-sm text-gray-500">{problemData.owner.email}</p>
+                    <p className="text-xs text-muted-foreground">{t('problems.owner')}</p>
+                    <p className="font-medium text-foreground">{problemData.owner.name}</p>
+                    <p className="text-xs text-muted-foreground">{problemData.owner.email}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <Tag className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <Tag className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-500">{t('common.category')}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{problemData.category_id}</p>
+                    <p className="text-xs text-muted-foreground">{t('common.category')}</p>
+                    <p className="font-medium text-foreground">{problemData.category_id}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <FileQuestion className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <FileQuestion className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-500">{t('problems.linkedIncidents')}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {problemData.linked_incidents?.length || 0} {t('incidents.title')}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('problems.linkedIncidents')}</p>
+                    <p className="font-medium text-foreground">{problemData.linked_incidents?.length || 0} incidents</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <Clock className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-500">{t('common.createdAt')}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {new Date(problemData.created_at).toLocaleString()}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('common.createdAt')}</p>
+                    <p className="font-medium text-foreground">{new Date(problemData.created_at).toLocaleString()}</p>
                   </div>
                 </div>
+                {problemData.rca_method && (
+                  <div className="flex items-start gap-3">
+                    <Search className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">RCA Method</p>
+                      <p className="font-medium text-foreground capitalize">{problemData.rca_method.replace('_', ' ')}</p>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            </Card>
 
             {/* Actions */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-4">{t('common.actions')}</h3>
+            <Card className="p-5">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-4">{t('common.actions')}</h3>
               <div className="space-y-2">
                 {problemData.status === ProblemStatus.LOGGED && (
-                  <button
-                    onClick={() => handleStatusChange(ProblemStatus.RCA_IN_PROGRESS)}
-                    className="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
-                  >
-                    {t('problems.startRCA')}
+                  <button onClick={() => setShowStartRCAModal(true)} className="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 text-sm flex items-center justify-center gap-2">
+                    <Play className="w-4 h-4" /> {t('problems.startRCA')}
+                  </button>
+                )}
+                {problemData.status === ProblemStatus.RCA_IN_PROGRESS && (
+                  <button onClick={() => setShowCompleteRCAPanel(true)} className="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 text-sm flex items-center justify-center gap-2">
+                    <CheckCircle className="w-4 h-4" /> Complete RCA
                   </button>
                 )}
                 {problemData.status === ProblemStatus.RCA_IN_PROGRESS && problemData.root_cause && (
-                  <button
-                    onClick={() => handleStatusChange(ProblemStatus.KNOWN_ERROR)}
-                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                  >
-                    {t('problems.markAsKnownError')}
+                  <button onClick={() => setShowPublishKEPanel(true)} className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm flex items-center justify-center gap-2">
+                    <BookOpen className="w-4 h-4" /> {t('problems.markAsKnownError')}
                   </button>
                 )}
                 {(problemData.status === ProblemStatus.RCA_IN_PROGRESS || problemData.status === ProblemStatus.KNOWN_ERROR) && (
-                  <button
-                    onClick={() => handleStatusChange(ProblemStatus.RESOLVED)}
-                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
+                  <button onClick={() => handleStatusChange(ProblemStatus.RESOLVED)} className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
                     {t('problems.resolveProblem')}
                   </button>
                 )}
                 {problemData.status === ProblemStatus.RESOLVED && (
-                  <button
-                    onClick={() => handleStatusChange(ProblemStatus.CLOSED)}
-                    className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                  >
+                  <button onClick={() => handleStatusChange(ProblemStatus.CLOSED)} className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm">
                     {t('common.close')}
                   </button>
                 )}
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       </div>
+
+      {/* Start RCA Modal */}
+      {showStartRCAModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 bg-warning/10 rounded-full flex items-center justify-center">
+                <Play className="w-5 h-5 text-warning" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground">Start Root Cause Analysis</h2>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">RCA Method</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {RCA_METHODS.map((m) => (
+                    <button
+                      key={m.value}
+                      onClick={() => setSelectedRCAMethod(m.value)}
+                      className={`p-3 rounded-lg border-2 text-left text-sm transition-all ${
+                        selectedRCAMethod === m.value
+                          ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 font-semibold text-yellow-800 dark:text-yellow-200'
+                          : 'border-border text-muted-foreground hover:border-muted-foreground'
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleStartRCA}
+                  disabled={startRCA.isPending}
+                  className="flex-1 px-4 py-2.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-medium disabled:opacity-50"
+                >
+                  {startRCA.isPending ? 'Starting...' : 'Start RCA'}
+                </button>
+                <button
+                  onClick={() => setShowStartRCAModal(false)}
+                  className="flex-1 px-4 py-2.5 border border-border rounded-lg hover:bg-accent"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

@@ -81,7 +81,7 @@ export const useDashboardAnalytics = () => {
   return useQuery({
     queryKey: ['reports', 'analytics'],
     queryFn: async () => {
-      const response = await api.get('/reports/analytics');
+      const response = await api.get('/analytics/reports/dashboard');
       const apiResponse = response as unknown as AnalyticsResponse;
       console.log('🔍 Analytics API Response:', apiResponse);
       return apiResponse.data?.analytics;
@@ -94,7 +94,7 @@ export const useDailyReport = (date?: string) => {
   return useQuery({
     queryKey: ['reports', 'daily', date],
     queryFn: async () => {
-      const url = date ? `/reports/daily?date=${date}` : '/reports/daily';
+      const url = date ? `/analytics/reports/daily?date=${date}` : '/analytics/reports/daily';
       const response = await api.get(url);
       const apiResponse = response as unknown as DailyReportResponse;
       console.log('🔍 Daily Report API Response:', apiResponse);
@@ -108,7 +108,7 @@ export const useWeeklyReport = (weekStart?: string) => {
   return useQuery({
     queryKey: ['reports', 'weekly', weekStart],
     queryFn: async () => {
-      const url = weekStart ? `/reports/weekly?weekStart=${weekStart}` : '/reports/weekly';
+      const url = weekStart ? `/analytics/reports/weekly?weekStart=${weekStart}` : '/analytics/reports/weekly';
       const response = await api.get(url);
       const apiResponse = response as unknown as WeeklyReportResponse;
       console.log('🔍 Weekly Report API Response:', apiResponse);
@@ -126,7 +126,7 @@ export const useMonthlyReport = (month?: number, year?: number) => {
       if (month !== undefined) params.append('month', month.toString());
       if (year !== undefined) params.append('year', year.toString());
       
-      const url = `/reports/monthly${params.toString() ? `?${params.toString()}` : ''}`;
+      const url = `/analytics/reports/monthly${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await api.get(url);
       const apiResponse = response as unknown as MonthlyReportResponse;
       console.log('🔍 Monthly Report API Response:', apiResponse);

@@ -69,7 +69,7 @@ export function useSocket() {
   const joinITSM = useCallback(() => {
     if (socketRef.current && user) {
       socketRef.current.emit('join:itsm', {
-        userId: user._id || user.id,
+        userId: user.id,
         role: user.role,
       });
     }
@@ -84,7 +84,7 @@ export function useSocket() {
   const joinSelfService = useCallback(() => {
     if (socketRef.current && user) {
       socketRef.current.emit('join:self-service', {
-        userId: user._id || user.id,
+        userId: user.id,
       });
     }
   }, [user]);

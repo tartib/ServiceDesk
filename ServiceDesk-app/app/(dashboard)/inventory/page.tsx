@@ -7,7 +7,7 @@ import { Search, Package, AlertTriangle, Edit, Plus } from 'lucide-react';
 import { useInventory, useLowStockItems, useAdjustStock, useCreateInventoryItem } from '@/hooks/useInventory';
 import StockAdjustmentModal from '@/components/inventory/StockAdjustmentModal';
 import AddInventoryModal from '@/components/inventory/AddInventoryModal';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface InventoryItem {
@@ -33,7 +33,6 @@ interface StockAdjustmentData {
 
 export default function InventoryPage() {
   const { t } = useLanguage();
-  const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
@@ -122,8 +121,8 @@ export default function InventoryPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('inventory.title')}</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-2xl font-bold text-foreground">{t('inventory.title')}</h1>
+            <p className="text-muted-foreground mt-1">
               {t('inventory.subtitle')}
             </p>
           </div>
@@ -138,26 +137,26 @@ export default function InventoryPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{inventory.length}</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">{t('inventory.stats.totalItems')}</div>
+          <div className="bg-card rounded-lg p-4 shadow-sm border border-border">
+            <div className="text-2xl font-bold text-foreground">{inventory.length}</div>
+            <div className="text-sm text-muted-foreground">{t('inventory.stats.totalItems')}</div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-card rounded-lg p-4 shadow-sm border border-border">
             <div className="text-2xl font-bold text-green-600">{inStockCount}</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">{t('inventory.stats.inStock')}</div>
+            <div className="text-sm text-muted-foreground">{t('inventory.stats.inStock')}</div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-card rounded-lg p-4 shadow-sm border border-border">
             <div className="text-2xl font-bold text-yellow-600">{lowStockItems.length}</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">{t('inventory.stats.lowStock')}</div>
+            <div className="text-sm text-muted-foreground">{t('inventory.stats.lowStock')}</div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-card rounded-lg p-4 shadow-sm border border-border">
             <div className="text-2xl font-bold text-red-600">{outOfStockCount}</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">{t('inventory.stats.outOfStock')}</div>
+            <div className="text-sm text-muted-foreground">{t('inventory.stats.outOfStock')}</div>
           </div>
         </div>
 
         {/* Search */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -165,63 +164,63 @@ export default function InventoryPage() {
               placeholder={t('inventory.search')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-input rounded-lg bg-card text-foreground focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
 
         {/* Inventory Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-gray-500 dark:text-gray-400">{t('inventory.messages.loading')}</div>
+              <div className="text-muted-foreground">{t('inventory.messages.loading')}</div>
             </div>
           ) : filteredInventory.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Package className="w-12 h-12 text-gray-400 mb-3" />
-              <div className="text-gray-500 dark:text-gray-400">{searchQuery ? t('inventory.messages.noResults') : t('inventory.messages.noItems')}</div>
+              <div className="text-muted-foreground">{searchQuery ? t('inventory.messages.noResults') : t('inventory.messages.noItems')}</div>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700">
+                <thead className="bg-muted">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('inventory.table.item')}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('inventory.table.category')}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('inventory.table.currentStock')}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('inventory.table.minMax')}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('inventory.table.status')}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('inventory.table.actions')}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-border">
                   {filteredInventory.map((item: InventoryItem) => (
-                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <tr key={item.id} className="hover:bg-accent">
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
                           {item.image ? (
                             <Image src={item.image} alt={item.name} width={40} height={40} className="rounded object-cover" />
                           ) : (
-                            <Package className="w-10 h-10 text-gray-400 p-2 bg-gray-100 dark:bg-gray-700 rounded" />
+                            <Package className="w-10 h-10 text-gray-400 p-2 bg-muted rounded" />
                           )}
                           <div>
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            <div className="text-sm font-medium text-foreground">
                               {item.name}
                             </div>
                             {item.nameAr && (
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                              <div className="text-xs text-muted-foreground">
                                 {item.nameAr}
                               </div>
                             )}
@@ -229,15 +228,15 @@ export default function InventoryPage() {
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900 dark:text-white">{item.category}</span>
+                        <span className="text-sm text-foreground">{item.category}</span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                        <span className="text-sm font-semibold text-foreground">
                           {item.currentQuantity} {item.unit}
                         </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                        <span className="text-sm text-muted-foreground">
                           {item.minThreshold} / {item.maxThreshold} {item.unit}
                         </span>
                       </td>

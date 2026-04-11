@@ -23,7 +23,7 @@ import {
   Search
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface ProjectHeaderProps {
   projectKey?: string;
@@ -126,7 +126,7 @@ export default function ProjectHeader({
     
     // API call to save starred status
     try {
-      await fetch(`/api/v1/pm/projects/${projectId}/star`, {
+      await fetch(`/api/v2/pm/projects/${projectId}/star`, {
         method: newStarred ? 'POST' : 'DELETE',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -244,7 +244,7 @@ export default function ProjectHeader({
     
     setIsSavingTemplate(true);
     try {
-      await fetch(`/api/v1/pm/projects/${projectId}/template`, {
+      await fetch(`/api/v2/pm/projects/${projectId}/template`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: templateName }),
@@ -263,7 +263,7 @@ export default function ProjectHeader({
     setShowBackgroundPicker(false);
     
     try {
-      await fetch(`/api/v1/pm/projects/${projectId}/settings`, {
+      await fetch(`/api/v2/pm/projects/${projectId}/settings`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ background: bgId }),
@@ -275,7 +275,7 @@ export default function ProjectHeader({
 
   const handleArchive = async () => {
     try {
-      await fetch(`/api/v1/pm/projects/${projectId}/archive`, {
+      await fetch(`/api/v2/pm/projects/${projectId}/archive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -289,7 +289,7 @@ export default function ProjectHeader({
 
   const handleDelete = async () => {
     try {
-      await fetch(`/api/v1/pm/projects/${projectId}`, {
+      await fetch(`/api/v2/pm/projects/${projectId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
       });

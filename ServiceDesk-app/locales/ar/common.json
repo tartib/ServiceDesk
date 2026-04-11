@@ -35,6 +35,11 @@
     "sla": "إدارة SLA",
     "releases": "الإصدارات",
     "cab": "مجلس التغيير",
+    "changeCalendar": "تقويم التغييرات",
+    "pirs": "مراجعات ما بعد الحوادث",
+    "agentConsole": "وحدة تحكم الوكيل",
+    "portfolioAnalytics": "تحليلات المحفظة",
+    "teamPerformance": "أداء الفريق",
     "loggedInAs": "مسجل الدخول كـ"
   },
   "common": {
@@ -115,7 +120,22 @@
     "createAccount": "إنشاء حساب جديد",
     "fullName": "الاسم الكامل",
     "role": "الدور",
-    "phone": "رقم الهاتف"
+    "phone": "رقم الهاتف",
+    "joinServiceDesk": "انضم إلى ServiceDesk للبدء",
+    "namePlaceholder": "محمد أحمد",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "••••••••",
+    "selectRole": "اختر الدور",
+    "creatingAccount": "جارٍ إنشاء الحساب...",
+    "loginFailed": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+    "registerError": "فشل إنشاء الحساب. يرجى المحاولة مرة أخرى.",
+    "devTestAccounts": "حسابات اختبار التطوير"
+  },
+  "validation": {
+    "invalidEmail": "عنوان بريد إلكتروني غير صالح",
+    "passwordMinLength": "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل",
+    "nameMinLength": "يجب أن يتكون الاسم من حرفين على الأقل",
+    "passwordsDontMatch": "كلمات المرور غير متطابقة"
   },
   "roles": {
     "prep": "موظف تحضير",

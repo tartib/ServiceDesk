@@ -1,0 +1,36 @@
+{
+  "categories": {
+    "title": "Catégories",
+    "subtitle": "Gérer les catégories de produits",
+    "newCategory": "Nouvelle catégorie",
+    "search": "Rechercher des catégories...",
+    "status": "Statut",
+    "active": "Active",
+    "inactive": "Inactive",
+    "noCategories": "Aucune catégorie",
+    "noCategoriesDesc": "Commencez par créer votre première catégorie",
+    "noResults": "Aucune catégorie trouvée",
+    "noResultsDesc": "Essayez d'ajuster votre recherche",
+    "createCategory": "Créer une catégorie",
+    "addModal": {
+      "title": "Ajouter une nouvelle catégorie",
+      "nameEn": "Nom (anglais)",
+      "nameAr": "Nom (arabe)",
+      "description": "Description (facultatif)",
+      "descriptionPlaceholder": "Brève description de la catégorie",
+      "charactersRemaining": "caractères restants",
+      "cancel": "Annuler",
+      "addButton": "Ajouter la catégorie",
+      "adding": "Ajout en cours..."
+    },
+    "messages": {
+      "categoryAdded": "Catégorie ajoutée avec succès",
+      "categoryAddFailed": "Échec de l'ajout de la catégorie",
+      "categoryDeleted": "Catégorie supprimée avec succès",
+      "categoryDeleteFailed": "Échec de la suppression de la catégorie",
+      "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette catégorie ?",
+      "deleteWarning": "Cette action est irréversible.",
+      "loading": "Chargement des catégories..."
+    }
+  }
+}

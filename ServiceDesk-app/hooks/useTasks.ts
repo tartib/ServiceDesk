@@ -5,8 +5,7 @@ import {
   TaskFormData,
   TaskStatus
 } from '@/types';
-import { parseListResponse, parseApiResponse, getErrorMessage } from '@/lib/api/response-parser';
-import { validatePMOperation } from '@/lib/api/organization-context';
+import { normalizeList, normalizeEntity, getErrorMessage } from '@/lib/api/normalize';
 
 // API Response interface
 interface InventoryUsageItem {
@@ -23,13 +22,8 @@ export const useAllTasks = (projectId: string) => {
   return useQuery({
     queryKey: ['tasks', 'all', projectId],
     queryFn: async () => {
-      validatePMOperation('getAllTasks');
       const response = await api.get(`/projects/${projectId}/tasks`);
-      const tasks = parseListResponse<Task>(response);
-      return tasks.map((task: Task) => ({
-        ...task,
-        id: task._id || task.id,
-      }));
+      return normalizeList<Task>(response);
     },
     enabled: !!projectId,
   });
@@ -43,15 +37,10 @@ export const useTodayTasks = (projectId: string) => {
   return useQuery({
     queryKey: ['tasks', 'today', projectId],
     queryFn: async () => {
-      validatePMOperation('getTodayTasks');
       const response = await api.get(`/projects/${projectId}/tasks`, {
         params: { dueDate: new Date().toISOString().split('T')[0] },
       });
-      const tasks = parseListResponse<Task>(response);
-      return tasks.map((task: Task) => ({
-        ...task,
-        id: task._id || task.id,
-      }));
+      return normalizeList<Task>(response);
     },
     enabled: !!projectId,
   });
@@ -65,15 +54,10 @@ export const useMyTasks = (projectId: string) => {
   return useQuery({
     queryKey: ['tasks', 'my-tasks', projectId],
     queryFn: async () => {
-      validatePMOperation('getMyTasks');
       const response = await api.get(`/projects/${projectId}/tasks`, {
         params: { assignee: 'me' },
       });
-      const tasks = parseListResponse<Task>(response);
-      return tasks.map((task: Task) => ({
-        ...task,
-        id: task._id || task.id,
-      }));
+      return normalizeList<Task>(response);
     },
     enabled: !!projectId,
   });
@@ -88,15 +72,10 @@ export const useTasksByStatus = (projectId: string, status: TaskStatus) => {
   return useQuery({
     queryKey: ['tasks', 'status', projectId, status],
     queryFn: async () => {
-      validatePMOperation('getTasksByStatus');
       const response = await api.get(`/projects/${projectId}/tasks`, {
         params: { status },
       });
-      const tasks = parseListResponse<Task>(response);
-      return tasks.map((task: Task) => ({
-        ...task,
-        id: task._id || task.id,
-      }));
+      return normalizeList<Task>(response);
     },
     enabled: !!projectId && !!status,
   });
@@ -110,15 +89,10 @@ export const useProductTasks = (projectId: string, productId: string) => {
   return useQuery({
     queryKey: ['tasks', 'product', projectId, productId],
     queryFn: async () => {
-      validatePMOperation('getProductTasks');
       const response = await api.get(`/projects/${projectId}/tasks`, {
         params: { product: productId },
       });
-      const tasks = parseListResponse<Task>(response);
-      return tasks.map((task: Task) => ({
-        ...task,
-        id: task._id || task.id,
-      }));
+      return normalizeList<Task>(response);
     },
     enabled: !!projectId && !!productId,
   });
@@ -135,12 +109,7 @@ export const useTask = (taskId: string) => {
     queryKey: ['tasks', taskId],
     queryFn: async () => {
       const response = await api.get(`/tasks/${taskId}`);
-      const task = parseApiResponse<Task>(response);
-      
-      return {
-        ...task,
-        id: task._id || task.id,
-      };
+      return normalizeEntity<Task>(response);
     },
     enabled: !!taskId,
   });
@@ -159,7 +128,7 @@ export const useStartTask = () => {
       const response = await api.post(`/tasks/${taskId}/transition`, {
         statusId: 'in-progress',
       });
-      return parseApiResponse<Task>(response);
+      return normalizeEntity<Task>(response);
     },
     onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
@@ -183,7 +152,7 @@ export const useCompleteTask = () => {
         statusId: 'done',
         comment: notes,
       });
-      return parseApiResponse<Task>(response);
+      return normalizeEntity<Task>(response);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.taskId] });
@@ -205,9 +174,8 @@ export const useCreateTask = () => {
   return useMutation({
     mutationFn: async (data: TaskFormData & { projectId: string }) => {
       const { projectId, ...taskData } = data;
-      validatePMOperation('createTask');
       const response = await api.post(`/projects/${projectId}/tasks`, taskData);
-      return parseApiResponse<Task>(response);
+      return normalizeEntity<Task>(response);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', 'all', variables.projectId] });
@@ -228,7 +196,7 @@ export const useAssignTask = () => {
   return useMutation({
     mutationFn: async ({ taskId, userId }: { taskId: string; userId: string }) => {
       const response = await api.put(`/tasks/${taskId}`, { assignee: userId });
-      return parseApiResponse<Task>(response);
+      return normalizeEntity<Task>(response);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.taskId] });
@@ -250,7 +218,7 @@ export const useMarkTaskLate = () => {
   return useMutation({
     mutationFn: async (taskId: string) => {
       const response = await api.patch(`/tasks/${taskId}`, { isLate: true });
-      return parseApiResponse<Task>(response);
+      return normalizeEntity<Task>(response);
     },
     onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
@@ -272,7 +240,7 @@ export const useUpdateTaskUsage = () => {
   return useMutation({
     mutationFn: async ({ taskId, inventoryUsage }: { taskId: string; inventoryUsage: InventoryUsageItem[] }) => {
       const response = await api.patch(`/tasks/${taskId}`, { inventoryUsage });
-      return parseApiResponse<Task>(response);
+      return normalizeEntity<Task>(response);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.taskId] });

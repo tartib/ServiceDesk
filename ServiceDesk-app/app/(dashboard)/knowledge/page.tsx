@@ -231,7 +231,7 @@ export default function KnowledgePage() {
           </Select>
 
           {/* View Mode Toggle */}
-          <div className="flex items-center border border-gray-200 rounded-lg">
+          <div className="flex items-center border border-border rounded-lg">
             <Button
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
               size="icon"
@@ -367,11 +367,11 @@ export default function KnowledgePage() {
               </div>
             ) : (
               /* List View */
-              <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
+              <div className="bg-card rounded-lg border border-border divide-y divide-border">
                 {articles.map((article: KnowledgeArticle) => (
                   <div
                     key={article._id || article.article_id}
-                    className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-4 px-5 py-4 hover:bg-accent transition-colors"
                   >
                     {/* Icon */}
                     <div className="shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -383,7 +383,7 @@ export default function KnowledgePage() {
                       <div className="flex items-center gap-2">
                         <Link
                           href={`/knowledge/${article.article_id || article._id}`}
-                          className="text-sm font-semibold text-gray-900 hover:text-blue-600 truncate"
+                          className="text-sm font-semibold text-foreground hover:text-blue-600 truncate"
                         >
                           {locale === 'ar' ? article.title_ar || article.title : article.title}
                         </Link>

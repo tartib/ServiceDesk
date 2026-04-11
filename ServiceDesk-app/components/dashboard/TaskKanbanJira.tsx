@@ -68,12 +68,12 @@ const JiraTaskCard = ({
 
   const handleStart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    startTask(task._id || task.id || '');
+    startTask(task.id || '');
   };
 
   const handleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    completeTask({ taskId: task._id || task.id || '' });
+    completeTask({ taskId: task.id || '' });
   };
 
   return (
@@ -107,7 +107,7 @@ const JiraTaskCard = ({
       {/* Task ID & Time */}
       <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
         <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">
-          TASK-{(task._id || task.id || '').slice(-4).toUpperCase()}
+          TASK-{(task.id || '').slice(-4).toUpperCase()}
         </span>
         <span>•</span>
         <div className="flex items-center gap-1">
@@ -260,9 +260,9 @@ export default function TaskKanbanJira({ tasks }: TaskKanbanProps) {
               {column.tasks.length > 0 ? (
                 column.tasks.map((task) => (
                   <JiraTaskCard
-                    key={task._id || task.id}
+                    key={task.id}
                     task={task}
-                    onClick={() => router.push(`/tasks/${task._id || task.id}`)}
+                    onClick={() => router.push(`/tasks/${task.id}`)}
                     t={t}
                   />
                 ))

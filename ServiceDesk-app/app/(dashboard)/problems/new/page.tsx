@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCreateProblem } from '@/hooks/useProblems';
@@ -65,15 +67,15 @@ export default function NewProblemPage() {
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-accent rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-foreground">
               {t('problems.newProblem')}
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-muted-foreground">
               {t('problems.subtitle')}
             </p>
           </div>
@@ -82,37 +84,37 @@ export default function NewProblemPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-4 rounded-lg">
               <AlertCircle className="w-5 h-5" />
               <span>{error}</span>
             </div>
           )}
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-6">
+          <Card className="p-6 space-y-6">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('problems.form.title')} <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {t('problems.form.title')} <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-input rounded-lg bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
                 placeholder={t('problems.form.titlePlaceholder')}
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('problems.form.description')} <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {t('problems.form.description')} <span className="text-destructive">*</span>
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={5}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-input rounded-lg bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
                 placeholder={t('problems.form.descriptionPlaceholder')}
               />
             </div>
@@ -120,13 +122,13 @@ export default function NewProblemPage() {
             {/* Priority & Impact */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   {t('incidents.form.impact')}
                 </label>
                 <select
                   value={formData.impact}
                   onChange={(e) => setFormData({ ...formData, impact: e.target.value as Impact })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-input rounded-lg bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
                 >
                   <option value={Impact.LOW}>{t('incidents.form.impactLow')}</option>
                   <option value={Impact.MEDIUM}>{t('incidents.form.impactMedium')}</option>
@@ -135,13 +137,13 @@ export default function NewProblemPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   {t('common.status')}
                 </label>
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value as Priority })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-input rounded-lg bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
                 >
                   <option value={Priority.LOW}>{t('incidents.priority.low')}</option>
                   <option value={Priority.MEDIUM}>{t('incidents.priority.medium')}</option>
@@ -153,34 +155,26 @@ export default function NewProblemPage() {
 
             {/* Linked Incidents */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 {t('problems.linkedIncidents')}
               </label>
               <input
                 type="text"
                 value={formData.linked_incidents}
                 onChange={(e) => setFormData({ ...formData, linked_incidents: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-input rounded-lg bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
                 placeholder={t('problems.form.linkedIncidentsPlaceholder')}
               />
-              <p className="text-sm text-gray-500 mt-1">{t('problems.form.linkedIncidentsHint')}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('problems.form.linkedIncidentsHint')}</p>
             </div>
-          </div>
+          </Card>
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-4">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
+            <Button variant="outline" type="button" onClick={() => router.back()}>
               {t('common.cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={createProblem.isPending}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-            >
+            </Button>
+            <Button type="submit" disabled={createProblem.isPending}>
               {createProblem.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -189,7 +183,7 @@ export default function NewProblemPage() {
               ) : (
                 t('problems.form.submit')
               )}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

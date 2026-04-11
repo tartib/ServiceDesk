@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -12,24 +12,26 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
-const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-  role: z.enum(['prep', 'supervisor', 'manager']),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
-
-type RegisterFormData = z.infer<typeof registerSchema>;
+type RegisterFormData = { name: string; email: string; password: string; confirmPassword: string; role: 'prep' | 'supervisor' | 'manager' };
 
 export default function RegisterPage() {
   const [error, setError] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<string>('prep');
   const { mutate: register, isPending } = useRegister();
+  const { t } = useLanguage();
+
+  const registerSchema = useMemo(() => z.object({
+    name: z.string().min(2, t('validation.nameMinLength')),
+    email: z.string().email(t('validation.invalidEmail')),
+    password: z.string().min(6, t('validation.passwordMinLength')),
+    confirmPassword: z.string(),
+    role: z.enum(['prep', 'supervisor', 'manager']),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: t('validation.passwordsDontMatch'),
+    path: ['confirmPassword'],
+  }), [t]);
 
   const {
     register: registerField,
@@ -56,7 +58,7 @@ export default function RegisterPage() {
     };
     register(trimmedData, {
       onError: (err: Error & { response?: { data?: { message?: string } } }) => {
-        setError(err.response?.data?.message || 'Registration failed. Please try again.');
+        setError(err.response?.data?.message || t('auth.registerError'));
       },
     });
   };
@@ -65,9 +67,9 @@ export default function RegisterPage() {
     <div className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">{t('auth.createAccount')}</CardTitle>
           <CardDescription className="text-center">
-            Join ServiceDesk to get started
+            {t('auth.joinServiceDesk')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -80,11 +82,11 @@ export default function RegisterPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">{t('auth.fullName')}</Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="John Doe"
+                placeholder={t('auth.namePlaceholder')}
                 {...registerField('name')}
                 disabled={isPending}
               />
@@ -94,11 +96,11 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder={t('auth.emailPlaceholder')}
                 {...registerField('email')}
                 disabled={isPending}
               />
@@ -108,7 +110,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role">{t('auth.role')}</Label>
               <Select
                 value={selectedRole}
                 onValueChange={(value) => {
@@ -118,12 +120,12 @@ export default function RegisterPage() {
                 disabled={isPending}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
+                  <SelectValue placeholder={t('auth.selectRole')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="prep">Prep Staff</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="prep">{t('roles.prep')}</SelectItem>
+                  <SelectItem value="supervisor">{t('roles.supervisor')}</SelectItem>
+                  <SelectItem value="manager">{t('roles.manager')}</SelectItem>
                 </SelectContent>
               </Select>
               {errors.role && (
@@ -132,11 +134,11 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder={t('auth.passwordPlaceholder')}
                 {...registerField('password')}
                 disabled={isPending}
               />
@@ -146,11 +148,11 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="••••••••"
+                placeholder={t('auth.passwordPlaceholder')}
                 {...registerField('confirmPassword')}
                 disabled={isPending}
               />
@@ -162,18 +164,18 @@ export default function RegisterPage() {
             <Button type="submit" className="w-full" disabled={isPending}>
               {isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
+                  <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" />
+                  {t('auth.creatingAccount')}
                 </>
               ) : (
-                'Create Account'
+                t('auth.createAccount')
               )}
             </Button>
 
             <div className="text-center text-sm text-gray-600">
-              Already have an account?{' '}
+              {t('auth.alreadyHaveAccount')}{' '}
               <Link href="/login" className="text-blue-600 hover:underline font-medium">
-                Sign in
+                {t('auth.signIn')}
               </Link>
             </div>
           </form>

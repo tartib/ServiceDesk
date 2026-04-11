@@ -45,7 +45,7 @@ npm install
 3. **Set up environment variables**
 Create a `.env.local` file in the root directory:
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:5000/api/v2
 NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
 ```
 
@@ -131,20 +131,20 @@ ServiceDesk-app/
 The application connects to a backend API. Key endpoints:
 
 ### Authentication
-- `POST /api/v1/auth/login` - User login
-- `POST /api/v1/auth/register` - User registration
-- `GET /api/v1/auth/me` - Get current user
+- `POST /api/v2/auth/login` - User login
+- `POST /api/v2/auth/register` - User registration
+- `GET /api/v2/auth/me` - Get current user
 
 ### Tasks
-- `GET /api/v1/tasks/today` - Today's tasks
-- `GET /api/v1/tasks/my-tasks` - User's assigned tasks
-- `PATCH /api/v1/tasks/:id/start` - Start a task
-- `PATCH /api/v1/tasks/:id/complete` - Complete a task
+- `GET /api/v2/tasks/today` - Today's tasks
+- `GET /api/v2/tasks/my-tasks` - User's assigned tasks
+- `PATCH /api/v2/tasks/:id/start` - Start a task
+- `PATCH /api/v2/tasks/:id/complete` - Complete a task
 
 ### Inventory
-- `GET /api/v1/inventory` - List all inventory items
-- `GET /api/v1/inventory/low-stock` - Get low stock items
-- `PATCH /api/v1/inventory/:id/restock` - Restock item (Supervisor/Manager)
+- `GET /api/v2/inventory` - List all inventory items
+- `GET /api/v2/inventory/low-stock` - Get low stock items
+- `PATCH /api/v2/inventory/:id/restock` - Restock item (Supervisor/Manager)
 
 ## 🎨 UI Components
 

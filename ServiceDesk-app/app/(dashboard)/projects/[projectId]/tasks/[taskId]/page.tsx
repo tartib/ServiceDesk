@@ -30,7 +30,7 @@ import {
   Edit3,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import toast, { Toaster } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useTaskComments, useAddComment } from '@/hooks/useComments';
 
 interface TaskAssignee {
@@ -447,7 +447,7 @@ export default function TaskDetailPage() {
           const data = await response.json();
           const user = data.data || data;
           setCurrentUser({
-            _id: user._id || user.id,
+            _id: user.id,
             profile: user.profile || { firstName: user.firstName || '', lastName: user.lastName || '' },
             permissions: { canEditTasks: true, isAdmin: user.role === 'admin' },
           });
@@ -985,7 +985,6 @@ export default function TaskDetailPage() {
 
   return (
     <div className="bg-gray-50">
-      <Toaster position="top-right" />
       
       {/* Header */}
       <div className="bg-white border-b border-gray-200">

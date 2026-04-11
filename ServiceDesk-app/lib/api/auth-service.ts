@@ -4,15 +4,14 @@
  */
 
 import axios from 'axios';
-import axiosInstance from './axios-instance';
+import api from '../axios';
 import { fetchCsrfToken, clearCsrfToken } from './csrf';
 import { API_BASE_URL } from './config';
 import type { AxiosError } from 'axios';
 
-// Auth uses v2 endpoints, create a dedicated instance
-const API_BASE = API_BASE_URL;
+// Auth uses v2 core endpoints with base path /api (routes: /api/v2/core/auth/*)
 const authAxios = axios.create({
-  baseURL: `${API_BASE}/api`,
+  baseURL: `${API_BASE_URL}/api`,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -174,12 +173,12 @@ class AuthService {
         throw new Error('No refresh token available');
       }
 
-      const response = await axiosInstance.post<{ data: { token: string } }>(
+      const response = await api.post<{ data: { token: string } }>(
         '/auth/refresh',
         { refreshToken }
       );
 
-      const newToken = response.data.data.token;
+      const newToken = (response as unknown as { data: { token: string } }).data?.token || (response as unknown as { token: string }).token;
       localStorage.setItem('token', newToken);
 
       return newToken;

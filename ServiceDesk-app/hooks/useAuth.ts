@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axiosInstance from '@/lib/api/axios-instance';
+import api from '@/lib/axios';
 import authService from '@/lib/api/auth-service';
 import { useAuthStore } from '@/store/authStore';
 import { LoginFormData, RegisterFormData, User, ApiResponse } from '@/types';
@@ -57,14 +57,14 @@ export const useCurrentUser = () => {
   return useQuery({
     queryKey: ['auth', 'me'],
     queryFn: async () => {
-      const response = await axiosInstance.get('/auth/me');
-      const body = response.data;
+      const body = await api.get<Record<string, unknown>>('/auth/me');
       // Backend returns { success, data: { user: { id, name, email, role, ... } } }
-      const user = body?.data?.user || body?.data || body;
+      const data = body?.data as Record<string, unknown> | undefined;
+      const user = (data?.user || data || body) as User;
       if (user) {
         updateUser(user);
       }
-      return user as User;
+      return user;
     },
     enabled: isAuthenticated,
   });
@@ -75,17 +75,15 @@ export const useUpdateProfile = () => {
   const { updateUser } = useAuthStore();
 
   return useMutation({
-    mutationFn: async (data: Partial<User>): Promise<{ data?: User } | User> => {
-      const response = await axiosInstance.patch('/auth/profile', data);
-      return response as { data?: User } | User;
-    },
-    onSuccess: (response: { data?: User } | User) => {
-      let user: User | undefined;
-      if ('data' in response && response.data) {
-        user = response.data;
-      } else if ('id' in response) {
-        user = response as User;
+    mutationFn: async (data: Partial<User>): Promise<User> => {
+      const response = await api.patch<{ data?: User } | User>('/auth/profile', data);
+      // Unwrap if nested
+      if (response && typeof response === 'object' && 'data' in response && (response as { data?: User }).data) {
+        return (response as { data: User }).data;
       }
+      return response as User;
+    },
+    onSuccess: (user: User) => {
       if (user) {
         updateUser(user);
         queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
@@ -97,8 +95,7 @@ export const useUpdateProfile = () => {
 export const useChangePassword = () => {
   return useMutation({
     mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
-      const response = await axiosInstance.patch('/auth/password', data);
-      return response.data as ApiResponse<void>;
+      return await api.patch<ApiResponse<void>>('/auth/password', data);
     },
   });
 };

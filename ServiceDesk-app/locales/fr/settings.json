@@ -1,0 +1,26 @@
+{
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Gérez vos préférences d'application et notifications",
+    "language": "Langue",
+    "languageDescription": "Choisissez la langue de l'interface",
+    "appearance": "Apparence",
+    "appearanceDescription": "Choisissez votre thème préféré",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "themeSystem": "Système",
+    "notifications": "Notifications",
+    "notificationsDescription": "Gérez vos préférences de notification",
+    "emailNotifications": "Notifications par e-mail",
+    "emailNotificationsDesc": "Recevoir des notifications par e-mail",
+    "browserNotifications": "Notifications navigateur",
+    "browserNotificationsDesc": "Notifications push en temps réel dans le navigateur",
+    "notificationTypes": "Types de notifications",
+    "incidents": "Incidents",
+    "incidentsDesc": "Nouveaux incidents et mises à jour de statut",
+    "tasks": "Tâches",
+    "tasksDesc": "Affectations de tâches et mises à jour",
+    "mentions": "Mentions",
+    "mentionsDesc": "Lorsque quelqu'un vous mentionne dans un commentaire"
+  }
+}

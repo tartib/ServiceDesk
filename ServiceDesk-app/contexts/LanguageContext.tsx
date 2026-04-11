@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Locale, defaultLocale } from '@/i18n/config';
+import { Locale, defaultLocale, locales, isRTL } from '@/i18n/config';
 
 import enRoot from '@/locales/en.json';
 import arRoot from '@/locales/ar.json';
@@ -37,8 +37,28 @@ import enIntake from '@/locales/en/intake.json';
 import arIntake from '@/locales/ar/intake.json';
 import enPortfolio from '@/locales/en/portfolio.json';
 import arPortfolio from '@/locales/ar/portfolio.json';
+import frRoot from '@/locales/fr.json';
+import frCommon from '@/locales/fr/common.json';
+import frDashboard from '@/locales/fr/dashboard.json';
+import frReports from '@/locales/fr/reports.json';
+import frUsers from '@/locales/fr/users.json';
+import frItsm from '@/locales/fr/itsm.json';
+import frInventory from '@/locales/fr/inventory.json';
+import frCategories from '@/locales/fr/categories.json';
+import frRoadmap from '@/locales/fr/roadmap.json';
+import frProjects from '@/locales/fr/projects.json';
+import frSettings from '@/locales/fr/settings.json';
+import frProfile from '@/locales/fr/profile.json';
+import frDrive from '@/locales/fr/drive.json';
+import frWorkflows from '@/locales/fr/workflows.json';
+import frVacations from '@/locales/fr/vacations.json';
+import frIntake from '@/locales/fr/intake.json';
+import frPortfolio from '@/locales/fr/portfolio.json';
+import enAgentConsole from '@/locales/en/agent-console.json';
+import arAgentConsole from '@/locales/ar/agent-console.json';
+import frAgentConsole from '@/locales/fr/agent-console.json';
 
-type Messages = typeof enRoot & typeof enCommon & typeof enDashboard & typeof enReports & typeof enUsers & typeof enItsm & typeof enInventory & typeof enCategories & typeof enRoadmap & typeof enProjects & typeof enSettings & typeof enProfile & typeof enDrive & typeof enWorkflows & typeof enVacations & typeof enIntake & typeof enPortfolio;
+type Messages = typeof enRoot & typeof enCommon & typeof enDashboard & typeof enReports & typeof enUsers & typeof enItsm & typeof enInventory & typeof enCategories & typeof enRoadmap & typeof enProjects & typeof enSettings & typeof enProfile & typeof enDrive & typeof enWorkflows & typeof enVacations & typeof enIntake & typeof enPortfolio & typeof enAgentConsole;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deepMerge(...objects: Record<string, any>[]): Record<string, any> {
@@ -63,8 +83,9 @@ function deepMerge(...objects: Record<string, any>[]): Record<string, any> {
 }
 
 const messages: Record<Locale, Messages> = {
-  en: deepMerge(enRoot, enCommon, enDashboard, enReports, enUsers, enItsm, enInventory, enCategories, enRoadmap, enProjects, enSettings, enProfile, enDrive, enWorkflows, enVacations, enIntake, enPortfolio) as Messages,
-  ar: deepMerge(arRoot, arCommon, arDashboard, arReports, arUsers, arItsm, arInventory, arCategories, arRoadmap, arProjects, arSettings, arProfile, arDrive, arWorkflows, arVacations, arIntake, arPortfolio) as Messages,
+  en: deepMerge(enRoot, enCommon, enDashboard, enReports, enUsers, enItsm, enInventory, enCategories, enRoadmap, enProjects, enSettings, enProfile, enDrive, enWorkflows, enVacations, enIntake, enPortfolio, enAgentConsole) as Messages,
+  ar: deepMerge(arRoot, arCommon, arDashboard, arReports, arUsers, arItsm, arInventory, arCategories, arRoadmap, arProjects, arSettings, arProfile, arDrive, arWorkflows, arVacations, arIntake, arPortfolio, arAgentConsole) as Messages,
+  fr: deepMerge(frRoot, frCommon, frDashboard, frReports, frUsers, frItsm, frInventory, frCategories, frRoadmap, frProjects, frSettings, frProfile, frDrive, frWorkflows, frVacations, frIntake, frPortfolio, frAgentConsole) as Messages,
 };
 
 interface LanguageContextType {
@@ -83,7 +104,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Load saved locale from localStorage
     const savedLocale = localStorage.getItem('locale') as Locale | null;
-    if (savedLocale && (savedLocale === 'en' || savedLocale === 'ar')) {
+    if (savedLocale && (locales as readonly string[]).includes(savedLocale)) {
       setLocaleState(savedLocale);
     }
     setMounted(true);
@@ -92,7 +113,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (mounted) {
       // Update document direction and lang attribute
-      document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+      document.documentElement.dir = isRTL(locale) ? 'rtl' : 'ltr';
       document.documentElement.lang = locale;
       // Save to localStorage
       localStorage.setItem('locale', locale);

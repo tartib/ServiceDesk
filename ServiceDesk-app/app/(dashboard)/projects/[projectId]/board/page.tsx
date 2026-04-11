@@ -23,7 +23,7 @@ import { useMethodology } from '@/hooks/useMethodology';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProjectIssueTypes } from '@/hooks/useProjectIssueTypes';
 import ManageWorkTypesModal from '@/components/projects/ManageWorkTypesModal';
-import toast, { Toaster } from 'react-hot-toast';
+import { toast } from 'sonner';
 import {
   DndContext,
   DragEndEvent,
@@ -1617,8 +1617,6 @@ export default function ProjectBoardPage() {
         initialEditTypeId={workTypesEditTypeId}
       />
 
-      {/* Toast Notifications */}
-      <Toaster position="top-right" />
     </div>
   );
 }

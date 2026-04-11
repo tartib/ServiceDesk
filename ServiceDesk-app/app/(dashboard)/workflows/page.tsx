@@ -172,7 +172,7 @@ export default function WorkflowsPage() {
           </Select>
 
           {/* View Mode Toggle */}
-          <div className="flex items-center border border-gray-200 rounded-lg">
+          <div className="flex items-center border border-border rounded-lg">
             <Button
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
               size="icon"
@@ -291,11 +291,11 @@ export default function WorkflowsPage() {
               </div>
             ) : (
               /* List View */
-              <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
+              <div className="bg-card rounded-lg border border-border divide-y divide-border">
                 {workflows.map((workflow: WorkflowDiagram) => (
                   <div
                     key={workflow._id}
-                    className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-4 px-5 py-4 hover:bg-accent transition-colors"
                   >
                     {/* Icon */}
                     <div className="shrink-0 w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
@@ -307,7 +307,7 @@ export default function WorkflowsPage() {
                       <div className="flex items-center gap-2">
                         <Link
                           href={`/workflows/${workflow._id}`}
-                          className="text-sm font-semibold text-gray-900 hover:text-blue-600 truncate"
+                          className="text-sm font-semibold text-foreground hover:text-blue-600 truncate"
                         >
                           {workflow.name}
                         </Link>
@@ -394,7 +394,7 @@ export default function WorkflowsPage() {
             )}
 
             {/* Pagination */}
-            {pagination && pagination.pages > 1 && (
+            {pagination && (pagination.pages ?? 0) > 1 && (
               <div className="flex justify-center gap-2 mt-6">
                 <Button
                   variant="outline"
@@ -406,13 +406,13 @@ export default function WorkflowsPage() {
                 </Button>
                 <span className="flex items-center px-4 text-sm">
                   {locale === 'ar'
-                    ? `صفحة ${page} من ${pagination.pages}`
-                    : `Page ${page} of ${pagination.pages}`}
+                    ? `صفحة ${page} من ${pagination.pages ?? 1}`
+                    : `Page ${page} of ${pagination.pages ?? 1}`}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={page === pagination.pages}
+                  disabled={page === (pagination.pages ?? 1)}
                   onClick={() => setPage(page + 1)}
                 >
                   {locale === 'ar' ? 'التالي' : 'Next'}

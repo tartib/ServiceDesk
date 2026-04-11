@@ -11,6 +11,7 @@ import {
   IApiListResponse,
 } from '@/types/itsm';
 
+const ITSM_BASE = '/api/v2/itsm';
 const CHANGES_KEY = 'changes';
 
 // ============================================
@@ -46,7 +47,7 @@ export const useChanges = (filters?: {
     queryKey: [CHANGES_KEY, 'list', filters],
     queryFn: async () => {
       const response = await api.get<IApiListResponse<IChange>>(
-        `/changes?${params.toString()}`
+        `${ITSM_BASE}/changes?${params.toString()}`
       );
       return response;
     },
@@ -57,7 +58,7 @@ export const useChange = (changeId: string) => {
   return useQuery({
     queryKey: [CHANGES_KEY, changeId],
     queryFn: async () => {
-      const response = await api.get(`/changes/${changeId}`) as { data?: { change: IChange }, change?: IChange };
+      const response = await api.get(`${ITSM_BASE}/changes/${changeId}`) as { data?: { change: IChange }, change?: IChange };
       // Handle both response formats: { data: { change } } or { change }
       const change = response.data?.change || response.change;
       if (!change) {
@@ -75,7 +76,7 @@ export const useChangeStats = (siteId?: string) => {
     queryFn: async () => {
       const params = siteId ? `?site_id=${siteId}` : '';
       const response = await api.get<IChangeStats>(
-        `/changes/stats${params}`
+        `${ITSM_BASE}/changes/stats${params}`
       );
       return response;
     },
@@ -86,7 +87,7 @@ export const usePendingCabApproval = () => {
   return useQuery({
     queryKey: [CHANGES_KEY, 'pending-cab'],
     queryFn: async () => {
-      const response = await api.get<IChange[]>('/changes/pending-cab');
+      const response = await api.get<IChange[]>(`${ITSM_BASE}/changes/pending-cab`);
       return response;
     },
   });
@@ -97,7 +98,7 @@ export const useScheduledChanges = (startDate: string, endDate: string) => {
     queryKey: [CHANGES_KEY, 'scheduled', startDate, endDate],
     queryFn: async () => {
       const response = await api.get<IChange[]>(
-        `/changes/scheduled?start_date=${startDate}&end_date=${endDate}`
+        `${ITSM_BASE}/changes/scheduled?start_date=${startDate}&end_date=${endDate}`
       );
       return response;
     },
@@ -109,7 +110,7 @@ export const useEmergencyChanges = () => {
   return useQuery({
     queryKey: [CHANGES_KEY, 'emergency'],
     queryFn: async () => {
-      const response = await api.get<IChange[]>('/changes/emergency');
+      const response = await api.get<IChange[]>(`${ITSM_BASE}/changes/emergency`);
       return response;
     },
   });
@@ -123,7 +124,7 @@ export const useMyChangeRequests = (page?: number, limit?: number) => {
       if (page) params.append('page', String(page));
       if (limit) params.append('limit', String(limit));
       const response = await api.get<IApiListResponse<IChange>>(
-        `/changes/my-requests?${params.toString()}`
+        `${ITSM_BASE}/changes/my-requests?${params.toString()}`
       );
       return response;
     },
@@ -140,7 +141,7 @@ export const useCreateChange = () => {
   return useMutation({
     mutationFn: async (data: CreateChangeDTO) => {
       const response = await api.post<{ data: { change: IChange } }>(
-        '/changes',
+        `${ITSM_BASE}/changes`,
         data
       );
       return response.data.change;
@@ -163,7 +164,7 @@ export const useUpdateChange = () => {
       data: Partial<CreateChangeDTO>;
     }) => {
       const response = await api.patch<{ data: { change: IChange } }>(
-        `/changes/${changeId}`,
+        `${ITSM_BASE}/changes/${changeId}`,
         data
       );
       return response.data.change;
@@ -183,7 +184,7 @@ export const useSubmitChangeForApproval = () => {
   return useMutation({
     mutationFn: async (changeId: string) => {
       const response = await api.post<{ data: { change: IChange } }>(
-        `/changes/${changeId}/submit`
+        `${ITSM_BASE}/changes/${changeId}/submit`
       );
       return response.data.change;
     },
@@ -210,7 +211,7 @@ export const useAddCabApproval = () => {
       role?: string;
     }) => {
       const response = await api.post<{ data: { change: IChange } }>(
-        `/changes/${changeId}/cab/approve`,
+        `${ITSM_BASE}/changes/${changeId}/cab/approve`,
         { decision, comments, role }
       );
       return response.data.change;
@@ -240,7 +241,7 @@ export const useScheduleChange = () => {
       };
     }) => {
       const response = await api.post<{ data: { change: IChange } }>(
-        `/changes/${changeId}/schedule`,
+        `${ITSM_BASE}/changes/${changeId}/schedule`,
         schedule
       );
       return response.data.change;
@@ -260,7 +261,7 @@ export const useStartImplementation = () => {
   return useMutation({
     mutationFn: async (changeId: string) => {
       const response = await api.post<{ data: { change: IChange } }>(
-        `/changes/${changeId}/implement`
+        `${ITSM_BASE}/changes/${changeId}/implement`
       );
       return response.data.change;
     },
@@ -285,7 +286,7 @@ export const useCompleteChange = () => {
       notes: string;
     }) => {
       const response = await api.post<{ data: { change: IChange } }>(
-        `/changes/${changeId}/complete`,
+        `${ITSM_BASE}/changes/${changeId}/complete`,
         { success, notes }
       );
       return response.data.change;
@@ -311,7 +312,7 @@ export const useCancelChange = () => {
       reason: string;
     }) => {
       const response = await api.post<{ data: { change: IChange } }>(
-        `/changes/${changeId}/cancel`,
+        `${ITSM_BASE}/changes/${changeId}/cancel`,
         { reason }
       );
       return response.data.change;

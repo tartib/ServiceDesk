@@ -3,8 +3,11 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useChange, useSubmitChangeForApproval, useAddCabApproval, useScheduleChange, useStartImplementation, useCompleteChange, useCancelChange } from '@/hooks/useChanges';
-import { IChange, ChangeStatus, ChangeType, ApprovalStatus, getPriorityColor } from '@/types/itsm';
+import { useCreateCalendarEvent } from '@/hooks/useChangeCalendar';
+import { IChange, ChangeStatus, ChangeType, ApprovalStatus, getPriorityColor, ChangeCalendarEventType } from '@/types/itsm';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { 
   ArrowLeft, 
   Clock, 
@@ -15,7 +18,8 @@ import {
   XCircle,
   Play,
   Send,
-  Ban
+  Ban,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -64,6 +68,24 @@ export default function ChangeDetailPage() {
     planned_start: '',
     planned_end: '',
   });
+  const [showCalModal, setShowCalModal] = useState(false);
+  const [calForm, setCalForm] = useState({ start_date: '', end_date: '' });
+
+  const createCalendarEvent = useCreateCalendarEvent();
+
+  const handleAddToCalendar = () => {
+    if (!calForm.start_date || !calForm.end_date) return;
+    createCalendarEvent.mutate(
+      {
+        type: ChangeCalendarEventType.MAINTENANCE_WINDOW,
+        title: `[${changeData?.change_id}] ${changeData?.title ?? ''}`,
+        description: changeData?.description,
+        start_date: new Date(calForm.start_date).toISOString(),
+        end_date: new Date(calForm.end_date).toISOString(),
+      },
+      { onSuccess: () => { setShowCalModal(false); setCalForm({ start_date: '', end_date: '' }); } }
+    );
+  };
 
   const handleSubmitForApproval = () => {
     if (!change) return;
@@ -118,7 +140,7 @@ export default function ChangeDetailPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       </DashboardLayout>
     );
@@ -128,10 +150,10 @@ export default function ChangeDetailPage() {
     return (
       <DashboardLayout>
         <div className="text-center py-12">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Change not found</h2>
-          <p className="text-gray-500 mt-2">The change request you are looking for does not exist.</p>
-          <Link href="/changes" className="mt-4 inline-block text-blue-600 hover:underline">
+          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-foreground">Change not found</h2>
+          <p className="text-muted-foreground mt-2">The change request you are looking for does not exist.</p>
+          <Link href="/changes" className="mt-4 inline-block text-primary hover:underline">
             Back to Changes
           </Link>
         </div>
@@ -149,20 +171,20 @@ export default function ChangeDetailPage() {
           <div className="flex items-start gap-4">
             <button
               onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="p-2 hover:bg-accent rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-2xl font-bold text-foreground">
                   {changeData.change_id}
                 </h1>
                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(changeData.type)}`}>
                   {changeData.type}
                 </span>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">{changeData.title}</p>
+              <p className="text-muted-foreground mt-1">{changeData.title}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -179,60 +201,60 @@ export default function ChangeDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Description */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Description</h2>
-              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Description</h2>
+              <p className="text-muted-foreground whitespace-pre-wrap">
                 {changeData.description}
               </p>
-            </div>
+            </Card>
 
             {/* Justification */}
             {changeData.reason_for_change && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Reason for Change</h2>
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+              <Card className="p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Reason for Change</h2>
+                <p className="text-muted-foreground whitespace-pre-wrap">
                   {changeData.reason_for_change}
                 </p>
-              </div>
+              </Card>
             )}
 
             {/* Risk & Rollback */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {changeData.risk_assessment && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                  <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-3">Risk Assessment</h3>
-                  <p className="text-gray-700 dark:text-gray-300 text-sm">{changeData.risk_assessment}</p>
-                </div>
+                <Card className="p-6">
+                  <h3 className="text-md font-semibold text-foreground mb-3">Risk Assessment</h3>
+                  <p className="text-muted-foreground text-sm">{changeData.risk_assessment}</p>
+                </Card>
               )}
               {changeData.rollback_plan && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                  <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-3">Rollback Plan</h3>
-                  <p className="text-gray-700 dark:text-gray-300 text-sm">{changeData.rollback_plan}</p>
-                </div>
+                <Card className="p-6">
+                  <h3 className="text-md font-semibold text-foreground mb-3">Rollback Plan</h3>
+                  <p className="text-muted-foreground text-sm">{changeData.rollback_plan}</p>
+                </Card>
               )}
             </div>
 
             {/* CAB Approval Status */}
             {changeData.approval && changeData.approval.members && changeData.approval.members.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">CAB Approvals</h2>
-                <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              <Card className="p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">CAB Approvals</h2>
+                <div className="mb-4 text-sm text-muted-foreground">
                   Status: <span className="font-medium">{changeData.approval.cab_status}</span> ({changeData.approval.current_approvers}/{changeData.approval.required_approvers} approvers)
                 </div>
                 <div className="space-y-3">
                   {changeData.approval.members.map((member, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <div className="flex items-center gap-3">
                         {member.decision === ApprovalStatus.APPROVED ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
+                          <CheckCircle className="w-5 h-5 text-success" />
                         ) : member.decision === ApprovalStatus.REJECTED ? (
-                          <XCircle className="w-5 h-5 text-red-500" />
+                          <XCircle className="w-5 h-5 text-destructive" />
                         ) : (
-                          <Clock className="w-5 h-5 text-gray-400" />
+                          <Clock className="w-5 h-5 text-muted-foreground" />
                         )}
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-white">{member.name}</p>
-                          <p className="text-sm text-gray-500">{member.role}</p>
+                          <p className="font-medium text-foreground">{member.name}</p>
+                          <p className="text-sm text-muted-foreground">{member.role}</p>
                         </div>
                       </div>
                       <span className={`px-2 py-1 text-xs rounded-full ${
@@ -247,96 +269,88 @@ export default function ChangeDetailPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </Card>
             )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Schedule */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-4">Schedule</h3>
+            <Card className="p-6">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-4">Schedule</h3>
               {changeData.schedule ? (
                 <div className="space-y-3 text-sm">
                   <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="text-gray-500">Planned Start</p>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <p className="text-muted-foreground">Planned Start</p>
+                      <p className="font-medium text-foreground">
                         {new Date(changeData.schedule.planned_start).toLocaleString()}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="text-gray-500">Planned End</p>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <p className="text-muted-foreground">Planned End</p>
+                      <p className="font-medium text-foreground">
                         {new Date(changeData.schedule.planned_end).toLocaleString()}
                       </p>
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">Not scheduled yet</p>
+                <p className="text-muted-foreground text-sm">Not scheduled yet</p>
               )}
-            </div>
+            </Card>
 
             {/* Details */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-4">Details</h3>
+            <Card className="p-6">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-4">Details</h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <User className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <User className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm text-gray-500">Requested By</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{changeData.requested_by.name}</p>
-                    <p className="text-sm text-gray-500">{changeData.requested_by.email}</p>
+                    <p className="text-sm text-muted-foreground">Requested By</p>
+                    <p className="font-medium text-foreground">{changeData.requested_by?.name ?? '—'}</p>
+                    <p className="text-sm text-muted-foreground">{changeData.requested_by?.email ?? ''}</p>
                   </div>
                 </div>
                 {changeData.owner && (
                   <div className="flex items-start gap-3">
-                    <User className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <User className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="text-sm text-gray-500">Owner</p>
-                      <p className="font-medium text-gray-900 dark:text-white">{changeData.owner.name}</p>
+                      <p className="text-sm text-muted-foreground">Owner</p>
+                      <p className="font-medium text-foreground">{changeData.owner.name}</p>
                     </div>
                   </div>
                 )}
                 <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm text-gray-500">Created</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
+                    <p className="text-sm text-muted-foreground">Created</p>
+                    <p className="font-medium text-foreground">
                       {new Date(changeData.created_at).toLocaleString()}
                     </p>
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Actions */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-4">Actions</h3>
+            <Card className="p-6">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-4">Actions</h3>
               <div className="space-y-2">
                 {changeData.status === ChangeStatus.DRAFT && (
                   <>
-                    <button
-                      onClick={handleSubmitForApproval}
-                      disabled={submitForApproval.isPending}
-                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                    >
+                    <Button className="w-full" onClick={handleSubmitForApproval} disabled={submitForApproval.isPending}>
                       <Send className="w-4 h-4" />
                       Submit for Approval
-                    </button>
-                    <button
-                      onClick={handleCancel}
-                      disabled={cancelChange.isPending}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
-                    >
+                    </Button>
+                    <Button variant="outline" className="w-full" onClick={handleCancel} disabled={cancelChange.isPending}>
                       <Ban className="w-4 h-4" />
                       Cancel
-                    </button>
+                    </Button>
                   </>
                 )}
 
@@ -345,7 +359,7 @@ export default function ChangeDetailPage() {
                     <button
                       onClick={() => handleCabApproval(ApprovalStatus.APPROVED)}
                       disabled={addCabApproval.isPending}
-                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                      className="w-full px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors flex items-center justify-center gap-2"
                     >
                       <CheckCircle className="w-4 h-4" />
                       Approve
@@ -353,7 +367,7 @@ export default function ChangeDetailPage() {
                     <button
                       onClick={() => handleCabApproval(ApprovalStatus.REJECTED)}
                       disabled={addCabApproval.isPending}
-                      className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                      className="w-full px-4 py-2 bg-destructive text-white rounded-lg hover:bg-destructive/90 transition-colors flex items-center justify-center gap-2"
                     >
                       <XCircle className="w-4 h-4" />
                       Reject
@@ -377,14 +391,14 @@ export default function ChangeDetailPage() {
                           type="datetime-local"
                           value={scheduleData.planned_start}
                           onChange={(e) => setScheduleData({ ...scheduleData, planned_start: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
+                          className="w-full px-3 py-2 border border-input rounded-lg text-sm"
                           placeholder="Start"
                         />
                         <input
                           type="datetime-local"
                           value={scheduleData.planned_end}
                           onChange={(e) => setScheduleData({ ...scheduleData, planned_end: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
+                          className="w-full px-3 py-2 border border-input rounded-lg text-sm"
                           placeholder="End"
                         />
                         <button
@@ -397,6 +411,17 @@ export default function ChangeDetailPage() {
                       </div>
                     )}
                   </>
+                )}
+
+                {/* Add to Calendar — available for SCHEDULED and APPROVED changes */}
+                {(changeData.status === ChangeStatus.SCHEDULED || changeData.status === ChangeStatus.APPROVED) && (
+                  <button
+                    onClick={() => setShowCalModal(true)}
+                    className="w-full px-4 py-2 border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Add to Calendar
+                  </button>
                 )}
 
                 {changeData.status === ChangeStatus.SCHEDULED && (
@@ -415,7 +440,7 @@ export default function ChangeDetailPage() {
                     <button
                       onClick={() => handleComplete(true)}
                       disabled={completeChange.isPending}
-                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                      className="w-full px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors flex items-center justify-center gap-2"
                     >
                       <CheckCircle className="w-4 h-4" />
                       Complete Successfully
@@ -423,7 +448,7 @@ export default function ChangeDetailPage() {
                     <button
                       onClick={() => handleComplete(false)}
                       disabled={completeChange.isPending}
-                      className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                      className="w-full px-4 py-2 bg-destructive text-white rounded-lg hover:bg-destructive/90 transition-colors flex items-center justify-center gap-2"
                     >
                       <XCircle className="w-4 h-4" />
                       Mark as Failed
@@ -431,10 +456,61 @@ export default function ChangeDetailPage() {
                   </>
                 )}
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       </div>
+      {/* Add to Calendar Modal */}
+      {showCalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b border-border">
+              <h2 className="text-base font-bold text-foreground">Add to Change Calendar</h2>
+              <button onClick={() => setShowCalModal(false)} className="p-1.5 hover:bg-accent rounded-lg">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-muted-foreground truncate">
+                <span className="font-medium text-foreground">{changeData.change_id}</span> — {changeData.title}
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Start <span className="text-destructive">*</span></label>
+                <input
+                  type="datetime-local"
+                  value={calForm.start_date}
+                  onChange={(e) => setCalForm({ ...calForm, start_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-input rounded-lg text-sm bg-card text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">End <span className="text-destructive">*</span></label>
+                <input
+                  type="datetime-local"
+                  value={calForm.end_date}
+                  onChange={(e) => setCalForm({ ...calForm, end_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-input rounded-lg text-sm bg-card text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-border">
+              <Button variant="secondary" onClick={() => setShowCalModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddToCalendar}
+                disabled={createCalendarEvent.isPending || !calForm.start_date || !calForm.end_date}
+              >
+                {createCalendarEvent.isPending ? (
+                  <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
+                ) : (
+                  <><Calendar className="w-4 h-4" /> Add to Calendar</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
