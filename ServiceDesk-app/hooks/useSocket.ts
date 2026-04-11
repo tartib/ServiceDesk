@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/authStore';
-import { SOCKET_URL } from '@/lib/api/config';
+import { getSocket, releaseSocket } from '@/lib/socket';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SocketCallback = (data: any) => void;
@@ -33,36 +33,26 @@ export function useSocket() {
   useEffect(() => {
     if (!user) return;
 
-    // Create socket connection with auth token
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    socketRef.current = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
-      autoConnect: true,
-      auth: {
-        token,
-      },
-    });
+    const socket = getSocket();
+    socketRef.current = socket;
 
-    const socket = socketRef.current;
+    const onConnect = () => setIsConnected(true);
+    const onDisconnect = () => setIsConnected(false);
+    const onError = () => setIsConnected(false);
 
-    socket.on('connect', () => {
-      setIsConnected(true);
-      console.log('🔌 WebSocket connected');
-    });
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('connect_error', onError);
 
-    socket.on('disconnect', () => {
-      setIsConnected(false);
-      console.log('🔌 WebSocket disconnected');
-    });
-
-    socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
-      setIsConnected(false);
-    });
+    // If already connected, sync state
+    if (socket.connected) setIsConnected(true);
 
     return () => {
-      socket.disconnect();
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('connect_error', onError);
       socketRef.current = null;
+      releaseSocket();
     };
   }, [user]);
 
@@ -224,32 +214,32 @@ export function usePortfolioSocket(options?: {
   useEffect(() => {
     if (!user) return;
 
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    socketRef.current = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
-      autoConnect: true,
-      auth: { token },
-    });
+    const socket = getSocket();
+    socketRef.current = socket;
 
-    const socket = socketRef.current;
-
-    socket.on('connect', () => {
+    const onConnect = () => {
       setIsConnected(true);
       socket.emit('join:portfolio');
-    });
+    };
+    const onDisconnect = () => setIsConnected(false);
+    const onError = () => setIsConnected(false);
 
-    socket.on('disconnect', () => {
-      setIsConnected(false);
-    });
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('connect_error', onError);
 
-    socket.on('connect_error', () => {
-      setIsConnected(false);
-    });
+    if (socket.connected) {
+      setIsConnected(true);
+      socket.emit('join:portfolio');
+    }
 
     return () => {
       socket.emit('leave:portfolio');
-      socket.disconnect();
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('connect_error', onError);
       socketRef.current = null;
+      releaseSocket();
     };
   }, [user]);
 

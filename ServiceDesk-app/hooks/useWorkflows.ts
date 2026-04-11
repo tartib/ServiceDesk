@@ -52,6 +52,11 @@ export interface WorkflowDiagram {
 export interface CreateWorkflowDTO {
   name: string;
   description?: string;
+  entityType?: string;
+  states?: Array<{ code: string; name: string; category: string; type?: string; color?: string; order: number; position?: { x: number; y: number } }>;
+  transitions?: Array<{ transitionId: string; name: string; fromState: string; toState: string; ui: { buttonLabel: string } }>;
+  initialState?: string;
+  finalStates?: string[];
   nodes?: WorkflowNode[];
   edges?: WorkflowEdge[];
   tags?: string[];

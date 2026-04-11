@@ -22,13 +22,6 @@ vi.mock('@/lib/axios', () => ({
   },
 }));
 
-// Mock organization context
-vi.mock('@/lib/api/organization-context', () => ({
-  validatePMOperation: vi.fn(() => 'org-123'),
-  requireOrganizationId: vi.fn(() => 'org-123'),
-  hasOrganizationContext: vi.fn(() => true),
-  getOrganizationId: vi.fn(() => 'org-123'),
-}));
 
 describe('useTasks Hooks - Basic Tests', () => {
   let queryClient: QueryClient;
@@ -100,7 +93,7 @@ describe('useTasks Hooks - Basic Tests', () => {
 
   describe('useTask', () => {
     it('should fetch a single task by ID', async () => {
-      const mockTask = { _id: 'task-1', name: 'Single Task' };
+      const mockTask = { _id: 'task-1', productName: 'Single Task' };
       const api = require('@/lib/axios').default;
       api.get.mockResolvedValueOnce({ data: mockTask });
 
@@ -112,7 +105,7 @@ describe('useTasks Hooks - Basic Tests', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(result.current.data?.name).toBe('Single Task');
+      expect(result.current.data?.productName).toBe('Single Task');
       expect(api.get).toHaveBeenCalledWith('/tasks/task-1');
     });
 

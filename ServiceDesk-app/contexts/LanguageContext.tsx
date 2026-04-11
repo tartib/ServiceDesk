@@ -57,8 +57,11 @@ import frPortfolio from '@/locales/fr/portfolio.json';
 import enAgentConsole from '@/locales/en/agent-console.json';
 import arAgentConsole from '@/locales/ar/agent-console.json';
 import frAgentConsole from '@/locales/fr/agent-console.json';
+import enNotifications from '@/locales/en/notifications.json';
+import arNotifications from '@/locales/ar/notifications.json';
+import frNotifications from '@/locales/fr/notifications.json';
 
-type Messages = typeof enRoot & typeof enCommon & typeof enDashboard & typeof enReports & typeof enUsers & typeof enItsm & typeof enInventory & typeof enCategories & typeof enRoadmap & typeof enProjects & typeof enSettings & typeof enProfile & typeof enDrive & typeof enWorkflows & typeof enVacations & typeof enIntake & typeof enPortfolio & typeof enAgentConsole;
+type Messages = typeof enRoot & typeof enCommon & typeof enDashboard & typeof enReports & typeof enUsers & typeof enItsm & typeof enInventory & typeof enCategories & typeof enRoadmap & typeof enProjects & typeof enSettings & typeof enProfile & typeof enDrive & typeof enWorkflows & typeof enVacations & typeof enIntake & typeof enPortfolio & typeof enAgentConsole & typeof enNotifications;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deepMerge(...objects: Record<string, any>[]): Record<string, any> {
@@ -83,9 +86,9 @@ function deepMerge(...objects: Record<string, any>[]): Record<string, any> {
 }
 
 const messages: Record<Locale, Messages> = {
-  en: deepMerge(enRoot, enCommon, enDashboard, enReports, enUsers, enItsm, enInventory, enCategories, enRoadmap, enProjects, enSettings, enProfile, enDrive, enWorkflows, enVacations, enIntake, enPortfolio, enAgentConsole) as Messages,
-  ar: deepMerge(arRoot, arCommon, arDashboard, arReports, arUsers, arItsm, arInventory, arCategories, arRoadmap, arProjects, arSettings, arProfile, arDrive, arWorkflows, arVacations, arIntake, arPortfolio, arAgentConsole) as Messages,
-  fr: deepMerge(frRoot, frCommon, frDashboard, frReports, frUsers, frItsm, frInventory, frCategories, frRoadmap, frProjects, frSettings, frProfile, frDrive, frWorkflows, frVacations, frIntake, frPortfolio, frAgentConsole) as Messages,
+  en: deepMerge(enRoot, enCommon, enDashboard, enReports, enUsers, enItsm, enInventory, enCategories, enRoadmap, enProjects, enSettings, enProfile, enDrive, enWorkflows, enVacations, enIntake, enPortfolio, enAgentConsole, enNotifications) as Messages,
+  ar: deepMerge(arRoot, arCommon, arDashboard, arReports, arUsers, arItsm, arInventory, arCategories, arRoadmap, arProjects, arSettings, arProfile, arDrive, arWorkflows, arVacations, arIntake, arPortfolio, arAgentConsole, arNotifications) as Messages,
+  fr: deepMerge(frRoot, frCommon, frDashboard, frReports, frUsers, frItsm, frInventory, frCategories, frRoadmap, frProjects, frSettings, frProfile, frDrive, frWorkflows, frVacations, frIntake, frPortfolio, frAgentConsole, frNotifications) as Messages,
 };
 
 interface LanguageContextType {

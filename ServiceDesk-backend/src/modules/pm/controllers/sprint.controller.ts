@@ -136,12 +136,6 @@ export const getSprints = async (req: PMAuthRequest, res: Response): Promise<voi
     // Find all sprints for this project
     const sprints = await Sprint.find(query).sort({ number: -1 });
     
-    // If no sprints found, also try to find any sprints (for debugging)
-    if (sprints.length === 0) {
-      const allSprints = await Sprint.find({}).limit(5);
-      console.log(`No sprints found for project ${projectId}. Total sprints in DB: ${allSprints.length}`);
-    }
-
     // Get task counts for each sprint
     const sprintsWithStats = await Promise.all(
       sprints.map(async (sprint) => {

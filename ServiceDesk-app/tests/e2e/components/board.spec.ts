@@ -15,7 +15,7 @@ test.describe('Project Board', () => {
 
   test.beforeEach(async ({ page }) => {
     // Mock auth API
-    await page.route('**/api/v2/auth/me', async (route) => {
+    await page.route('**/api/v2/core/auth/me', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

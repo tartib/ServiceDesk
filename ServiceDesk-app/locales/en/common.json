@@ -40,6 +40,10 @@
     "agentConsole": "Agent Console",
     "portfolioAnalytics": "Portfolio Analytics",
     "teamPerformance": "Team Performance",
+    "gamification": "Gamification",
+    "gamificationDashboard": "Dashboard",
+    "leaderboard": "Leaderboard",
+    "achievements": "Achievements",
     "loggedInAs": "Logged in as"
   },
   "common": {

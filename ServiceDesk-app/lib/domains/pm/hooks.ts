@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { normalizeEntity } from '@/lib/api/normalize';
 import { pmKeys } from './keys';
 import { projectApi, taskApi, sprintApi, commentApi } from './api';
-import { projectAdapters, taskAdapters, sprintAdapters, commentAdapters } from './adapters';
+import { projectAdapters, taskAdapters, sprintAdapters, commentAdapters, mapAdapters } from './adapters';
 
 // ── Project Hooks ──────────────────────────────────────────────
 
@@ -143,5 +143,27 @@ export const usePmComments = (taskId: string) => {
       return commentAdapters.list(raw);
     },
     enabled: !!taskId,
+  });
+};
+
+// ── Map View Hook ─────────────────────────────────────────────
+
+export const usePmMapView = (projectId: string, filters?: Record<string, unknown>) => {
+  const params = new URLSearchParams();
+  if (filters) {
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, Array.isArray(value) ? value.join(',') : String(value));
+      }
+    });
+  }
+
+  return useQuery({
+    queryKey: pmKeys.map.view(projectId, filters),
+    queryFn: async () => {
+      const raw = await taskApi.getMapView(projectId, params);
+      return mapAdapters.view(raw);
+    },
+    enabled: !!projectId,
   });
 };

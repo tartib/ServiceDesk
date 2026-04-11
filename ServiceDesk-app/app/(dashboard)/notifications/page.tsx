@@ -7,13 +7,15 @@ import { Button } from '@/components/ui/button';
 import { useNotifications, useMarkNotificationAsRead, useMarkAllAsRead } from '@/hooks/useNotifications';
 import { Bell, CheckCheck } from 'lucide-react';
 import { formatTimeAgo } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function NotificationsPage() {
   const { data: notificationsData, isLoading } = useNotifications();
   const { mutate: markAsRead } = useMarkNotificationAsRead();
   const { mutate: markAllAsRead } = useMarkAllAsRead();
+  const { t } = useLanguage();
 
-  const notifications = notificationsData?.data || [];
+  const notifications = notificationsData?.notifications || [];
 
   const unreadNotifications = notifications.filter((n) => !n.isRead);
   const readNotifications = notifications.filter((n) => n.isRead);
@@ -23,15 +25,15 @@ export default function NotificationsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Notifications</h1>
+            <h1 className="text-3xl font-bold">{t('notifications.title')}</h1>
             <p className="text-muted-foreground mt-1">
-              {unreadNotifications.length} unread notification{unreadNotifications.length !== 1 ? 's' : ''}
+              {unreadNotifications.length} {t('notifications.unreadCount')}
             </p>
           </div>
           {unreadNotifications.length > 0 && (
             <Button onClick={() => markAllAsRead()} variant="outline">
               <CheckCheck className="h-4 w-4 mr-2" />
-              Mark All as Read
+              {t('notifications.markAllRead')}
             </Button>
           )}
         </div>
@@ -41,7 +43,7 @@ export default function NotificationsPage() {
             <CardContent className="py-12">
               <div className="text-center">
                 <div className="animate-spin h-8 w-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading notifications...</p>
+                <p className="text-muted-foreground">{t('notifications.loading')}</p>
               </div>
             </CardContent>
           </Card>
@@ -50,9 +52,9 @@ export default function NotificationsPage() {
             <CardContent className="py-12">
               <div className="text-center">
                 <Bell className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground text-lg">No notifications yet</p>
+                <p className="text-muted-foreground text-lg">{t('notifications.empty')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  You&apos;ll see task reminders, alerts, and updates here
+                  {t('notifications.emptyHint')}
                 </p>
               </div>
             </CardContent>
@@ -61,12 +63,12 @@ export default function NotificationsPage() {
           <div className="space-y-6">
             {unreadNotifications.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold mb-3">Unread</h2>
+                <h2 className="text-lg font-semibold mb-3">{t('notifications.filterUnread')}</h2>
                 <div className="space-y-2">
                   {unreadNotifications.map((notification) => (
-                    <Card key={notification._id}
+                    <Card key={notification.id}
                       className="hover:shadow-md transition-shadow cursor-pointer bg-blue-50"
-                      onClick={() => notification._id && markAsRead(notification._id)}
+                      onClick={() => notification.id && markAsRead(notification.id)}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
@@ -92,10 +94,10 @@ export default function NotificationsPage() {
 
             {readNotifications.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold mb-3">Read</h2>
+                <h2 className="text-lg font-semibold mb-3">{t('notifications.read')}</h2>
                 <div className="space-y-2">
                   {readNotifications.map((notification) => (
-                    <Card key={notification._id}
+                    <Card key={notification.id}
                       className="hover:shadow-sm transition-shadow opacity-75"
                     >
                       <CardContent className="p-4">

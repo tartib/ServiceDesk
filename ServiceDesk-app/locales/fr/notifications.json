@@ -1,0 +1,20 @@
+{
+  "notifications": {
+    "title": "Notifications",
+    "filterAll": "Toutes",
+    "filterUnread": "Non lues",
+    "read": "Lues",
+    "markAllRead": "Tout marquer comme lu",
+    "markRead": "Marquer comme lu",
+    "empty": "Aucune notification",
+    "emptyHint": "Vous verrez ici les rappels de t\u00e2ches, alertes et mises \u00e0 jour",
+    "loading": "Chargement des notifications...",
+    "unreadCount": "notifications non lues",
+    "view": "Voir",
+    "viewAll": "Voir tout",
+    "viewAllNotifications": "Voir toutes les notifications \u2192",
+    "deleted": "Notification supprim\u00e9e",
+    "markedRead": "Notification marqu\u00e9e comme lue",
+    "allMarkedRead": "Toutes les notifications marqu\u00e9es comme lues"
+  }
+}

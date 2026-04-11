@@ -65,7 +65,7 @@ export interface UpdateTeamDTO {
 }
 
 export interface AddMemberDTO {
-  user_id: string;
+  userId: string;
   role?: 'leader' | 'member';
 }
 
@@ -91,8 +91,12 @@ export function useTeams(filters?: { type?: string; is_active?: boolean; search?
       if (filters?.is_active !== undefined) params.append('is_active', String(filters.is_active));
       if (filters?.search) params.append('search', filters.search);
       
-      const response = await api.get(`/core/teams?${params.toString()}`) as { data?: Team[] } | Team[];
-      return Array.isArray(response) ? response : (response.data || []);
+      const response = await api.get(`/core/teams?${params.toString()}`) as { data?: { teams?: Team[] } | Team[] } | Team[];
+      if (Array.isArray(response)) return response;
+      const d = response.data;
+      if (Array.isArray(d)) return d;
+      if (d && typeof d === 'object' && 'teams' in d && Array.isArray(d.teams)) return d.teams;
+      return [];
     },
   });
 }

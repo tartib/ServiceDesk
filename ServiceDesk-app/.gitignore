@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# repomix
+repomix-output.*
+
+# playwright
+playwright-report/
+test-results/

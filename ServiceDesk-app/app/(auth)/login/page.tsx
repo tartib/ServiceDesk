@@ -145,45 +145,6 @@ export default function LoginPage() {
             </div>
           </form>
 
-          {/* Development Credentials */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm font-semibold text-amber-800 mb-3">🔧 {t('auth.devTestAccounts')}</p>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-amber-700">
-                  <thead>
-                    <tr className="border-b border-amber-200">
-                      <th className="text-left py-1 font-semibold">Role</th>
-                      <th className="text-left py-1 font-semibold">Email</th>
-                      <th className="text-left py-1 font-semibold">Password</th>
-                    </tr>
-                  </thead>
-                  <tbody className="font-mono">
-                    <tr className="border-b border-amber-100">
-                      <td className="py-1.5">Manager</td>
-                      <td className="py-1.5">admin@servicedesk.com</td>
-                      <td className="py-1.5">Admin@123</td>
-                    </tr>
-                    <tr className="border-b border-amber-100">
-                      <td className="py-1.5">Supervisor</td>
-                      <td className="py-1.5">supervisor@servicedesk.com</td>
-                      <td className="py-1.5">Super@123</td>
-                    </tr>
-                    <tr className="border-b border-amber-100">
-                      <td className="py-1.5">Prep</td>
-                      <td className="py-1.5">prep@servicedesk.com</td>
-                      <td className="py-1.5">Prep@123</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1.5">Prep</td>
-                      <td className="py-1.5">test@servicedesk.com</td>
-                      <td className="py-1.5">Test@123</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

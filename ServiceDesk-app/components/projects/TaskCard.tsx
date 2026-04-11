@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { User } from 'lucide-react';
 
 interface TaskAssignee {
@@ -63,7 +64,7 @@ const statusColors: Record<string, string> = {
   'ready': 'bg-blue-100 text-blue-700',
 };
 
-export default function TaskCard({
+function TaskCard({
   taskKey,
   title,
   type,
@@ -188,3 +189,5 @@ export default function TaskCard({
     </div>
   );
 }
+
+export default React.memo(TaskCard);

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import api from '@/lib/axios';
-import { io, Socket } from 'socket.io-client';
-import { SOCKET_URL } from '@/lib/api/config';
+import { Socket } from 'socket.io-client';
+import { getSocket, releaseSocket } from '@/lib/socket';
 
 interface ApiResponse<T> {
   data: T;
@@ -43,7 +43,7 @@ export interface PokerVote {
 
 export const POKER_VALUES = [1, 2, 3, 5, 8, 13, 21];
 
-export const usePlanningPoker = (sprintId?: string) => {
+export const usePlanningPoker = (_sprintId?: string) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSession, setActiveSession] = useState<PokerSession | null>(null);
@@ -61,12 +61,7 @@ export const usePlanningPoker = (sprintId?: string) => {
   }, [activeSession]);
 
   useEffect(() => {
-    const socketInstance = io(SOCKET_URL, {
-      auth: {
-        token: localStorage.getItem('token') || localStorage.getItem('accessToken'),
-      },
-    });
-
+    const socketInstance = getSocket();
     socketRef.current = socketInstance;
 
     // Session created
@@ -129,10 +124,10 @@ export const usePlanningPoker = (sprintId?: string) => {
     });
 
     return () => {
-      socketInstance.disconnect();
       socketRef.current = null;
+      releaseSocket();
     };
-  }, []); // Empty deps — socket created once
+  }, []); // Empty deps — socket acquired once
 
   const createPokerSession = useCallback(async (
     taskId: string, 
@@ -141,14 +136,11 @@ export const usePlanningPoker = (sprintId?: string) => {
     try {
       setLoading(true);
       setError(null);
-      console.log('🎯 Creating poker session:', { taskId, estimationType });
-      
       const payload = {
         estimationType
       };
       
       const response = await api.post<PokerSessionResponse>(`/pm/tasks/${taskId}/poker`, payload);
-      console.log('🎯 Poker session created:', response);
       const session = response?.session || response?.data?.session || (response as unknown as PokerSession);
       setActiveSession(session);
       setParticipantCount(Math.max(1, session?.votes?.length || 1));
@@ -164,7 +156,6 @@ export const usePlanningPoker = (sprintId?: string) => {
       const axiosErr = err as { response?: { status?: number; data?: { session?: PokerSession; data?: { session?: PokerSession } } } };
       const existingSessionData = axiosErr?.response?.data?.session || axiosErr?.response?.data?.data?.session;
       if (axiosErr?.response?.status === 400 && existingSessionData) {
-        console.log('🎯 Active session already exists, joining it');
         const existingSession = existingSessionData;
         setActiveSession(existingSession);
         setParticipantCount(Math.max(1, existingSession?.votes?.length || 1));
@@ -249,16 +240,13 @@ export const usePlanningPoker = (sprintId?: string) => {
     try {
       setLoading(true);
       setError(null);
-      console.log('🔍 revealVotes: calling API for session', sessionId);
       const response = await api.post<ApiResponse<PokerSession>>(`/pm/poker/${sessionId}/reveal`);
-      console.log('🔍 revealVotes: raw response', JSON.stringify(response).substring(0, 500));
       // Extract session and stats from nested response structure
       // After axios interceptor (response.data), response = { success, data: { session, stats, suggestedEstimate } }
       const responseData = response as unknown as { data?: { session?: PokerSession; stats?: PokerStats; suggestedEstimate?: number }; session?: PokerSession; stats?: PokerStats; suggestedEstimate?: number };
       const session = responseData?.data?.session || responseData?.session;
       const revealedStats = responseData?.data?.stats || responseData?.stats;
       const suggestedEstimate = responseData?.data?.suggestedEstimate || responseData?.suggestedEstimate;
-      console.log('🔍 revealVotes: extracted session?', !!session, 'stats?', !!revealedStats, 'suggestedEstimate?', suggestedEstimate);
       if (session) {
         setActiveSession({ ...session, status: 'revealed' });
       } else {

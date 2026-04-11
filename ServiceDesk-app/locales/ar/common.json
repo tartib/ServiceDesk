@@ -40,6 +40,10 @@
     "agentConsole": "وحدة تحكم الوكيل",
     "portfolioAnalytics": "تحليلات المحفظة",
     "teamPerformance": "أداء الفريق",
+    "gamification": "التلعيب",
+    "gamificationDashboard": "لوحة التحكم",
+    "leaderboard": "المتصدرين",
+    "achievements": "الإنجازات",
     "loggedInAs": "مسجل الدخول كـ"
   },
   "common": {

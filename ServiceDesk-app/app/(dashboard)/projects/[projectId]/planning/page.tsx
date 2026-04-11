@@ -5,7 +5,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Target,
-  Clock,
   Users,
   Zap,
   GripVertical,
@@ -167,12 +166,8 @@ export default function SprintPlanningPage() {
       }
       
       const data = await res.json();
-      console.log('📋 Backlog API Response:', data);
-      
       if (data.success) {
         const tasks = data.data?.tasks || data.data?.backlog || data.data || [];
-        console.log('📋 Tasks found:', tasks.length);
-        
         // Filter for backlog items (not in sprint, or status is Backlog/Ready)
         const backlogTasks = tasks.filter((task: ApiTask) => 
           !task.sprint || task.status === 'Backlog' || task.status === 'Ready'
@@ -190,7 +185,6 @@ export default function SprintPlanningPage() {
           selected: false,
         }));
         
-        console.log('📋 Mapped backlog items:', backlogItems.length);
         setBacklog(backlogItems);
       }
     } catch (error) {
@@ -300,7 +294,6 @@ export default function SprintPlanningPage() {
     if (orgId) headers['X-Organization-ID'] = orgId;
     const url = `${API_URL}/pm/tasks/${taskId}/move`;
     const payload = { sprintId };
-    console.log('[Planning] persistMoveTask:', { url, payload });
     try {
       const res = await fetch(url, {
         method: 'POST',
@@ -311,7 +304,6 @@ export default function SprintPlanningPage() {
       if (!res.ok) {
         console.error('[Planning] Move task API error:', { status: res.status, data });
       } else {
-        console.log('[Planning] Move task success:', data);
       }
     } catch (err) {
       console.error('[Planning] persistMoveTask network error:', err);
@@ -494,7 +486,6 @@ export default function SprintPlanningPage() {
 
   const confirmStartSprint = async () => {
     try {
-      console.log('🚀 Starting sprint:', { sprintId: sprint.id, sprintName: sprint.name });
       if (!sprint.id) {
         alert('❌ No sprint selected. Please select a sprint first.');
         return;

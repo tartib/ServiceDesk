@@ -10,6 +10,7 @@ import {
   useUpdateIncidentStatus,
   useAddWorklog,
   useEscalateIncident,
+  incidentKeys,
 } from '@/hooks/useIncidents';
 import {
   useServiceRequests,
@@ -19,6 +20,7 @@ import {
   useFulfillServiceRequest,
   ServiceRequestStatus,
   ServiceRequest,
+  requestKeys,
 } from '@/hooks/useServiceRequests';
 import {
   IIncident,
@@ -190,10 +192,24 @@ export default function AgentConsolePage() {
 
   // ─── WebSocket ──────────────────────────────────────────────────
   useITSMSocket({
-    onIncidentCreated: () => { queryClient.invalidateQueries({ queryKey: ['incidents'] }); },
-    onIncidentUpdated: () => { queryClient.invalidateQueries({ queryKey: ['incidents'] }); },
-    onServiceRequestCreated: () => { queryClient.invalidateQueries({ queryKey: ['service-requests'] }); },
-    onServiceRequestUpdated: () => { queryClient.invalidateQueries({ queryKey: ['service-requests'] }); },
+    onIncidentCreated: () => {
+      queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.unassigned() });
+    },
+    onIncidentUpdated: () => {
+      queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.unassigned() });
+    },
+    onServiceRequestCreated: () => {
+      queryClient.invalidateQueries({ queryKey: requestKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: requestKeys.stats() });
+    },
+    onServiceRequestUpdated: () => {
+      queryClient.invalidateQueries({ queryKey: requestKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: requestKeys.stats() });
+    },
   });
 
   // ─── Normalize data per tab ─────────────────────────────────────
@@ -249,8 +265,11 @@ export default function AgentConsolePage() {
 
   // ─── Action handlers ────────────────────────────────────────────
   const refreshAll = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['incidents'] });
-    queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+    queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
+    queryClient.invalidateQueries({ queryKey: incidentKeys.stats() });
+    queryClient.invalidateQueries({ queryKey: incidentKeys.unassigned() });
+    queryClient.invalidateQueries({ queryKey: requestKeys.lists() });
+    queryClient.invalidateQueries({ queryKey: requestKeys.stats() });
     toast.success(t('agentConsole.dataRefreshed'));
   }, [queryClient, t]);
 

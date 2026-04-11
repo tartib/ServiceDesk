@@ -4,31 +4,47 @@ import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { BarChart3, TrendingUp, TrendingDown, Clock, CheckCircle2, Calendar, Loader2, FileText, Users } from 'lucide-react';
+import {
+  BarChart3, TrendingUp, TrendingDown, Clock, CheckCircle2, Calendar,
+  Loader2, FileText, Shield, AlertTriangle, Zap, Target, Activity,
+  FolderKanban,
+} from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useDashboardAnalytics, useDailyReport, useWeeklyReport, useMonthlyReport } from '@/hooks/useReports';
+import {
+  useItsmAnalytics, useItsmIncidentTrend,
+  usePmAnalytics, usePmVelocityTrend,
+  useDashboardAnalytics, useDailyReport, useWeeklyReport, useMonthlyReport,
+} from '@/hooks/useReports';
 
+type TabType = 'itsm' | 'pm' | 'legacy';
 type ReportType = 'daily' | 'weekly' | 'monthly';
 
 export default function ReportsPage() {
   const { t } = useLanguage();
+  const [activeTab, setActiveTab] = useState<TabType>('itsm');
   const [reportType, setReportType] = useState<ReportType>('daily');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  
-  // Get current week start (Monday)
+
   const getWeekStart = () => {
     const date = new Date();
     const day = date.getDay();
     const diff = date.getDate() - day + (day === 0 ? -6 : 1);
     return new Date(date.setDate(diff)).toISOString().split('T')[0];
   };
-  
+
   const [weekStart, setWeekStart] = useState(getWeekStart());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  
-  // Fetch analytics and reports
+
+  // ITSM hooks
+  const { data: itsmData, isLoading: isLoadingItsm } = useItsmAnalytics();
+  const { data: incidentTrend } = useItsmIncidentTrend(14);
+
+  // PM hooks
+  const { data: pmData, isLoading: isLoadingPm } = usePmAnalytics();
+  const { data: velocityTrend } = usePmVelocityTrend(10);
+
+  // Legacy hooks
   const { data: analytics, isLoading: isLoadingAnalytics } = useDashboardAnalytics();
   const { data: dailyReport, isLoading: isLoadingDaily } = useDailyReport(selectedDate);
   const { data: weeklyReport, isLoading: isLoadingWeekly } = useWeeklyReport(weekStart);
@@ -44,339 +60,372 @@ export default function ReportsPage() {
     );
   };
 
+  const StatBox = ({ label, value, color = 'bg-muted/50', textColor = '' }: { label: string; value: string | number; color?: string; textColor?: string }) => (
+    <div className={`p-4 ${color} rounded-lg`}>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className={`text-2xl font-bold ${textColor}`}>{value}</p>
+    </div>
+  );
+
+  // ── ITSM Tab ──────────────────────────────────────────────
+  const renderItsmTab = () => (
+    <div className="space-y-6">
+      {isLoadingItsm ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      ) : itsmData ? (
+        <>
+          {/* Incident KPIs */}
+          <div>
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+              {t('reports.itsm.incidents')}
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatBox label={t('reports.itsm.openIncidents')} value={itsmData.incidents.total_open} color="bg-red-50" textColor="text-red-600" />
+              <StatBox label={t('reports.itsm.inProgress')} value={itsmData.incidents.total_in_progress} color="bg-blue-50" textColor="text-blue-600" />
+              <StatBox label={t('reports.itsm.mttr')} value={`${itsmData.incidents.mttr_hours}h`} color="bg-yellow-50" textColor="text-yellow-600" />
+              <StatBox label={t('reports.itsm.breachedSla')} value={itsmData.incidents.breached_sla} color="bg-orange-50" textColor="text-orange-600" />
+            </div>
+          </div>
+
+          {/* SLA Compliance */}
+          <div>
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Shield className="h-4 w-4 text-green-500" />
+              {t('reports.itsm.slaCompliance')}
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <StatBox label={t('reports.itsm.complianceRate')} value={`${itsmData.sla.compliance_percent}%`} color="bg-green-50" textColor="text-green-600" />
+              <StatBox label={t('reports.itsm.totalMeasured')} value={itsmData.sla.total_measured} />
+              <StatBox label={t('reports.itsm.totalBreached')} value={itsmData.sla.total_breached} color="bg-red-50" textColor="text-red-600" />
+            </div>
+          </div>
+
+          {/* Problem KPIs */}
+          <div>
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Target className="h-4 w-4 text-purple-500" />
+              {t('reports.itsm.problems')}
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatBox label={t('reports.itsm.openProblems')} value={itsmData.problems.total_open} color="bg-purple-50" textColor="text-purple-600" />
+              <StatBox label={t('reports.itsm.knownErrors')} value={itsmData.problems.total_known_errors} color="bg-yellow-50" textColor="text-yellow-600" />
+              <StatBox label={t('reports.itsm.resolutionRate')} value={`${itsmData.problems.resolution_rate_percent}%`} color="bg-green-50" textColor="text-green-600" />
+              <StatBox label={t('reports.itsm.avgAge')} value={`${itsmData.problems.avg_age_days}d`} />
+            </div>
+          </div>
+
+          {/* Change KPIs */}
+          <div>
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Zap className="h-4 w-4 text-blue-500" />
+              {t('reports.itsm.changes')}
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatBox label={t('reports.itsm.pendingApproval')} value={itsmData.changes.total_pending_approval} color="bg-yellow-50" textColor="text-yellow-600" />
+              <StatBox label={t('reports.itsm.scheduled')} value={itsmData.changes.total_scheduled} color="bg-blue-50" textColor="text-blue-600" />
+              <StatBox label={t('reports.itsm.successRate')} value={`${itsmData.changes.success_rate_percent}%`} color="bg-green-50" textColor="text-green-600" />
+              <StatBox label={t('reports.itsm.emergencyChanges')} value={itsmData.changes.emergency_changes_this_month} color="bg-red-50" textColor="text-red-600" />
+            </div>
+          </div>
+
+          {/* Incident Trend */}
+          {incidentTrend && incidentTrend.length > 0 && (
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                {t('reports.itsm.incidentTrend')}
+              </h3>
+              <div className="grid grid-cols-7 gap-1">
+                {incidentTrend.slice(-7).map((point) => (
+                  <div key={point.date} className="p-2 bg-muted/50 rounded text-center text-xs">
+                    <p className="text-muted-foreground">{new Date(point.date).toLocaleDateString('default', { weekday: 'short' })}</p>
+                    <p className="font-semibold text-red-600">+{point.created}</p>
+                    <p className="font-semibold text-green-600">-{point.resolved}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-center py-12 text-muted-foreground">{t('reports.noData')}</div>
+      )}
+    </div>
+  );
+
+  // ── PM Tab ────────────────────────────────────────────────
+  const renderPmTab = () => (
+    <div className="space-y-6">
+      {isLoadingPm ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      ) : pmData ? (
+        <>
+          {/* Project Overview */}
+          <div>
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <FolderKanban className="h-4 w-4 text-blue-500" />
+              {t('reports.pm.projects')}
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <StatBox label={t('reports.pm.totalProjects')} value={pmData.projects.total} />
+              <StatBox label={t('reports.pm.activeProjects')} value={pmData.projects.active} color="bg-green-50" textColor="text-green-600" />
+              <StatBox label={t('reports.pm.archivedProjects')} value={pmData.projects.archived} color="bg-muted/50" />
+            </div>
+          </div>
+
+          {/* Task Stats */}
+          <div>
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              {t('reports.pm.taskStats')}
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatBox label={t('reports.totalTasks')} value={pmData.tasks.total} />
+              <StatBox label={t('reports.completed')} value={pmData.tasks.done} color="bg-green-50" textColor="text-green-600" />
+              <StatBox label={t('reports.pm.inProgress')} value={pmData.tasks.in_progress} color="bg-blue-50" textColor="text-blue-600" />
+              <StatBox label={t('reports.overdue')} value={pmData.tasks.overdue} color="bg-red-50" textColor="text-red-600" />
+            </div>
+            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-4">
+              <StatBox label={t('reports.completionRate')} value={`${pmData.tasks.completion_rate_percent}%`} color="bg-green-50" textColor="text-green-600" />
+              <StatBox label={t('reports.pm.storyPoints')} value={`${pmData.story_points.completed}/${pmData.story_points.total}`} color="bg-blue-50" textColor="text-blue-600" />
+              <StatBox label={t('reports.pm.pointsCompletion')} value={`${pmData.story_points.completion_percent}%`} color="bg-purple-50" textColor="text-purple-600" />
+            </div>
+          </div>
+
+          {/* Sprint Stats */}
+          <div>
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Zap className="h-4 w-4 text-purple-500" />
+              {t('reports.pm.sprints')}
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatBox label={t('reports.pm.totalSprints')} value={pmData.sprints.total} />
+              <StatBox label={t('reports.pm.activeSprints')} value={pmData.sprints.active} color="bg-blue-50" textColor="text-blue-600" />
+              <StatBox label={t('reports.pm.completedSprints')} value={pmData.sprints.completed} color="bg-green-50" textColor="text-green-600" />
+              <StatBox label={t('reports.pm.avgVelocity')} value={pmData.sprints.avg_velocity} color="bg-purple-50" textColor="text-purple-600" />
+            </div>
+          </div>
+
+          {/* Velocity Trend */}
+          {velocityTrend && velocityTrend.length > 0 && (
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                {t('reports.pm.velocityTrend')}
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                {velocityTrend.slice(-5).map((point, i) => (
+                  <div key={i} className="p-3 bg-muted/50 rounded-lg text-center">
+                    <p className="text-xs text-muted-foreground truncate">{point.sprint_name}</p>
+                    <p className="font-bold text-blue-600">{point.committed}</p>
+                    <p className="text-sm text-green-600">{point.completed} {t('reports.completed').toLowerCase()}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-center py-12 text-muted-foreground">{t('reports.noData')}</div>
+      )}
+    </div>
+  );
+
+  // ── Legacy Tab ────────────────────────────────────────────
+  const renderLegacyTab = () => (
+    <div className="space-y-6">
+      {/* Analytics Overview Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="border-l-4 border-blue-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('reports.totalTasks')}</CardTitle>
+            <BarChart3 className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingAnalytics ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+              <>
+                <div className="text-2xl font-bold">{analytics?.totalTasks?.count ?? 0}</div>
+                <div className="flex items-center gap-2 mt-1">
+                  {analytics?.totalTasks && renderTrend(analytics.totalTasks.changePercent)}
+                  <span className="text-xs text-muted-foreground">{analytics?.totalTasks?.changeLabel}</span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-green-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('reports.completionRate')}</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingAnalytics ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+              <>
+                <div className="text-2xl font-bold">{analytics?.completionRate?.percent ?? 0}%</div>
+                <div className="flex items-center gap-2 mt-1">
+                  {analytics?.completionRate && renderTrend(analytics.completionRate.changePercent)}
+                  <span className="text-xs text-muted-foreground">{analytics?.completionRate?.changeLabel}</span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-yellow-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('reports.avgResolutionTime')}</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingAnalytics ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+              <>
+                <div className="text-2xl font-bold">{analytics?.avgPrepTime?.hours ?? 0}h</div>
+                <div className="flex items-center gap-2 mt-1">
+                  {analytics?.avgPrepTime && renderTrend(analytics.avgPrepTime.changePercent, analytics.avgPrepTime.changePercent <= 0)}
+                  <span className="text-xs text-muted-foreground">{analytics?.avgPrepTime?.changeLabel}</span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-purple-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('reports.onTimeTasks')}</CardTitle>
+            <TrendingUp className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingAnalytics ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+              <>
+                <div className="text-2xl font-bold">{analytics?.onTimeTasks?.percent ?? 0}%</div>
+                <div className="flex items-center gap-2 mt-1">
+                  {analytics?.onTimeTasks && renderTrend(analytics.onTimeTasks.changePercent)}
+                  <span className="text-xs text-muted-foreground">{analytics?.onTimeTasks?.changeLabel}</span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Report Type Selector */}
+      <div className="flex gap-2 flex-wrap">
+        {(['daily', 'weekly', 'monthly'] as const).map((rt) => (
+          <Button key={rt} variant={reportType === rt ? 'default' : 'outline'} size="sm" onClick={() => setReportType(rt)}>
+            {t(`reports.${rt}`)}
+          </Button>
+        ))}
+      </div>
+
+      {/* Date Selector */}
+      <div className="flex flex-col md:flex-row md:items-center gap-4">
+        <Calendar className="h-5 w-5 text-muted-foreground shrink-0" />
+        {reportType === 'daily' && (
+          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-3 py-2 border rounded-md h-10 text-sm" />
+        )}
+        {reportType === 'weekly' && (
+          <input type="date" value={weekStart} onChange={(e) => setWeekStart(e.target.value)}
+            className="px-3 py-2 border rounded-md h-10 text-sm" />
+        )}
+        {reportType === 'monthly' && (
+          <div className="flex gap-2">
+            <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="px-3 py-2 border rounded-md h-10 text-sm">
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i} value={i}>{new Date(2000, i).toLocaleString('default', { month: 'long' })}</option>
+              ))}
+            </select>
+            <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="px-3 py-2 border rounded-md h-10 text-sm">
+              {Array.from({ length: 5 }, (_, i) => (
+                <option key={i} value={new Date().getFullYear() - i}>{new Date().getFullYear() - i}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Daily Report */}
+      {reportType === 'daily' && (
+        isLoadingDaily ? (
+          <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+        ) : dailyReport ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatBox label={t('reports.totalTasks')} value={dailyReport.totalTasks as number} />
+            <StatBox label={t('reports.completed')} value={dailyReport.completedTasks as number} color="bg-green-50" textColor="text-green-600" />
+            <StatBox label={t('reports.pending')} value={dailyReport.pendingTasks as number} color="bg-yellow-50" textColor="text-yellow-600" />
+            <StatBox label={t('reports.overdue')} value={dailyReport.overdueTasks as number} color="bg-red-50" textColor="text-red-600" />
+          </div>
+        ) : <div className="text-center py-12 text-muted-foreground">{t('reports.noData')}</div>
+      )}
+
+      {/* Weekly Report */}
+      {reportType === 'weekly' && (
+        isLoadingWeekly ? (
+          <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+        ) : weeklyReport ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatBox label={t('reports.totalTasks')} value={weeklyReport.totalTasks as number} />
+            <StatBox label={t('reports.completed')} value={weeklyReport.completedTasks as number} color="bg-green-50" textColor="text-green-600" />
+            <StatBox label={t('reports.completionRate')} value={`${weeklyReport.completionRate}%`} color="bg-blue-50" textColor="text-blue-600" />
+            <StatBox label={t('reports.avgResolutionTime')} value={`${weeklyReport.avgPrepTime}h`} color="bg-yellow-50" textColor="text-yellow-600" />
+          </div>
+        ) : <div className="text-center py-12 text-muted-foreground">{t('reports.noData')}</div>
+      )}
+
+      {/* Monthly Report */}
+      {reportType === 'monthly' && (
+        isLoadingMonthly ? (
+          <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+        ) : monthlyReport ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatBox label={t('reports.totalTasks')} value={monthlyReport.totalTasks as number} />
+            <StatBox label={t('reports.completed')} value={monthlyReport.completedTasks as number} color="bg-green-50" textColor="text-green-600" />
+            <StatBox label={t('reports.completionRate')} value={`${monthlyReport.completionRate}%`} color="bg-blue-50" textColor="text-blue-600" />
+            <StatBox label={t('reports.avgResolutionTime')} value={`${monthlyReport.avgPrepTime}h`} color="bg-yellow-50" textColor="text-yellow-600" />
+          </div>
+        ) : <div className="text-center py-12 text-muted-foreground">{t('reports.noData')}</div>
+      )}
+    </div>
+  );
+
   return (
     <DashboardLayout allowedRoles={['supervisor', 'manager']}>
       <div className="space-y-6 md:space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 md:gap-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl md:text-3xl font-bold leading-tight">{t('reports.title')}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold leading-tight">{t('reports.title')}</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-1 leading-relaxed">{t('reports.subtitle')}</p>
           </div>
         </div>
 
-        {/* Analytics Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <Card className="border-l-4 border-blue-500">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('reports.totalTasks')}</CardTitle>
-              <BarChart3 className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              {isLoadingAnalytics ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{analytics?.totalTasks?.count ?? 0}</div>
-                  <div className="flex items-center gap-2 mt-1">
-                    {analytics?.totalTasks && renderTrend(analytics.totalTasks.changePercent)}
-                    <span className="text-xs text-muted-foreground">{analytics?.totalTasks?.changeLabel}</span>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-green-500">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('reports.completionRate')}</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              {isLoadingAnalytics ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{analytics?.completionRate?.percent ?? 0}%</div>
-                  <div className="flex items-center gap-2 mt-1">
-                    {analytics?.completionRate && renderTrend(analytics.completionRate.changePercent)}
-                    <span className="text-xs text-muted-foreground">{analytics?.completionRate?.changeLabel}</span>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-yellow-500">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('reports.avgPrepTime')}</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              {isLoadingAnalytics ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{analytics?.avgPrepTime?.hours ?? 0}h</div>
-                  <div className="flex items-center gap-2 mt-1">
-                    {analytics?.avgPrepTime && renderTrend(analytics.avgPrepTime.changePercent, analytics.avgPrepTime.changePercent <= 0)}
-                    <span className="text-xs text-muted-foreground">{analytics?.avgPrepTime?.changeLabel}</span>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-purple-500">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('reports.onTimeTasks')}</CardTitle>
-              <TrendingUp className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              {isLoadingAnalytics ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{analytics?.onTimeTasks?.percent ?? 0}%</div>
-                  <div className="flex items-center gap-2 mt-1">
-                    {analytics?.onTimeTasks && renderTrend(analytics.onTimeTasks.changePercent)}
-                    <span className="text-xs text-muted-foreground">{analytics?.onTimeTasks?.changeLabel}</span>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+        {/* Domain Tabs */}
+        <div className="flex gap-2 border-b pb-2">
+          <Button variant={activeTab === 'itsm' ? 'default' : 'ghost'} size="sm" onClick={() => setActiveTab('itsm')}>
+            <Shield className="h-4 w-4 mr-1.5" />
+            {t('reports.tab.itsm')}
+          </Button>
+          <Button variant={activeTab === 'pm' ? 'default' : 'ghost'} size="sm" onClick={() => setActiveTab('pm')}>
+            <FolderKanban className="h-4 w-4 mr-1.5" />
+            {t('reports.tab.pm')}
+          </Button>
+          <Button variant={activeTab === 'legacy' ? 'default' : 'ghost'} size="sm" onClick={() => setActiveTab('legacy')}>
+            <FileText className="h-4 w-4 mr-1.5" />
+            {t('reports.tab.legacy')}
+          </Button>
         </div>
 
-        {/* Report Type Selector */}
+        {/* Tab Content */}
         <Card>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                {t('reports.detailedReports')}
-              </CardTitle>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant={reportType === 'daily' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-9 md:h-10 text-xs md:text-sm"
-                  onClick={() => setReportType('daily')}
-                >
-                  {t('reports.daily')}
-                </Button>
-                <Button
-                  variant={reportType === 'weekly' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-9 md:h-10 text-xs md:text-sm"
-                  onClick={() => setReportType('weekly')}
-                >
-                  {t('reports.weekly')}
-                </Button>
-                <Button
-                  variant={reportType === 'monthly' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-9 md:h-10 text-xs md:text-sm"
-                  onClick={() => setReportType('monthly')}
-                >
-                  {t('reports.monthly')}
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Date Selector */}
-            <div className="mb-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-              <Calendar className="h-5 w-5 text-muted-foreground shrink-0" />
-              {reportType === 'daily' && (
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-3 py-2 md:py-2.5 border rounded-md h-10 md:h-11 flex-1 md:flex-none text-sm md:text-base"
-                />
-              )}
-              {reportType === 'weekly' && (
-                <input
-                  type="date"
-                  value={weekStart}
-                  onChange={(e) => setWeekStart(e.target.value)}
-                  className="px-3 py-2 md:py-2.5 border rounded-md h-10 md:h-11 flex-1 md:flex-none text-sm md:text-base"
-                />
-              )}
-              {reportType === 'monthly' && (
-                <div className="flex gap-2 flex-1 md:flex-none">
-                  <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                    className="px-3 py-2 md:py-2.5 border rounded-md h-10 md:h-11 flex-1 text-sm md:text-base"
-                  >
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <option key={i} value={i}>
-                        {new Date(2000, i).toLocaleString('default', { month: 'long' })}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="px-3 py-2 md:py-2.5 border rounded-md h-10 md:h-11 flex-1 text-sm md:text-base"
-                  >
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <option key={i} value={new Date().getFullYear() - i}>
-                        {new Date().getFullYear() - i}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* Daily Report */}
-            {reportType === 'daily' && (
-              <div>
-                {isLoadingDaily ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                  </div>
-                ) : dailyReport ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="p-4 bg-muted/50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.totalTasks')}</p>
-                        <p className="text-2xl font-bold">{dailyReport.totalTasks}</p>
-                      </div>
-                      <div className="p-4 bg-green-50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.completed')}</p>
-                        <p className="text-2xl font-bold text-green-600">{dailyReport.completedTasks}</p>
-                      </div>
-                      <div className="p-4 bg-yellow-50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.pending')}</p>
-                        <p className="text-2xl font-bold text-yellow-600">{dailyReport.pendingTasks}</p>
-                      </div>
-                      <div className="p-4 bg-red-50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.overdue')}</p>
-                        <p className="text-2xl font-bold text-red-600">{dailyReport.overdueTasks}</p>
-                      </div>
-                    </div>
-                    
-                    {/* Tasks by User */}
-                    {dailyReport.tasksByUser && dailyReport.tasksByUser.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold mb-3 flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          {t('reports.tasksByUser')}
-                        </h3>
-                        <div className="space-y-2">
-                          {dailyReport.tasksByUser.map((user) => (
-                            <div key={user.userId} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                              <span>{user.userName}</span>
-                              <Badge>{user.count} {t('reports.tasks')}</Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    {t('reports.noData')}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Weekly Report */}
-            {reportType === 'weekly' && (
-              <div>
-                {isLoadingWeekly ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                  </div>
-                ) : weeklyReport ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="p-4 bg-muted/50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.totalTasks')}</p>
-                        <p className="text-2xl font-bold">{weeklyReport.totalTasks}</p>
-                      </div>
-                      <div className="p-4 bg-green-50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.completed')}</p>
-                        <p className="text-2xl font-bold text-green-600">{weeklyReport.completedTasks}</p>
-                      </div>
-                      <div className="p-4 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.completionRate')}</p>
-                        <p className="text-2xl font-bold text-blue-600">{weeklyReport.completionRate}%</p>
-                      </div>
-                      <div className="p-4 bg-yellow-50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.avgPrepTime')}</p>
-                        <p className="text-2xl font-bold text-yellow-600">{weeklyReport.avgPrepTime}h</p>
-                      </div>
-                    </div>
-                    
-                    {/* Daily Breakdown */}
-                    {weeklyReport.dailyBreakdown && weeklyReport.dailyBreakdown.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold mb-3">{t('reports.dailyBreakdown')}</h3>
-                        <div className="grid grid-cols-7 gap-2">
-                          {weeklyReport.dailyBreakdown.map((day) => (
-                            <div key={day.date} className="p-3 bg-muted/50 rounded-lg text-center">
-                              <p className="text-xs text-muted-foreground">{new Date(day.date).toLocaleDateString('default', { weekday: 'short' })}</p>
-                              <p className="font-bold">{day.completed}/{day.total}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    {t('reports.noData')}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Monthly Report */}
-            {reportType === 'monthly' && (
-              <div>
-                {isLoadingMonthly ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                  </div>
-                ) : monthlyReport ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="p-4 bg-muted/50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.totalTasks')}</p>
-                        <p className="text-2xl font-bold">{monthlyReport.totalTasks}</p>
-                      </div>
-                      <div className="p-4 bg-green-50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.completed')}</p>
-                        <p className="text-2xl font-bold text-green-600">{monthlyReport.completedTasks}</p>
-                      </div>
-                      <div className="p-4 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.completionRate')}</p>
-                        <p className="text-2xl font-bold text-blue-600">{monthlyReport.completionRate}%</p>
-                      </div>
-                      <div className="p-4 bg-yellow-50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">{t('reports.avgPrepTime')}</p>
-                        <p className="text-2xl font-bold text-yellow-600">{monthlyReport.avgPrepTime}h</p>
-                      </div>
-                    </div>
-                    
-                    {/* Weekly Breakdown */}
-                    {monthlyReport.weeklyBreakdown && monthlyReport.weeklyBreakdown.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold mb-3">{t('reports.weeklyBreakdown')}</h3>
-                        <div className="grid grid-cols-4 gap-2">
-                          {monthlyReport.weeklyBreakdown.map((week) => (
-                            <div key={week.week} className="p-3 bg-muted/50 rounded-lg text-center">
-                              <p className="text-xs text-muted-foreground">{t('reports.week')} {week.week}</p>
-                              <p className="font-bold">{week.completed}/{week.total}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    {t('reports.noData')}
-                  </div>
-                )}
-              </div>
-            )}
+          <CardContent className="pt-6">
+            {activeTab === 'itsm' && renderItsmTab()}
+            {activeTab === 'pm' && renderPmTab()}
+            {activeTab === 'legacy' && renderLegacyTab()}
           </CardContent>
         </Card>
       </div>

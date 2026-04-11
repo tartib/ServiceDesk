@@ -1,10 +1,10 @@
 {
   "reports": {
-    "title": "Reports",
-    "subtitle": "View analytics and detailed reports for your tasks",
+    "title": "Reports & Analytics",
+    "subtitle": "Unified ITSM and project management analytics",
     "totalTasks": "Total Tasks",
     "completionRate": "Completion Rate",
-    "avgPrepTime": "Avg Prep Time",
+    "avgResolutionTime": "Avg Resolution Time",
     "onTimeTasks": "On-Time Tasks",
     "fromLastWeek": "from last week",
     "detailedReports": "Detailed Reports",
@@ -20,8 +20,48 @@
     "weeklyBreakdown": "Weekly Breakdown",
     "week": "Week",
     "noData": "No data available for the selected period",
-    "comingSoon": "Coming Soon",
-    "advancedAnalytics": "Advanced Analytics",
-    "comingSoonDescription": "Detailed charts and analytics will be available soon."
+    "tab": {
+      "itsm": "ITSM Analytics",
+      "pm": "Project Analytics",
+      "legacy": "Task Reports"
+    },
+    "itsm": {
+      "incidents": "Incidents",
+      "openIncidents": "Open Incidents",
+      "inProgress": "In Progress",
+      "mttr": "MTTR",
+      "breachedSla": "Breached SLA",
+      "slaCompliance": "SLA Compliance",
+      "complianceRate": "Compliance Rate",
+      "totalMeasured": "Total Measured",
+      "totalBreached": "Total Breached",
+      "problems": "Problems",
+      "openProblems": "Open Problems",
+      "knownErrors": "Known Errors",
+      "resolutionRate": "Resolution Rate",
+      "avgAge": "Avg Age",
+      "changes": "Changes",
+      "pendingApproval": "Pending Approval",
+      "scheduled": "Scheduled",
+      "successRate": "Success Rate",
+      "emergencyChanges": "Emergency Changes",
+      "incidentTrend": "Incident Trend (7 days)"
+    },
+    "pm": {
+      "projects": "Projects",
+      "totalProjects": "Total Projects",
+      "activeProjects": "Active Projects",
+      "archivedProjects": "Archived",
+      "taskStats": "Task Statistics",
+      "inProgress": "In Progress",
+      "storyPoints": "Story Points",
+      "pointsCompletion": "Points Completion",
+      "sprints": "Sprints",
+      "totalSprints": "Total Sprints",
+      "activeSprints": "Active Sprints",
+      "completedSprints": "Completed Sprints",
+      "avgVelocity": "Avg Velocity",
+      "velocityTrend": "Velocity Trend"
+    }
   }
 }

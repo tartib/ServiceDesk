@@ -1,8 +1,7 @@
 'use client';
 
-import { API_URL } from '@/lib/api/config';
-import { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import {
   Bell,
   CheckCircle,
@@ -20,44 +19,18 @@ import {
   LoadingState,
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/axios';
+import {
+  useNotificationsByProject,
+  useMarkNotificationAsRead,
+  useMarkAllAsRead,
+  useDeleteNotification,
+} from '@/hooks/useNotifications';
+import { useLanguage } from '@/contexts/LanguageContext';
+import type { Notification } from '@/types';
 
-interface Notification {
-  id: string;
-  type: 'task' | 'comment' | 'mention' | 'assignment' | 'deadline' | 'system';
-  title: string;
-  message: string;
-  read: boolean;
-  timestamp: string;
-  actionUrl?: string;
-}
-
-interface Project {
-  _id: string;
-  name: string;
-  key: string;
-}
-
-interface BackendNotification {
-  _id: string;
-  type: Notification['type'];
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: string;
-  actionUrl?: string;
-}
-
-const mapNotification = (n: BackendNotification): Notification => ({
-  id: n._id,
-  type: n.type || 'system',
-  title: n.title,
-  message: n.message,
-  read: n.read,
-  timestamp: n.createdAt,
-  actionUrl: n.actionUrl,
-});
-
-const typeConfig = {
+const typeConfig: Record<string, { icon: typeof Bell; color: string; bgColor: string }> = {
   task: { icon: CheckCircle, color: 'text-green-500', bgColor: 'bg-green-100' },
   comment: { icon: MessageSquare, color: 'text-purple-500', bgColor: 'bg-purple-100' },
   mention: { icon: User, color: 'text-blue-500', bgColor: 'bg-blue-100' },
@@ -66,91 +39,45 @@ const typeConfig = {
   system: { icon: Bell, color: 'text-gray-500', bgColor: 'bg-gray-100' },
 };
 
+const formatTime = (timestamp: string) => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor(diff / (1000 * 60));
+
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (hours < 48) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
 export default function NotificationsPage() {
   const params = useParams();
-  const router = useRouter();
   const projectId = params?.projectId as string;
+  const { t } = useLanguage();
   
   const { methodology } = useMethodology(projectId);
+  const { data: project } = useQuery({
+    queryKey: ['pm', 'projects', projectId],
+    queryFn: async () => {
+      const res = await api.get<{ project?: { _id: string; name: string; key: string } }>(`/pm/projects/${projectId}`);
+      return res?.project ?? null;
+    },
+    enabled: !!projectId,
+  });
+  const { data: notifData, isLoading } = useNotificationsByProject(projectId);
+  const { mutate: markAsRead } = useMarkNotificationAsRead();
+  const { mutate: markAllAsRead } = useMarkAllAsRead();
+  const { mutate: deleteNotification } = useDeleteNotification();
 
-  const [project, setProject] = useState<Project | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  const getToken = () => localStorage.getItem('token') || localStorage.getItem('accessToken');
-
-  const fetchData = useCallback(async (token: string) => {
-    try {
-      const [projRes, notifRes] = await Promise.all([
-        fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/pm/projects/${projectId}/notifications`, { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
-      const projData = await projRes.json();
-      if (projData.success) setProject(projData.data.project);
-      const notifData = await notifRes.json();
-      if (notifData.success) setNotifications((notifData.data.notifications || []).map(mapNotification));
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) { router.push('/login'); return; }
-    fetchData(token);
-  }, [projectId, router, fetchData]);
-
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor(diff / (1000 * 60));
-
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (hours < 48) return 'Yesterday';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
-  const handleMarkAsRead = async (id: string) => {
-    const token = getToken();
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_URL}/pm/notifications/${id}/read`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.success) setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    } catch (error) { console.error('Failed to mark as read:', error); }
-  };
-
-  const handleMarkAllAsRead = async () => {
-    const token = getToken();
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}/notifications/read-all`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.success) setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    } catch (error) { console.error('Failed to mark all as read:', error); }
-  };
-
-  const handleDelete = async (id: string) => {
-    const token = getToken();
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_URL}/pm/notifications/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.success) setNotifications(prev => prev.filter(n => n.id !== id));
-    } catch (error) { console.error('Failed to delete notification:', error); }
-  };
-
+  const notifications = notifData?.notifications ?? [];
   const filteredNotifications = filter === 'unread' 
-    ? notifications.filter(n => !n.read)
+    ? notifications.filter((n: Notification) => !n.isRead)
     : notifications;
-
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n: Notification) => !n.isRead).length;
 
   if (isLoading) {
     return <LoadingState />;
@@ -174,7 +101,7 @@ export default function NotificationsPage() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Bell className="h-5 w-5 text-blue-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('notifications.title')}</h2>
               {unreadCount > 0 && (
                 <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-medium rounded-full">
                   {unreadCount}
@@ -188,7 +115,7 @@ export default function NotificationsPage() {
                   filter === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
                 }`}
               >
-                All
+                {t('notifications.filterAll')}
               </button>
               <button
                 onClick={() => setFilter('unread')}
@@ -196,17 +123,17 @@ export default function NotificationsPage() {
                   filter === 'unread' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
                 }`}
               >
-                Unread
+                {t('notifications.filterUnread')}
               </button>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={handleMarkAllAsRead}
+              onClick={() => markAllAsRead()}
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Check className="h-4 w-4" />
-              Mark all as read
+              {t('notifications.markAllRead')}
             </button>
             <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
               <Settings className="h-5 w-5" />
@@ -221,19 +148,19 @@ export default function NotificationsPage() {
           {filteredNotifications.length === 0 ? (
             <div className="text-center py-12">
               <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No notifications</p>
+              <p className="text-gray-500">{t('notifications.empty')}</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredNotifications.map((notification) => {
-                const config = typeConfig[notification.type];
+              {filteredNotifications.map((notification: Notification) => {
+                const config = typeConfig[notification.type] || typeConfig.system;
                 const Icon = config.icon;
 
                 return (
                   <div
                     key={notification.id}
                     className={`bg-white border rounded-xl p-4 transition-all hover:shadow-md ${
-                      notification.read ? 'border-gray-200' : 'border-blue-200 bg-blue-50/30'
+                      notification.isRead ? 'border-gray-200' : 'border-blue-200 bg-blue-50/30'
                     }`}
                   >
                     <div className="flex items-start gap-4">
@@ -246,7 +173,7 @@ export default function NotificationsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <h3 className={`text-sm ${notification.read ? 'text-gray-900' : 'font-semibold text-gray-900'}`}>
+                            <h3 className={`text-sm ${notification.isRead ? 'text-gray-900' : 'font-semibold text-gray-900'}`}>
                               {notification.title}
                             </h3>
                             <p className="text-sm text-gray-600 mt-0.5">{notification.message}</p>
@@ -254,7 +181,7 @@ export default function NotificationsPage() {
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-xs text-gray-500 flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {formatTime(notification.timestamp)}
+                              {formatTime(notification.createdAt)}
                             </span>
                           </div>
                         </div>
@@ -263,19 +190,19 @@ export default function NotificationsPage() {
                         <div className="flex items-center gap-2 mt-3">
                           {notification.actionUrl && (
                             <button className="text-sm text-blue-600 hover:underline">
-                              View
+                              {t('notifications.view')}
                             </button>
                           )}
-                          {!notification.read && (
+                          {!notification.isRead && (
                             <button
-                              onClick={() => handleMarkAsRead(notification.id)}
+                              onClick={() => markAsRead(notification.id)}
                               className="text-sm text-gray-500 hover:text-gray-700"
                             >
-                              Mark as read
+                              {t('notifications.markRead')}
                             </button>
                           )}
                           <button
-                            onClick={() => handleDelete(notification.id)}
+                            onClick={() => deleteNotification(notification.id)}
                             className="text-sm text-gray-400 hover:text-red-600 ml-auto"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -284,7 +211,7 @@ export default function NotificationsPage() {
                       </div>
 
                       {/* Unread indicator */}
-                      {!notification.read && (
+                      {!notification.isRead && (
                         <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-2" />
                       )}
                     </div>

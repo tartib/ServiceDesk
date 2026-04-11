@@ -440,7 +440,7 @@ export default function TaskDetailPage() {
       if (!token) return;
 
       try {
-        const response = await fetch(`${API_URL}/auth/me`, {
+        const response = await fetch(`${API_URL}/core/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {

@@ -39,7 +39,7 @@ export const taskApi = {
   create: (projectId: string, data: Record<string, unknown>) =>
     api.post(`/pm/projects/${projectId}/tasks`, data),
   update: (id: string, data: Record<string, unknown>) =>
-    api.put(`/pm/tasks/${id}`, data),
+    api.patch(`/pm/tasks/${id}`, data),
   delete: (id: string) =>
     api.delete(`/pm/tasks/${id}`),
   transition: (id: string, data: Record<string, unknown>) =>
@@ -50,6 +50,8 @@ export const taskApi = {
     api.get(`/pm/projects/${projectId}/board`),
   getBacklog: (projectId: string) =>
     api.get(`/pm/projects/${projectId}/backlog`),
+  getMapView: (projectId: string, params?: URLSearchParams) =>
+    api.get(`/pm/projects/${projectId}/map-view${params ? `?${params}` : ''}`),
 };
 
 // ── Sprints ────────────────────────────────────────────────────

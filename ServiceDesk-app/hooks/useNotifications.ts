@@ -1,39 +1,41 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/axios';
-import { Notification, ApiResponse } from '@/types';
+import { notificationKeys, notificationApi } from '@/lib/domains/notifications';
+import type { NotificationListParams } from '@/lib/domains/notifications';
 
-export const useNotifications = (isRead?: boolean) => {
+export const useNotifications = (params?: NotificationListParams) => {
   return useQuery({
-    queryKey: ['notifications', isRead],
-    queryFn: async () => {
-      const params = isRead !== undefined ? `?isRead=${isRead}` : '';
-      const response: ApiResponse<Notification[]> = await api.get(`/notifications${params}`);
-      return {
-        data: response.data || [],
-        count: response.count || 0,
-        unreadCount: response.unreadCount || 0,
-      };
-    },
+    queryKey: notificationKeys.list(params as Record<string, unknown>),
+    queryFn: () => notificationApi.list(params),
+  });
+};
+
+export const useNotificationsByProject = (projectId: string) => {
+  return useQuery({
+    queryKey: notificationKeys.byProject(projectId),
+    queryFn: () => notificationApi.list({ projectId }),
+    enabled: !!projectId,
   });
 };
 
 export const useUnreadNotifications = () => {
   return useQuery({
-    queryKey: ['notifications', 'unread'],
-    queryFn: async () => {
-      const response: ApiResponse<Notification[]> = await api.get('/notifications/unread');
-      return response.data || [];
-    },
+    queryKey: notificationKeys.unread(),
+    queryFn: () => notificationApi.unread(),
+  });
+};
+
+export const useUnreadCount = () => {
+  return useQuery({
+    queryKey: notificationKeys.unreadCount(),
+    queryFn: () => notificationApi.unreadCount(),
+    refetchInterval: 30_000,
   });
 };
 
 export const useCriticalNotifications = () => {
   return useQuery({
-    queryKey: ['notifications', 'critical'],
-    queryFn: async () => {
-      const response: ApiResponse<Notification[]> = await api.get('/notifications/critical');
-      return response.data || [];
-    },
+    queryKey: notificationKeys.critical(),
+    queryFn: () => notificationApi.critical(),
   });
 };
 
@@ -41,14 +43,9 @@ export const useMarkNotificationAsRead = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (notificationId: string) => {
-      const response: ApiResponse<Notification> = await api.put(
-        `/notifications/${notificationId}/read`
-      );
-      return response.data;
-    },
+    mutationFn: (notificationId: string) => notificationApi.markAsRead(notificationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 };
@@ -57,14 +54,20 @@ export const useMarkAllAsRead = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
-      const response: ApiResponse<{ modifiedCount: number }> = await api.put(
-        '/notifications/read-all'
-      );
-      return response.data;
-    },
+    mutationFn: () => notificationApi.markAllAsRead(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+    },
+  });
+};
+
+export const useDeleteNotification = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (notificationId: string) => notificationApi.deleteNotification(notificationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 };

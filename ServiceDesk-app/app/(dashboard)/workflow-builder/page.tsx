@@ -143,7 +143,7 @@ export default function WorkflowBuilderPage() {
         const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
         if (!token) return null;
         try {
-          const res = await fetch(`${API_URL}/auth/me`, {
+          const res = await fetch(`${API_URL}/core/auth/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           const json = await res.json();

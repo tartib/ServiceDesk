@@ -3,29 +3,9 @@
  * Handles login, logout, and token management with CSRF protection
  */
 
-import axios from 'axios';
-import api from '../axios';
+import authAxios from './auth-client';
 import { fetchCsrfToken, clearCsrfToken } from './csrf';
-import { API_BASE_URL } from './config';
 import type { AxiosError } from 'axios';
-
-// Auth uses v2 core endpoints with base path /api (routes: /api/v2/core/auth/*)
-const authAxios = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
-  withCredentials: true,
-  headers: { 'Content-Type': 'application/json' },
-});
-
-// Attach Bearer token for protected auth endpoints (e.g. logout)
-authAxios.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
 
 export interface LoginRequest {
   email: string;
@@ -173,12 +153,13 @@ class AuthService {
         throw new Error('No refresh token available');
       }
 
-      const response = await api.post<{ data: { token: string } }>(
-        '/auth/refresh',
+      const response = await authAxios.post(
+        '/v2/core/auth/refresh',
         { refreshToken }
       );
 
-      const newToken = (response as unknown as { data: { token: string } }).data?.token || (response as unknown as { token: string }).token;
+      const resData = response.data;
+      const newToken = resData?.data?.token || resData?.token;
       localStorage.setItem('token', newToken);
 
       return newToken;

@@ -1570,7 +1570,7 @@ export function TaskDetailPanel({
 
     try {
       const response = await fetch(`${API_URL}/pm/tasks/${activeTask._id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -1603,7 +1603,7 @@ export function TaskDetailPanel({
 
     try {
       // Get current user
-      const response = await fetch(`${API_URL}/auth/me`, {
+      const response = await fetch(`${API_URL}/core/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();

@@ -27,6 +27,18 @@ export default function NewWorkflowPage() {
       const workflow = await createWorkflow.mutateAsync({
         name: name.trim(),
         description: description.trim() || undefined,
+        entityType: 'ticket',
+        states: [
+          { code: 'open', name: 'Open', category: 'todo', type: 'start', color: '#3B82F6', order: 0, position: { x: 250, y: 50 } },
+          { code: 'in_progress', name: 'In Progress', category: 'in_progress', type: 'normal', color: '#F59E0B', order: 1, position: { x: 250, y: 200 } },
+          { code: 'closed', name: 'Closed', category: 'done', type: 'end', color: '#10B981', order: 2, position: { x: 250, y: 350 } },
+        ],
+        transitions: [
+          { transitionId: 't-open-ip', name: 'Start', fromState: 'open', toState: 'in_progress', ui: { buttonLabel: 'Start' } },
+          { transitionId: 't-ip-closed', name: 'Close', fromState: 'in_progress', toState: 'closed', ui: { buttonLabel: 'Close' } },
+        ],
+        initialState: 'open',
+        finalStates: ['closed'],
       });
       router.push(`/workflows/${workflow._id}`);
     } catch (error) {

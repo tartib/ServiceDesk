@@ -6,7 +6,7 @@
  */
 
 import { normalizeEntity, normalizeList, normalizePaginated } from '@/lib/api/normalize';
-import type { ProjectDTO, TaskDTO, SprintDTO, CommentDTO } from './dto';
+import type { ProjectDTO, TaskDTO, SprintDTO, CommentDTO, ProjectMapViewDTO } from './dto';
 
 // ── Project adapters ───────────────────────────────────────────
 
@@ -66,4 +66,18 @@ export const commentAdapters = {
   },
 
   list: (raw: unknown): CommentDTO[] => normalizeList<CommentDTO>(raw),
+};
+
+// ── Map View adapters ─────────────────────────────────────────
+
+export const mapAdapters = {
+  view: (raw: unknown): ProjectMapViewDTO => {
+    const obj = raw as Record<string, unknown>;
+    const inner = obj?.data && typeof obj.data === 'object' ? obj.data : raw;
+    const data = inner as Record<string, unknown>;
+    return {
+      nodes: Array.isArray(data.nodes) ? data.nodes : [],
+      edges: Array.isArray(data.edges) ? data.edges : [],
+    };
+  },
 };

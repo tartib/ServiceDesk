@@ -112,7 +112,7 @@ export interface ServiceRequestFilters {
 
 const ITSM_BASE = '/api/v2/itsm';
 
-const requestKeys = {
+export const requestKeys = {
   all: ['service-requests'] as const,
   lists: () => [...requestKeys.all, 'list'] as const,
   list: (filters: ServiceRequestFilters) => [...requestKeys.lists(), filters] as const,

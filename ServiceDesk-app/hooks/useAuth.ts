@@ -57,7 +57,7 @@ export const useCurrentUser = () => {
   return useQuery({
     queryKey: ['auth', 'me'],
     queryFn: async () => {
-      const body = await api.get<Record<string, unknown>>('/auth/me');
+      const body = await api.get<Record<string, unknown>>('/core/auth/me');
       // Backend returns { success, data: { user: { id, name, email, role, ... } } }
       const data = body?.data as Record<string, unknown> | undefined;
       const user = (data?.user || data || body) as User;
@@ -76,7 +76,7 @@ export const useUpdateProfile = () => {
 
   return useMutation({
     mutationFn: async (data: Partial<User>): Promise<User> => {
-      const response = await api.patch<{ data?: User } | User>('/auth/profile', data);
+      const response = await api.patch<{ data?: User } | User>('/core/auth/profile', data);
       // Unwrap if nested
       if (response && typeof response === 'object' && 'data' in response && (response as { data?: User }).data) {
         return (response as { data: User }).data;
@@ -95,7 +95,7 @@ export const useUpdateProfile = () => {
 export const useChangePassword = () => {
   return useMutation({
     mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
-      return await api.patch<ApiResponse<void>>('/auth/password', data);
+      return await api.patch<ApiResponse<void>>('/core/auth/password', data);
     },
   });
 };

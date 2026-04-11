@@ -149,7 +149,7 @@ export default function ProjectHeader({
     setIsSearching(true);
     try {
       const response = await fetch(
-        `${API_URL}/users/search?q=${encodeURIComponent(query)}`,
+        `${API_URL}/core/users/search?q=${encodeURIComponent(query)}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

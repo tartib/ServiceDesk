@@ -22,6 +22,7 @@ import intakeRoutes from './intake.routes';
 import portfolioAnalyticsRoutes from './portfolioAnalytics.routes';
 import projectExtrasRoutes from './projectExtras.routes';
 import teamPerformanceRoutes from './teamPerformance.routes';
+import mapRoutes from './map.routes';
 
 const router = Router();
 
@@ -93,5 +94,8 @@ router.use('/pm', projectExtrasRoutes);
 
 // Team Performance Dashboard
 router.use('/pm/team-performance', teamPerformanceRoutes);
+
+// Map View routes (graph visualization)
+router.use('/pm', mapRoutes);
 
 export default router;

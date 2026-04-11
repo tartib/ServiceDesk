@@ -14,7 +14,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import authService from '@/lib/api/auth-service';
-import { useNotificationStore } from '@/store/notificationStore';
+import { useUnreadCount } from '@/hooks/useNotifications';
 import { useRouter } from 'next/navigation';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -22,7 +22,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 export default function Header() {
   const { user, logout } = useAuthStore();
   const { toggleSidebar } = useUIStore();
-  const { unreadCount } = useNotificationStore();
+  const { data: unreadCount = 0 } = useUnreadCount();
   const router = useRouter();
   const { t } = useLanguage();
 

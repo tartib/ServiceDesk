@@ -1,13 +1,14 @@
 'use client';
-import { useIncidentStats, useOpenIncidents, useBreachedIncidents } from '@/hooks/useIncidents';
-import { useProblemStats } from '@/hooks/useProblems';
-import { useChangeStats } from '@/hooks/useChanges';
+import { useIncidentStats, useOpenIncidents, useBreachedIncidents, incidentKeys } from '@/hooks/useIncidents';
+import { useProblemStats, problemKeys } from '@/hooks/useProblems';
+import { useChangeStats, changeKeys } from '@/hooks/useChanges';
 import { useSLACompliance, useIncidentTrend } from '@/hooks/useITSMDashboard';
 import { IIncident, IIncidentStats, IProblemStats, IChangeStats, ISLACompliancePoint, IIncidentTrendPoint, getPriorityColor, getStatusColor, formatSLATime } from '@/types/itsm';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useITSMSocket } from '@/hooks/useSocket';
+import { requestKeys } from '@/hooks/useServiceRequests';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -44,34 +45,40 @@ export default function ITSMDashboardPage() {
   // WebSocket for real-time updates
   useITSMSocket({
     onIncidentCreated: () => {
-      queryClient.invalidateQueries({ queryKey: ['incidents'] });
-      queryClient.invalidateQueries({ queryKey: ['incident-stats'] });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.open() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.breached() });
     },
     onIncidentUpdated: () => {
-      queryClient.invalidateQueries({ queryKey: ['incidents'] });
-      queryClient.invalidateQueries({ queryKey: ['incident-stats'] });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.open() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.breached() });
     },
     onServiceRequestCreated: () => {
-      queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+      queryClient.invalidateQueries({ queryKey: requestKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: requestKeys.stats() });
     },
     onServiceRequestUpdated: () => {
-      queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+      queryClient.invalidateQueries({ queryKey: requestKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: requestKeys.stats() });
     },
     onProblemCreated: () => {
-      queryClient.invalidateQueries({ queryKey: ['problems'] });
-      queryClient.invalidateQueries({ queryKey: ['problem-stats'] });
+      queryClient.invalidateQueries({ queryKey: problemKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: problemKeys.stats() });
     },
     onProblemUpdated: () => {
-      queryClient.invalidateQueries({ queryKey: ['problems'] });
-      queryClient.invalidateQueries({ queryKey: ['problem-stats'] });
+      queryClient.invalidateQueries({ queryKey: problemKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: problemKeys.stats() });
     },
     onChangeCreated: () => {
-      queryClient.invalidateQueries({ queryKey: ['changes'] });
-      queryClient.invalidateQueries({ queryKey: ['change-stats'] });
+      queryClient.invalidateQueries({ queryKey: changeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: changeKeys.stats() });
     },
     onChangeUpdated: () => {
-      queryClient.invalidateQueries({ queryKey: ['changes'] });
-      queryClient.invalidateQueries({ queryKey: ['change-stats'] });
+      queryClient.invalidateQueries({ queryKey: changeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: changeKeys.stats() });
     },
   });
 
@@ -81,7 +88,7 @@ export default function ITSMDashboardPage() {
     changes: changeStats as IChangeStats | undefined,
   };
 
-  const isLoading = loadingIncidents || loadingProblems || loadingChanges;
+  // Per-section loading — each section renders independently
 
   const SkeletonCard = () => (
     <div className="animate-pulse space-y-3">
@@ -223,7 +230,7 @@ export default function ITSMDashboardPage() {
               </div>
             </div>
             <div className="p-5">
-              {isLoading ? <SkeletonCard /> : (
+              {loadingIncidents ? <SkeletonCard /> : (
                 <>
                   <div className="text-3xl font-bold text-foreground mb-4">
                     {stats.incidents?.total || 0}
@@ -278,7 +285,7 @@ export default function ITSMDashboardPage() {
               </div>
             </div>
             <div className="p-5">
-              {isLoading ? <SkeletonCard /> : (
+              {loadingProblems ? <SkeletonCard /> : (
                 <>
                   <div className="text-3xl font-bold text-foreground mb-4">
                     {stats.problems?.total || 0}
@@ -333,7 +340,7 @@ export default function ITSMDashboardPage() {
               </div>
             </div>
             <div className="p-5">
-              {isLoading ? <SkeletonCard /> : (
+              {loadingChanges ? <SkeletonCard /> : (
                 <>
                   <div className="text-3xl font-bold text-foreground mb-4">
                     {stats.changes?.total || 0}

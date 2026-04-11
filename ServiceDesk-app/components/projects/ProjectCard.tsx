@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Star, MoreHorizontal } from 'lucide-react';
 
 interface ProjectCardProps {
@@ -31,7 +32,7 @@ const methodologyColors: Record<string, string> = {
   okr: 'bg-pink-100 text-pink-700 border-pink-300',
 };
 
-export default function ProjectCard({
+function ProjectCard({
   name,
   projectKey,
   methodology,
@@ -157,3 +158,5 @@ export default function ProjectCard({
     </tr>
   );
 }
+
+export default React.memo(ProjectCard);

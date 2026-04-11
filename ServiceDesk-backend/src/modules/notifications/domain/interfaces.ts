@@ -112,5 +112,6 @@ export interface INotificationService {
   getUnreadCount(userId: string): Promise<number>;
   markAsRead(notificationId: string): Promise<any | null>;
   markAllAsRead(userId: string): Promise<number>;
+  deleteNotification(notificationId: string): Promise<boolean>;
   cleanOld(daysOld?: number): Promise<number>;
 }

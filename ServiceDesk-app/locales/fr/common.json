@@ -40,6 +40,10 @@
     "agentConsole": "Console agent",
     "portfolioAnalytics": "Analytique du portefeuille",
     "teamPerformance": "Performance de l'équipe",
+    "gamification": "Gamification",
+    "gamificationDashboard": "Tableau de bord",
+    "leaderboard": "Classement",
+    "achievements": "Réalisations",
     "loggedInAs": "Connecté en tant que"
   },
   "common": {

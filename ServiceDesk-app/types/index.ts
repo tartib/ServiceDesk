@@ -173,25 +173,29 @@ export interface InventoryItem {
 }
 
 // Notification Types
-export type NotificationType = 'reminder' | 'start' | 'late' | 'overdue' | 'critical' | 'stock_issue' | 'completion' | 'escalation' | 'before_due';
+export type NotificationType =
+  | 'reminder' | 'system'
+  | 'start' | 'late' | 'overdue' | 'critical' | 'escalation' | 'before_due' | 'completed'
+  | 'task' | 'comment' | 'mention' | 'assignment' | 'deadline'
+  | 'status_change' | 'approval' | 'breach'
+  | 'workflow_started' | 'workflow_transitioned' | 'workflow_completed';
 export type NotificationLevel = 'info' | 'warning' | 'error' | 'critical';
+export type NotificationSource = 'itsm' | 'pm' | 'ops' | 'workflow' | 'system';
 
 export interface Notification {
-  _id: string;
-  id?: string;
-  userId: string | { _id: string; name: string; email: string };
+  id: string;
+  userId: string;
   type: NotificationType;
+  source?: NotificationSource;
   level: NotificationLevel;
-  priority: TaskPriority;
   title: string;
+  titleAr?: string;
   message: string;
-  relatedTaskId?: string | {
-    _id: string;
-    productName: string;
-    status: TaskStatus;
-    priority: TaskPriority;
-  };
-  relatedInventoryId?: string;
+  messageAr?: string;
+  relatedEntityId?: string;
+  relatedEntityType?: string;
+  projectId?: string;
+  organizationId?: string;
   isRead: boolean;
   sentAt: string;
   readAt?: string;

@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use modules/notifications/models/Notification.ts (UnifiedNotification) instead.
+ * PM notifications are now written to the unified_notifications collection via notificationService.
+ * This model is retained only for backward-compatible reads of historical data.
+ */
 import mongoose, { Schema } from 'mongoose';
 
 export interface IPMNotification {

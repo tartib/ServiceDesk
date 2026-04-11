@@ -1,10 +1,10 @@
 {
   "reports": {
-    "title": "التقارير",
-    "subtitle": "عرض التحليلات والتقارير التفصيلية للمهام",
+    "title": "التقارير والتحليلات",
+    "subtitle": "تحليلات موحدة لإدارة الخدمات والمشاريع",
     "totalTasks": "إجمالي المهام",
     "completionRate": "نسبة الإنجاز",
-    "avgPrepTime": "متوسط وقت التحضير",
+    "avgResolutionTime": "متوسط وقت الحل",
     "onTimeTasks": "المهام في الوقت",
     "fromLastWeek": "من الأسبوع الماضي",
     "detailedReports": "التقارير التفصيلية",
@@ -20,8 +20,48 @@
     "weeklyBreakdown": "التفصيل الأسبوعي",
     "week": "الأسبوع",
     "noData": "لا توجد بيانات للفترة المحددة",
-    "comingSoon": "قريباً",
-    "advancedAnalytics": "تحليلات متقدمة",
-    "comingSoonDescription": "الرسوم البيانية والتحليلات المفصلة ستكون متاحة قريباً."
+    "tab": {
+      "itsm": "تحليلات ITSM",
+      "pm": "تحليلات المشاريع",
+      "legacy": "تقارير المهام"
+    },
+    "itsm": {
+      "incidents": "الحوادث",
+      "openIncidents": "الحوادث المفتوحة",
+      "inProgress": "قيد التنفيذ",
+      "mttr": "متوسط وقت الحل",
+      "breachedSla": "SLA مخالف",
+      "slaCompliance": "التزام SLA",
+      "complianceRate": "نسبة الالتزام",
+      "totalMeasured": "إجمالي القياسات",
+      "totalBreached": "إجمالي المخالفات",
+      "problems": "المشاكل",
+      "openProblems": "المشاكل المفتوحة",
+      "knownErrors": "الأخطاء المعروفة",
+      "resolutionRate": "نسبة الحل",
+      "avgAge": "متوسط العمر",
+      "changes": "التغييرات",
+      "pendingApproval": "بانتظار الموافقة",
+      "scheduled": "مجدول",
+      "successRate": "نسبة النجاح",
+      "emergencyChanges": "تغييرات طارئة",
+      "incidentTrend": "اتجاه الحوادث (7 أيام)"
+    },
+    "pm": {
+      "projects": "المشاريع",
+      "totalProjects": "إجمالي المشاريع",
+      "activeProjects": "المشاريع النشطة",
+      "archivedProjects": "مؤرشف",
+      "taskStats": "إحصائيات المهام",
+      "inProgress": "قيد التنفيذ",
+      "storyPoints": "نقاط القصة",
+      "pointsCompletion": "إنجاز النقاط",
+      "sprints": "السبرنتات",
+      "totalSprints": "إجمالي السبرنتات",
+      "activeSprints": "السبرنتات النشطة",
+      "completedSprints": "السبرنتات المكتملة",
+      "avgVelocity": "متوسط السرعة",
+      "velocityTrend": "اتجاه السرعة"
+    }
   }
 }

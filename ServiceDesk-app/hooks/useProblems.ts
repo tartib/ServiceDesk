@@ -10,9 +10,22 @@ import {
   IApiResponse,
   IApiListResponse,
 } from '@/types/itsm';
+import { incidentKeys } from '@/hooks/useIncidents';
 
 const ITSM_BASE = '/api/v2/itsm';
 const PROBLEMS_KEY = 'problems';
+
+export const problemKeys = {
+  all: [PROBLEMS_KEY] as const,
+  lists: () => [...problemKeys.all, 'list'] as const,
+  list: (filters?: Record<string, unknown>) => [...problemKeys.lists(), filters] as const,
+  details: () => [...problemKeys.all, 'detail'] as const,
+  detail: (id: string) => [PROBLEMS_KEY, id] as const,
+  stats: (siteId?: string) => [PROBLEMS_KEY, 'stats', siteId] as const,
+  open: () => [PROBLEMS_KEY, 'open'] as const,
+  knownErrors: () => [PROBLEMS_KEY, 'known-errors'] as const,
+  recurring: () => [PROBLEMS_KEY, 'recurring'] as const,
+};
 
 // ============================================
 // Query Hooks
@@ -110,7 +123,9 @@ export const useCreateProblem = () => {
       return response.data.problem;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY] });
+      queryClient.invalidateQueries({ queryKey: problemKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: problemKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: problemKeys.open() });
     },
   });
 };
@@ -126,8 +141,9 @@ export const useCreateProblemFromIncident = () => {
       return response.data.problem;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY] });
-      queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      queryClient.invalidateQueries({ queryKey: problemKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: problemKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
     },
   });
 };
@@ -149,11 +165,9 @@ export const useUpdateProblem = () => {
       );
       return response.data.problem;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [PROBLEMS_KEY, variables.problemId],
-      });
+    onSuccess: (updatedProblem, variables) => {
+      queryClient.setQueryData(problemKeys.detail(variables.problemId), updatedProblem);
+      queryClient.invalidateQueries({ queryKey: problemKeys.lists() });
     },
   });
 };
@@ -177,11 +191,9 @@ export const useUpdateRootCause = () => {
       );
       return response.data.problem;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [PROBLEMS_KEY, variables.problemId],
-      });
+    onSuccess: (updatedProblem, variables) => {
+      queryClient.setQueryData(problemKeys.detail(variables.problemId), updatedProblem);
+      queryClient.invalidateQueries({ queryKey: problemKeys.lists() });
     },
   });
 };
@@ -208,11 +220,10 @@ export const useMarkAsKnownError = () => {
       );
       return response.data.problem;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [PROBLEMS_KEY, variables.problemId],
-      });
+    onSuccess: (updatedProblem, variables) => {
+      queryClient.setQueryData(problemKeys.detail(variables.problemId), updatedProblem);
+      queryClient.invalidateQueries({ queryKey: problemKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: problemKeys.knownErrors() });
     },
   });
 };
@@ -234,11 +245,9 @@ export const useLinkIncidentToProblem = () => {
       );
       return response.data.problem;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: [PROBLEMS_KEY, variables.problemId],
-      });
-      queryClient.invalidateQueries({ queryKey: ['incidents'] });
+    onSuccess: (updatedProblem, variables) => {
+      queryClient.setQueryData(problemKeys.detail(variables.problemId), updatedProblem);
+      queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
     },
   });
 };
@@ -260,11 +269,10 @@ export const useUpdateProblemStatus = () => {
       );
       return response.data.problem;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [PROBLEMS_KEY, variables.problemId],
-      });
+    onSuccess: (updatedProblem, variables) => {
+      queryClient.setQueryData(problemKeys.detail(variables.problemId), updatedProblem);
+      queryClient.invalidateQueries({ queryKey: problemKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: problemKeys.stats() });
     },
   });
 };
@@ -286,11 +294,11 @@ export const useResolveProblem = () => {
       );
       return response.data.problem;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [PROBLEMS_KEY, variables.problemId],
-      });
+    onSuccess: (updatedProblem, variables) => {
+      queryClient.setQueryData(problemKeys.detail(variables.problemId), updatedProblem);
+      queryClient.invalidateQueries({ queryKey: problemKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: problemKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: problemKeys.open() });
     },
   });
 };
@@ -305,9 +313,9 @@ export const useStartRCA = () => {
       );
       return response.data.problem;
     },
-    onSuccess: (_, { problemId }) => {
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, problemId] });
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, 'list'] });
+    onSuccess: (updatedProblem, { problemId }) => {
+      queryClient.setQueryData(problemKeys.detail(problemId), updatedProblem);
+      queryClient.invalidateQueries({ queryKey: problemKeys.lists() });
     },
   });
 };
@@ -332,9 +340,9 @@ export const useCompleteRCA = () => {
       );
       return response.data.problem;
     },
-    onSuccess: (_, { problemId }) => {
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, problemId] });
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, 'list'] });
+    onSuccess: (updatedProblem, { problemId }) => {
+      queryClient.setQueryData(problemKeys.detail(problemId), updatedProblem);
+      queryClient.invalidateQueries({ queryKey: problemKeys.lists() });
     },
   });
 };
@@ -359,9 +367,9 @@ export const usePublishKnownError = () => {
       );
       return response.data.problem;
     },
-    onSuccess: (_, { problemId }) => {
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, problemId] });
-      queryClient.invalidateQueries({ queryKey: [PROBLEMS_KEY, 'known-errors'] });
+    onSuccess: (updatedProblem, { problemId }) => {
+      queryClient.setQueryData(problemKeys.detail(problemId), updatedProblem);
+      queryClient.invalidateQueries({ queryKey: problemKeys.knownErrors() });
     },
   });
 };

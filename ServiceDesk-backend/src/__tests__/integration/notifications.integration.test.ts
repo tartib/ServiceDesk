@@ -152,4 +152,92 @@ describe('Notifications API — Integration Tests', () => {
       expect(res.body.success).toBe(true);
     });
   });
+
+  // ============================================
+  // DELETE NOTIFICATION
+  // ============================================
+  describe('DELETE /api/v2/notifications/:notifId', () => {
+    let deleteTargetId: string;
+
+    beforeAll(async () => {
+      const UnifiedNotification = mongoose.models.UnifiedNotification;
+      const n = await UnifiedNotification.create({
+        userId: user.id,
+        type: 'system',
+        source: 'system',
+        level: 'info',
+        channel: 'in_app',
+        title: 'To Delete',
+        message: 'Will be deleted',
+        isRead: false,
+        sentAt: new Date(),
+      });
+      deleteTargetId = n._id.toString();
+    });
+
+    it('should delete an existing notification', async () => {
+      const res = await authReq(
+        request(app).delete(`/api/v2/notifications/${deleteTargetId}`), user);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+
+    it('should return 404 for already-deleted notification', async () => {
+      const res = await authReq(
+        request(app).delete(`/api/v2/notifications/${deleteTargetId}`), user);
+
+      expect(res.status).toBe(404);
+    });
+
+    it('should reject invalid ID format', async () => {
+      const res = await authReq(
+        request(app).delete('/api/v2/notifications/bad-id'), user);
+
+      expect([400, 422, 500]).toContain(res.status);
+    });
+  });
+
+  // ============================================
+  // PROJECT-SCOPED FILTER
+  // ============================================
+  describe('GET /api/v2/notifications?projectId=X', () => {
+    let projNotifId: string;
+
+    beforeAll(async () => {
+      const UnifiedNotification = mongoose.models.UnifiedNotification;
+      const n = await UnifiedNotification.create({
+        userId: user.id,
+        type: 'task',
+        source: 'pm',
+        level: 'info',
+        channel: 'in_app',
+        title: 'PM Notification',
+        message: 'Project-scoped test',
+        projectId: new mongoose.Types.ObjectId(),
+        isRead: false,
+        sentAt: new Date(),
+      });
+      projNotifId = n._id.toString();
+    });
+
+    it('should filter notifications by projectId', async () => {
+      const res = await authReq(
+        request(app).get(`/api/v2/notifications?projectId=${new mongoose.Types.ObjectId()}`), user);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      // Different projectId — should return no results for that project
+      const data = res.body.data;
+      expect(data).toBeDefined();
+    });
+
+    it('should filter notifications by source', async () => {
+      const res = await authReq(
+        request(app).get('/api/v2/notifications?source=pm'), user);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+  });
 });

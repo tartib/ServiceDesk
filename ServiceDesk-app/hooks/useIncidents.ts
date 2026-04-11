@@ -16,6 +16,22 @@ import {
 const ITSM_BASE = '/api/v2/itsm';
 const INCIDENTS_KEY = 'incidents';
 
+export const incidentKeys = {
+  all: [INCIDENTS_KEY] as const,
+  lists: () => [...incidentKeys.all, 'list'] as const,
+  list: (filters?: Record<string, unknown>) => [...incidentKeys.lists(), filters] as const,
+  details: () => [...incidentKeys.all, 'detail'] as const,
+  detail: (id: string) => [INCIDENTS_KEY, id] as const,
+  stats: (siteId?: string) => [INCIDENTS_KEY, 'stats', siteId] as const,
+  open: () => [INCIDENTS_KEY, 'open'] as const,
+  breached: () => [INCIDENTS_KEY, 'breached'] as const,
+  unassigned: () => [INCIDENTS_KEY, 'unassigned'] as const,
+  major: () => [INCIDENTS_KEY, 'major'] as const,
+  myRequests: (page?: number, limit?: number) => [INCIDENTS_KEY, 'my-requests', page, limit] as const,
+  myAssignments: (page?: number, limit?: number) => [INCIDENTS_KEY, 'my-assignments', page, limit] as const,
+  search: (query: string) => [INCIDENTS_KEY, 'search', query] as const,
+};
+
 // ============================================
 // Query Hooks
 // ============================================
@@ -166,7 +182,10 @@ export const useCreateIncident = () => {
       return response.data.incident;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY] });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.open() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.unassigned() });
     },
   });
 };
@@ -185,11 +204,9 @@ export const useUpdateIncident = () => {
       const response = await api.patch(`${ITSM_BASE}/incidents/${incidentId}`, data) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [INCIDENTS_KEY, variables.incidentId],
-      });
+    onSuccess: (updatedIncident, variables) => {
+      queryClient.setQueryData(incidentKeys.detail(variables.incidentId), updatedIncident);
+      queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
     },
   });
 };
@@ -210,11 +227,11 @@ export const useUpdateIncidentStatus = () => {
       const response = await api.patch(`${ITSM_BASE}/incidents/${incidentId}/status`, { status, resolution }) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [INCIDENTS_KEY, variables.incidentId],
-      });
+    onSuccess: (updatedIncident, variables) => {
+      queryClient.setQueryData(incidentKeys.detail(variables.incidentId), updatedIncident);
+      queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.open() });
     },
   });
 };
@@ -239,11 +256,10 @@ export const useAssignIncident = () => {
       const response = await api.patch(`${ITSM_BASE}/incidents/${incidentId}/assign`, assignee) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [INCIDENTS_KEY, variables.incidentId],
-      });
+    onSuccess: (updatedIncident, variables) => {
+      queryClient.setQueryData(incidentKeys.detail(variables.incidentId), updatedIncident);
+      queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.unassigned() });
     },
   });
 };
@@ -266,10 +282,8 @@ export const useAddWorklog = () => {
       const response = await api.post(`${ITSM_BASE}/incidents/${incidentId}/worklogs`, worklog) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: [INCIDENTS_KEY, variables.incidentId],
-      });
+    onSuccess: (updatedIncident, variables) => {
+      queryClient.setQueryData(incidentKeys.detail(variables.incidentId), updatedIncident);
     },
   });
 };
@@ -288,11 +302,10 @@ export const useEscalateIncident = () => {
       const response = await api.post(`${ITSM_BASE}/incidents/${incidentId}/escalate`, { reason }) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [INCIDENTS_KEY, variables.incidentId],
-      });
+    onSuccess: (updatedIncident, variables) => {
+      queryClient.setQueryData(incidentKeys.detail(variables.incidentId), updatedIncident);
+      queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: incidentKeys.stats() });
     },
   });
 };
@@ -311,10 +324,8 @@ export const useLinkIncidentToProblem = () => {
       const response = await api.post(`${ITSM_BASE}/incidents/${incidentId}/link-problem`, { problem_id: problemId }) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: [INCIDENTS_KEY, variables.incidentId],
-      });
+    onSuccess: (updatedIncident, variables) => {
+      queryClient.setQueryData(incidentKeys.detail(variables.incidentId), updatedIncident);
     },
   });
 };
@@ -334,9 +345,9 @@ export const useDeclareMajorIncident = () => {
       const response = await api.post(`${ITSM_BASE}/incidents/${incidentId}/declare-major`, { severity, bridge }) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
-    onSuccess: (_, { incidentId }) => {
-      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY, incidentId] });
-      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY, 'major'] });
+    onSuccess: (updatedIncident, { incidentId }) => {
+      queryClient.setQueryData(incidentKeys.detail(incidentId), updatedIncident);
+      queryClient.invalidateQueries({ queryKey: incidentKeys.major() });
     },
   });
 };
@@ -356,8 +367,8 @@ export const useAddCommsUpdate = () => {
       const response = await api.post(`${ITSM_BASE}/incidents/${incidentId}/comms-update`, { message, next_update_at }) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
-    onSuccess: (_, { incidentId }) => {
-      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY, incidentId] });
+    onSuccess: (updatedIncident, { incidentId }) => {
+      queryClient.setQueryData(incidentKeys.detail(incidentId), updatedIncident);
     },
   });
 };
@@ -375,8 +386,8 @@ export const useUpdateBridge = () => {
       const response = await api.patch(`${ITSM_BASE}/incidents/${incidentId}/bridge`, bridge) as IApiResponse<{ incident: IIncident }>;
       return response.data.incident;
     },
-    onSuccess: (_, { incidentId }) => {
-      queryClient.invalidateQueries({ queryKey: [INCIDENTS_KEY, incidentId] });
+    onSuccess: (updatedIncident, { incidentId }) => {
+      queryClient.setQueryData(incidentKeys.detail(incidentId), updatedIncident);
     },
   });
 };

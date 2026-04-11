@@ -32,21 +32,22 @@ The application will be available at `http://localhost:3000`
 This frontend application requires a backend API with the following endpoints:
 
 ### Authentication Endpoints
-- `POST /api/v2/auth/register` - Register new user
-- `POST /api/v2/auth/login` - User login
-- `GET /api/v2/auth/me` - Get current user info
-- `PATCH /api/v2/auth/profile` - Update user profile
-- `PATCH /api/v2/auth/password` - Change password
+- `POST /api/v2/core/auth/register` - Register new user
+- `POST /api/v2/core/auth/login` - User login
+- `POST /api/v2/core/auth/logout` - User logout
+- `POST /api/v2/core/auth/refresh` - Refresh JWT token
+- `GET /api/v2/core/auth/me` - Get current user info
+- `PATCH /api/v2/core/auth/profile` - Update user profile
+- `PATCH /api/v2/core/auth/password` - Change password
 
-### Task Endpoints
-- `GET /api/v2/tasks/today` - Get today's tasks
-- `GET /api/v2/tasks/my-tasks` - Get user's assigned tasks
-- `GET /api/v2/tasks/status/:status` - Get tasks by status
-- `GET /api/v2/tasks/:id` - Get task details
-- `PATCH /api/v2/tasks/:id/assign` - Assign task to user
-- `PATCH /api/v2/tasks/:id/start` - Start a task
-- `PATCH /api/v2/tasks/:id/complete` - Complete a task
-- `PATCH /api/v2/tasks/:id/usage` - Update inventory usage
+### Task Endpoints (project-scoped)
+- `GET /api/v2/projects/:projectId/tasks` - List tasks for a project
+  - Query params: `?dueDate=YYYY-MM-DD` (today's tasks), `?assignee=me` (my tasks), `?status=scheduled` (by status), `?product=:productId`
+- `POST /api/v2/projects/:projectId/tasks` - Create a new task in a project
+- `GET /api/v2/tasks/:id` - Get single task details
+- `PUT /api/v2/tasks/:id` - Update task (assign, edit fields)
+- `POST /api/v2/tasks/:id/transition` - Transition task status (start, complete)
+  - Body: `{ statusId: 'in-progress' | 'done', comment?: string }`
 
 ### Inventory Endpoints
 - `GET /api/v2/inventory` - Get all inventory items
@@ -66,13 +67,15 @@ This frontend application requires a backend API with the following endpoints:
 
 ## Role-Based Access
 
-The application supports three user roles:
+The application supports the following ITSM roles:
 
-- **prep**: Basic prep staff - Can view and complete tasks
-- **supervisor**: Team lead - Can assign tasks, manage products/inventory
-- **manager**: Full admin access - All features including user management
+- **end_user**: Self-service portal — submit and track service requests
+- **technician / agent**: Incident handling, task management, service request fulfillment
+- **manager**: Team oversight, reporting, approvals
+- **admin**: Full system access including user management and configuration
 
-Routes are protected based on these roles using the `ProtectedRoute` component.
+Project management uses separate project-level roles (owner, member, viewer).
+Routes are protected based on these roles using the `ProtectedRoute` component and the RBAC/ABAC authorization layer.
 
 ## State Management
 
@@ -83,17 +86,69 @@ Routes are protected based on these roles using the `ProtectedRoute` component.
 
 ### TanStack Query (Server State)
 - Handles all API data fetching with caching
-- Automatic refetching and invalidation
-- Query keys follow pattern: `['resource', ...params]`
+- `staleTime: 60s`, `refetchOnWindowFocus: false` (configured in `QueryProvider.tsx`)
+- Query keys use factory pattern: `incidentKeys.lists()`, `problemKeys.detail(id)`, etc.
+- Mutations use `setQueryData` + targeted `invalidateQueries` instead of broad collection invalidation
 
-## Socket.io Integration (Future)
+## Socket.io Integration (Active)
 
-The app includes Socket.io client setup for real-time features:
-- Task assignments
-- Low stock alerts
-- Notification updates
+The app uses a **shared, ref-counted WebSocket singleton** (`lib/socket.ts`) for real-time features:
 
-To enable, ensure your backend has Socket.io server running at `NEXT_PUBLIC_SOCKET_URL`.
+- `getSocket()` — returns or creates the shared connection
+- `releaseSocket()` — decrements ref count; disconnects when 0
+- All hooks (`useITSMSocket`, `usePortfolioSocket`, `useSelfServiceSocket`, `usePlanningPoker`) share this single connection
+
+Events handled:
+- Incident/problem/change/service-request created/updated
+- Planning poker sessions
+- Portfolio notifications
+
+Ensure your backend has Socket.io running at `NEXT_PUBLIC_SOCKET_URL`.
+
+## ITSM Endpoints
+
+- `GET/POST /api/v2/itsm/incidents` — Incident list/create
+- `GET/PATCH /api/v2/itsm/incidents/:id` — Incident detail/update
+- `GET/POST /api/v2/itsm/problems` — Problem list/create
+- `POST /api/v2/itsm/problems/:id/known-error` — Mark as known error
+- `GET/POST /api/v2/itsm/changes` — Change list/create
+- `POST /api/v2/itsm/changes/:id/cab/approve` — CAB approval
+- `GET /api/v2/itsm/service-catalog` — Service catalog
+- `GET/POST /api/v2/itsm/service-requests` — Service requests
+- `GET /api/v2/itsm/cmdb/config-items` — CMDB items
+
+## Query Key Conventions
+
+All ITSM hooks export a key factory for targeted cache invalidation:
+
+```typescript
+export const incidentKeys = {
+  all: ['incidents'] as const,
+  lists: () => [...incidentKeys.all, 'list'] as const,
+  detail: (id: string) => ['incidents', id] as const,
+  stats: () => ['incidents', 'stats'] as const,
+  // ...
+};
+```
+
+Equivalent factories exist for `problemKeys`, `changeKeys`, and `requestKeys`.
+
+Mutations should:
+1. Call `setQueryData(keys.detail(id), updatedEntity)` for optimistic cache updates
+2. Invalidate only the affected list/stat keys, never the bare collection key
+
+## Pre-merge Checklist
+
+Before merging, run the contract test suite to verify API route alignment:
+
+```bash
+npx vitest run tests/contracts/
+```
+
+This validates:
+- Auth routes use `/v2/core/auth/*`
+- Task routes are project-scoped
+- ITSM mutations use targeted query key invalidation
 
 ## Development Tips
 

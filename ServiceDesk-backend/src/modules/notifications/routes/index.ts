@@ -24,6 +24,7 @@ router.get(
   [
     query('source').optional().isIn(Object.values(NotificationSource)),
     query('isRead').optional().isBoolean(),
+    query('projectId').optional().isMongoId(),
     query('limit').optional().isInt({ min: 1, max: 100 }),
   ],
   notifCtrl.listNotifications
@@ -56,5 +57,15 @@ router.put(
  * Mark all notifications as read
  */
 router.put('/read-all', notifCtrl.markAllAsRead);
+
+/**
+ * DELETE /api/v2/notifications/:notifId
+ * Delete a notification
+ */
+router.delete(
+  '/:notifId',
+  [param('notifId').isMongoId().withMessage('Invalid notification ID')],
+  notifCtrl.deleteNotification
+);
 
 export default router;

@@ -1,15 +1,27 @@
 /**
- * @deprecated Use modules/notifications/services/NotificationService.ts instead.
- * This file is retained for backward compatibility with PM controllers.
- * New code should use the NotificationDispatcher from modules/notifications.
+ * PM Notification Helper
+ *
+ * Delegates to modules/notifications unified service.
+ * Keeps the same exported function signatures so PM controllers work unchanged.
  */
 
 import mongoose from 'mongoose';
-import PMNotification from '../models/Notification';
 import Project from '../models/Project';
 import logger from '../../../utils/logger';
+import { notificationService } from '../../notifications/services/NotificationService';
+import { NotificationSource, NotificationType as UnifiedType } from '../../notifications/domain/interfaces';
 
 type NotificationType = 'task' | 'comment' | 'mention' | 'assignment' | 'deadline' | 'system';
+
+/** Maps PM-specific type strings to unified NotificationType enum values */
+const PM_TYPE_MAP: Record<NotificationType, UnifiedType> = {
+  task: UnifiedType.TASK,
+  comment: UnifiedType.COMMENT,
+  mention: UnifiedType.MENTION,
+  assignment: UnifiedType.ASSIGNMENT,
+  deadline: UnifiedType.DEADLINE,
+  system: UnifiedType.SYSTEM,
+};
 
 interface NotificationPayload {
   projectId: string | mongoose.Types.ObjectId;
@@ -29,9 +41,16 @@ export const notifyUser = async (
   payload: NotificationPayload
 ): Promise<void> => {
   try {
-    await PMNotification.create({
-      userId,
-      ...payload,
+    await notificationService.create({
+      userId: userId.toString(),
+      type: PM_TYPE_MAP[payload.type] ?? UnifiedType.SYSTEM,
+      source: NotificationSource.PM,
+      title: payload.title,
+      message: payload.message,
+      projectId: payload.projectId.toString(),
+      organizationId: payload.organizationId.toString(),
+      actionUrl: payload.actionUrl,
+      metadata: payload.metadata,
     });
   } catch (err) {
     logger.error('notifyUser failed:', err);
@@ -52,9 +71,16 @@ export const notifyUsers = async (
       (id) => id !== excludeStr
     );
     if (unique.length === 0) return;
-    await PMNotification.insertMany(
-      unique.map((userId) => ({ userId, ...payload }))
-    );
+    await notificationService.createBulk(unique, {
+      type: PM_TYPE_MAP[payload.type] ?? UnifiedType.SYSTEM,
+      source: NotificationSource.PM,
+      title: payload.title,
+      message: payload.message,
+      projectId: payload.projectId.toString(),
+      organizationId: payload.organizationId.toString(),
+      actionUrl: payload.actionUrl,
+      metadata: payload.metadata,
+    });
   } catch (err) {
     logger.error('notifyUsers failed:', err);
   }

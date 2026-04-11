@@ -154,7 +154,7 @@ export default function ProjectMembersPanel({ projectId }: ProjectMembersPanelPr
     setIsLoadingUsers(true);
     try {
       const response = await fetch(
-        `${API_URL}/users/search?q=${encodeURIComponent(query.trim())}&limit=10`,
+        `${API_URL}/core/users/search?q=${encodeURIComponent(query.trim())}&limit=10`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

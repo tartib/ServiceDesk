@@ -381,9 +381,7 @@ export default function BacklogPage() {
       }
       if (backlogData.success) setBacklogTasks(backlogData.data.tasks || []);
       if (membersData.success) {
-        console.log('📋 Members API Response:', membersData);
         const members = membersData.data?.members || [];
-        console.log('👥 Raw members array:', members);
         
         const mappedMembers = members
           .map((m: { userId?: { _id: string; profile?: { firstName: string; lastName: string; avatar?: string } }; user?: { _id: string; profile?: { firstName: string; lastName: string; avatar?: string } }; _id?: string; profile?: { firstName: string; lastName: string; avatar?: string } }) => {
@@ -404,7 +402,6 @@ export default function BacklogPage() {
           })
           .filter((m: { _id: string; profile: { firstName: string; lastName: string; avatar?: string } } | null): m is { _id: string; profile: { firstName: string; lastName: string; avatar?: string } } => m !== null);
         
-        console.log('✅ Mapped members:', mappedMembers);
         setProjectMembers(mappedMembers);
       } else {
         console.error('❌ Members API failed:', membersData);
@@ -478,14 +475,12 @@ export default function BacklogPage() {
     const orgId = project?.organizationId || project?.organization;
     if (orgId) headers['X-Organization-ID'] = orgId;
     try {
-      console.log('🚀 Creating sprint:', newSprintData);
       const res = await fetch(`${API_URL}/pm/projects/${projectId}/sprints`, {
         method: 'POST',
         headers,
         body: JSON.stringify(newSprintData),
       });
       const data = await res.json();
-      console.log('📋 Create sprint response:', data);
       if (data.success) {
         setShowNewSprintModal(false);
         setNewSprintData({ name: '', startDate: '', endDate: '', goal: '' });

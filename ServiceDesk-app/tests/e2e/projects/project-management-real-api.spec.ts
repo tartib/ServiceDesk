@@ -89,7 +89,7 @@ test.describe('Project Management - Real API Tests', () => {
     expect(token).toBeTruthy();
     
     // Get user info to find organization
-    const userResponse = await apiCall(token, 'GET', '/api/v2/auth/me');
+    const userResponse = await apiCall(token, 'GET', '/api/v2/core/auth/me');
     if (userResponse.success && userResponse.data?.user?.organizations?.length > 0) {
       organizationId = userResponse.data.user.organizations[0];
     }

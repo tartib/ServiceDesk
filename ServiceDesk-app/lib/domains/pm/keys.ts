@@ -40,4 +40,9 @@ export const pmKeys = {
     list: () => ['pm', 'categories', 'list'] as const,
     detail: (id: string) => ['pm', 'categories', id] as const,
   },
+
+  map: {
+    view: (projectId: string, filters?: Record<string, unknown>) =>
+      ['pm', 'map', 'view', projectId, filters] as const,
+  },
 } as const;

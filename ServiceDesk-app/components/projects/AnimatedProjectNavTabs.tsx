@@ -10,6 +10,7 @@ import {
   BarChart3,
   Users,
   Settings,
+  GitBranch,
 } from 'lucide-react';
 
 interface TabItem {
@@ -30,6 +31,7 @@ export default function AnimatedProjectNavTabs({ projectId }: AnimatedProjectNav
     { label: 'Board', href: `/projects/${projectId}/board`, icon: <LayoutGrid className="h-4 w-4" /> },
     { label: 'Backlog', href: `/projects/${projectId}/backlog`, icon: <ListTodo className="h-4 w-4" /> },
     { label: 'Planning', href: `/projects/${projectId}/planning`, icon: <Calendar className="h-4 w-4" /> },
+    { label: 'Map', href: `/projects/${projectId}/map`, icon: <GitBranch className="h-4 w-4" /> },
     { label: 'Reports', href: `/projects/${projectId}/reports`, icon: <BarChart3 className="h-4 w-4" /> },
     { label: 'Team', href: `/projects/${projectId}/team`, icon: <Users className="h-4 w-4" /> },
     { label: 'Settings', href: `/projects/${projectId}/settings`, icon: <Settings className="h-4 w-4" /> },

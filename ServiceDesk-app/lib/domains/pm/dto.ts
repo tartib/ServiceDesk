@@ -86,3 +86,36 @@ export interface CommentDTO {
   created_at?: string;
   updated_at?: string;
 }
+
+// ── Map View ──────────────────────────────────────────────────
+
+export interface MapNodeDataDTO {
+  title: string;
+  key: string;
+  status: string;
+  statusCategory: string;
+  priority: string;
+  type: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  assigneeAvatar?: string;
+  labels: string[];
+  storyPoints?: number;
+}
+
+export interface MapNodeDTO {
+  id: string;
+  data: MapNodeDataDTO;
+}
+
+export interface MapEdgeDTO {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+}
+
+export interface ProjectMapViewDTO {
+  nodes: MapNodeDTO[];
+  edges: MapEdgeDTO[];
+}

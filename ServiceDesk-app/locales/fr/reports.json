@@ -1,10 +1,10 @@
 {
   "reports": {
-    "title": "Rapports",
-    "subtitle": "Consultez les analyses et rapports détaillés de vos tâches",
+    "title": "Rapports et Analyses",
+    "subtitle": "Analyses unifiées ITSM et gestion de projets",
     "totalTasks": "Total des tâches",
     "completionRate": "Taux d'achèvement",
-    "avgPrepTime": "Temps de préparation moyen",
+    "avgResolutionTime": "Temps de résolution moyen",
     "onTimeTasks": "Tâches dans les délais",
     "fromLastWeek": "par rapport à la semaine dernière",
     "detailedReports": "Rapports détaillés",
@@ -20,8 +20,48 @@
     "weeklyBreakdown": "Ventilation hebdomadaire",
     "week": "Semaine",
     "noData": "Aucune donnée disponible pour la période sélectionnée",
-    "comingSoon": "Bientôt disponible",
-    "advancedAnalytics": "Analytique avancée",
-    "comingSoonDescription": "Les graphiques et analyses détaillés seront bientôt disponibles."
+    "tab": {
+      "itsm": "Analyses ITSM",
+      "pm": "Analyses Projets",
+      "legacy": "Rapports Tâches"
+    },
+    "itsm": {
+      "incidents": "Incidents",
+      "openIncidents": "Incidents ouverts",
+      "inProgress": "En cours",
+      "mttr": "MTTR",
+      "breachedSla": "SLA violé",
+      "slaCompliance": "Conformité SLA",
+      "complianceRate": "Taux de conformité",
+      "totalMeasured": "Total mesuré",
+      "totalBreached": "Total violé",
+      "problems": "Problèmes",
+      "openProblems": "Problèmes ouverts",
+      "knownErrors": "Erreurs connues",
+      "resolutionRate": "Taux de résolution",
+      "avgAge": "Âge moyen",
+      "changes": "Changements",
+      "pendingApproval": "En attente d'approbation",
+      "scheduled": "Planifié",
+      "successRate": "Taux de réussite",
+      "emergencyChanges": "Changements d'urgence",
+      "incidentTrend": "Tendance incidents (7 jours)"
+    },
+    "pm": {
+      "projects": "Projets",
+      "totalProjects": "Total projets",
+      "activeProjects": "Projets actifs",
+      "archivedProjects": "Archivés",
+      "taskStats": "Statistiques des tâches",
+      "inProgress": "En cours",
+      "storyPoints": "Points de story",
+      "pointsCompletion": "Complétion des points",
+      "sprints": "Sprints",
+      "totalSprints": "Total sprints",
+      "activeSprints": "Sprints actifs",
+      "completedSprints": "Sprints terminés",
+      "avgVelocity": "Vélocité moyenne",
+      "velocityTrend": "Tendance de vélocité"
+    }
   }
 }

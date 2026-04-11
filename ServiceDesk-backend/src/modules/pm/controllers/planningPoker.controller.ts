@@ -12,11 +12,6 @@ const STORY_POINT_VALUES = [1, 2, 3, 5, 8, 13, 21];
 // Create a new planning poker session for a task
 export const createSession = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    // Debug logging
-    console.log('Planning Poker - Request body:', JSON.stringify(req.body));
-    console.log('Planning Poker - Request params:', JSON.stringify(req.params));
-    
-
     const userId = req.user?.id;
     
     const { taskId } = req.params;
@@ -31,7 +26,6 @@ export const createSession = async (req: PMAuthRequest, res: Response): Promise<
     }
 
     const task = await Task.findById(taskId);
-    console.log('Planning Poker - task found:', task ? task._id : 'null');
     if (!task) {
       res.status(404).json({
         success: false,

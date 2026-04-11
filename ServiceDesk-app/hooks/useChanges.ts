@@ -14,6 +14,19 @@ import {
 const ITSM_BASE = '/api/v2/itsm';
 const CHANGES_KEY = 'changes';
 
+export const changeKeys = {
+  all: [CHANGES_KEY] as const,
+  lists: () => [...changeKeys.all, 'list'] as const,
+  list: (filters?: Record<string, unknown>) => [...changeKeys.lists(), filters] as const,
+  details: () => [...changeKeys.all, 'detail'] as const,
+  detail: (id: string) => [CHANGES_KEY, id] as const,
+  stats: (siteId?: string) => [CHANGES_KEY, 'stats', siteId] as const,
+  pendingCab: () => [CHANGES_KEY, 'pending-cab'] as const,
+  scheduled: (start: string, end: string) => [CHANGES_KEY, 'scheduled', start, end] as const,
+  emergency: () => [CHANGES_KEY, 'emergency'] as const,
+  myRequests: (page?: number, limit?: number) => [CHANGES_KEY, 'my-requests', page, limit] as const,
+};
+
 // ============================================
 // Query Hooks
 // ============================================
@@ -147,7 +160,8 @@ export const useCreateChange = () => {
       return response.data.change;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [CHANGES_KEY] });
+      queryClient.invalidateQueries({ queryKey: changeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: changeKeys.stats() });
     },
   });
 };
@@ -169,11 +183,9 @@ export const useUpdateChange = () => {
       );
       return response.data.change;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [CHANGES_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [CHANGES_KEY, variables.changeId],
-      });
+    onSuccess: (updatedChange, variables) => {
+      queryClient.setQueryData(changeKeys.detail(variables.changeId), updatedChange);
+      queryClient.invalidateQueries({ queryKey: changeKeys.lists() });
     },
   });
 };
@@ -188,9 +200,10 @@ export const useSubmitChangeForApproval = () => {
       );
       return response.data.change;
     },
-    onSuccess: (_, changeId) => {
-      queryClient.invalidateQueries({ queryKey: [CHANGES_KEY] });
-      queryClient.invalidateQueries({ queryKey: [CHANGES_KEY, changeId] });
+    onSuccess: (updatedChange, changeId) => {
+      queryClient.setQueryData(changeKeys.detail(changeId), updatedChange);
+      queryClient.invalidateQueries({ queryKey: changeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: changeKeys.pendingCab() });
     },
   });
 };
@@ -216,11 +229,10 @@ export const useAddCabApproval = () => {
       );
       return response.data.change;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [CHANGES_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [CHANGES_KEY, variables.changeId],
-      });
+    onSuccess: (updatedChange, variables) => {
+      queryClient.setQueryData(changeKeys.detail(variables.changeId), updatedChange);
+      queryClient.invalidateQueries({ queryKey: changeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: changeKeys.pendingCab() });
     },
   });
 };
@@ -246,11 +258,9 @@ export const useScheduleChange = () => {
       );
       return response.data.change;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [CHANGES_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [CHANGES_KEY, variables.changeId],
-      });
+    onSuccess: (updatedChange, variables) => {
+      queryClient.setQueryData(changeKeys.detail(variables.changeId), updatedChange);
+      queryClient.invalidateQueries({ queryKey: changeKeys.lists() });
     },
   });
 };
@@ -265,9 +275,9 @@ export const useStartImplementation = () => {
       );
       return response.data.change;
     },
-    onSuccess: (_, changeId) => {
-      queryClient.invalidateQueries({ queryKey: [CHANGES_KEY] });
-      queryClient.invalidateQueries({ queryKey: [CHANGES_KEY, changeId] });
+    onSuccess: (updatedChange, changeId) => {
+      queryClient.setQueryData(changeKeys.detail(changeId), updatedChange);
+      queryClient.invalidateQueries({ queryKey: changeKeys.lists() });
     },
   });
 };
@@ -291,11 +301,10 @@ export const useCompleteChange = () => {
       );
       return response.data.change;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [CHANGES_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [CHANGES_KEY, variables.changeId],
-      });
+    onSuccess: (updatedChange, variables) => {
+      queryClient.setQueryData(changeKeys.detail(variables.changeId), updatedChange);
+      queryClient.invalidateQueries({ queryKey: changeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: changeKeys.stats() });
     },
   });
 };
@@ -317,11 +326,10 @@ export const useCancelChange = () => {
       );
       return response.data.change;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [CHANGES_KEY] });
-      queryClient.invalidateQueries({
-        queryKey: [CHANGES_KEY, variables.changeId],
-      });
+    onSuccess: (updatedChange, variables) => {
+      queryClient.setQueryData(changeKeys.detail(variables.changeId), updatedChange);
+      queryClient.invalidateQueries({ queryKey: changeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: changeKeys.stats() });
     },
   });
 };

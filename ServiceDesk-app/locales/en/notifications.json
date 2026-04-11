@@ -1,0 +1,20 @@
+{
+  "notifications": {
+    "title": "Notifications",
+    "filterAll": "All",
+    "filterUnread": "Unread",
+    "read": "Read",
+    "markAllRead": "Mark all as read",
+    "markRead": "Mark as read",
+    "empty": "No notifications",
+    "emptyHint": "You'll see task reminders, alerts, and updates here",
+    "loading": "Loading notifications...",
+    "unreadCount": "unread notifications",
+    "view": "View",
+    "viewAll": "View all",
+    "viewAllNotifications": "View all notifications \u2192",
+    "deleted": "Notification deleted",
+    "markedRead": "Notification marked as read",
+    "allMarkedRead": "All notifications marked as read"
+  }
+}

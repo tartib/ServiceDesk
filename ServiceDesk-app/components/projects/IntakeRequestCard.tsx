@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock, TrendingUp, Wrench, Search, Server } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -46,7 +47,7 @@ function formatTimeAgo(dateStr: string, t: (key: string) => string): string {
   return `${mins}${t('intake.card.timeAgo.minutes')}`;
 }
 
-export default function IntakeRequestCard({ request }: { request: IntakeRequest }) {
+function IntakeRequestCard({ request }: { request: IntakeRequest }) {
   const router = useRouter();
   const { t } = useLanguage();
   const priorityColor = priorityColors[request.priority] || priorityColors.medium;
@@ -110,3 +111,5 @@ export default function IntakeRequestCard({ request }: { request: IntakeRequest 
     </div>
   );
 }
+
+export default React.memo(IntakeRequestCard);

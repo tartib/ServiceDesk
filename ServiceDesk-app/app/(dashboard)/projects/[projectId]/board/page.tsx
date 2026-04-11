@@ -294,12 +294,6 @@ export default function ProjectBoardPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-      console.log('📋 Board API response:', { 
-        success: data.success, 
-        columns: data.data?.board?.columns?.map((c: { statusId: string; name: string }) => c.name),
-        activeSprint: data.data?.activeSprint?.name,
-        taskCount: Object.values(data.data?.tasksByStatus || {}).flat().length,
-      });
       if (data.success) {
         setTasksByStatus(data.data.tasksByStatus || {});
         if (data.data.activeSprint) {

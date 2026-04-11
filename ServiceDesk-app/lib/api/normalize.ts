@@ -85,6 +85,7 @@ function extractArray(raw: unknown): unknown[] {
   if (Array.isArray(obj.items)) return obj.items;
   if (Array.isArray(obj.data)) return obj.data;
   if (Array.isArray(obj.tasks)) return obj.tasks;
+  if (Array.isArray(obj.notifications)) return obj.notifications;
   if (Array.isArray(obj.results)) return obj.results;
 
   // Nested: { data: { items: T[] } }

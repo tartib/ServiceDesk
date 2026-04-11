@@ -580,6 +580,16 @@
       "addItem": "Add Item"
     },
 
+    "map": {
+      "title": "Map",
+      "legend": "Legend",
+      "connections": "Connections",
+      "empty": "No tasks to display",
+      "emptyHint": "Create tasks or adjust your filters to see the map",
+      "horizontal": "Horizontal Layout",
+      "vertical": "Vertical Layout"
+    },
+
     "milestones": {
       "title": "Milestones",
       "upcoming": "Upcoming Milestones",

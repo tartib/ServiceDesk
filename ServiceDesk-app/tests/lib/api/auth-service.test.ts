@@ -5,11 +5,11 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import authService from '@/lib/api/auth-service';
-import axiosInstance from '@/lib/api/axios-instance';
+import authAxios from '@/lib/api/auth-client';
 import * as csrfModule from '@/lib/api/csrf';
 
-// Mock axios instance
-vi.mock('@/lib/api/axios-instance');
+// Mock auth client
+vi.mock('@/lib/api/auth-client');
 
 // Mock CSRF module
 vi.mock('@/lib/api/csrf', () => ({
@@ -29,7 +29,7 @@ describe('AuthService', () => {
       const mockFetchCsrf = vi.spyOn(csrfModule, 'fetchCsrfToken');
       mockFetchCsrf.mockResolvedValue('test-csrf-token');
 
-      vi.mocked(axiosInstance.post).mockResolvedValue({
+      vi.mocked(authAxios.post).mockResolvedValue({
         data: {
           success: true,
           data: {
@@ -39,8 +39,10 @@ describe('AuthService', () => {
               email: 'test@example.com',
               role: 'user',
             },
-            token: 'jwt-token',
-            refreshToken: 'refresh-token',
+            tokens: {
+              accessToken: 'jwt-token',
+              refreshToken: 'refresh-token',
+            },
           },
         },
       });
@@ -56,7 +58,7 @@ describe('AuthService', () => {
     it('should store tokens in localStorage on successful login', async () => {
       vi.spyOn(csrfModule, 'fetchCsrfToken').mockResolvedValue('csrf-token');
 
-      vi.mocked(axiosInstance.post).mockResolvedValue({
+      vi.mocked(authAxios.post).mockResolvedValue({
         data: {
           success: true,
           data: {
@@ -66,8 +68,10 @@ describe('AuthService', () => {
               email: 'test@example.com',
               role: 'user',
             },
-            token: 'jwt-token',
-            refreshToken: 'refresh-token',
+            tokens: {
+              accessToken: 'jwt-token',
+              refreshToken: 'refresh-token',
+            },
           },
         },
       });
@@ -84,7 +88,7 @@ describe('AuthService', () => {
     it('should make POST request with credentials', async () => {
       vi.spyOn(csrfModule, 'fetchCsrfToken').mockResolvedValue('csrf-token');
 
-      vi.mocked(axiosInstance.post).mockResolvedValue({
+      vi.mocked(authAxios.post).mockResolvedValue({
         data: {
           success: true,
           data: {
@@ -94,8 +98,10 @@ describe('AuthService', () => {
               email: 'test@example.com',
               role: 'user',
             },
-            token: 'jwt-token',
-            refreshToken: 'refresh-token',
+            tokens: {
+              accessToken: 'jwt-token',
+              refreshToken: 'refresh-token',
+            },
           },
         },
       });
@@ -105,7 +111,7 @@ describe('AuthService', () => {
         password: 'password123',
       });
 
-      expect(axiosInstance.post).toHaveBeenCalledWith('/auth/login', {
+      expect(authAxios.post).toHaveBeenCalledWith('/v2/core/auth/login', {
         email: 'test@example.com',
         password: 'password123',
       });
@@ -115,7 +121,7 @@ describe('AuthService', () => {
       vi.spyOn(csrfModule, 'fetchCsrfToken').mockResolvedValue('csrf-token');
 
       const error = new Error('Invalid credentials');
-      vi.mocked(axiosInstance.post).mockRejectedValue(error);
+      vi.mocked(authAxios.post).mockRejectedValue(error);
 
       await expect(
         authService.login({
@@ -131,7 +137,7 @@ describe('AuthService', () => {
       localStorage.setItem('token', 'jwt-token');
       localStorage.setItem('refreshToken', 'refresh-token');
 
-      vi.mocked(axiosInstance.post).mockResolvedValue({ data: {} });
+      vi.mocked(authAxios.post).mockResolvedValue({ data: {} });
 
       await authService.logout();
 
@@ -142,7 +148,7 @@ describe('AuthService', () => {
     it('should clear CSRF token on logout', async () => {
       const mockClearCsrf = vi.spyOn(csrfModule, 'clearCsrfToken');
 
-      vi.mocked(axiosInstance.post).mockResolvedValue({ data: {} });
+      vi.mocked(authAxios.post).mockResolvedValue({ data: {} });
 
       await authService.logout();
 
@@ -186,7 +192,7 @@ describe('AuthService', () => {
     it('should refresh JWT token', async () => {
       localStorage.setItem('refreshToken', 'refresh-token');
 
-      vi.mocked(axiosInstance.post).mockResolvedValue({
+      vi.mocked(authAxios.post).mockResolvedValue({
         data: {
           data: {
             token: 'new-jwt-token',
@@ -198,13 +204,14 @@ describe('AuthService', () => {
 
       expect(newToken).toBe('new-jwt-token');
       expect(localStorage.getItem('token')).toBe('new-jwt-token');
+      expect(authAxios.post).toHaveBeenCalledWith('/v2/core/auth/refresh', { refreshToken: 'refresh-token' });
     });
 
     it('should clear tokens on refresh failure', async () => {
       localStorage.setItem('token', 'jwt-token');
       localStorage.setItem('refreshToken', 'refresh-token');
 
-      vi.mocked(axiosInstance.post).mockRejectedValue(new Error('Refresh failed'));
+      vi.mocked(authAxios.post).mockRejectedValue(new Error('Refresh failed'));
 
       await expect(authService.refreshToken()).rejects.toThrow('Refresh failed');
 

@@ -24,6 +24,7 @@ export const listNotifications = async (req: Request, res: Response): Promise<vo
         userId,
         isRead,
         source: req.query.source as NotificationSource | undefined,
+        projectId: req.query.projectId as string | undefined,
       },
       limit
     );
@@ -86,5 +87,21 @@ export const markAllAsRead = async (req: Request, res: Response): Promise<void> 
   } catch (error) {
     logger.error('Error marking all notifications as read', { error });
     sendError(req, res, 500, 'Failed to mark all as read');
+  }
+};
+
+export const deleteNotification = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const deleted = await notificationService.deleteNotification(req.params.notifId);
+
+    if (!deleted) {
+      sendError(req, res, 404, 'Notification not found');
+      return;
+    }
+
+    sendSuccess(req, res, null, 'Notification deleted');
+  } catch (error) {
+    logger.error('Error deleting notification', { error });
+    sendError(req, res, 500, 'Failed to delete notification');
   }
 };

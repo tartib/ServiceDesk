@@ -251,7 +251,7 @@ export default function HomePage() {
   const { data: notificationsData, isLoading: notificationsLoading } = useNotifications();
   const { mutate: markAsRead } = useMarkNotificationAsRead();
   
-  const notifications = notificationsData?.data || [];
+  const notifications = notificationsData?.notifications || [];
   const unreadNotifications = notifications.filter((n) => !n.isRead);
   const recentNotifications = notifications.slice(0, 5);
 
@@ -377,14 +377,14 @@ export default function HomePage() {
               <div className="absolute right-0 mt-2 w-80 bg-card border border-border rounded-lg shadow-lg z-20">
                 <div className="flex items-center justify-between px-4 py-3 border-b">
                   <h3 className="font-semibold text-sm">
-                    {locale === 'ar' ? 'الإشعارات' : 'Notifications'}
+                    {t('notifications.title')}
                   </h3>
                   {unreadNotifications.length > 0 && (
                     <button
                       onClick={() => router.push('/notifications')}
                       className="text-xs text-blue-600 hover:text-blue-700"
                     >
-                      {locale === 'ar' ? 'عرض الكل' : 'View all'}
+                      {t('notifications.viewAll')}
                     </button>
                   )}
                 </div>
@@ -397,7 +397,7 @@ export default function HomePage() {
                     <div className="px-4 py-8 text-center">
                       <Bell className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                       <p className="text-sm text-muted-foreground">
-                        {locale === 'ar' ? 'لا توجد إشعارات' : 'No notifications'}
+                        {t('notifications.empty')}
                       </p>
                     </div>
                   ) : (
@@ -449,7 +449,7 @@ export default function HomePage() {
                     }}
                     className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    {locale === 'ar' ? 'عرض جميع الإشعارات →' : 'View all notifications →'}
+                    {t('notifications.viewAllNotifications')}
                   </button>
                 </div>
               </div>

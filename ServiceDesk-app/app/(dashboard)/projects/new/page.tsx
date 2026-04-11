@@ -98,6 +98,12 @@ export default function NewProjectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (formData.key.length < 2 || formData.key.length > 10) {
+      setError('Project key must be 2-10 characters');
+      return;
+    }
+
     setIsLoading(true);
 
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
@@ -126,7 +132,8 @@ export default function NewProjectPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error?.message || data.error || 'Failed to create project');
+        const validationErrors = data.details?.errors?.map((e: { field: string; message: string }) => e.message).join(', ');
+        throw new Error(validationErrors || data.error?.message || data.error || data.message || 'Failed to create project');
       }
 
       const projectId = data.data?.project?._id || data.data?._id;
@@ -246,6 +253,7 @@ export default function NewProjectPage() {
                     <input
                       type="text"
                       required
+                      minLength={2}
                       maxLength={10}
                       value={formData.key}
                       onChange={(e) => {
@@ -369,7 +377,7 @@ export default function NewProjectPage() {
               </Link>
               <button
                 type="submit"
-                disabled={isLoading || !formData.methodology || !formData.name || !formData.key}
+                disabled={isLoading || !formData.methodology || !formData.name || formData.key.length < 2}
                 className="flex items-center gap-2 px-8 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm"
               >
                 {isLoading ? (

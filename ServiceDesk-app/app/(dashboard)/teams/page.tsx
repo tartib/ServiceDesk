@@ -160,12 +160,14 @@ export default function TeamsPage() {
     try {
       await addMember.mutateAsync({
         teamId: selectedTeam._id,
-        data: { user_id: userId, role },
+        data: { userId, role },
       });
       setAddedUserIds((prev) => new Set(prev).add(userId));
       refetch();
-    } catch (error) {
-      console.error('Error adding member:', error);
+    } catch (error: unknown) {
+      const axiosErr = error as { response?: { data?: { error?: string } } };
+      const msg = axiosErr?.response?.data?.error || (isAr ? 'فشل في إضافة العضو' : 'Failed to add member');
+      alert(msg);
     }
   };
 
@@ -204,7 +206,7 @@ export default function TeamsPage() {
   const availableUsers = useMemo(() => {
     const base = selectedTeam
       ? users.filter((user: { _id: string }) =>
-          !selectedTeam.members.some((m) => m.user_id._id === user._id)
+          !selectedTeam.members.some((m) => m.user_id?._id === user._id)
         )
       : users;
 
@@ -325,7 +327,7 @@ export default function TeamsPage() {
 
                       {team.members && team.members.length > 0 ? (
                         <div className="space-y-2 max-h-40 overflow-y-auto">
-                          {team.members.map((member: TeamMember) => (
+                          {team.members.filter((member: TeamMember) => member.user_id).map((member: TeamMember) => (
                             <div
                               key={member.user_id._id}
                               className="flex items-center justify-between group/member py-1.5 px-2 -mx-2 rounded-lg hover:bg-accent transition-colors"

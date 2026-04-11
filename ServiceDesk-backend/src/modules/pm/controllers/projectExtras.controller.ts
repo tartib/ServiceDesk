@@ -8,8 +8,8 @@ import PMMilestone from '../models/Milestone';
 import PMImprovement from '../models/Improvement';
 import PMValueStreamStep from '../models/ValueStreamStep';
 import PMProjectFile from '../models/ProjectFile';
-import PMNotification from '../models/Notification';
 import PMReport from '../models/Report';
+import { notificationService } from '../../notifications/services/NotificationService';
 
 // Helper: resolve organizationId from the project document
 const getOrgIdFromProject = async (projectId: string): Promise<string | null> => {
@@ -313,13 +313,13 @@ export const deleteProjectFile = async (req: PMAuthRequest, res: Response): Prom
   }
 };
 
-// ─── NOTIFICATIONS ────────────────────────────────────────────────────
+// ─── NOTIFICATIONS (proxied to unified notification service) ──────────
 
 export const getNotifications = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const { projectId } = req.params;
     const userId = req.user?.id;
-    const notifications = await PMNotification.find({ projectId, userId }).sort({ createdAt: -1 }).limit(50);
+    const notifications = await notificationService.getByUser({ userId: userId!, projectId }, 50);
     res.json({ success: true, data: { notifications } } as ApiResponse);
   } catch (error) {
     logger.error('Get notifications error:', error);
@@ -330,7 +330,7 @@ export const getNotifications = async (req: PMAuthRequest, res: Response): Promi
 export const markNotificationRead = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const { notificationId } = req.params;
-    const notification = await PMNotification.findByIdAndUpdate(notificationId, { read: true }, { new: true });
+    const notification = await notificationService.markAsRead(notificationId);
     if (!notification) { res.status(404).json({ success: false, message: 'Notification not found' } as ApiResponse); return; }
     res.json({ success: true, data: { notification } } as ApiResponse);
   } catch (error) {
@@ -341,9 +341,8 @@ export const markNotificationRead = async (req: PMAuthRequest, res: Response): P
 
 export const markAllNotificationsRead = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
     const userId = req.user?.id;
-    await PMNotification.updateMany({ projectId, userId, read: false }, { read: true });
+    await notificationService.markAllAsRead(userId!);
     res.json({ success: true, message: 'All notifications marked as read' } as ApiResponse);
   } catch (error) {
     logger.error('Mark all notifications read error:', error);
@@ -354,7 +353,7 @@ export const markAllNotificationsRead = async (req: PMAuthRequest, res: Response
 export const deleteNotification = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const { notificationId } = req.params;
-    await PMNotification.findByIdAndDelete(notificationId);
+    await notificationService.deleteNotification(notificationId);
     res.json({ success: true, message: 'Notification deleted' } as ApiResponse);
   } catch (error) {
     logger.error('Delete notification error:', error);

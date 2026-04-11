@@ -58,8 +58,6 @@ describe('useTasks Hooks', () => {
     });
 
     it('should not fetch if projectId is empty', () => {
-      mockApi.get.mockResolvedValueOnce({ data: [] });
-
       const { result } = renderHook(() => useAllTasks(''), { wrapper });
 
       expect(result.current.isLoading).toBe(false);
@@ -74,7 +72,7 @@ describe('useTasks Hooks', () => {
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
-      }, { timeout: 5000 });
+      });
 
       expect(result.current.error).toBeDefined();
     });
@@ -115,8 +113,6 @@ describe('useTasks Hooks', () => {
     });
 
     it('should not fetch if projectId is empty', () => {
-      mockApi.get.mockResolvedValueOnce({ data: [] });
-
       const { result } = renderHook(() => useTodayTasks(''), { wrapper });
 
       expect(result.current.isLoading).toBe(false);
@@ -168,8 +164,6 @@ describe('useTasks Hooks', () => {
     });
 
     it('should not fetch if status is missing', () => {
-      mockApi.get.mockResolvedValueOnce({ data: [] });
-
       const { result } = renderHook(() => useTasksByStatus('project-123', '' as TaskStatus), { wrapper });
 
       expect(result.current.isLoading).toBe(false);
@@ -193,8 +187,6 @@ describe('useTasks Hooks', () => {
     });
 
     it('should not fetch if taskId is empty', () => {
-      mockApi.get.mockResolvedValueOnce({ data: {} });
-
       const { result } = renderHook(() => useTask(''), { wrapper });
 
       expect(result.current.isLoading).toBe(false);
@@ -208,7 +200,7 @@ describe('useTasks Hooks', () => {
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
-      }, { timeout: 5000 });
+      });
     });
   });
 

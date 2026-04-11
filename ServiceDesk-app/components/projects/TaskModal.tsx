@@ -90,7 +90,7 @@ export default function TaskModal({ taskId, onClose, onUpdate }: TaskModalProps)
     if (!token) return;
     try {
       await fetch(`${API_URL}/pm/tasks/${taskId}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           title: editData.title,

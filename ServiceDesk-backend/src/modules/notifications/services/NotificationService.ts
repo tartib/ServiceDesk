@@ -175,6 +175,18 @@ export class NotificationService implements INotificationService {
     return result.modifiedCount;
   }
 
+  // ── Delete ─────────────────────────────────────────────────
+
+  async deleteNotification(notificationId: string): Promise<boolean> {
+    const result = await UnifiedNotification.findByIdAndDelete(notificationId);
+
+    if (result) {
+      logger.debug('Notification deleted', { id: notificationId });
+    }
+
+    return !!result;
+  }
+
   // ── Cleanup ──────────────────────────────────────────────────
 
   async cleanOld(daysOld: number = 30): Promise<number> {

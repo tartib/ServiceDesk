@@ -580,6 +580,16 @@
       "addItem": "Ajouter un élément"
     },
 
+    "map": {
+      "title": "Carte",
+      "legend": "Légende",
+      "connections": "Connexions",
+      "empty": "Aucune tâche à afficher",
+      "emptyHint": "Créez des tâches ou ajustez vos filtres pour voir la carte",
+      "horizontal": "Disposition horizontale",
+      "vertical": "Disposition verticale"
+    },
+
     "milestones": {
       "title": "Jalons",
       "upcoming": "Jalons à venir",

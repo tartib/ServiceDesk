@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { User } from 'lucide-react';
@@ -34,7 +35,7 @@ interface DraggableTaskCardProps {
   getPriorityColor: (priority: string) => string;
 }
 
-export function DraggableTaskCard({
+function DraggableTaskCardInner({
   task,
   onClick,
   getTypeIcon,
@@ -98,3 +99,5 @@ export function DraggableTaskCard({
     </div>
   );
 }
+
+export const DraggableTaskCard = React.memo(DraggableTaskCardInner);
