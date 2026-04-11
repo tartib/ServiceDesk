@@ -5,7 +5,7 @@ import { PMAuthRequest, ApiResponse } from '../../../types/pm';
 
 export const getDashboardData = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const dashboardService = container.resolve('dashboardRefactoredService');
+    const dashboardService = container.resolve('dashboardService');
     const dateFrom = req.query.dateFrom ? new Date(String(req.query.dateFrom)) : undefined;
     const dateTo = req.query.dateTo ? new Date(String(req.query.dateTo)) : undefined;
 
@@ -23,7 +23,7 @@ export const getDashboardData = async (req: PMAuthRequest, res: Response): Promi
 
 export const getSprintBurndown = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const dashboardService = container.resolve('dashboardRefactoredService');
+    const dashboardService = container.resolve('dashboardService');
     const { sprintId } = req.params;
 
     const burndownData = await dashboardService.getSprintBurndown(sprintId);
@@ -40,7 +40,7 @@ export const getSprintBurndown = async (req: PMAuthRequest, res: Response): Prom
 
 export const getVelocityChart = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const dashboardService = container.resolve('dashboardRefactoredService');
+    const dashboardService = container.resolve('dashboardService');
     const { projectId } = req.params;
     const limit = parseInt(req.query.limit as string) || 10;
 
@@ -58,7 +58,7 @@ export const getVelocityChart = async (req: PMAuthRequest, res: Response): Promi
 
 export const getProjectStats = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const dashboardService = container.resolve('dashboardRefactoredService');
+    const dashboardService = container.resolve('dashboardService');
     const { projectId } = req.params;
 
     const projectStats = await dashboardService.getProjectStats(projectId);
@@ -75,7 +75,7 @@ export const getProjectStats = async (req: PMAuthRequest, res: Response): Promis
 
 export const getCumulativeFlow = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const dashboardService = container.resolve('dashboardRefactoredService');
+    const dashboardService = container.resolve('dashboardService');
     const { projectId } = req.params;
     const days = parseInt(req.query.days as string) || 30;
 

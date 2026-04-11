@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 /**
  * Service Request Status
@@ -105,6 +105,7 @@ export interface IServiceRequest extends Document {
     assignedBy: string;
   };
   assignedTeam?: string;
+  teamId?: mongoose.Types.ObjectId;
   
   // Approval Workflow
   approvalStage?: string;
@@ -284,6 +285,11 @@ const ServiceRequestSchema = new Schema<IServiceRequest>(
       assignedBy: String,
     },
     assignedTeam: String,
+    teamId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Team',
+      index: true,
+    },
     
     approvalStage: String,
     approvals: [

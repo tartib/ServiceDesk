@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../utils/jwt';
+import { verifyAccessToken } from '../utils/jwt';
 import User from '../models/User';
 import ApiError from '../utils/ApiError';
 import asyncHandler from '../utils/asyncHandler';
@@ -15,21 +15,13 @@ export const authenticate = asyncHandler(async (req: Request, _res: Response, ne
     token = req.headers.authorization.split(' ')[1];
   }
 
-  // If no Authorization header, try to get token from cookies
-  if (!token && req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  }
-
   if (!token) {
     throw new ApiError(401, 'Not authorized, no token provided');
   }
 
   try {
-    // Verify token
-    const decoded = verifyToken(token);
-
-    // Support both 'id' (v1 tokens) and 'userId' (v2 tokens)
-    const userId = decoded.id || (decoded as any).userId;
+    const decoded = verifyAccessToken(token);
+    const userId = decoded.userId;
 
     // Get user from database
     const user = await User.findById(userId).select('-password');
@@ -75,6 +67,11 @@ export const authenticate = asyncHandler(async (req: Request, _res: Response, ne
           req.user.organizationId = organizationId;
         }
       }
+    }
+
+    // Auto-resolve from first org membership when no header provided
+    if (!req.user?.organizationId && user.organizations.length > 0) {
+      req.user!.organizationId = user.organizations[0].organizationId.toString();
     }
 
     next();

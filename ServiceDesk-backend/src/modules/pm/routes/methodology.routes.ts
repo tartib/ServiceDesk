@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/v1/pm/{projectId}/methodology:
+ * /api/v2/pm/{projectId}/methodology:
  *   get:
  *     summary: الحصول على إعدادات المنهجية
  *     description: استرجاع إعدادات المنهجية للمشروع
@@ -67,7 +67,7 @@ router.put('/:projectId/methodology', methodologyController.updateMethodologyCon
 
 /**
  * @swagger
- * /api/v1/pm/{projectId}/methodology/change:
+ * /api/v2/pm/{projectId}/methodology/change:
  *   post:
  *     summary: تغيير المنهجية
  *     description: تغيير منهجية المشروع
@@ -91,7 +91,7 @@ router.post('/:projectId/methodology/change', methodologyController.changeMethod
 
 /**
  * @swagger
- * /api/v1/pm/{projectId}/methodology/navigation:
+ * /api/v2/pm/{projectId}/methodology/navigation:
  *   get:
  *     summary: الحصول على علامات التنقل
  *     description: استرجاع علامات التنقل للمنهجية

@@ -33,7 +33,7 @@ beforeAll(async () => {
     role: 'prep',
   });
   testUserId = testUser._id.toString();
-  authToken = jwt.sign({ id: testUserId, role: 'prep' }, env.JWT_SECRET, { expiresIn: '1h' });
+  authToken = jwt.sign({ userId: testUserId, role: 'prep' }, env.JWT_SECRET, { expiresIn: '1h' });
 
   // Create manager user for protected routes
   const managerUser = await User.create({
@@ -43,7 +43,7 @@ beforeAll(async () => {
     role: 'manager',
   });
   testManagerId = managerUser._id.toString();
-  managerToken = jwt.sign({ id: testManagerId, role: 'manager' }, env.JWT_SECRET, { expiresIn: '1h' });
+  managerToken = jwt.sign({ userId: testManagerId, role: 'manager' }, env.JWT_SECRET, { expiresIn: '1h' });
 });
 
 afterAll(async () => {
@@ -292,10 +292,11 @@ describe('🔥 Smoke Tests - API Health & Connectivity', () => {
   // ============================================
 
   describe('Error Handling', () => {
-    it('should return 404 for non-existent routes', async () => {
+    it('should return 410 Gone for v1 routes', async () => {
       const res = await request(app).get('/api/v1/nonexistent');
       
-      expect(res.status).toBe(404);
+      // v1 block middleware returns 410 Gone for all v1 endpoints
+      expect(res.status).toBe(410);
     });
 
     it('should handle malformed JSON gracefully', async () => {
@@ -304,7 +305,8 @@ describe('🔥 Smoke Tests - API Health & Connectivity', () => {
         .set('Content-Type', 'application/json')
         .send('{ invalid json }');
       
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Express JSON parser rejects malformed JSON with 400
+      expect(res.status).toBe(400);
     });
   });
 

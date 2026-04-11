@@ -3,6 +3,7 @@ import { param } from 'express-validator';
 import * as importController from '../controllers/import.controller';
 import { authenticate } from '../../../middleware/auth';
 import { uploadCSV } from '../../../middleware/upload';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -10,7 +11,7 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/v1/pm/projects/{projectId}/import/csv:
+ * /api/v2/pm/projects/{projectId}/import/csv:
  *   post:
  *     summary: Import tasks from CSV file
  *     description: Upload a CSV file to bulk-create tasks in the project backlog
@@ -60,8 +61,9 @@ router.use(authenticate);
 router.post(
   '/projects/:projectId/import/csv',
   [param('projectId').isMongoId().withMessage('Invalid project ID')],
+  handleValidation,
   uploadCSV,
-  (req: Request, res: Response) => importController.importTasksFromCSV(req as any, res)
+  (req: Request, res: Response) => importController.importTasksFromCSV(req, res)
 );
 
 export default router;

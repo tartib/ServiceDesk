@@ -258,6 +258,7 @@ ReleaseSchema.pre('save', function (next) {
 ReleaseSchema.set('toJSON', { virtuals: true });
 ReleaseSchema.set('toObject', { virtuals: true });
 
-const Release = mongoose.model<IRelease>('Release', ReleaseSchema);
+const Release = (mongoose.models['Release'] as mongoose.Model<IRelease>) ||
+  mongoose.model<IRelease>('Release', ReleaseSchema);
 
 export default Release;

@@ -45,18 +45,15 @@ export const csrfProtection = (req: Request, res: Response, next: NextFunction) 
     const cookieToken = req.cookies[CSRF_COOKIE_NAME];
     const headerToken = req.headers[CSRF_HEADER_NAME] as string;
 
-    // Only enforce CSRF if no JWT auth is present
-    if (!cookieToken && !headerToken) {
-      // Allow request if neither cookie nor header token is present
-      // This is for development/API testing
-      return next();
+    // Require both cookie and header tokens for cookie-authenticated requests
+    if (!cookieToken || !headerToken) {
+      throw new ApiError(403, 'CSRF token missing');
     }
 
-    if (cookieToken && headerToken && cookieToken !== headerToken) {
+    if (cookieToken !== headerToken) {
       throw new ApiError(403, 'CSRF token validation failed');
     }
 
-    // Token is valid or not required, continue
     return next();
   }
 

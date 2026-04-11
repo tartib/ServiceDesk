@@ -8,14 +8,15 @@ import {
   listIntegrations,
   getAdapterHealth,
 } from './webhook.controller';
+import { authenticate, authorize } from '../middleware/auth';
 
 const router = Router();
 
-// List all integrations and their status
-router.get('/', listIntegrations);
+// List all integrations and their status (admin only)
+router.get('/', authenticate, authorize('admin'), listIntegrations);
 
-// Health check for a specific adapter
-router.get('/:provider/health', getAdapterHealth);
+// Health check for a specific adapter (admin only)
+router.get('/:provider/health', authenticate, authorize('admin'), getAdapterHealth);
 
 // Inbound webhook endpoint (no auth — each adapter verifies its own signature)
 router.post('/:provider/webhook', handleInboundWebhook);

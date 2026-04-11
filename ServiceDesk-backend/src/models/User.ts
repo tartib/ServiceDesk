@@ -22,6 +22,7 @@ export interface IUser extends Document {
   teamIds: mongoose.Types.ObjectId[];
   isActive: boolean;
   fcmToken?: string;
+  refreshTokenHash?: string;
   organizations: {
     organizationId: mongoose.Types.ObjectId;
     role: string;
@@ -92,6 +93,10 @@ const userSchema = new Schema<IUser>(
     fcmToken: {
       type: String,
     },
+    refreshTokenHash: {
+      type: String,
+      select: false,
+    },
     organizations: [
       {
         organizationId: { type: Schema.Types.ObjectId, ref: 'PMOrganization' },
@@ -123,6 +128,7 @@ userSchema.methods.comparePassword = async function (candidatePassword: string):
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
+  delete obj.refreshTokenHash;
   return obj;
 };
 

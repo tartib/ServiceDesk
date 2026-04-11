@@ -81,7 +81,8 @@ describe('Workflow Instances — Integration Tests', () => {
       const res = await authReq(request(app).post('/api/v2/workflow-engine/instances'), managerUser)
         .send({ entityType: 'test' });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Engine throws when definitionId is missing
+      expect(res.status).toBe(500);
     });
 
     it('should require authentication', async () => {
@@ -143,8 +144,8 @@ describe('Workflow Instances — Integration Tests', () => {
         request(app).post(`/api/v2/workflow-engine/instances/${instanceId}/transition`), managerUser)
         .send({ transitionId: 'review' });
 
-      // May succeed or fail depending on engine logic
-      expect([200, 400, 404]).toContain(res.status);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
     });
   });
 
@@ -166,21 +167,23 @@ describe('Workflow Instances — Integration Tests', () => {
   // SUSPEND / RESUME
   // ============================================
   describe('Suspend / Resume', () => {
-    it('POST /api/v2/workflow-engine/instances/:id/suspend - should suspend', async () => {
+    it('POST /api/v2/workflow-engine/instances/:id/suspend - should suspend active instance', async () => {
       if (!instanceId) return;
       const res = await authReq(
         request(app).post(`/api/v2/workflow-engine/instances/${instanceId}/suspend`), managerUser)
         .send({ reason: 'Waiting for info' });
 
-      expect([200, 400]).toContain(res.status);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
     });
 
-    it('POST /api/v2/workflow-engine/instances/:id/resume - should resume', async () => {
+    it('POST /api/v2/workflow-engine/instances/:id/resume - should resume suspended instance', async () => {
       if (!instanceId) return;
       const res = await authReq(
         request(app).post(`/api/v2/workflow-engine/instances/${instanceId}/resume`), managerUser);
 
-      expect([200, 400]).toContain(res.status);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
     });
   });
 
@@ -188,13 +191,14 @@ describe('Workflow Instances — Integration Tests', () => {
   // CANCEL
   // ============================================
   describe('POST /api/v2/workflow-engine/instances/:id/cancel', () => {
-    it('should cancel workflow', async () => {
+    it('should cancel active workflow', async () => {
       if (!instanceId) return;
       const res = await authReq(
         request(app).post(`/api/v2/workflow-engine/instances/${instanceId}/cancel`), managerUser)
         .send({ reason: 'No longer needed' });
 
-      expect([200, 400]).toContain(res.status);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
     });
   });
 });

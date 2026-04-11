@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { param, query } from 'express-validator';
 import * as analyticsController from '../controllers/analytics.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -9,7 +10,7 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/v1/pm/sprints/{sprintId}/burndown:
+ * /api/v2/pm/sprints/{sprintId}/burndown:
  *   get:
  *     summary: الحصول على مخطط احتراق الـ Sprint
  *     description: استرجاع بيانات مخطط احتراق الـ Sprint
@@ -35,12 +36,13 @@ router.use(authenticate);
 router.get(
   '/sprints/:sprintId/burndown',
   [param('sprintId').isMongoId().withMessage('Invalid sprint ID')],
-  (req: Request, res: Response) => analyticsController.getSprintBurndown(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => analyticsController.getSprintBurndown(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/projects/{projectId}/velocity:
+ * /api/v2/pm/projects/{projectId}/velocity:
  *   get:
  *     summary: الحصول على مخطط السرعة
  *     description: استرجاع بيانات سرعة المشروع
@@ -74,14 +76,16 @@ router.get(
     param('projectId').isMongoId().withMessage('Invalid project ID'),
     query('limit').optional().isNumeric(),
   ],
-  (req: Request, res: Response) => analyticsController.getVelocityChart(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => analyticsController.getVelocityChart(req, res)
 );
 
 // Project statistics
 router.get(
   '/projects/:projectId/stats',
   [param('projectId').isMongoId().withMessage('Invalid project ID')],
-  (req: Request, res: Response) => analyticsController.getProjectStats(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => analyticsController.getProjectStats(req, res)
 );
 
 // Cumulative flow diagram
@@ -91,7 +95,8 @@ router.get(
     param('projectId').isMongoId().withMessage('Invalid project ID'),
     query('days').optional().isNumeric(),
   ],
-  (req: Request, res: Response) => analyticsController.getCumulativeFlow(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => analyticsController.getCumulativeFlow(req, res)
 );
 
 export default router;

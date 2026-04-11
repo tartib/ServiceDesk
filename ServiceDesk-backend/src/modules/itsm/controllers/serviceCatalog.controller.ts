@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
 import { ServiceCatalog, ServiceStatus, ServiceCategory, ServiceVisibility } from '../models';
-// UserRole import removed — authorization now handled by itsmAuthorize middleware
-import { ApiResponse } from '../../../types/pm';
 import logger from '../../../utils/logger';
 import { getItsmRepos, isItsmPostgres } from '../infrastructure/repositories';
 import { PgServiceCatalogRepository } from '../infrastructure/repositories/PgServiceCatalogRepository';
+import asyncHandler from '../../../utils/asyncHandler';
+import { sendSuccess, sendPaginated, sendError } from '../../../utils/ApiResponse';
 
 /**
  * Service Catalog Controller
@@ -13,9 +12,8 @@ import { PgServiceCatalogRepository } from '../infrastructure/repositories/PgSer
  */
 
 // GET /api/v2/itsm/services - List all services
-export const getServices = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const {
+export const getServices = asyncHandler(async (req: Request, res: Response) => {
+  const {
       category,
       status = ServiceStatus.ACTIVE,
       featured,
@@ -49,17 +47,7 @@ export const getServices = async (req: Request, res: Response): Promise<void> =>
         limitNum,
       );
 
-      res.status(200).json({
-        success: true,
-        data: result.data,
-        pagination: {
-          page: result.page,
-          limit: result.limit,
-          total: result.total,
-          totalPages: result.totalPages,
-        },
-      } as ApiResponse);
-      return;
+      return void sendPaginated(req, res, result.data, result.page, result.limit, result.total);
     }
 
     // ── MongoDB path (unchanged) ──
@@ -124,148 +112,80 @@ export const getServices = async (req: Request, res: Response): Promise<void> =>
       ServiceCatalog.countDocuments(query),
     ]);
 
-    res.status(200).json({
-      success: true,
-      data: services,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        totalPages: Math.ceil(total / limitNum),
-      },
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Get services error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch services',
-    } as ApiResponse);
-  }
-};
+    sendPaginated(req, res, services, pageNum, limitNum, total);
+});
 
 // GET /api/v2/itsm/services/:id - Get single service
-export const getService = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
+export const getService = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    let service: any;
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
-      service = await repo.findByServiceId(id) || await repo.findById(id);
-    } else {
-      service = await ServiceCatalog.findOne({
-        $or: [{ _id: id }, { serviceId: id }],
-      }).lean();
-    }
-
-    if (!service) {
-      res.status(404).json({
-        success: false,
-        error: 'Service not found',
-      } as ApiResponse);
-      return;
-    }
-
-    // Check visibility permissions
-    const itsmRole = req.user?.itsmRole || 'end_user';
-    const userId = req.user?.id;
-    
-    if (service.visibility === ServiceVisibility.RESTRICTED) {
-      if (
-        itsmRole !== 'manager' &&
-        itsmRole !== 'admin' &&
-        !service.allowedRoles?.includes(itsmRole) &&
-        service.createdBy !== userId
-      ) {
-        res.status(403).json({
-          success: false,
-          error: 'Access denied to this service',
-        } as ApiResponse);
-        return;
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      data: service,
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Get service error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch service',
-    } as ApiResponse);
+  let service: any;
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
+    service = await repo.findByServiceId(id) || await repo.findById(id);
+  } else {
+    service = await ServiceCatalog.findOne({
+      $or: [{ _id: id }, { serviceId: id }],
+    }).lean();
   }
-};
+
+  if (!service) return void sendError(req, res, 404, 'Service not found');
+
+  // Check visibility permissions
+  const itsmRole = req.user?.itsmRole || 'end_user';
+  const userId = req.user?.id;
+  
+  if (service.visibility === ServiceVisibility.RESTRICTED) {
+    if (
+      itsmRole !== 'manager' &&
+      itsmRole !== 'admin' &&
+      !service.allowedRoles?.includes(itsmRole) &&
+      service.createdBy !== userId
+    ) {
+      return void sendError(req, res, 403, 'Access denied to this service');
+    }
+  }
+
+  sendSuccess(req, res, service);
+});
 
 // POST /api/v2/itsm/services - Create new service (admin only)
-export const createService = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
+export const createService = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
 
-    const userId = req.user?.id;
+  const serviceData = {
+    ...req.body,
+    createdBy: userId,
+    stats: {
+      totalRequests: 0,
+      completedRequests: 0,
+      avgFulfillmentTime: 0,
+      satisfactionScore: 0,
+    },
+  };
 
-    const serviceData = {
-      ...req.body,
-      createdBy: userId,
-      stats: {
-        totalRequests: 0,
-        completedRequests: 0,
-        avgFulfillmentTime: 0,
-        satisfactionScore: 0,
-      },
-    };
-
-    let service: any;
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
-      // Flatten stats for PG
-      const pgData = { ...serviceData };
-      pgData['stats.totalRequests'] = 0;
-      pgData['stats.completedRequests'] = 0;
-      pgData['stats.avgFulfillmentTime'] = 0;
-      pgData['stats.satisfactionScore'] = 0;
-      delete pgData.stats;
-      service = await repo.create(pgData);
-    } else {
-      service = await ServiceCatalog.create(serviceData);
-    }
-
-    res.status(201).json({
-      success: true,
-      data: service,
-      message: 'Service created successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Create service error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create service',
-    } as ApiResponse);
+  let service: any;
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
+    // Flatten stats for PG
+    const pgData = { ...serviceData };
+    pgData['stats.totalRequests'] = 0;
+    pgData['stats.completedRequests'] = 0;
+    pgData['stats.avgFulfillmentTime'] = 0;
+    pgData['stats.satisfactionScore'] = 0;
+    delete pgData.stats;
+    service = await repo.create(pgData);
+  } else {
+    service = await ServiceCatalog.create(serviceData);
   }
-};
+
+  sendSuccess(req, res, service, 'Service created successfully', 201);
+});
 
 // PUT /api/v2/itsm/services/:id - Update service (admin only)
-export const updateService = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
-
-    const { id } = req.params;
-    const userId = req.user?.id;
+export const updateService = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
 
     const allowedUpdates = [
       'name',
@@ -300,31 +220,21 @@ export const updateService = async (req: Request, res: Response): Promise<void> 
     if (isItsmPostgres()) {
       const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
       let service = await repo.findByServiceId(id) || await repo.findById(id);
-      if (!service) {
-        res.status(404).json({ success: false, error: 'Service not found' } as ApiResponse);
-        return;
-      }
+      if (!service) return void sendError(req, res, 404, 'Service not found');
       const updateData: Record<string, any> = {};
       allowedUpdates.forEach((field) => {
         if (req.body[field] !== undefined) updateData[field] = req.body[field];
       });
       updateData.updatedBy = userId;
       service = await repo.updateById((service as any)._id || (service as any).id, updateData as any);
-      res.status(200).json({ success: true, data: service, message: 'Service updated successfully' } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, service, 'Service updated successfully');
     }
 
     const service = await ServiceCatalog.findOne({
       $or: [{ _id: id }, { serviceId: id }],
     });
 
-    if (!service) {
-      res.status(404).json({
-        success: false,
-        error: 'Service not found',
-      } as ApiResponse);
-      return;
-    }
+    if (!service) return void sendError(req, res, 404, 'Service not found');
 
     allowedUpdates.forEach((field) => {
       if (req.body[field] !== undefined) {
@@ -335,144 +245,90 @@ export const updateService = async (req: Request, res: Response): Promise<void> 
     service.updatedBy = userId;
     await service.save();
 
-    res.status(200).json({
-      success: true,
-      data: service,
-      message: 'Service updated successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Update service error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update service',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, service, 'Service updated successfully');
+});
 
 // DELETE /api/v2/itsm/services/:id - Delete service (admin only)
-export const deleteService = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
+export const deleteService = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
-      const service = await repo.findByServiceId(id) || await repo.findById(id);
-      if (!service) {
-        res.status(404).json({ success: false, error: 'Service not found' } as ApiResponse);
-        return;
-      }
-      await repo.updateById((service as any)._id || (service as any).id, { status: ServiceStatus.RETIRED } as any);
-      res.status(200).json({ success: true, message: 'Service retired successfully' } as ApiResponse);
-      return;
-    }
-
-    const service = await ServiceCatalog.findOne({
-      $or: [{ _id: id }, { serviceId: id }],
-    });
-
-    if (!service) {
-      res.status(404).json({
-        success: false,
-        error: 'Service not found',
-      } as ApiResponse);
-      return;
-    }
-
-    // Soft delete by setting status to retired
-    service.status = ServiceStatus.RETIRED;
-    await service.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Service retired successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Delete service error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to delete service',
-    } as ApiResponse);
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
+    const service = await repo.findByServiceId(id) || await repo.findById(id);
+    if (!service) return void sendError(req, res, 404, 'Service not found');
+    await repo.updateById((service as any)._id || (service as any).id, { status: ServiceStatus.RETIRED } as any);
+    return void sendSuccess(req, res, null, 'Service retired successfully');
   }
-};
+
+  const service = await ServiceCatalog.findOne({
+    $or: [{ _id: id }, { serviceId: id }],
+  });
+
+  if (!service) return void sendError(req, res, 404, 'Service not found');
+
+  // Soft delete by setting status to retired
+  service.status = ServiceStatus.RETIRED;
+  await service.save();
+
+  sendSuccess(req, res, null, 'Service retired successfully');
+});
 
 // GET /api/v2/itsm/services/categories - Get all categories
-export const getCategories = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const categories = Object.values(ServiceCategory).map((cat) => ({
-      id: cat,
-      name: cat.charAt(0).toUpperCase() + cat.slice(1),
-      count: 0, // Will be populated
-    }));
+export const getCategories = asyncHandler(async (req: Request, res: Response) => {
+  const categories = Object.values(ServiceCategory).map((cat) => ({
+    id: cat,
+    name: cat.charAt(0).toUpperCase() + cat.slice(1),
+    count: 0, // Will be populated
+  }));
 
-    // Get counts for each category
-    let counts: any[];
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
-      counts = await repo.getCategoryCounts(true);
-      // normalize: PG returns {category, count}, Mongo returns {_id, count}
-      counts = counts.map((c: any) => ({ _id: c.category || c._id, count: c.count }));
-    } else {
-      counts = await ServiceCatalog.aggregate([
-        { $match: { status: ServiceStatus.ACTIVE } },
-        { $group: { _id: '$category', count: { $sum: 1 } } },
-      ]);
-    }
-
-    counts.forEach((c) => {
-      const cat = categories.find((cat) => cat.id === c._id);
-      if (cat) cat.count = c.count;
-    });
-
-    res.status(200).json({
-      success: true,
-      data: categories,
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Get categories error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch categories',
-    } as ApiResponse);
+  // Get counts for each category
+  let counts: any[];
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
+    counts = await repo.getCategoryCounts(true);
+    // normalize: PG returns {category, count}, Mongo returns {_id, count}
+    counts = counts.map((c: any) => ({ _id: c.category || c._id, count: c.count }));
+  } else {
+    counts = await ServiceCatalog.aggregate([
+      { $match: { status: ServiceStatus.ACTIVE } },
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+    ]);
   }
-};
+
+  counts.forEach((c) => {
+    const cat = categories.find((cat) => cat.id === c._id);
+    if (cat) cat.count = c.count;
+  });
+
+  sendSuccess(req, res, categories);
+});
 
 // GET /api/v2/itsm/services/featured - Get featured services
-export const getFeaturedServices = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { limit = '6' } = req.query;
-    const limitNum = Math.min(20, Math.max(1, parseInt(limit as string) || 6));
+export const getFeaturedServices = asyncHandler(async (req: Request, res: Response) => {
+  const { limit = '6' } = req.query;
+  const limitNum = Math.min(20, Math.max(1, parseInt(limit as string) || 6));
 
-    let services: any[];
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
-      const result = await repo.searchWithVisibility(
-        '',
-        { status: ServiceStatus.ACTIVE, featured: true, sort: 'order', sortDir: 'asc' },
-        'admin', // no visibility restriction for featured endpoint
-        1,
-        limitNum,
-      );
-      services = result.data;
-    } else {
-      services = await ServiceCatalog.find({
-        status: ServiceStatus.ACTIVE,
-        featured: true,
-        visibility: { $in: [ServiceVisibility.PUBLIC, ServiceVisibility.INTERNAL] },
-      })
-        .sort({ order: 1, stats_totalRequests: -1 })
-        .limit(limitNum)
-        .lean();
-    }
-
-    res.status(200).json({
-      success: true,
-      data: services,
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Get featured services error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch featured services',
-    } as ApiResponse);
+  let services: any[];
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
+    const result = await repo.searchWithVisibility(
+      '',
+      { status: ServiceStatus.ACTIVE, featured: true, sort: 'order', sortDir: 'asc' },
+      'admin', // no visibility restriction for featured endpoint
+      1,
+      limitNum,
+    );
+    services = result.data;
+  } else {
+    services = await ServiceCatalog.find({
+      status: ServiceStatus.ACTIVE,
+      featured: true,
+      visibility: { $in: [ServiceVisibility.PUBLIC, ServiceVisibility.INTERNAL] },
+    })
+      .sort({ order: 1, stats_totalRequests: -1 })
+      .limit(limitNum)
+      .lean();
   }
-};
+
+  sendSuccess(req, res, services);
+});

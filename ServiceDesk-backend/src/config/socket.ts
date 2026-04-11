@@ -2,7 +2,7 @@ import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import logger from '../utils/logger';
 import env from './env';
-import { verifyToken } from '../utils/jwt';
+import { verifyAccessToken } from '../utils/jwt';
 import User from '../models/User';
 
 let io: Server | null = null;
@@ -39,8 +39,8 @@ export const initializeSocket = (httpServer: HttpServer): Server => {
         return next(new Error('Authentication error: No token provided'));
       }
 
-      const decoded = verifyToken(token);
-      const userId = decoded.id || (decoded as any).userId;
+      const decoded = verifyAccessToken(token);
+      const userId = decoded.userId;
       const user = await User.findById(userId).select('-password');
 
       if (!user) {

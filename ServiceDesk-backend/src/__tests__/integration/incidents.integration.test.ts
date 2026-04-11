@@ -296,8 +296,7 @@ describe('Incidents API - Integration Tests', () => {
           group_name: 'IT Support',
         });
 
-      // May return 500 if assignment validation fails - accept both
-      expect([200, 500]).toContain(res.status);
+      expect(res.status).toBe(200);
     });
 
     it('should deny assignment for supervisor', async () => {
@@ -339,8 +338,8 @@ describe('Incidents API - Integration Tests', () => {
           is_internal: false,
         });
 
-      // API returns 201 for worklog creation
-      expect([200, 201]).toContain(res.status);
+      // Controller uses res.status(201) for worklog creation
+      expect(res.status).toBe(201);
       expect(res.body.data.incident.worklogs).toBeDefined();
     });
   });

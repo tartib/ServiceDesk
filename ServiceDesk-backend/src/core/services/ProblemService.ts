@@ -1,6 +1,7 @@
 import { IProblem } from '../entities/Problem';
+import Incident from '../entities/Incident';
 import Counter from '../entities/Counter';
-import { ProblemStatus, Priority, Impact, IKnownError } from '../types/itsm.types';
+import { ProblemStatus, Priority, Impact, IKnownError, RCAMethod, KnownErrorStatus } from '../types/itsm.types';
 import problemRepository from '../repositories/ProblemRepository';
 import incidentRepository from '../repositories/IncidentRepository';
 import logger from '../../utils/logger';
@@ -392,6 +393,162 @@ export class ProblemService {
    */
   async findByIncident(incidentId: string): Promise<IProblem[]> {
     return problemRepository.findByLinkedIncident(incidentId);
+  }
+
+  /**
+   * Start RCA workflow on a problem
+   */
+  async startRCA(
+    problemId: string,
+    method: RCAMethod,
+    userId: string,
+    userName: string
+  ): Promise<IProblem> {
+    const problem = await this.getProblem(problemId);
+
+    if (problem.rca_started_at) {
+      throw new ApiError(400, 'RCA has already been started for this problem');
+    }
+
+    problem.status = ProblemStatus.RCA_IN_PROGRESS;
+    problem.rca_started_at = new Date();
+    problem.rca_method = method;
+
+    problem.timeline.push({
+      event: `RCA Started (${method})`,
+      by: userId,
+      by_name: userName,
+      time: new Date(),
+      details: { method },
+    });
+
+    await problem.save();
+
+    logger.info(`RCA started for problem: ${problemId}`, { method, by: userId });
+    return problem;
+  }
+
+  /**
+   * Complete RCA with findings and root cause
+   */
+  async completeRCA(
+    problemId: string,
+    findings: string,
+    rootCause: string,
+    userId: string,
+    userName: string,
+    contributingFactors?: string[]
+  ): Promise<IProblem> {
+    const problem = await this.getProblem(problemId);
+
+    if (!problem.rca_started_at) {
+      throw new ApiError(400, 'RCA has not been started for this problem');
+    }
+
+    problem.rca_findings = findings;
+    problem.root_cause = rootCause;
+    problem.rca_completed_at = new Date();
+    if (contributingFactors?.length) {
+      problem.contributing_factors = contributingFactors;
+    }
+
+    problem.timeline.push({
+      event: 'RCA Completed',
+      by: userId,
+      by_name: userName,
+      time: new Date(),
+      details: { root_cause: rootCause.substring(0, 200) },
+    });
+
+    await problem.save();
+
+    logger.info(`RCA completed for problem: ${problemId}`, { by: userId });
+    return problem;
+  }
+
+  /**
+   * Publish known error workaround and notify linked incidents
+   */
+  async publishKnownError(
+    problemId: string,
+    workaround: string,
+    userId: string,
+    userName: string
+  ): Promise<IProblem> {
+    const problem = await this.getProblem(problemId);
+
+    if (problem.status !== ProblemStatus.KNOWN_ERROR && !problem.known_error) {
+      throw new ApiError(400, 'Problem must be in known_error status before publishing workaround');
+    }
+
+    problem.workaround = workaround;
+    problem.known_error_status = KnownErrorStatus.PUBLISHED;
+    problem.known_error_published_at = new Date();
+
+    if (problem.known_error) {
+      problem.known_error.workaround = workaround;
+    }
+
+    problem.timeline.push({
+      event: 'Known Error Published',
+      by: userId,
+      by_name: userName,
+      time: new Date(),
+      details: { workaround: workaround.substring(0, 200) },
+    });
+
+    await problem.save();
+
+    // Notify all linked incidents about the workaround
+    for (const incidentId of problem.linked_incidents) {
+      await incidentRepository.addTimelineEvent(incidentId, {
+        event: `Workaround Published for Problem ${problemId}`,
+        by: 'system',
+        details: { workaround: workaround.substring(0, 300), problem_id: problemId },
+      });
+    }
+
+    logger.info(`Known error published for problem: ${problemId}`, {
+      linked_incidents: problem.linked_incidents.length,
+    });
+
+    return problem;
+  }
+
+  /**
+   * Detect recurring incidents (same category, 3+ incidents in 7 days)
+   * Returns groups of incidents that warrant problem creation
+   */
+  async detectRecurringIncidents(
+    siteId?: string,
+    lookbackDays: number = 7,
+    threshold: number = 3
+  ): Promise<{ category_id: string; count: number; incident_ids: string[]; suggestion: string }[]> {
+    const since = new Date();
+    since.setDate(since.getDate() - lookbackDays);
+
+    const matchStage: any = { created_at: { $gte: since } };
+    if (siteId) matchStage.site_id = siteId;
+
+    const results = await Incident.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: '$category_id',
+          count: { $sum: 1 },
+          incident_ids: { $push: '$incident_id' },
+        },
+      },
+      { $match: { count: { $gte: threshold } } },
+      { $sort: { count: -1 } },
+    ]);
+
+    return results.map((r) => ({
+      category_id: r._id,
+      count: r.count,
+      incident_ids: r.incident_ids.slice(0, 10),
+      suggestion: `${r.count} incidents in category "${r._id}" in the last ${lookbackDays} days — consider opening a problem`,
+    }));
   }
 }
 

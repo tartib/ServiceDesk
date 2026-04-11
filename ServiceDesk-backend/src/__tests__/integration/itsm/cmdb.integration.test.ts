@@ -58,7 +58,8 @@ describe('ITSM CMDB — Integration Tests', () => {
       const res = await authReq(request(app).post('/api/v2/itsm/cmdb/items'), adminUser)
         .send({ name: '' });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Mongoose validation: required fields missing
+      expect(res.status).toBe(500);
     });
 
     it('should reject CI creation by end_user', async () => {

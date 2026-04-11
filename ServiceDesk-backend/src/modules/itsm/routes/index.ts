@@ -1,14 +1,30 @@
 import { Router } from 'express';
 import { body, param } from 'express-validator';
 import * as itsmController from '../controllers';
-import { authenticate } from '../../../middleware/auth';
 import { itsmAuthorize, requireItsmRole } from '../../../middleware/itsmAuthorize';
 import { RESOURCES } from '../../../shared/auth/permission.types';
 
+// Sub-routers for ITSM v2 domains (migrated from presentation/)
+import incidentRoutes from './incident.routes';
+import changeRoutes from './change.routes';
+import problemRoutes from './problem.routes';
+import pirRoutes from './pir.routes';
+import releaseRoutes from './release.routes';
+import itsmDashboardRoutes from './itsmDashboard.routes';
+import knowledgeDeflectionRoutes from './knowledgeDeflection.routes';
+import knowledgeRoutes from './knowledge.routes';
+
 const router = Router();
 
-// All ITSM routes require authentication
-router.use(authenticate);
+// ── ITSM v2 Domain Routes (migrated from presentation/routes/v2) ──
+router.use('/incidents', incidentRoutes);
+router.use('/changes', changeRoutes);
+router.use('/problems', problemRoutes);
+router.use('/pirs', pirRoutes);
+router.use('/releases', releaseRoutes);
+router.use('/itsm-dashboard', itsmDashboardRoutes);
+router.use('/knowledge/deflect', knowledgeDeflectionRoutes);
+router.use('/knowledge', knowledgeRoutes);
 
 // ============================================================
 // CMDB Routes

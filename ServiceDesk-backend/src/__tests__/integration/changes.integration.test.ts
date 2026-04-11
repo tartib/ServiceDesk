@@ -129,8 +129,8 @@ describe('Changes API - Integration Tests', () => {
         .set('Authorization', `Bearer ${prepUser.token}`)
         .send(createChangePayload({ type: 'invalid_type' }));
 
-      // Server returns 500 for validation errors (could be improved to 400)
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Invalid enum value causes Mongoose validation error → 500
+      expect(res.status).toBe(500);
     });
   });
 

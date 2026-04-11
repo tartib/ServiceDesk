@@ -59,7 +59,7 @@ export async function seedUser(opts: SeedUserOptions = {}): Promise<TestUser> {
   });
   const id = user._id.toString();
   const token = jwt.sign(
-    { id, userId: id, email: data.email, role: data.role },
+    { userId: id, email: data.email, role: data.role },
     env.JWT_SECRET,
     { expiresIn: '1h' },
   );
@@ -82,7 +82,7 @@ export async function seedAllUsers(): Promise<Record<TestRole, TestUser>> {
  * Generate a JWT for an existing user ID.
  */
 export function generateToken(userId: string, role: TestRole = 'prep'): string {
-  return jwt.sign({ id: userId, userId, role }, env.JWT_SECRET, { expiresIn: '1h' });
+  return jwt.sign({ userId, role }, env.JWT_SECRET, { expiresIn: '1h' });
 }
 
 /**

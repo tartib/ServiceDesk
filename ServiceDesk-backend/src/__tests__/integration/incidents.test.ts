@@ -67,8 +67,8 @@ describe('Incidents API - Create (POST /api/v2/itsm/incidents)', () => {
       });
 
     expect(response.status).toBe(201);
-    // high+high = critical priority in the system
-    expect(['high', 'critical']).toContain(response.body.data.incident.priority);
+    // high+high = critical per the priority matrix
+    expect(response.body.data.incident.priority).toBe('critical');
   });
 
   test('should calculate LOW priority for low impact + low urgency', async () => {
@@ -114,8 +114,8 @@ describe('Incidents API - Create (POST /api/v2/itsm/incidents)', () => {
         // missing description, impact, urgency, etc.
       });
 
-    // Server may return 400 or 500 for validation errors
-    expect([400, 500]).toContain(response.status);
+    // Server returns 500 for missing required fields (no schema-level validation middleware)
+    expect(response.status).toBe(500);
   });
 
   test('should set SLA due dates on creation', async () => {
@@ -182,7 +182,7 @@ describe('Incidents API - Read (GET /api/v2/itsm/incidents)', () => {
       .get('/api/v2/itsm/incidents/INC-9999-99999')
       .set('Authorization', `Bearer ${authToken}`);
 
-    expect([400, 404]).toContain(response.status);
+    expect(response.status).toBe(404);
   });
 
   test('should filter incidents by status', async () => {
@@ -379,8 +379,8 @@ describe('Incidents API - Worklogs (POST /api/v2/itsm/incidents/:id/worklogs)', 
         is_internal: false,
       });
 
-    // API may return 200 or 201 for worklog creation
-    expect([200, 201]).toContain(response.status);
+    // Controller uses res.status(201) for worklog creation
+    expect(response.status).toBe(201);
     expect(response.body.data.incident.worklogs).toBeDefined();
   });
 
@@ -394,8 +394,7 @@ describe('Incidents API - Worklogs (POST /api/v2/itsm/incidents/:id/worklogs)', 
         is_internal: true,
       });
 
-    // API may return 200 or 201 for worklog creation
-    expect([200, 201]).toContain(response.status);
+    expect(response.status).toBe(201);
     expect(response.body.data.incident.worklogs).toBeDefined();
   });
 });

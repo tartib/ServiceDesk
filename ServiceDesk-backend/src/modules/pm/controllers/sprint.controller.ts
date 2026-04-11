@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import logger from '../../../utils/logger';
-import { validationResult } from 'express-validator';
 import Sprint from '../models/Sprint';
 import Task from '../models/Task';
 import Project from '../models/Project';
@@ -14,14 +13,6 @@ import { PgProjectRepository } from '../infrastructure/repositories/PgProjectRep
 
 export const createSprint = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const { projectId } = req.params;
@@ -266,14 +257,6 @@ export const getSprint = async (req: PMAuthRequest, res: Response): Promise<void
 
 export const updateSprint = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const { sprintId } = req.params;
 
@@ -763,14 +746,6 @@ export const getSprintInsights = async (req: PMAuthRequest, res: Response): Prom
 // Update team capacity for sprint
 export const updateTeamCapacity = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const { sprintId } = req.params;
     const { teamCapacity } = req.body;

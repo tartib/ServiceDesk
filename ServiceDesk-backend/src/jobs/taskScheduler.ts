@@ -1,9 +1,11 @@
 import cron from 'node-cron';
 import PrepTask from '../models/PrepTask';
 import Inventory from '../models/Inventory';
-import { TaskStatus, NotificationType } from '../types';
+import { TaskStatus } from '../types';
+import { NotificationType, NotificationSource, NotificationLevel } from '../modules/notifications/domain/interfaces';
 import logger from '../utils/logger';
-import { createNotification } from '../services/notificationService';
+import { NotificationService } from '../modules/notifications/services/NotificationService';
+const notificationService = new NotificationService();
 
 // Job 1: Auto-generate prep tasks every 15 minutes
 export const autoGenerateTasksJob = cron.schedule('*/15 * * * *', async () => {
@@ -39,12 +41,15 @@ export const checkLateTasksJob = cron.schedule('*/5 * * * *', async () => {
 
         // Send notification if assigned
         if (task.assignedTo) {
-          await createNotification({
-            userId: task.assignedTo as any,
+          await notificationService.create({
+            userId: (task.assignedTo as any).toString(),
             type: NotificationType.LATE,
+            source: NotificationSource.OPS,
+            level: NotificationLevel.WARNING,
             title: 'Late Task Alert',
             message: `Task "${task.productName}" is overdue`,
-            relatedTaskId: task._id.toString(),
+            relatedEntityId: task._id.toString(),
+            relatedEntityType: 'PrepTask',
           });
         }
 

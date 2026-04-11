@@ -343,6 +343,7 @@ ChangeSchema.pre('save', function (next) {
 ChangeSchema.set('toJSON', { virtuals: true });
 ChangeSchema.set('toObject', { virtuals: true });
 
-const Change = mongoose.model<IChange>('Change', ChangeSchema);
+const Change = (mongoose.models['Change'] as mongoose.Model<IChange>) ||
+  mongoose.model<IChange>('Change', ChangeSchema);
 
 export default Change;

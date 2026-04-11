@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { body, param } from 'express-validator';
 import * as standupController from '../controllers/standup.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -11,7 +12,8 @@ router.use(authenticate);
 router.get(
   '/standups/:standupId',
   [param('standupId').isMongoId().withMessage('Invalid standup ID')],
-  (req: Request, res: Response) => standupController.getStandup(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => standupController.getStandup(req, res)
 );
 
 // Update standup
@@ -25,14 +27,16 @@ router.put(
     body('blockers.*').optional().isString(),
     body('status').optional().isIn(['draft', 'published']),
   ],
-  (req: Request, res: Response) => standupController.updateStandup(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => standupController.updateStandup(req, res)
 );
 
 // Delete standup
 router.delete(
   '/standups/:standupId',
   [param('standupId').isMongoId().withMessage('Invalid standup ID')],
-  (req: Request, res: Response) => standupController.deleteStandup(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => standupController.deleteStandup(req, res)
 );
 
 export default router;

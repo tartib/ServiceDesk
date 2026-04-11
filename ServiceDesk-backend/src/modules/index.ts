@@ -18,7 +18,8 @@ import logger from '../utils/logger';
 interface ModuleDescriptor {
   name: string;
   prefix: string;
-  /** If true, authenticate middleware is applied before the router */
+  /** If false, auth is NOT applied at the registry level (module handles it internally).
+   *  Defaults to true — all routes require authentication unless explicitly opted out. */
   requiresAuth?: boolean;
   /** Feature flag name — if set, module routes are gated behind this flag */
   featureFlag?: string;
@@ -27,40 +28,77 @@ interface ModuleDescriptor {
 }
 
 const modules: ModuleDescriptor[] = [
-  // ── Domain Modules ──────────────────────────────────────
+  // ── Modules with public sub-routes (auth handled internally) ──
+  {
+    name: 'core',
+    prefix: '/api/v2/core',
+    requiresAuth: false, // has public auth routes (login, register, refresh)
+    router: () => require('./core/routes').default,
+  },
+  {
+    name: 'pm',
+    prefix: '/api/v2',
+    requiresAuth: false, // has public pm/auth routes
+    featureFlag: 'pm_module_enabled',
+    router: () => require('./pm/routes').default,
+  },
+
+  // ── Fully authenticated modules (requiresAuth defaults to true) ──
   {
     name: 'itsm',
     prefix: '/api/v2/itsm',
-    requiresAuth: false, // routes handle auth internally
     featureFlag: 'itsm_module_enabled',
     router: () => require('./itsm/routes').default,
   },
   {
-    name: 'pm',
-    prefix: '/api/v1',
-    requiresAuth: false,
-    featureFlag: 'pm_module_enabled',
-    router: () => require('./pm/routes').default,
-  },
-  {
     name: 'workflow-engine',
     prefix: '/api/v2/workflow-engine',
-    requiresAuth: false,
     featureFlag: 'workflow_engine_enabled',
     router: () => require('./workflow-engine/routes').default,
   },
   {
     name: 'notifications',
     prefix: '/api/v2/notifications',
-    requiresAuth: false, // routes apply authenticate internally
     router: () => require('./notifications/routes').default,
   },
   {
     name: 'sla',
     prefix: '/api/v2/sla',
-    requiresAuth: false, // routes apply authenticate internally
     featureFlag: 'sla_module_enabled',
     router: () => require('./sla/routes').default,
+  },
+  {
+    name: 'analytics',
+    prefix: '/api/v2/analytics',
+    router: () => require('./analytics/routes').default,
+  },
+  {
+    name: 'forms',
+    prefix: '/api/v2/forms',
+    router: () => require('./forms/routes').default,
+  },
+  {
+    name: 'storage',
+    prefix: '/api/v2/storage',
+    requiresAuth: false, // has public share-link routes, auth applied internally
+    router: () => require('./storage/routes').default,
+  },
+  {
+    name: 'ops',
+    prefix: '/api/v2/ops',
+    router: () => require('./ops/routes').default,
+  },
+  {
+    name: 'gamification',
+    prefix: '/api/v2/gamification',
+    featureFlag: 'gamification_module_enabled',
+    router: () => require('./gamification/routes').default,
+  },
+  {
+    name: 'campaigns',
+    prefix: '/api/v2/campaigns',
+    featureFlag: 'campaigns_module_enabled',
+    router: () => require('./campaigns/routes').default,
   },
 ];
 
@@ -77,8 +115,8 @@ export function registerModules(app: Application): void {
       middleware.push(featureGate(mod.featureFlag));
     }
 
-    // Authentication
-    if (mod.requiresAuth) {
+    // Authentication — default to true (secure by default)
+    if (mod.requiresAuth !== false) {
       middleware.push(authenticate);
     }
 
@@ -128,6 +166,20 @@ function registerInternalApis(): void {
     InternalApiRegistry.register('sla', new SlaApiImpl());
   } catch (e) {
     logger.warn('[modules] failed to register SLA internal API', { error: e });
+  }
+
+  try {
+    const { GamificationApiImpl } = require('./gamification/contracts/GamificationApi');
+    InternalApiRegistry.register('gamification', new GamificationApiImpl());
+  } catch (e) {
+    logger.warn('[modules] failed to register Gamification internal API', { error: e });
+  }
+
+  try {
+    const { CampaignsApiImpl } = require('./campaigns/contracts');
+    InternalApiRegistry.register('campaigns', new CampaignsApiImpl());
+  } catch (e) {
+    logger.warn('[modules] failed to register Campaigns internal API', { error: e });
   }
 
   logger.info(`[modules] internal APIs registered: [${InternalApiRegistry.keys().join(', ')}]`);

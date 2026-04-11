@@ -31,6 +31,8 @@ export interface IServiceCatalogItem extends Document {
   availability: {
     is_active: boolean;
     available_to: string[];
+    available_to_roles?: string[];
+    available_to_groups?: string[];
     blackout_dates?: Date[];
     requires_approval: boolean;
   };
@@ -139,6 +141,8 @@ const AvailabilitySchema = new Schema(
   {
     is_active: { type: Boolean, default: true },
     available_to: { type: [String], default: ['all'] },
+    available_to_roles: { type: [String], default: [] },
+    available_to_groups: { type: [String], default: [] },
     blackout_dates: { type: [Date], default: [] },
     requires_approval: { type: Boolean, default: true },
   },
@@ -260,6 +264,7 @@ ServiceCatalogSchema.virtual('is_free').get(function () {
 ServiceCatalogSchema.set('toJSON', { virtuals: true });
 ServiceCatalogSchema.set('toObject', { virtuals: true });
 
-const ServiceCatalog = mongoose.model<IServiceCatalogItem>('ServiceCatalog', ServiceCatalogSchema);
+const ServiceCatalog = (mongoose.models['ServiceCatalog'] as mongoose.Model<IServiceCatalogItem>) ||
+  mongoose.model<IServiceCatalogItem>('ServiceCatalog', ServiceCatalogSchema);
 
 export default ServiceCatalog;

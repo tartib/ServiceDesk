@@ -143,6 +143,39 @@ export enum UserRole {
   ADMIN = 'admin',
 }
 
+export enum MajorIncidentSeverity {
+  SEV0 = 'SEV0',
+  SEV1 = 'SEV1',
+  SEV2 = 'SEV2',
+}
+
+export enum PIRStatus {
+  DRAFT = 'draft',
+  IN_REVIEW = 'in_review',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
+}
+
+export enum RCAMethod {
+  FIVE_WHYS = 'five_whys',
+  FISHBONE = 'fishbone',
+  FAULT_TREE = 'fault_tree',
+  TIMELINE = 'timeline',
+  OTHER = 'other',
+}
+
+export enum KnownErrorStatus {
+  DRAFT = 'draft',
+  PUBLISHED = 'published',
+  RETIRED = 'retired',
+}
+
+export enum ChangeCalendarEventType {
+  FREEZE_WINDOW = 'freeze_window',
+  MAINTENANCE_WINDOW = 'maintenance_window',
+  CAB_MEETING = 'cab_meeting',
+}
+
 // ============================================
 // INTERFACES - Common
 // ============================================
@@ -314,6 +347,41 @@ export interface IServiceWorkflow {
 }
 
 // ============================================
+// INTERFACES - Major Incident
+// ============================================
+
+export interface IMajorIncidentCommsUpdate {
+  update_id: string;
+  message: string;
+  audience: 'internal' | 'external' | 'all';
+  sent_by: string;
+  sent_by_name: string;
+  sent_at: Date;
+}
+
+export interface IMajorIncidentBridge {
+  commander?: string;
+  commander_name?: string;
+  scribe?: string;
+  scribe_name?: string;
+  technical_leads: string[];
+}
+
+// ============================================
+// INTERFACES - Post-Incident Review
+// ============================================
+
+export interface IFollowUpAction {
+  action_id: string;
+  description: string;
+  owner: string;
+  owner_name: string;
+  due_date?: Date;
+  completed: boolean;
+  completed_at?: Date;
+}
+
+// ============================================
 // INTERFACES - Known Error
 // ============================================
 
@@ -349,6 +417,11 @@ export const generateChangeId = (sequence: number): string => {
 export const generateReleaseId = (sequence: number): string => {
   const year = new Date().getFullYear();
   return `REL-${year}-${String(sequence).padStart(5, '0')}`;
+};
+
+export const generatePIRId = (sequence: number): string => {
+  const year = new Date().getFullYear();
+  return `PIR-${year}-${String(sequence).padStart(5, '0')}`;
 };
 
 export const generateServiceRequestId = (sequence: number): string => {

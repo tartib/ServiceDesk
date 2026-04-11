@@ -1,19 +1,10 @@
 import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
 import { getService } from '../../../infrastructure/di/middleware';
 import { IAuthService } from '../../../infrastructure/di/types';
 import { ApiResponse } from '../../../types/pm';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const { email, password, firstName, lastName, organizationName } = req.body;
     const authService: IAuthService = getService(req, 'authService');
@@ -46,14 +37,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const { email, password } = req.body;
     const authService: IAuthService = getService(req, 'authService');
@@ -134,14 +117,6 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 
 export const changePassword = async (req: Request, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const { currentPassword, newPassword } = req.body;

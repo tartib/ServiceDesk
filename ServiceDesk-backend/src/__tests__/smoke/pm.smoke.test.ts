@@ -36,7 +36,7 @@ beforeAll(async () => {
     role: 'manager', // Assuming manager role has access
   });
   userId = user._id.toString();
-  authToken = jwt.sign({ id: userId, role: 'manager' }, env.JWT_SECRET, { expiresIn: '1h' });
+  authToken = jwt.sign({ userId, role: 'manager' }, env.JWT_SECRET, { expiresIn: '1h' });
 });
 
 afterAll(async () => {

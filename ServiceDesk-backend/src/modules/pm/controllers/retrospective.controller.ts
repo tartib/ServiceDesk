@@ -1,6 +1,5 @@
 import { Response } from 'express';
 import logger from '../../../utils/logger';
-import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import PMRetrospective, { IRetrospectiveNote, IActionItem } from '../models/Retrospective';
 import Sprint from '../models/Sprint';
@@ -18,14 +17,6 @@ import {
 // Create a new retrospective for a sprint
 export const createRetrospective = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const { sprintId } = req.params;
@@ -199,14 +190,6 @@ export const getProjectRetrospectives = async (req: PMAuthRequest, res: Response
 // Update retrospective settings
 export const updateRetrospective = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const { retrospectiveId } = req.params;
     const { maxVotesPerUser, status } = req.body;
@@ -453,14 +436,6 @@ export const archiveRetrospective = async (req: PMAuthRequest, res: Response): P
 // Add a note
 export const addNote = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const { retrospectiveId } = req.params;
@@ -543,14 +518,6 @@ export const addNote = async (req: PMAuthRequest, res: Response): Promise<void> 
 // Update a note
 export const updateNote = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const { retrospectiveId, noteId } = req.params;
@@ -939,14 +906,6 @@ export const getVotingStatus = async (req: PMAuthRequest, res: Response): Promis
 // Add action item
 export const addActionItem = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const { retrospectiveId } = req.params;
@@ -1024,14 +983,6 @@ export const addActionItem = async (req: PMAuthRequest, res: Response): Promise<
 // Update action item
 export const updateActionItem = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const { retrospectiveId, actionItemId } = req.params;

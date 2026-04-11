@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { body, param, query } from 'express-validator';
 import * as sprintController from '../controllers/sprint.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -9,7 +10,7 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/v1/pm/projects/{projectId}/sprints:
+ * /api/v2/pm/projects/{projectId}/sprints:
  *   post:
  *     summary: إنشاء Sprint جديد
  *     description: إنشاء Sprint جديد للمشروع
@@ -61,12 +62,13 @@ router.post(
     body('endDate').isISO8601().withMessage('End date is required'),
     body('capacity').optional().isObject(),
   ],
-  (req: Request, res: Response) => sprintController.createSprint(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.createSprint(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/projects/{projectId}/sprints:
+ * /api/v2/pm/projects/{projectId}/sprints:
  *   get:
  *     summary: الحصول على Sprints المشروع
  *     description: استرجاع قائمة Sprints للمشروع
@@ -100,21 +102,24 @@ router.get(
     param('projectId').isMongoId().withMessage('Invalid project ID'),
     query('status').optional().isIn(['planning', 'active', 'completed', 'cancelled']),
   ],
-  (req: Request, res: Response) => sprintController.getSprints(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.getSprints(req, res)
 );
 
 // Get backlog (tasks without sprint)
 router.get(
   '/projects/:projectId/backlog',
   [param('projectId').isMongoId().withMessage('Invalid project ID')],
-  (req: Request, res: Response) => sprintController.getBacklog(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.getBacklog(req, res)
 );
 
 // Get single sprint
 router.get(
   '/sprints/:sprintId',
   [param('sprintId').isMongoId().withMessage('Invalid sprint ID')],
-  (req: Request, res: Response) => sprintController.getSprint(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.getSprint(req, res)
 );
 
 // Update sprint
@@ -127,7 +132,8 @@ router.put(
     body('startDate').optional().isISO8601(),
     body('endDate').optional().isISO8601(),
   ],
-  (req: Request, res: Response) => sprintController.updateSprint(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.updateSprint(req, res)
 );
 
 // Start sprint
@@ -138,7 +144,8 @@ router.post(
     body('skipValidation').optional().isBoolean(),
     body('participants').optional().isArray(),
   ],
-  (req: Request, res: Response) => sprintController.startSprint(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.startSprint(req, res)
 );
 
 // Complete sprint
@@ -149,21 +156,24 @@ router.post(
     body('moveIncompleteToBacklog').optional().isBoolean(),
     body('moveToSprintId').optional().isMongoId(),
   ],
-  (req: Request, res: Response) => sprintController.completeSprint(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.completeSprint(req, res)
 );
 
 // Get sprint insights
 router.get(
   '/sprints/:sprintId/insights',
   [param('sprintId').isMongoId().withMessage('Invalid sprint ID')],
-  (req: Request, res: Response) => sprintController.getSprintInsights(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.getSprintInsights(req, res)
 );
 
 // Delete sprint
 router.delete(
   '/sprints/:sprintId',
   [param('sprintId').isMongoId().withMessage('Invalid sprint ID')],
-  (req: Request, res: Response) => sprintController.deleteSprint(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.deleteSprint(req, res)
 );
 
 // ==================== SPRINT PLANNING ====================
@@ -172,7 +182,8 @@ router.delete(
 router.get(
   '/sprints/:sprintId/planning',
   [param('sprintId').isMongoId().withMessage('Invalid sprint ID')],
-  (req: Request, res: Response) => sprintController.getSprintPlanningSummary(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.getSprintPlanningSummary(req, res)
 );
 
 // Update team capacity
@@ -187,7 +198,8 @@ router.put(
     body('teamCapacity.*.plannedLeave').optional().isNumeric(),
     body('teamCapacity.*.meetingHours').optional().isNumeric(),
   ],
-  (req: Request, res: Response) => sprintController.updateTeamCapacity(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.updateTeamCapacity(req, res)
 );
 
 // Update sprint settings
@@ -200,7 +212,8 @@ router.put(
     body('settings.requireEstimates').optional().isBoolean(),
     body('settings.enforceCapacity').optional().isBoolean(),
   ],
-  (req: Request, res: Response) => sprintController.updateSprintSettings(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => sprintController.updateSprintSettings(req, res)
 );
 
 export default router;

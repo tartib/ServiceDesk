@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { body, param } from 'express-validator';
 import * as organizationController from '../controllers/organization.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -9,7 +10,7 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/v1/pm/organizations:
+ * /api/v2/pm/organizations:
  *   post:
  *     summary: إنشاء منظمة جديدة
  *     description: إنشاء منظمة جديدة في النظام
@@ -47,12 +48,13 @@ router.post(
     body('description').optional().trim(),
     body('settings').optional().isObject(),
   ],
-  (req: Request, res: Response) => organizationController.createOrganization(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => organizationController.createOrganization(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/organizations:
+ * /api/v2/pm/organizations:
  *   get:
  *     summary: الحصول على المنظمات
  *     description: استرجاع قائمة المنظمات
@@ -68,11 +70,11 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  */
-router.get('/', (req: Request, res: Response) => organizationController.getOrganizations(req as any, res));
+router.get('/', (req: Request, res: Response) => organizationController.getOrganizations(req, res));
 
 /**
  * @swagger
- * /api/v1/pm/organizations/{organizationId}:
+ * /api/v2/pm/organizations/{organizationId}:
  *   get:
  *     summary: الحصول على المنظمة
  *     description: استرجاع تفاصيل منظمة معينة
@@ -104,12 +106,13 @@ router.get('/', (req: Request, res: Response) => organizationController.getOrgan
 router.get(
   '/:organizationId',
   [param('organizationId').isMongoId().withMessage('Invalid organization ID')],
-  (req: Request, res: Response) => organizationController.getOrganization(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => organizationController.getOrganization(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/organizations/{organizationId}:
+ * /api/v2/pm/organizations/{organizationId}:
  *   put:
  *     summary: تحديث المنظمة
  *     description: تحديث معلومات المنظمة
@@ -151,13 +154,15 @@ router.put(
     body('description').optional().trim(),
     body('settings').optional().isObject(),
   ],
-  (req: Request, res: Response) => organizationController.updateOrganization(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => organizationController.updateOrganization(req, res)
 );
 
 router.get(
   '/:organizationId/members',
   [param('organizationId').isMongoId().withMessage('Invalid organization ID')],
-  (req: Request, res: Response) => organizationController.getOrganizationMembers(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => organizationController.getOrganizationMembers(req, res)
 );
 
 router.post(
@@ -167,7 +172,8 @@ router.post(
     body('email').isEmail().withMessage('Valid email is required'),
     body('role').optional().isIn(['owner', 'admin', 'member']),
   ],
-  (req: Request, res: Response) => organizationController.inviteMember(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => organizationController.inviteMember(req, res)
 );
 
 router.delete(
@@ -176,13 +182,15 @@ router.delete(
     param('organizationId').isMongoId().withMessage('Invalid organization ID'),
     param('memberId').isMongoId().withMessage('Invalid member ID'),
   ],
-  (req: Request, res: Response) => organizationController.removeMember(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => organizationController.removeMember(req, res)
 );
 
 router.post(
   '/:organizationId/switch',
   [param('organizationId').isMongoId().withMessage('Invalid organization ID')],
-  (req: Request, res: Response) => organizationController.switchOrganization(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => organizationController.switchOrganization(req, res)
 );
 
 export default router;

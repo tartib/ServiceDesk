@@ -1,20 +1,11 @@
 import { Response } from 'express';
 import logger from '../../../utils/logger';
-import { validationResult } from 'express-validator';
 import Team from '../models/Team';
 import User from '../../../models/User';
 import { PMAuthRequest as Request, ApiResponse, OrganizationRole } from '../../../types/pm';
 
 export const createTeam = async (req: Request, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: any) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const organizationId = req.user?.organizationId;
@@ -129,14 +120,6 @@ export const getTeam = async (req: Request, res: Response): Promise<void> => {
 
 export const updateTeam = async (req: Request, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: any) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const { teamId } = req.params;
     const userId = req.user?.id;

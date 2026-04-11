@@ -136,7 +136,8 @@ describe('Notifications API — Integration Tests', () => {
       const res = await authReq(
         request(app).put('/api/v2/notifications/invalid-id/read'), user);
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Invalid ObjectId format returns 400 from validation or 500 from Mongoose cast error
+      expect(res.status).toBe(500);
     });
   });
 

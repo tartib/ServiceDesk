@@ -8,6 +8,8 @@ import {
   Channel,
   IRequester,
   IAssignee,
+  MajorIncidentSeverity,
+  IMajorIncidentBridge,
   calculatePriority,
 } from '../types/itsm.types';
 import incidentRepository from '../repositories/IncidentRepository';
@@ -428,6 +430,114 @@ export class IncidentService {
    */
   async getMajorIncidents(): Promise<IIncident[]> {
     return incidentRepository.findMajorIncidents();
+  }
+
+  /**
+   * Declare a major incident
+   */
+  async declareMajorIncident(
+    incidentId: string,
+    severity: MajorIncidentSeverity,
+    reason: string,
+    declaredBy: string,
+    declaredByName: string,
+    bridge?: IMajorIncidentBridge
+  ): Promise<IIncident> {
+    const incident = await this.getIncident(incidentId);
+
+    if (incident.status === IncidentStatus.CLOSED) {
+      throw new ApiError(400, 'Cannot declare a closed incident as major');
+    }
+
+    incident.is_major = true;
+    incident.severity = severity;
+    incident.major_declared_at = new Date();
+    incident.major_declared_by = declaredBy;
+    incident.major_declared_by_name = declaredByName;
+    if (bridge) incident.major_bridge = bridge;
+
+    await incidentRepository.addTimelineEvent(incidentId, {
+      event: `Major Incident Declared (${severity})`,
+      by: declaredBy,
+      by_name: declaredByName,
+      details: { reason, severity },
+    });
+
+    await incident.save();
+
+    logger.info(`Major incident declared: ${incidentId} severity=${severity}`, { declaredBy });
+
+    return incident;
+  }
+
+  /**
+   * Add a communications update to a major incident
+   */
+  async addCommsUpdate(
+    incidentId: string,
+    message: string,
+    audience: 'internal' | 'external' | 'all',
+    sentBy: string,
+    sentByName: string
+  ): Promise<IIncident> {
+    const incident = await this.getIncident(incidentId);
+
+    if (!incident.is_major) {
+      throw new ApiError(400, 'Communications updates are only for major incidents');
+    }
+
+    const update = {
+      update_id: `CU-${Date.now()}`,
+      message,
+      audience,
+      sent_by: sentBy,
+      sent_by_name: sentByName,
+      sent_at: new Date(),
+    };
+
+    incident.comms_updates.push(update);
+
+    await incidentRepository.addTimelineEvent(incidentId, {
+      event: `Comms Update Sent (${audience})`,
+      by: sentBy,
+      by_name: sentByName,
+      details: { audience, message: message.substring(0, 100) },
+    });
+
+    await incident.save();
+
+    logger.info(`Comms update added to major incident: ${incidentId}`, { audience, sentBy });
+
+    return incident;
+  }
+
+  /**
+   * Update major incident bridge roles
+   */
+  async updateMajorBridge(
+    incidentId: string,
+    bridge: IMajorIncidentBridge,
+    updatedBy: string,
+    updatedByName: string
+  ): Promise<IIncident> {
+    const incident = await this.getIncident(incidentId);
+
+    if (!incident.is_major) {
+      throw new ApiError(400, 'Bridge roles are only for major incidents');
+    }
+
+    incident.major_bridge = bridge;
+
+    await incidentRepository.addTimelineEvent(incidentId, {
+      event: 'Bridge Roles Updated',
+      by: updatedBy,
+      by_name: updatedByName,
+      details: bridge,
+    });
+
+    await incident.save();
+
+    return incident;
   }
 
   /**

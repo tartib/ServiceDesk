@@ -8,6 +8,7 @@ import path from 'path';
 import env from './config/env';
 import { errorConverter, errorHandler, notFound } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
+import { authenticate, authorize } from './middleware/auth';
 import { xssSanitizer } from './middleware/xssSanitizer';
 import { correlationId } from './middleware/correlationId';
 import { csrfProtectionConditional } from './shared/middleware/csrf';
@@ -66,9 +67,9 @@ if (env.NODE_ENV === 'development') {
   }));
 }
 
-// Rate limiting (disabled in development for hot reload)
+// Rate limiting — covers both /api/v1 and /api/v2 (disabled in development for hot reload)
 if (env.NODE_ENV !== 'development') {
-  app.use(`/api/${env.API_VERSION}`, apiLimiter);
+  app.use('/api', apiLimiter);
 }
 
 // CSRF Protection (conditional - skipped for API tokens, required for form submissions)
@@ -108,8 +109,8 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// Database health check (for Kubernetes readiness probe)
-app.get('/health/db', async (_req, res) => {
+// Database health check (for Kubernetes readiness probe — admin only)
+app.get('/health/db', authenticate, authorize('admin'), async (_req, res) => {
   try {
     const { checkDatabaseHealth } = await import('./config/database');
     const isHealthy = await checkDatabaseHealth();
@@ -136,8 +137,8 @@ app.get('/health/db', async (_req, res) => {
   }
 });
 
-// Prometheus metrics endpoint
-app.get('/metrics', async (_req, res) => {
+// Prometheus metrics endpoint (admin only)
+app.get('/metrics', authenticate, authorize('admin'), async (_req, res) => {
   try {
     const { getPrometheusMetrics } = await import('./utils/metrics');
     const metrics = getPrometheusMetrics();
@@ -152,8 +153,8 @@ app.get('/metrics', async (_req, res) => {
   }
 });
 
-// Cache statistics endpoint
-app.get('/cache/stats', async (_req, res) => {
+// Cache statistics endpoint (admin only)
+app.get('/cache/stats', authenticate, authorize('admin'), async (_req, res) => {
   try {
     const { getCacheStats } = await import('./middleware/caching');
     const stats = getCacheStats();
@@ -171,16 +172,16 @@ app.get('/cache/stats', async (_req, res) => {
   }
 });
 
-// Legacy v1 routes (feature-flag gated, sunset: 2026-09-01)
-import { registerLegacyRoutes } from './routes';
-
-// Module registry (ITSM, PM, Workflow Engine)
+// Module registry (ITSM, PM, Workflow Engine, Core, Ops, Analytics, etc.)
 import { registerModules } from './modules';
 
-// ── Legacy v1 Routes (gated by feature flags) ──
-registerLegacyRoutes(app);
+// v1 catch-all blocker — returns 410 Gone for any legacy v1 endpoint
+import { v1BlockMiddleware } from './shared/middleware/v1-block.middleware';
 
-// ── Domain Modules (ITSM, PM, Workflow Engine) ──
+// ── Catch-all: block any v1 endpoint with 410 Gone ──
+app.use('/api/v1', v1BlockMiddleware);
+
+// ── Domain Modules ──
 registerModules(app);
 
 // Feature Flags admin routes
@@ -191,8 +192,8 @@ app.use('/api/v2/admin/feature-flags', featureFlagRoutes);
 import integrationRoutes from './integrations/integration.routes';
 app.use('/api/v2/integrations', integrationRoutes);
 
-// Event Bus health endpoint
-app.get('/api/v2/events/health', async (_req, res) => {
+// Event Bus health endpoint (admin only)
+app.get('/api/v2/events/health', authenticate, authorize('admin'), async (_req, res) => {
   try {
     const { eventBus } = await import('./shared/events/event-bus');
     const status = eventBus.getStatus();

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { query, param } from 'express-validator';
 import * as searchController from '../controllers/search.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -9,7 +10,7 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/v1/pm/search:
+ * /api/v2/pm/search:
  *   get:
  *     summary: البحث العام عن المهام والمشاريع
  *     description: البحث عن المهام والمشاريع باستخدام كلمات مفتاحية
@@ -61,12 +62,13 @@ router.get(
     query('type').optional().isIn(['tasks', 'projects']),
     query('limit').optional().isNumeric(),
   ],
-  (req: Request, res: Response) => searchController.globalSearch(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => searchController.globalSearch(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/search/tasks:
+ * /api/v2/pm/search/tasks:
  *   get:
  *     summary: البحث عن المهام مع الفلاتر
  *     description: البحث عن المهام مع إمكانية التصفية حسب الحالة والأولوية والمعين
@@ -127,12 +129,13 @@ router.get(
     query('page').optional().isNumeric(),
     query('limit').optional().isNumeric(),
   ],
-  (req: Request, res: Response) => searchController.searchTasks(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => searchController.searchTasks(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/search/projects/{projectId}/tasks:
+ * /api/v2/pm/search/projects/{projectId}/tasks:
  *   get:
  *     summary: البحث عن المهام في المشروع
  *     description: البحث عن المهام داخل مشروع معين
@@ -186,7 +189,8 @@ router.get(
     query('type').optional(),
     query('priority').optional(),
   ],
-  (req: Request, res: Response) => searchController.searchTasks(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => searchController.searchTasks(req, res)
 );
 
 export default router;

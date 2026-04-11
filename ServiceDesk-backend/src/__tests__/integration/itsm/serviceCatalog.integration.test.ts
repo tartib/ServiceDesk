@@ -54,7 +54,8 @@ describe('ITSM Service Catalog — Integration Tests', () => {
       const res = await authReq(request(app).post('/api/v2/itsm/services'), adminUser)
         .send({ name: '' });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Mongoose validation: required fields missing
+      expect(res.status).toBe(500);
       expect(res.body.success).toBe(false);
     });
 
@@ -107,7 +108,8 @@ describe('ITSM Service Catalog — Integration Tests', () => {
       const res = await authReq(
         request(app).get('/api/v2/itsm/services/000000000000000000000000'), adminUser);
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Controller: sendError(404, 'Service not found')
+      expect(res.status).toBe(404);
     });
   });
 

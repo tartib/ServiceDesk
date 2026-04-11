@@ -6,6 +6,8 @@ import {
   ITimelineEvent,
   IAttachment,
   IKnownError,
+  RCAMethod,
+  KnownErrorStatus,
 } from '../types/itsm.types';
 
 export interface IProblem extends Document {
@@ -32,6 +34,14 @@ export interface IProblem extends Document {
     group_name: string;
   };
   known_error?: IKnownError;
+  known_error_status?: KnownErrorStatus;
+  known_error_published_at?: Date;
+  rca_started_at?: Date;
+  rca_method?: RCAMethod;
+  rca_findings?: string;
+  rca_completed_at?: Date;
+  contributing_factors?: string[];
+  recurring_incidents?: Array<{ incident_id: string; title?: string }>;
   timeline: ITimelineEvent[];
   attachments: IAttachment[];
   site_id: string;
@@ -173,6 +183,20 @@ const ProblemSchema = new Schema<IProblem>(
     known_error: {
       type: KnownErrorSchema,
     },
+    known_error_status: {
+      type: String,
+      enum: Object.values(KnownErrorStatus),
+    },
+    known_error_published_at: { type: Date },
+    rca_started_at: { type: Date },
+    rca_method: { type: String, enum: Object.values(RCAMethod) },
+    rca_findings: { type: String, maxlength: 10000 },
+    rca_completed_at: { type: Date },
+    contributing_factors: { type: [String], default: [] },
+    recurring_incidents: {
+      type: [new Schema({ incident_id: String, title: String }, { _id: false })],
+      default: [],
+    },
     timeline: {
       type: [TimelineEventSchema],
       default: [],
@@ -240,6 +264,7 @@ ProblemSchema.pre('save', function (next) {
 ProblemSchema.set('toJSON', { virtuals: true });
 ProblemSchema.set('toObject', { virtuals: true });
 
-const Problem = mongoose.model<IProblem>('Problem', ProblemSchema);
+const Problem = (mongoose.models['Problem'] as mongoose.Model<IProblem>) ||
+  mongoose.model<IProblem>('Problem', ProblemSchema);
 
 export default Problem;

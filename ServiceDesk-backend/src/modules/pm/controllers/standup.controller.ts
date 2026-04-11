@@ -1,6 +1,5 @@
 import { Response } from 'express';
 import logger from '../../../utils/logger';
-import { validationResult } from 'express-validator';
 import Standup from '../models/Standup';
 import Project from '../models/Project';
 import { PMAuthRequest, ApiResponse } from '../../../types/pm';
@@ -13,14 +12,6 @@ function isLeader(role: string | null): boolean {
 
 export const createStandup = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const currentUserId = req.user?.id;
     const { projectId } = req.params;
@@ -189,14 +180,6 @@ export const getStandup = async (req: PMAuthRequest, res: Response): Promise<voi
 
 export const updateStandup = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const currentUserId = req.user?.id;
     const { standupId } = req.params;

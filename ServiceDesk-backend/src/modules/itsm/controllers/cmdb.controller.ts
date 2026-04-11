@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
 import {
   ConfigurationItem,
   CIRelationship,
@@ -8,13 +7,13 @@ import {
   CICriticality,
   CIRelationshipType,
 } from '../models';
-// UserRole import removed — authorization now handled by itsmAuthorize middleware
-import { ApiResponse } from '../../../types/pm';
 import logger from '../../../utils/logger';
 import { ItsmEventPublisher } from '../../../shared/events/publishers/itsm.publisher';
 import { getItsmRepos, isItsmPostgres } from '../infrastructure/repositories';
 import { PgConfigurationItemRepository } from '../infrastructure/repositories/PgConfigurationItemRepository';
 import { PgCIRelationshipRepository } from '../infrastructure/repositories/PgCIRelationshipRepository';
+import asyncHandler from '../../../utils/asyncHandler';
+import { sendSuccess, sendPaginated, sendError } from '../../../utils/ApiResponse';
 
 /**
  * CMDB Controller
@@ -22,9 +21,8 @@ import { PgCIRelationshipRepository } from '../infrastructure/repositories/PgCIR
  */
 
 // GET /api/v2/itsm/cmdb/items - List configuration items
-export const getConfigItems = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const {
+export const getConfigItems = asyncHandler(async (req: Request, res: Response) => {
+  const {
       ciType,
       status,
       criticality,
@@ -50,14 +48,7 @@ export const getConfigItems = async (req: Request, res: Response): Promise<void>
         pageNum,
         limitNum,
       );
-      res.json({
-        success: true,
-        data: {
-          items: result.data,
-          pagination: { page: result.page, limit: result.limit, total: result.total, pages: result.totalPages },
-        },
-      } as ApiResponse);
-      return;
+      return void sendPaginated(req, res, result.data, result.page, result.limit, result.total);
     }
 
     // ── MongoDB path ──
@@ -98,146 +89,76 @@ export const getConfigItems = async (req: Request, res: Response): Promise<void>
       ConfigurationItem.countDocuments(query),
     ]);
 
-    res.json({
-      success: true,
-      data: {
-        items,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages: Math.ceil(total / limitNum),
-        },
-      },
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error fetching configuration items:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch configuration items',
-    } as ApiResponse);
-  }
-};
+    sendPaginated(req, res, items, pageNum, limitNum, total);
+});
 
 // GET /api/v2/itsm/cmdb/items/:id - Get single configuration item
-export const getConfigItem = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
+export const getConfigItem = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    let item: any;
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
-      item = await repo.findByCiId(id) || await repo.findById(id);
-    } else {
-      item = await ConfigurationItem.findById(id)
-        .populate('ownerId', 'name email')
-        .populate('technicalOwnerId', 'name email')
-        .populate('parentId', 'ciId name ciType')
-        .populate('children', 'ciId name ciType status')
-        .populate('relatedCIs.ciId', 'ciId name ciType status');
-    }
-
-    if (!item) {
-      res.status(404).json({
-        success: false,
-        error: 'Configuration item not found',
-      } as ApiResponse);
-      return;
-    }
-
-    res.json({
-      success: true,
-      data: item,
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error fetching configuration item:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch configuration item',
-    } as ApiResponse);
+  let item: any;
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
+    item = await repo.findByCiId(id) || await repo.findById(id);
+  } else {
+    item = await ConfigurationItem.findById(id)
+      .populate('ownerId', 'name email')
+      .populate('technicalOwnerId', 'name email')
+      .populate('parentId', 'ciId name ciType')
+      .populate('children', 'ciId name ciType status')
+      .populate('relatedCIs.ciId', 'ciId name ciType status');
   }
-};
+
+  if (!item) return void sendError(req, res, 404, 'Configuration item not found');
+  sendSuccess(req, res, item);
+});
 
 // POST /api/v2/itsm/cmdb/items - Create configuration item
-export const createConfigItem = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
-
-    let item: any;
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
-      item = await repo.create({
-        ...req.body,
-        createdBy: req.user?.id,
-        lastUpdatedBy: req.user?.id,
-      } as any);
-    } else {
-      item = new ConfigurationItem({
-        ...req.body,
-        createdBy: req.user?.id,
-        lastUpdatedBy: req.user?.id,
-      });
-      await item.save();
-    }
-
-    logger.info(`Configuration item created: ${item.ciId} by user ${req.user?.id}`);
-
-    // Emit event
-    ItsmEventPublisher.ciCreated(
-      {
-        ciId: item.ciId,
-        name: item.name,
-        ciType: item.ciType,
-        criticality: item.criticality || 'medium',
-        createdBy: req.user?.id || '',
-      },
-      { organizationId: req.user?.organizationId || '', userId: req.user?.id || '' }
-    ).catch((err) => logger.error('Failed to emit ciCreated', { err }));
-
-    res.status(201).json({
-      success: true,
-      data: item,
-      message: 'Configuration item created successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error creating configuration item:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create configuration item',
-    } as ApiResponse);
+export const createConfigItem = asyncHandler(async (req: Request, res: Response) => {
+  let item: any;
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
+    item = await repo.create({
+      ...req.body,
+      createdBy: req.user?.id,
+      lastUpdatedBy: req.user?.id,
+    } as any);
+  } else {
+    item = new ConfigurationItem({
+      ...req.body,
+      createdBy: req.user?.id,
+      lastUpdatedBy: req.user?.id,
+    });
+    await item.save();
   }
-};
+
+  logger.info(`Configuration item created: ${item.ciId} by user ${req.user?.id}`);
+
+  // Emit event
+  ItsmEventPublisher.ciCreated(
+    {
+      ciId: item.ciId,
+      name: item.name,
+      ciType: item.ciType,
+      criticality: item.criticality || 'medium',
+      createdBy: req.user?.id || '',
+    },
+    { organizationId: req.user?.organizationId || '', userId: req.user?.id || '' }
+  ).catch((err) => logger.error('Failed to emit ciCreated', { err }));
+
+  sendSuccess(req, res, item, 'Configuration item created successfully', 201);
+});
 
 // PUT /api/v2/itsm/cmdb/items/:id - Update configuration item
-export const updateConfigItem = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
+export const updateConfigItem = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const trackFields = ['name', 'status', 'criticality', 'ciType', 'category', 'ownerId', 'department', 'location'];
 
-    const { id } = req.params;
-    const trackFields = ['name', 'status', 'criticality', 'ciType', 'category', 'ownerId', 'department', 'location'];
-
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
-      let item = await repo.findByCiId(id) || await repo.findById(id);
-      if (!item) {
-        res.status(404).json({ success: false, error: 'Configuration item not found' } as ApiResponse);
-        return;
-      }
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
+    let item = await repo.findByCiId(id) || await repo.findById(id);
+    if (!item) return void sendError(req, res, 404, 'Configuration item not found');
       const itemId = (item as any)._id || (item as any).id;
 
       // Track changes
@@ -277,19 +198,12 @@ export const updateConfigItem = async (req: Request, res: Response): Promise<voi
         ).catch((err) => logger.error('Failed to emit ciUpdated', { err }));
       }
 
-      res.json({ success: true, data: item, message: 'Configuration item updated successfully' } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, item, 'Configuration item updated successfully');
     }
 
     // ── MongoDB path ──
     const item = await ConfigurationItem.findById(id);
-    if (!item) {
-      res.status(404).json({
-        success: false,
-        error: 'Configuration item not found',
-      } as ApiResponse);
-      return;
-    }
+    if (!item) return void sendError(req, res, 404, 'Configuration item not found');
 
     // Track changes for history
     const changes: Record<string, { old: unknown; new: unknown }> = {};
@@ -336,33 +250,18 @@ export const updateConfigItem = async (req: Request, res: Response): Promise<voi
       ).catch((err) => logger.error('Failed to emit ciUpdated', { err }));
     }
 
-    res.json({
-      success: true,
-      data: item,
-      message: 'Configuration item updated successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error updating configuration item:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update configuration item',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, item, 'Configuration item updated successfully');
+});
 
 // DELETE /api/v2/itsm/cmdb/items/:id - Delete (retire) configuration item
-export const deleteConfigItem = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
+export const deleteConfigItem = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
-      const item = await repo.findByCiId(id) || await repo.findById(id);
-      if (!item) {
-        res.status(404).json({ success: false, error: 'Configuration item not found' } as ApiResponse);
-        return;
-      }
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
+    const item = await repo.findByCiId(id) || await repo.findById(id);
+    if (!item) return void sendError(req, res, 404, 'Configuration item not found');
       const itemId = (item as any)._id || (item as any).id;
       await repo.pushToJsonArray(itemId, 'history', {
         timestamp: new Date(),
@@ -378,19 +277,12 @@ export const deleteConfigItem = async (req: Request, res: Response): Promise<voi
         { organizationId: req.user?.organizationId || '', userId: req.user?.id || '' }
       ).catch((err) => logger.error('Failed to emit ciRetired', { err }));
 
-      res.json({ success: true, message: 'Configuration item retired successfully' } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, null, 'Configuration item retired successfully');
     }
 
     // ── MongoDB path ──
     const item = await ConfigurationItem.findById(id);
-    if (!item) {
-      res.status(404).json({
-        success: false,
-        error: 'Configuration item not found',
-      } as ApiResponse);
-      return;
-    }
+    if (!item) return void sendError(req, res, 404, 'Configuration item not found');
 
     // Soft delete - set status to retired
     item.status = CIStatus.RETIRED;
@@ -417,83 +309,46 @@ export const deleteConfigItem = async (req: Request, res: Response): Promise<voi
       { organizationId: req.user?.organizationId || '', userId: req.user?.id || '' }
     ).catch((err) => logger.error('Failed to emit ciRetired', { err }));
 
-    res.json({
-      success: true,
-      message: 'Configuration item retired successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error deleting configuration item:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to delete configuration item',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, null, 'Configuration item retired successfully');
+});
 
 // GET /api/v2/itsm/cmdb/items/:id/relationships - Get CI relationships
-export const getRelationships = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
+export const getRelationships = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    let relationships: any[];
-    if (isItsmPostgres()) {
-      const relRepo = getItsmRepos().ciRelationship as PgCIRelationshipRepository;
-      relationships = await relRepo.findByCiId(id);
-    } else {
-      relationships = await CIRelationship.find({
-        $or: [{ sourceId: id }, { targetId: id }],
-      })
-        .populate('sourceId', 'ciId name ciType status criticality')
-        .populate('targetId', 'ciId name ciType status criticality')
-        .lean();
-    }
-
-    res.json({
-      success: true,
-      data: relationships,
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error fetching relationships:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch relationships',
-    } as ApiResponse);
+  let relationships: any[];
+  if (isItsmPostgres()) {
+    const relRepo = getItsmRepos().ciRelationship as PgCIRelationshipRepository;
+    relationships = await relRepo.findByCiId(id);
+  } else {
+    relationships = await CIRelationship.find({
+      $or: [{ sourceId: id }, { targetId: id }],
+    })
+      .populate('sourceId', 'ciId name ciType status criticality')
+      .populate('targetId', 'ciId name ciType status criticality')
+      .lean();
   }
-};
+
+  sendSuccess(req, res, relationships);
+});
 
 // POST /api/v2/itsm/cmdb/relationships - Create relationship between CIs
-export const createRelationship = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
+export const createRelationship = asyncHandler(async (req: Request, res: Response) => {
+  const { sourceId, targetId, relationshipType, direction, strength, description } = req.body;
 
-    const { sourceId, targetId, relationshipType, direction, strength, description } = req.body;
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const ciRepo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
+    const relRepo = getItsmRepos().ciRelationship as PgCIRelationshipRepository;
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const ciRepo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
-      const relRepo = getItsmRepos().ciRelationship as PgCIRelationshipRepository;
+    const [source, target] = await Promise.all([
+      ciRepo.findById(sourceId),
+      ciRepo.findById(targetId),
+    ]);
+    if (!source || !target) return void sendError(req, res, 404, 'One or both configuration items not found');
 
-      const [source, target] = await Promise.all([
-        ciRepo.findById(sourceId),
-        ciRepo.findById(targetId),
-      ]);
-      if (!source || !target) {
-        res.status(404).json({ success: false, error: 'One or both configuration items not found' } as ApiResponse);
-        return;
-      }
-
-      const exists = await relRepo!.existsBetween(sourceId, targetId);
-      if (exists) {
-        res.status(409).json({ success: false, error: 'Relationship already exists between these items' } as ApiResponse);
-        return;
-      }
+    const exists = await relRepo!.existsBetween(sourceId, targetId);
+    if (exists) return void sendError(req, res, 409, 'Relationship already exists between these items');
 
       const relationship = await relRepo!.create({
         sourceId,
@@ -509,8 +364,7 @@ export const createRelationship = async (req: Request, res: Response): Promise<v
       await ciRepo.pushToJsonArray(sourceId, 'relatedCIs', { ciId: targetId, relationship: relationshipType, direction: 'outbound', strength: strength || 'strong', description });
       await ciRepo.pushToJsonArray(targetId, 'relatedCIs', { ciId: sourceId, relationship: relationshipType, direction: 'inbound', strength: strength || 'strong', description });
 
-      res.status(201).json({ success: true, data: relationship, message: 'Relationship created successfully' } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, relationship, 'Relationship created successfully', 201);
     }
 
     // ── MongoDB path ──
@@ -520,23 +374,11 @@ export const createRelationship = async (req: Request, res: Response): Promise<v
       ConfigurationItem.findById(targetId),
     ]);
 
-    if (!source || !target) {
-      res.status(404).json({
-        success: false,
-        error: 'One or both configuration items not found',
-      } as ApiResponse);
-      return;
-    }
+    if (!source || !target) return void sendError(req, res, 404, 'One or both configuration items not found');
 
     // Check for duplicate relationship
     const existing = await CIRelationship.findOne({ sourceId, targetId });
-    if (existing) {
-      res.status(409).json({
-        success: false,
-        error: 'Relationship already exists between these items',
-      } as ApiResponse);
-      return;
-    }
+    if (existing) return void sendError(req, res, 409, 'Relationship already exists between these items');
 
     const relationship = new CIRelationship({
       sourceId,
@@ -575,87 +417,48 @@ export const createRelationship = async (req: Request, res: Response): Promise<v
       },
     });
 
-    res.status(201).json({
-      success: true,
-      data: relationship,
-      message: 'Relationship created successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error creating relationship:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create relationship',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, relationship, 'Relationship created successfully', 201);
+});
 
 // DELETE /api/v2/itsm/cmdb/relationships/:id - Delete relationship
-export const deleteRelationship = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
+export const deleteRelationship = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const relRepo = getItsmRepos().ciRelationship as PgCIRelationshipRepository;
-      const rel = await relRepo!.deleteAndReturn(id);
-      if (!rel) {
-        res.status(404).json({ success: false, error: 'Relationship not found' } as ApiResponse);
-        return;
-      }
-      // Note: cleaning relatedCIs JSONB arrays on both CIs would require filtering the JSONB.
-      // For now we skip that — the relationship table is the source of truth in PG.
-      res.json({ success: true, message: 'Relationship deleted successfully' } as ApiResponse);
-      return;
-    }
-
-    // ── MongoDB path ──
-    const relationship = await CIRelationship.findById(id);
-    if (!relationship) {
-      res.status(404).json({
-        success: false,
-        error: 'Relationship not found',
-      } as ApiResponse);
-      return;
-    }
-
-    // Remove references from both CIs
-    await ConfigurationItem.findByIdAndUpdate(relationship.sourceId, {
-      $pull: { relatedCIs: { ciId: relationship.targetId } },
-    });
-    await ConfigurationItem.findByIdAndUpdate(relationship.targetId, {
-      $pull: { relatedCIs: { ciId: relationship.sourceId } },
-    });
-
-    await CIRelationship.findByIdAndDelete(id);
-
-    res.json({
-      success: true,
-      message: 'Relationship deleted successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error deleting relationship:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to delete relationship',
-    } as ApiResponse);
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const relRepo = getItsmRepos().ciRelationship as PgCIRelationshipRepository;
+    const rel = await relRepo!.deleteAndReturn(id);
+    if (!rel) return void sendError(req, res, 404, 'Relationship not found');
+    // Note: cleaning relatedCIs JSONB arrays on both CIs would require filtering the JSONB.
+    // For now we skip that — the relationship table is the source of truth in PG.
+    return void sendSuccess(req, res, null, 'Relationship deleted successfully');
   }
-};
+
+  // ── MongoDB path ──
+  const relationship = await CIRelationship.findById(id);
+  if (!relationship) return void sendError(req, res, 404, 'Relationship not found');
+
+  // Remove references from both CIs
+  await ConfigurationItem.findByIdAndUpdate(relationship.sourceId, {
+    $pull: { relatedCIs: { ciId: relationship.targetId } },
+  });
+  await ConfigurationItem.findByIdAndUpdate(relationship.targetId, {
+    $pull: { relatedCIs: { ciId: relationship.sourceId } },
+  });
+
+  await CIRelationship.findByIdAndDelete(id);
+
+  sendSuccess(req, res, null, 'Relationship deleted successfully');
+});
 
 // GET /api/v2/itsm/cmdb/items/:id/impact - Impact analysis for a CI
-export const getImpactAnalysis = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { depth = '2' } = req.query;
-    const maxDepth = Math.min(5, Math.max(1, parseInt(depth as string) || 2));
+export const getImpactAnalysis = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { depth = '2' } = req.query;
+  const maxDepth = Math.min(5, Math.max(1, parseInt(depth as string) || 2));
 
-    const item = await ConfigurationItem.findById(id);
-    if (!item) {
-      res.status(404).json({
-        success: false,
-        error: 'Configuration item not found',
-      } as ApiResponse);
-      return;
-    }
+  const item = await ConfigurationItem.findById(id);
+  if (!item) return void sendError(req, res, 404, 'Configuration item not found');
 
     // BFS to find impacted CIs
     const visited = new Set<string>();
@@ -692,28 +495,17 @@ export const getImpactAnalysis = async (req: Request, res: Response): Promise<vo
       }
     }
 
-    res.json({
-      success: true,
-      data: {
-        sourceItem: { ciId: item.ciId, name: item.name, ciType: item.ciType },
-        impactedItems: impacted,
-        totalImpacted: impacted.length,
-        maxDepthReached: maxDepth,
-      },
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error performing impact analysis:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to perform impact analysis',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, {
+      sourceItem: { ciId: item.ciId, name: item.name, ciType: item.ciType },
+      impactedItems: impacted,
+      totalImpacted: impacted.length,
+      maxDepthReached: maxDepth,
+    });
+});
 
 // GET /api/v2/itsm/cmdb/types - Get CI types with counts
-export const getCITypes = async (req: Request, res: Response): Promise<void> => {
-  try {
-    let typeCounts: any[];
+export const getCITypes = asyncHandler(async (req: Request, res: Response) => {
+  let typeCounts: any[];
     if (isItsmPostgres()) {
       const repo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
       typeCounts = await repo.getTypeCounts(true);
@@ -730,35 +522,20 @@ export const getCITypes = async (req: Request, res: Response): Promise<void> => 
       return { type, count: found?.count || 0 };
     });
 
-    res.json({
-      success: true,
-      data: types,
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error fetching CI types:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch CI types',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, types);
+});
 
 // GET /api/v2/itsm/cmdb/stats - Get CMDB statistics
-export const getCMDBStats = async (req: Request, res: Response): Promise<void> => {
-  try {
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
+export const getCMDBStats = asyncHandler(async (req: Request, res: Response) => {
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
       const ciRepo = getItsmRepos().configurationItem as PgConfigurationItemRepository;
       const relRepo = getItsmRepos().ciRelationship as PgCIRelationshipRepository;
       const [stats, totalRelationships] = await Promise.all([
         ciRepo.getStats(),
         relRepo!.countAll(),
       ]);
-      res.json({
-        success: true,
-        data: { ...stats, totalRelationships },
-      } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, { ...stats, totalRelationships });
     }
 
     // ── MongoDB path ──
@@ -786,22 +563,12 @@ export const getCMDBStats = async (req: Request, res: Response): Promise<void> =
 
     const totalRelationships = await CIRelationship.countDocuments();
 
-    res.json({
-      success: true,
-      data: {
-        totalItems,
-        totalRelationships,
-        byStatus: statusCounts,
-        byType: typeCounts,
-        byCriticality: criticalityCounts,
-        recentlyUpdated,
-      },
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error fetching CMDB stats:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch CMDB statistics',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, {
+      totalItems,
+      totalRelationships,
+      byStatus: statusCounts,
+      byType: typeCounts,
+      byCriticality: criticalityCounts,
+      recentlyUpdated,
+    });
+});

@@ -16,7 +16,8 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "seed:itsm": "ts-node src/scripts/seedITSMData.ts",
     "seed:users": "ts-node src/scripts/seedTestUsers.ts",
-    "module:health": "node scripts/moduleHealth.js"
+    "module:health": "node scripts/moduleHealth.js",
+    "boundary:check": "ts-node scripts/check-boundaries.ts"
   },
   "keywords": [
     "servicedesk",

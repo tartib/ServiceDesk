@@ -95,7 +95,8 @@ describe('Workflow Definitions — Integration Tests', () => {
       const res = await authReq(request(app).post('/api/v2/workflow-engine/definitions'), managerUser)
         .send({ name: 'Incomplete' });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Mongoose validation error for missing required fields
+      expect(res.status).toBe(500);
     });
 
     it('should require authentication', async () => {
@@ -136,7 +137,8 @@ describe('Workflow Definitions — Integration Tests', () => {
       const res = await authReq(
         request(app).get('/api/v2/workflow-engine/definitions/invalid-id'), managerUser);
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Mongoose CastError for invalid ObjectId
+      expect(res.status).toBe(500);
     });
   });
 
@@ -159,20 +161,31 @@ describe('Workflow Definitions — Integration Tests', () => {
   // PUBLISH / DEPRECATE
   // ============================================
   describe('Publish / Deprecate', () => {
-    it('POST /api/v2/workflow-engine/definitions/:id/publish - should publish', async () => {
+    it('POST /api/v2/workflow-engine/definitions/:id/publish - should publish draft definition', async () => {
       if (!definitionId) return;
       const res = await authReq(
         request(app).post(`/api/v2/workflow-engine/definitions/${definitionId}/publish`), managerUser);
 
-      expect([200, 400]).toContain(res.status);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
     });
 
-    it('POST /api/v2/workflow-engine/definitions/:id/deprecate - should deprecate', async () => {
+    it('POST /api/v2/workflow-engine/definitions/:id/publish - should reject double publish', async () => {
+      if (!definitionId) return;
+      const res = await authReq(
+        request(app).post(`/api/v2/workflow-engine/definitions/${definitionId}/publish`), managerUser);
+
+      // Already published — service throws 'Definition is already published'
+      expect(res.status).toBe(500);
+    });
+
+    it('POST /api/v2/workflow-engine/definitions/:id/deprecate - should deprecate published definition', async () => {
       if (!definitionId) return;
       const res = await authReq(
         request(app).post(`/api/v2/workflow-engine/definitions/${definitionId}/deprecate`), managerUser);
 
-      expect([200, 400]).toContain(res.status);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
     });
   });
 

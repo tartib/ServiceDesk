@@ -67,14 +67,16 @@ describe('ITSM Service Requests — Integration Tests', () => {
       const res = await authReq(request(app).post('/api/v2/itsm/requests'), endUser)
         .send({ formData: {} });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // No serviceId → service lookup returns null → 404
+      expect(res.status).toBe(404);
     });
 
     it('should reject for non-existent service', async () => {
       const res = await authReq(request(app).post('/api/v2/itsm/requests'), endUser)
         .send({ serviceId: '000000000000000000000000', formData: { test: 'data' } });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Service not found or inactive → 404
+      expect(res.status).toBe(404);
     });
 
     it('should require authentication', async () => {
@@ -129,7 +131,8 @@ describe('ITSM Service Requests — Integration Tests', () => {
         request(app).post(`/api/v2/itsm/requests/${requestId}/comments`), endUser)
         .send({ message: 'When will this be processed?' });
 
-      expect([200, 201]).toContain(res.status);
+      // Controller uses sendSuccess(req, res, comment, 'Comment added', 201)
+      expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
     });
 
@@ -139,7 +142,8 @@ describe('ITSM Service Requests — Integration Tests', () => {
         request(app).post(`/api/v2/itsm/requests/${requestId}/comments`), endUser)
         .send({ message: '' });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Controller: sendError(400, 'Comment message is required')
+      expect(res.status).toBe(400);
     });
   });
 
@@ -165,8 +169,8 @@ describe('ITSM Service Requests — Integration Tests', () => {
         request(app).post(`/api/v2/itsm/requests/${transitionRequestId}/approve`), adminUser)
         .send({ comment: 'Approved for provisioning' });
 
-      // May succeed or fail depending on workflow state
-      expect([200, 400]).toContain(res.status);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
     });
 
     it('POST /api/v2/itsm/requests/:id/cancel - user should cancel own request', async () => {
@@ -183,7 +187,8 @@ describe('ITSM Service Requests — Integration Tests', () => {
         request(app).post(`/api/v2/itsm/requests/${cancelId}/cancel`), adminUser)
         .send({ reason: 'No longer needed' });
 
-      expect([200, 400]).toContain(res.status);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
     });
   });
 });

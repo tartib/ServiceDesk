@@ -2,226 +2,195 @@
  * SLA Policy Controller
  *
  * CRUD operations for SLA policies, goals, and escalation rules.
+ * Uses MongoDB models directly (PG path removed for MongoDB-first deployments).
  */
 
 import { Request, Response } from 'express';
-import { getSlaRepos } from '../infrastructure/repositories/SlaRepositoryFactory';
-import logger from '../../../utils/logger';
+import mongoose from 'mongoose';
+import SlaPolicy from '../models/SlaPolicy';
+import asyncHandler from '../../../utils/asyncHandler';
+import { sendSuccess, sendPaginated, sendError } from '../../../utils/ApiResponse';
 
-const asyncHandler = (fn: (req: Request, res: Response) => Promise<void>) =>
-  (req: Request, res: Response) => fn(req, res).catch((err) => {
-    logger.error('[SLA:PolicyController] Unhandled error', { error: err });
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  });
+function getTenant(req: Request): string | null {
+  return req.user?.organizationId || req.headers['x-organization-id'] as string || null;
+}
+
+function docToPolicy(doc: any) {
+  if (!doc) return null;
+  const obj = doc.toObject ? doc.toObject() : doc;
+  return { ...obj, id: obj._id?.toString(), goals: obj.goals || [] };
+}
 
 // ── Policies ─────────────────────────────────────────────────
 
 export const listPolicies = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const tenantId = (req as any).user?.organizationId || req.headers['x-organization-id'] as string;
-  if (!tenantId) return void res.status(400).json({ success: false, message: 'Missing organization context' });
+  const tenantId = getTenant(req);
+  if (!tenantId) return void sendError(req, res, 400, 'Missing organization context');
 
   const { entityType, isActive, search, page, limit } = req.query;
-  const result = await repos.policyRepo.search(
-    tenantId,
-    {
-      entityType: entityType as string,
-      isActive: isActive !== undefined ? isActive === 'true' : undefined,
-      search: search as string,
-    },
-    Number(page) || 1,
-    Number(limit) || 50
-  );
+  const pageNum = Number(page) || 1;
+  const limitNum = Number(limit) || 50;
 
-  res.json({
-    success: true,
-    data: result.data,
-    pagination: {
-      page: Number(page) || 1,
-      limit: Number(limit) || 50,
-      total: result.total,
-      totalPages: Math.ceil(result.total / (Number(limit) || 50)),
-    },
-  });
+  const filter: any = { tenantId };
+  if (entityType) filter.entityType = entityType;
+  if (isActive !== undefined) filter.isActive = isActive === 'true';
+  if (search) filter.$or = [{ name: { $regex: search, $options: 'i' } }, { code: { $regex: search, $options: 'i' } }];
+
+  const [docs, total] = await Promise.all([
+    SlaPolicy.find(filter).sort({ priority: 1 }).skip((pageNum - 1) * limitNum).limit(limitNum),
+    SlaPolicy.countDocuments(filter),
+  ]);
+
+  sendPaginated(req, res, docs.map(docToPolicy), pageNum, limitNum, total);
 });
 
 export const getPolicy = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const policy = await repos.policyRepo.findById(req.params.id);
-  if (!policy) return void res.status(404).json({ success: false, message: 'Policy not found' });
-
-  const goals = await repos.policyRepo.findGoalsByPolicyId(policy.id!);
-  res.json({ success: true, data: { ...policy, goals } });
+  const id = req.params.id;
+  const doc = mongoose.Types.ObjectId.isValid(id)
+    ? await SlaPolicy.findById(id)
+    : await SlaPolicy.findOne({ code: id });
+  if (!doc) return void sendError(req, res, 404, 'Policy not found');
+  sendSuccess(req, res, docToPolicy(doc));
 });
 
 export const createPolicy = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const tenantId = (req as any).user?.organizationId || req.headers['x-organization-id'] as string;
-  if (!tenantId) return void res.status(400).json({ success: false, message: 'Missing organization context' });
+  const tenantId = getTenant(req);
+  if (!tenantId) return void sendError(req, res, 400, 'Missing organization context');
 
-  const userId = (req as any).user?.id;
+  const userId = req.user?.id;
   const { code, name, nameAr, description, descriptionAr, entityType, priority, matchConditions, isActive, goals } = req.body;
 
   if (!code || !name || !entityType) {
-    return void res.status(400).json({ success: false, message: 'code, name, and entityType are required' });
+    return void sendError(req, res, 400, 'code, name, and entityType are required');
   }
 
-  // Check uniqueness
-  const existing = await repos.policyRepo.findByCode(tenantId, code);
-  if (existing) return void res.status(409).json({ success: false, message: 'Policy code already exists' });
+  const existing = await SlaPolicy.findOne({ tenantId, code });
+  if (existing) return void sendError(req, res, 409, 'Policy code already exists');
 
-  const policy = await repos.policyRepo.create({
-    tenantId,
-    code,
-    name,
-    nameAr,
-    description,
-    descriptionAr,
-    entityType,
-    priority: priority ?? 100,
-    matchConditions: matchConditions || [],
-    isActive: isActive ?? true,
-    createdBy: userId,
+  const doc = new SlaPolicy({
+    tenantId, code, name, nameAr, description, descriptionAr, entityType,
+    priority: priority ?? 100, matchConditions: matchConditions || [],
+    isActive: isActive ?? true, createdBy: userId,
+    goals: Array.isArray(goals) ? goals : [],
   });
-
-  // Create goals if provided
-  if (Array.isArray(goals)) {
-    for (const g of goals) {
-      await repos.policyRepo.createGoal({
-        policyId: policy.id!,
-        metricKey: g.metricKey,
-        targetMinutes: g.targetMinutes,
-        calendarId: g.calendarId,
-        startEvent: g.startEvent || 'ticket_created',
-        stopEvent: g.stopEvent || 'resolved',
-        pauseOnStatuses: g.pauseOnStatuses || [],
-        resumeOnStatuses: g.resumeOnStatuses || [],
-        breachSeverity: g.breachSeverity || 'warning',
-      });
-    }
-  }
-
-  const createdGoals = await repos.policyRepo.findGoalsByPolicyId(policy.id!);
-  res.status(201).json({ success: true, data: { ...policy, goals: createdGoals } });
+  await doc.save();
+  sendSuccess(req, res, docToPolicy(doc), 'Policy created', 201);
 });
 
 export const updatePolicy = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
   const { name, nameAr, description, descriptionAr, entityType, priority, matchConditions, isActive } = req.body;
-
-  const policy = await repos.policyRepo.update(req.params.id, {
-    name,
-    nameAr,
-    description,
-    descriptionAr,
-    entityType,
-    priority,
-    matchConditions,
-    isActive,
-  });
-
-  if (!policy) return void res.status(404).json({ success: false, message: 'Policy not found' });
-  res.json({ success: true, data: policy });
+  const doc = await SlaPolicy.findByIdAndUpdate(
+    req.params.id,
+    { $set: { name, nameAr, description, descriptionAr, entityType, priority, matchConditions, isActive } },
+    { new: true, runValidators: true }
+  );
+  if (!doc) return void sendError(req, res, 404, 'Policy not found');
+  sendSuccess(req, res, docToPolicy(doc));
 });
 
 export const deletePolicy = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const deleted = await repos.policyRepo.delete(req.params.id);
-  if (!deleted) return void res.status(404).json({ success: false, message: 'Policy not found' });
-  res.json({ success: true, message: 'Policy deleted' });
+  const doc = await SlaPolicy.findByIdAndDelete(req.params.id);
+  if (!doc) return void sendError(req, res, 404, 'Policy not found');
+  sendSuccess(req, res, null, 'Policy deleted');
 });
 
 export const activatePolicy = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const policy = await repos.policyRepo.activate(req.params.id);
-  if (!policy) return void res.status(404).json({ success: false, message: 'Policy not found' });
-  res.json({ success: true, data: policy });
+  const doc = await SlaPolicy.findByIdAndUpdate(req.params.id, { $set: { isActive: true } }, { new: true });
+  if (!doc) return void sendError(req, res, 404, 'Policy not found');
+  sendSuccess(req, res, docToPolicy(doc));
 });
 
 export const deactivatePolicy = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const policy = await repos.policyRepo.deactivate(req.params.id);
-  if (!policy) return void res.status(404).json({ success: false, message: 'Policy not found' });
-  res.json({ success: true, data: policy });
+  const doc = await SlaPolicy.findByIdAndUpdate(req.params.id, { $set: { isActive: false } }, { new: true });
+  if (!doc) return void sendError(req, res, 404, 'Policy not found');
+  sendSuccess(req, res, docToPolicy(doc));
 });
 
-// ── Goals ────────────────────────────────────────────────────
+// ── Goals (embedded in policy) ───────────────────────────────
 
 export const listGoals = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const goals = await repos.policyRepo.findGoalsByPolicyId(req.params.policyId);
-  res.json({ success: true, data: goals });
+  const doc = await SlaPolicy.findById(req.params.policyId);
+  if (!doc) return void sendError(req, res, 404, 'Policy not found');
+  sendSuccess(req, res, doc.goals || []);
 });
 
 export const createGoal = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
   const { metricKey, targetMinutes, calendarId, startEvent, stopEvent, pauseOnStatuses, resumeOnStatuses, breachSeverity } = req.body;
-
   if (!metricKey || !targetMinutes) {
-    return void res.status(400).json({ success: false, message: 'metricKey and targetMinutes are required' });
+    return void sendError(req, res, 400, 'metricKey and targetMinutes are required');
   }
-
-  const goal = await repos.policyRepo.createGoal({
-    policyId: req.params.policyId,
-    metricKey,
-    targetMinutes,
-    calendarId,
+  const newGoal = {
+    metricKey, targetMinutes, calendarId,
     startEvent: startEvent || 'ticket_created',
     stopEvent: stopEvent || 'resolved',
     pauseOnStatuses: pauseOnStatuses || [],
     resumeOnStatuses: resumeOnStatuses || [],
     breachSeverity: breachSeverity || 'warning',
-  });
-
-  res.status(201).json({ success: true, data: goal });
+    escalationRules: [],
+  };
+  const doc = await SlaPolicy.findByIdAndUpdate(
+    req.params.policyId,
+    { $push: { goals: newGoal } },
+    { new: true }
+  );
+  if (!doc) return void sendError(req, res, 404, 'Policy not found');
+  sendSuccess(req, res, doc.goals[doc.goals.length - 1], 'Goal created', 201);
 });
 
 export const updateGoal = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const goal = await repos.policyRepo.updateGoal(req.params.goalId, req.body);
-  if (!goal) return void res.status(404).json({ success: false, message: 'Goal not found' });
-  res.json({ success: true, data: goal });
+  const doc = await SlaPolicy.findOneAndUpdate(
+    { 'goals._id': req.params.goalId },
+    { $set: Object.fromEntries(Object.entries(req.body).map(([k, v]) => [`goals.$.${k}`, v])) },
+    { new: true }
+  );
+  if (!doc) return void sendError(req, res, 404, 'Goal not found');
+  sendSuccess(req, res, doc.goals.find((g: any) => g._id?.toString() === req.params.goalId));
 });
 
 export const deleteGoal = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const deleted = await repos.policyRepo.deleteGoal(req.params.goalId);
-  if (!deleted) return void res.status(404).json({ success: false, message: 'Goal not found' });
-  res.json({ success: true, message: 'Goal deleted' });
+  const doc = await SlaPolicy.findOneAndUpdate(
+    { 'goals._id': req.params.goalId },
+    { $pull: { goals: { _id: req.params.goalId } } },
+    { new: true }
+  );
+  if (!doc) return void sendError(req, res, 404, 'Goal not found');
+  sendSuccess(req, res, null, 'Goal deleted');
 });
 
-// ── Escalation Rules ─────────────────────────────────────────
+// ── Escalation Rules (embedded in goal) ──────────────────────
 
 export const listEscalationRules = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const rules = await repos.policyRepo.findEscalationRulesByGoalId(req.params.goalId);
-  res.json({ success: true, data: rules });
+  const doc = await SlaPolicy.findOne({ 'goals._id': req.params.goalId });
+  if (!doc) return void sendError(req, res, 404, 'Goal not found');
+  const goal = doc.goals.find((g: any) => g._id?.toString() === req.params.goalId);
+  sendSuccess(req, res, goal?.escalationRules || []);
 });
 
 export const createEscalationRule = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
   const { triggerType, offsetMinutes, actionType, actionConfig, isActive, sortOrder } = req.body;
-
   if (!triggerType || !actionType) {
-    return void res.status(400).json({ success: false, message: 'triggerType and actionType are required' });
+    return void sendError(req, res, 400, 'triggerType and actionType are required');
   }
-
-  const rule = await repos.policyRepo.createEscalationRule({
-    goalId: req.params.goalId,
-    triggerType,
-    offsetMinutes: offsetMinutes ?? 0,
-    actionType,
-    actionConfig: actionConfig || {},
-    isActive: isActive ?? true,
-    sortOrder: sortOrder ?? 0,
-  });
-
-  res.status(201).json({ success: true, data: rule });
+  const newRule = {
+    triggerType, offsetMinutes: offsetMinutes ?? 0, actionType,
+    actionConfig: actionConfig || {}, isActive: isActive ?? true, sortOrder: sortOrder ?? 0,
+  };
+  const doc = await SlaPolicy.findOneAndUpdate(
+    { 'goals._id': req.params.goalId },
+    { $push: { 'goals.$.escalationRules': newRule } },
+    { new: true }
+  );
+  if (!doc) return void sendError(req, res, 404, 'Goal not found');
+  const goal = doc.goals.find((g: any) => g._id?.toString() === req.params.goalId);
+  sendSuccess(req, res, goal?.escalationRules[goal.escalationRules.length - 1], 'Escalation rule created', 201);
 });
 
 export const deleteEscalationRule = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const deleted = await repos.policyRepo.deleteEscalationRule(req.params.ruleId);
-  if (!deleted) return void res.status(404).json({ success: false, message: 'Escalation rule not found' });
-  res.json({ success: true, message: 'Escalation rule deleted' });
+  const doc = await SlaPolicy.findOneAndUpdate(
+    { 'goals.escalationRules._id': req.params.ruleId },
+    { $pull: { 'goals.$[].escalationRules': { _id: req.params.ruleId } } },
+    { new: true }
+  );
+  if (!doc) return void sendError(req, res, 404, 'Escalation rule not found');
+  sendSuccess(req, res, null, 'Escalation rule deleted');
 });

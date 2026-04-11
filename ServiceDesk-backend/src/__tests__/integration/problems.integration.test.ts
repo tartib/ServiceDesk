@@ -61,8 +61,8 @@ describe('Problems API - Integration Tests', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.data.problem).toBeDefined();
       expect(res.body.data.problem.problem_id).toMatch(/^PRB-/);
-      // Problem status starts as 'logged' not 'open'
-      expect(['open', 'logged']).toContain(res.body.data.problem.status);
+      // ProblemService sets initial status to ProblemStatus.LOGGED
+      expect(res.body.data.problem.status).toBe('logged');
     });
 
     it('should create a problem as manager', async () => {
@@ -319,8 +319,7 @@ describe('Problems API - Integration Tests', () => {
           incident_id: 'INC-001',
         });
 
-      // Endpoint may not exist or return different status
-      expect([200, 404]).toContain(res.status);
+      expect(res.status).toBe(200);
     });
   });
 
@@ -384,8 +383,7 @@ describe('Problems API - Integration Tests', () => {
           notes: 'Starting investigation',
         });
 
-      // May return 500 for validation issues
-      expect([200, 500]).toContain(res.status);
+      expect(res.status).toBe(200);
     });
   });
 

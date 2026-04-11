@@ -5,133 +5,113 @@
  */
 
 import { Request, Response } from 'express';
-import { getSlaRepos } from '../infrastructure/repositories/SlaRepositoryFactory';
-import logger from '../../../utils/logger';
+import SlaCalendar from '../models/SlaCalendar';
+import asyncHandler from '../../../utils/asyncHandler';
+import { sendSuccess, sendError } from '../../../utils/ApiResponse';
 
-const asyncHandler = (fn: (req: Request, res: Response) => Promise<void>) =>
-  (req: Request, res: Response) => fn(req, res).catch((err) => {
-    logger.error('[SLA:CalendarController] Unhandled error', { error: err });
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  });
+function getTenant(req: Request): string | null {
+  return req.user?.organizationId || req.headers['x-organization-id'] as string || null;
+}
+
+function docToCalendar(doc: any) {
+  if (!doc) return null;
+  const obj = doc.toObject ? doc.toObject() : doc;
+  return { ...obj, id: obj._id?.toString() };
+}
 
 // ── Calendars ────────────────────────────────────────────────
 
 export const listCalendars = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const tenantId = (req as any).user?.organizationId || req.headers['x-organization-id'] as string;
-  if (!tenantId) return void res.status(400).json({ success: false, message: 'Missing organization context' });
-
-  const calendars = await repos.calendarRepo.findByTenant(tenantId);
-  res.json({ success: true, data: calendars });
+  const tenantId = getTenant(req);
+  if (!tenantId) return void sendError(req, res, 400, 'Missing organization context');
+  const docs = await SlaCalendar.find({ tenantId }).sort({ isDefault: -1, name: 1 });
+  sendSuccess(req, res, docs.map(docToCalendar));
 });
 
 export const getCalendar = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const calendar = await repos.calendarRepo.findById(req.params.id);
-  if (!calendar) return void res.status(404).json({ success: false, message: 'Calendar not found' });
-
-  const [workingHours, holidays] = await Promise.all([
-    repos.calendarRepo.getWorkingHours(calendar.id!),
-    repos.calendarRepo.getHolidays(calendar.id!),
-  ]);
-
-  res.json({ success: true, data: { ...calendar, workingHours, holidays } });
+  const doc = await SlaCalendar.findById(req.params.id);
+  if (!doc) return void sendError(req, res, 404, 'Calendar not found');
+  sendSuccess(req, res, docToCalendar(doc));
 });
 
 export const createCalendar = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const tenantId = (req as any).user?.organizationId || req.headers['x-organization-id'] as string;
-  if (!tenantId) return void res.status(400).json({ success: false, message: 'Missing organization context' });
-
-  const userId = (req as any).user?.id;
+  const tenantId = getTenant(req);
+  if (!tenantId) return void sendError(req, res, 400, 'Missing organization context');
   const { name, nameAr, timezone, isDefault, isActive, workingHours, holidays } = req.body;
-
-  if (!name) return void res.status(400).json({ success: false, message: 'name is required' });
-
-  const calendar = await repos.calendarRepo.create({
-    tenantId,
-    name,
-    nameAr,
+  if (!name) return void sendError(req, res, 400, 'name is required');
+  const doc = new SlaCalendar({
+    tenantId, name, nameAr,
     timezone: timezone || 'Asia/Riyadh',
     isDefault: isDefault ?? false,
     isActive: isActive ?? true,
-    createdBy: userId,
+    workingHours: Array.isArray(workingHours) ? workingHours : [],
+    holidays: Array.isArray(holidays) ? holidays : [],
   });
-
-  // Set working hours if provided
-  if (Array.isArray(workingHours) && workingHours.length > 0) {
-    await repos.calendarRepo.setWorkingHours(calendar.id!, workingHours);
-  }
-
-  // Set holidays if provided
-  if (Array.isArray(holidays) && holidays.length > 0) {
-    await repos.calendarRepo.setHolidays(calendar.id!, holidays);
-  }
-
-  const resolved = await repos.calendarRepo.resolve(calendar.id!);
-  res.status(201).json({ success: true, data: resolved });
+  await doc.save();
+  sendSuccess(req, res, docToCalendar(doc), 'Calendar created', 201);
 });
 
 export const updateCalendar = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
   const { name, nameAr, timezone, isDefault, isActive } = req.body;
-
-  const calendar = await repos.calendarRepo.update(req.params.id, {
-    name,
-    nameAr,
-    timezone,
-    isDefault,
-    isActive,
-  });
-
-  if (!calendar) return void res.status(404).json({ success: false, message: 'Calendar not found' });
-  res.json({ success: true, data: calendar });
+  const doc = await SlaCalendar.findByIdAndUpdate(
+    req.params.id,
+    { $set: { name, nameAr, timezone, isDefault, isActive } },
+    { new: true, runValidators: true }
+  );
+  if (!doc) return void sendError(req, res, 404, 'Calendar not found');
+  sendSuccess(req, res, docToCalendar(doc));
 });
 
 export const deleteCalendar = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const deleted = await repos.calendarRepo.delete(req.params.id);
-  if (!deleted) return void res.status(404).json({ success: false, message: 'Calendar not found' });
-  res.json({ success: true, message: 'Calendar deleted' });
+  const doc = await SlaCalendar.findByIdAndDelete(req.params.id);
+  if (!doc) return void sendError(req, res, 404, 'Calendar not found');
+  sendSuccess(req, res, null, 'Calendar deleted');
 });
 
 // ── Working Hours ────────────────────────────────────────────
 
 export const setWorkingHours = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
   const { hours } = req.body;
-  if (!Array.isArray(hours)) return void res.status(400).json({ success: false, message: 'hours array is required' });
-
-  const result = await repos.calendarRepo.setWorkingHours(req.params.id, hours);
-  res.json({ success: true, data: result });
+  if (!Array.isArray(hours)) return void sendError(req, res, 400, 'hours array is required');
+  const doc = await SlaCalendar.findByIdAndUpdate(
+    req.params.id, { $set: { workingHours: hours } }, { new: true }
+  );
+  if (!doc) return void sendError(req, res, 404, 'Calendar not found');
+  sendSuccess(req, res, doc.workingHours);
 });
 
 export const getWorkingHours = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const hours = await repos.calendarRepo.getWorkingHours(req.params.id);
-  res.json({ success: true, data: hours });
+  const doc = await SlaCalendar.findById(req.params.id);
+  if (!doc) return void sendError(req, res, 404, 'Calendar not found');
+  sendSuccess(req, res, doc.workingHours || []);
 });
 
-// ── Holidays ─────────────────────────────────────────────────
+// ── Holidays ───────────────────────────────────────────────────
 
 export const getHolidays = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const holidays = await repos.calendarRepo.getHolidays(req.params.id);
-  res.json({ success: true, data: holidays });
+  const doc = await SlaCalendar.findById(req.params.id);
+  if (!doc) return void sendError(req, res, 404, 'Calendar not found');
+  sendSuccess(req, res, doc.holidays || []);
 });
 
 export const addHoliday = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
   const { holidayDate, name, nameAr } = req.body;
-  if (!holidayDate) return void res.status(400).json({ success: false, message: 'holidayDate is required' });
-
-  const holiday = await repos.calendarRepo.addHoliday(req.params.id, { holidayDate, name, nameAr });
-  res.status(201).json({ success: true, data: holiday });
+  if (!holidayDate) return void sendError(req, res, 400, 'holidayDate is required');
+  const doc = await SlaCalendar.findByIdAndUpdate(
+    req.params.id,
+    { $push: { holidays: { holidayDate, name, nameAr } } },
+    { new: true }
+  );
+  if (!doc) return void sendError(req, res, 404, 'Calendar not found');
+  sendSuccess(req, res, doc.holidays[doc.holidays.length - 1], 'Holiday added', 201);
 });
 
 export const removeHoliday = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const deleted = await repos.calendarRepo.removeHoliday(req.params.id, req.params.date);
-  if (!deleted) return void res.status(404).json({ success: false, message: 'Holiday not found' });
-  res.json({ success: true, message: 'Holiday removed' });
+  const doc = await SlaCalendar.findByIdAndUpdate(
+    req.params.id,
+    { $pull: { holidays: { holidayDate: req.params.date } } },
+    { new: true }
+  );
+  if (!doc) return void sendError(req, res, 404, 'Calendar or holiday not found');
+  sendSuccess(req, res, null, 'Holiday removed');
 });

@@ -57,7 +57,8 @@ describe('Workflow External Tasks — Integration Tests', () => {
         request(app).post('/api/v2/workflow-engine/external-tasks/fetch-and-lock'), managerUser)
         .send({ topic: '' });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Validation: topic and workerId are required
+      expect(res.status).toBe(400);
     });
   });
 
@@ -71,7 +72,8 @@ describe('Workflow External Tasks — Integration Tests', () => {
         request(app).post(`/api/v2/workflow-engine/external-tasks/${fakeId}/complete`), managerUser)
         .send({ workerId: 'worker-test-001', result: {} });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Engine throws for non-existent external task
+      expect(res.status).toBe(500);
     });
   });
 
@@ -82,18 +84,20 @@ describe('Workflow External Tasks — Integration Tests', () => {
         request(app).post(`/api/v2/workflow-engine/external-tasks/${fakeId}/failure`), managerUser)
         .send({ workerId: 'worker-test-001', errorMessage: 'Task failed' });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Engine throws for non-existent external task
+      expect(res.status).toBe(500);
     });
   });
 
   describe('POST /api/v2/workflow-engine/external-tasks/:id/extend-lock', () => {
-    it('should return error for non-existent task', async () => {
+    it('should return 404 for non-existent task', async () => {
       const fakeId = '000000000000000000000000';
       const res = await authReq(
         request(app).post(`/api/v2/workflow-engine/external-tasks/${fakeId}/extend-lock`), managerUser)
         .send({ workerId: 'worker-test-001', lockDuration: 60000 });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Controller explicitly returns 404 for non-existent task
+      expect(res.status).toBe(404);
     });
   });
 });

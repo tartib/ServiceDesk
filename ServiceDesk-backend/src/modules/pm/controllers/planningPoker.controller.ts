@@ -1,6 +1,5 @@
 import { Response } from 'express';
 import logger from '../../../utils/logger';
-import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import PlanningPokerSession from '../models/PlanningPoker';
 import Task from '../models/Task';
@@ -17,15 +16,6 @@ export const createSession = async (req: PMAuthRequest, res: Response): Promise<
     console.log('Planning Poker - Request body:', JSON.stringify(req.body));
     console.log('Planning Poker - Request params:', JSON.stringify(req.params));
     
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      console.log('Planning Poker - Validation errors:', JSON.stringify(errors.array()));
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: (e as { path?: string }).path || 'unknown', message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     
@@ -190,14 +180,6 @@ export const getSprintSessions = async (req: PMAuthRequest, res: Response): Prom
 // Submit a vote
 export const submitVote = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const { sessionId } = req.params;
@@ -442,14 +424,6 @@ export const startNewRound = async (req: PMAuthRequest, res: Response): Promise<
 // Complete session and save final estimate
 export const completeSession = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const { sessionId } = req.params;

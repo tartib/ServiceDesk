@@ -355,10 +355,7 @@ Authorization: Bearer <your-jwt-token>
   },
   apis: [
     './src/routes/*.ts',
-    './src/routes/pm/**/*.ts',
-    './src/presentation/routes/v2/*.ts',
-    './src/presentation/routes/*.ts',
-    './src/api/v2/**/*.ts',
+    './src/modules/**/routes/**/*.ts',
   ],
 };
 

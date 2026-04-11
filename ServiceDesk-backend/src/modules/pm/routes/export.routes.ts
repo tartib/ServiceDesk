@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { param, query } from 'express-validator';
 import * as exportController from '../controllers/export.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -9,7 +10,7 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/v1/pm/export/projects/{projectId}/tasks:
+ * /api/v2/pm/export/projects/{projectId}/tasks:
  *   get:
  *     summary: تصدير مهام المشروع
  *     description: تصدير مهام المشروع بصيغة JSON أو CSV
@@ -43,12 +44,13 @@ router.get(
     param('projectId').isMongoId().withMessage('Invalid project ID'),
     query('format').optional().isIn(['json', 'csv']),
   ],
-  (req: Request, res: Response) => exportController.exportProjectTasks(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => exportController.exportProjectTasks(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/export/sprints/{sprintId}/report:
+ * /api/v2/pm/export/sprints/{sprintId}/report:
  *   get:
  *     summary: تصدير تقرير Sprint
  *     description: تصدير تقرير مفصل عن Sprint
@@ -73,12 +75,13 @@ router.get(
 router.get(
   '/sprints/:sprintId/report',
   [param('sprintId').isMongoId().withMessage('Invalid sprint ID')],
-  (req: Request, res: Response) => exportController.exportSprintReport(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => exportController.exportSprintReport(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/export/projects/{projectId}/summary:
+ * /api/v2/pm/export/projects/{projectId}/summary:
  *   get:
  *     summary: تصدير ملخص المشروع
  *     description: تصدير ملخص شامل للمشروع
@@ -103,7 +106,8 @@ router.get(
 router.get(
   '/projects/:projectId/summary',
   [param('projectId').isMongoId().withMessage('Invalid project ID')],
-  (req: Request, res: Response) => exportController.exportProjectSummary(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => exportController.exportProjectSummary(req, res)
 );
 
 export default router;

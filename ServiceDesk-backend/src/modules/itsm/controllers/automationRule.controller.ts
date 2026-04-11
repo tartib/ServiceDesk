@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
 import {
   AutomationRule,
   RuleExecutionLog,
@@ -7,11 +6,12 @@ import {
   AutomationRuleStatus,
   RuleTriggerType,
 } from '../models';
-import { ApiResponse } from '../../../types/pm';
 import logger from '../../../utils/logger';
 import { getItsmRepos, isItsmPostgres } from '../infrastructure/repositories';
 import { PgAutomationRuleRepository } from '../infrastructure/repositories/PgAutomationRuleRepository';
 import { PgRuleExecutionLogRepository } from '../infrastructure/repositories/PgRuleExecutionLogRepository';
+import asyncHandler from '../../../utils/asyncHandler';
+import { sendSuccess, sendPaginated, sendError } from '../../../utils/ApiResponse';
 
 /**
  * Automation Rules Controller
@@ -19,9 +19,8 @@ import { PgRuleExecutionLogRepository } from '../infrastructure/repositories/PgR
  */
 
 // GET /api/v2/itsm/automation/rules - List automation rules
-export const getRules = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const {
+export const getRules = asyncHandler(async (req: Request, res: Response) => {
+  const {
       status,
       triggerType,
       q,
@@ -42,14 +41,7 @@ export const getRules = async (req: Request, res: Response): Promise<void> => {
         pageNum,
         limitNum,
       );
-      res.json({
-        success: true,
-        data: {
-          rules: result.data,
-          pagination: { page: result.page, limit: result.limit, total: result.total, pages: result.totalPages },
-        },
-      } as ApiResponse);
-      return;
+      return void sendPaginated(req, res, result.data, result.page, result.limit, result.total);
     }
 
     // ── MongoDB path ──
@@ -81,76 +73,30 @@ export const getRules = async (req: Request, res: Response): Promise<void> => {
       AutomationRule.countDocuments(query),
     ]);
 
-    res.json({
-      success: true,
-      data: {
-        rules,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages: Math.ceil(total / limitNum),
-        },
-      },
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error fetching automation rules:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch automation rules',
-    } as ApiResponse);
-  }
-};
+    sendPaginated(req, res, rules, pageNum, limitNum, total);
+});
 
 // GET /api/v2/itsm/automation/rules/:id - Get single rule
-export const getRule = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
+export const getRule = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    let rule: any;
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().automationRule as PgAutomationRuleRepository;
-      rule = await repo.findByRuleId(id) || await repo.findById(id);
-    } else {
-      rule = await AutomationRule.findById(id)
-        .populate('createdBy', 'name email')
-        .populate('updatedBy', 'name email');
-    }
-
-    if (!rule) {
-      res.status(404).json({
-        success: false,
-        error: 'Automation rule not found',
-      } as ApiResponse);
-      return;
-    }
-
-    res.json({
-      success: true,
-      data: rule,
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error fetching automation rule:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch automation rule',
-    } as ApiResponse);
+  let rule: any;
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().automationRule as PgAutomationRuleRepository;
+    rule = await repo.findByRuleId(id) || await repo.findById(id);
+  } else {
+    rule = await AutomationRule.findById(id)
+      .populate('createdBy', 'name email')
+      .populate('updatedBy', 'name email');
   }
-};
+
+  if (!rule) return void sendError(req, res, 404, 'Automation rule not found');
+  sendSuccess(req, res, rule);
+});
 
 // POST /api/v2/itsm/automation/rules - Create automation rule
-export const createRule = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
-
-    const ruleData = {
+export const createRule = asyncHandler(async (req: Request, res: Response) => {
+  const ruleData = {
       ...req.body,
       createdBy: req.user?.id,
       updatedBy: req.user?.id,
@@ -177,43 +123,19 @@ export const createRule = async (req: Request, res: Response): Promise<void> => 
 
     logger.info(`Automation rule created: ${rule.ruleId} by user ${req.user?.id}`);
 
-    res.status(201).json({
-      success: true,
-      data: rule,
-      message: 'Automation rule created successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error creating automation rule:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create automation rule',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, rule, 'Automation rule created successfully', 201);
+});
 
 // PUT /api/v2/itsm/automation/rules/:id - Update automation rule
-export const updateRule = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
+export const updateRule = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const trackFields = ['name', 'status', 'trigger', 'conditions', 'actions'];
 
-    const { id } = req.params;
-    const trackFields = ['name', 'status', 'trigger', 'conditions', 'actions'];
-
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().automationRule as PgAutomationRuleRepository;
-      let rule = await repo.findByRuleId(id) || await repo.findById(id);
-      if (!rule) {
-        res.status(404).json({ success: false, error: 'Automation rule not found' } as ApiResponse);
-        return;
-      }
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().automationRule as PgAutomationRuleRepository;
+    let rule = await repo.findByRuleId(id) || await repo.findById(id);
+    if (!rule) return void sendError(req, res, 404, 'Automation rule not found');
       const ruleId = (rule as any)._id || (rule as any).id;
 
       const changes: Record<string, { old: unknown; new: unknown }> = {};
@@ -247,19 +169,12 @@ export const updateRule = async (req: Request, res: Response): Promise<void> => 
       } as any);
 
       logger.info(`Automation rule updated: ${(rule as any).ruleId} by user ${req.user?.id}`);
-      res.json({ success: true, data: rule, message: 'Automation rule updated successfully' } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, rule, 'Automation rule updated successfully');
     }
 
     // ── MongoDB path ──
     const rule = await AutomationRule.findById(id);
-    if (!rule) {
-      res.status(404).json({
-        success: false,
-        error: 'Automation rule not found',
-      } as ApiResponse);
-      return;
-    }
+    if (!rule) return void sendError(req, res, 404, 'Automation rule not found');
 
     // Track changes for history
     const changes: Record<string, { old: unknown; new: unknown }> = {};
@@ -295,277 +210,145 @@ export const updateRule = async (req: Request, res: Response): Promise<void> => 
 
     logger.info(`Automation rule updated: ${rule.ruleId} by user ${req.user?.id}`);
 
-    res.json({
-      success: true,
-      data: rule,
-      message: 'Automation rule updated successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error updating automation rule:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update automation rule',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, rule, 'Automation rule updated successfully');
+});
 
 // DELETE /api/v2/itsm/automation/rules/:id - Delete automation rule
-export const deleteRule = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
+export const deleteRule = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().automationRule as PgAutomationRuleRepository;
-      const rule = await repo.findByRuleId(id) || await repo.findById(id);
-      if (!rule) {
-        res.status(404).json({ success: false, error: 'Automation rule not found' } as ApiResponse);
-        return;
-      }
-      await repo.updateById((rule as any)._id || (rule as any).id, { status: AutomationRuleStatus.DEPRECATED, updatedBy: req.user?.id } as any);
-      logger.info(`Automation rule deprecated: ${(rule as any).ruleId} by user ${req.user?.id}`);
-      res.json({ success: true, message: 'Automation rule deprecated successfully' } as ApiResponse);
-      return;
-    }
-
-    // ── MongoDB path ──
-    const rule = await AutomationRule.findById(id);
-    if (!rule) {
-      res.status(404).json({
-        success: false,
-        error: 'Automation rule not found',
-      } as ApiResponse);
-      return;
-    }
-
-    // Soft delete - deprecate instead of removing
-    rule.status = AutomationRuleStatus.DEPRECATED;
-    rule.updatedBy = req.user?.id as any;
-    await rule.save();
-
-    logger.info(`Automation rule deprecated: ${rule.ruleId} by user ${req.user?.id}`);
-
-    res.json({
-      success: true,
-      message: 'Automation rule deprecated successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error deleting automation rule:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to delete automation rule',
-    } as ApiResponse);
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().automationRule as PgAutomationRuleRepository;
+    const rule = await repo.findByRuleId(id) || await repo.findById(id);
+    if (!rule) return void sendError(req, res, 404, 'Automation rule not found');
+    await repo.updateById((rule as any)._id || (rule as any).id, { status: AutomationRuleStatus.DEPRECATED, updatedBy: req.user?.id } as any);
+    logger.info(`Automation rule deprecated: ${(rule as any).ruleId} by user ${req.user?.id}`);
+    return void sendSuccess(req, res, null, 'Automation rule deprecated successfully');
   }
-};
+
+  // ── MongoDB path ──
+  const rule = await AutomationRule.findById(id);
+  if (!rule) return void sendError(req, res, 404, 'Automation rule not found');
+
+  // Soft delete - deprecate instead of removing
+  rule.status = AutomationRuleStatus.DEPRECATED;
+  rule.updatedBy = req.user?.id as any;
+  await rule.save();
+
+  logger.info(`Automation rule deprecated: ${rule.ruleId} by user ${req.user?.id}`);
+  sendSuccess(req, res, null, 'Automation rule deprecated successfully');
+});
 
 // POST /api/v2/itsm/automation/rules/:id/activate - Activate rule
-export const activateRule = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
+export const activateRule = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().automationRule as PgAutomationRuleRepository;
-      const rule = await repo.findByRuleId(id) || await repo.findById(id);
-      if (!rule) {
-        res.status(404).json({ success: false, error: 'Automation rule not found' } as ApiResponse);
-        return;
-      }
-      if (!(rule as any).isValid) {
-        res.status(400).json({ success: false, error: 'Cannot activate invalid rule', data: { validationErrors: (rule as any).validationErrors } } as ApiResponse);
-        return;
-      }
-      const updated = await repo.updateById((rule as any)._id || (rule as any).id, { status: AutomationRuleStatus.ACTIVE, updatedBy: req.user?.id } as any);
-      res.json({ success: true, data: updated, message: 'Automation rule activated' } as ApiResponse);
-      return;
-    }
-
-    // ── MongoDB path ──
-    const rule = await AutomationRule.findById(id);
-    if (!rule) {
-      res.status(404).json({
-        success: false,
-        error: 'Automation rule not found',
-      } as ApiResponse);
-      return;
-    }
-
-    if (!rule.isValid) {
-      res.status(400).json({
-        success: false,
-        error: 'Cannot activate invalid rule',
-        data: { validationErrors: rule.validationErrors },
-      } as ApiResponse);
-      return;
-    }
-
-    rule.status = AutomationRuleStatus.ACTIVE;
-    rule.updatedBy = req.user?.id as any;
-    await rule.save();
-
-    res.json({
-      success: true,
-      data: rule,
-      message: 'Automation rule activated',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error activating rule:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to activate rule',
-    } as ApiResponse);
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().automationRule as PgAutomationRuleRepository;
+    const rule = await repo.findByRuleId(id) || await repo.findById(id);
+    if (!rule) return void sendError(req, res, 404, 'Automation rule not found');
+    if (!(rule as any).isValid) return void sendError(req, res, 400, 'Cannot activate invalid rule');
+    const updated = await repo.updateById((rule as any)._id || (rule as any).id, { status: AutomationRuleStatus.ACTIVE, updatedBy: req.user?.id } as any);
+    return void sendSuccess(req, res, updated, 'Automation rule activated');
   }
-};
+
+  // ── MongoDB path ──
+  const rule = await AutomationRule.findById(id);
+  if (!rule) return void sendError(req, res, 404, 'Automation rule not found');
+  if (!rule.isValid) return void sendError(req, res, 400, 'Cannot activate invalid rule');
+
+  rule.status = AutomationRuleStatus.ACTIVE;
+  rule.updatedBy = req.user?.id as any;
+  await rule.save();
+
+  sendSuccess(req, res, rule, 'Automation rule activated');
+});
 
 // POST /api/v2/itsm/automation/rules/:id/deactivate - Deactivate rule
-export const deactivateRule = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
+export const deactivateRule = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().automationRule as PgAutomationRuleRepository;
-      const rule = await repo.findByRuleId(id) || await repo.findById(id);
-      if (!rule) {
-        res.status(404).json({ success: false, error: 'Automation rule not found' } as ApiResponse);
-        return;
-      }
-      const updated = await repo.updateById((rule as any)._id || (rule as any).id, { status: AutomationRuleStatus.INACTIVE, updatedBy: req.user?.id } as any);
-      res.json({ success: true, data: updated, message: 'Automation rule deactivated' } as ApiResponse);
-      return;
-    }
-
-    // ── MongoDB path ──
-    const rule = await AutomationRule.findById(id);
-    if (!rule) {
-      res.status(404).json({
-        success: false,
-        error: 'Automation rule not found',
-      } as ApiResponse);
-      return;
-    }
-
-    rule.status = AutomationRuleStatus.INACTIVE;
-    rule.updatedBy = req.user?.id as any;
-    await rule.save();
-
-    res.json({
-      success: true,
-      data: rule,
-      message: 'Automation rule deactivated',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error deactivating rule:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to deactivate rule',
-    } as ApiResponse);
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().automationRule as PgAutomationRuleRepository;
+    const rule = await repo.findByRuleId(id) || await repo.findById(id);
+    if (!rule) return void sendError(req, res, 404, 'Automation rule not found');
+    const updated = await repo.updateById((rule as any)._id || (rule as any).id, { status: AutomationRuleStatus.INACTIVE, updatedBy: req.user?.id } as any);
+    return void sendSuccess(req, res, updated, 'Automation rule deactivated');
   }
-};
+
+  // ── MongoDB path ──
+  const rule = await AutomationRule.findById(id);
+  if (!rule) return void sendError(req, res, 404, 'Automation rule not found');
+
+  rule.status = AutomationRuleStatus.INACTIVE;
+  rule.updatedBy = req.user?.id as any;
+  await rule.save();
+
+  sendSuccess(req, res, rule, 'Automation rule deactivated');
+});
 
 // GET /api/v2/itsm/automation/rules/:id/logs - Get execution logs for a rule
-export const getRuleLogs = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { page = '1', limit = '25', status } = req.query;
+export const getRuleLogs = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { page = '1', limit = '25', status } = req.query;
 
-    const pageNum = Math.max(1, parseInt(page as string) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 25));
+  const pageNum = Math.max(1, parseInt(page as string) || 1);
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 25));
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const logRepo = getItsmRepos().ruleExecutionLog as PgRuleExecutionLogRepository;
-      const result = await logRepo.findByRuleId(id, { status: status as string }, pageNum, limitNum);
-      res.json({
-        success: true,
-        data: {
-          logs: result.data,
-          pagination: { page: result.page, limit: result.limit, total: result.total, pages: result.totalPages },
-        },
-      } as ApiResponse);
-      return;
-    }
-
-    // ── MongoDB path ──
-    const skip = (pageNum - 1) * limitNum;
-
-    const query: Record<string, unknown> = { ruleId: id };
-    if (status) query.status = status;
-
-    const [logs, total] = await Promise.all([
-      RuleExecutionLog.find(query)
-        .sort({ startedAt: -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
-      RuleExecutionLog.countDocuments(query),
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        logs,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages: Math.ceil(total / limitNum),
-        },
-      },
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error fetching rule logs:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch execution logs',
-    } as ApiResponse);
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const logRepo = getItsmRepos().ruleExecutionLog as PgRuleExecutionLogRepository;
+    const result = await logRepo.findByRuleId(id, { status: status as string }, pageNum, limitNum);
+    return void sendPaginated(req, res, result.data, result.page, result.limit, result.total);
   }
-};
+
+  // ── MongoDB path ──
+  const skip = (pageNum - 1) * limitNum;
+
+  const query: Record<string, unknown> = { ruleId: id };
+  if (status) query.status = status;
+
+  const [logs, total] = await Promise.all([
+    RuleExecutionLog.find(query)
+      .sort({ startedAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean(),
+    RuleExecutionLog.countDocuments(query),
+  ]);
+
+  sendPaginated(req, res, logs, pageNum, limitNum, total);
+});
 
 // GET /api/v2/itsm/automation/templates - List rule templates
-export const getTemplates = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { category, q } = req.query;
+export const getTemplates = asyncHandler(async (req: Request, res: Response) => {
+  const { category, q } = req.query;
 
-    const query: Record<string, unknown> = {};
-    if (category) query.category = category;
-    if (q) {
-      query.$or = [
-        { name: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } },
-      ];
-    }
-
-    const templates = await RuleTemplate.find(query)
-      .sort({ usageCount: -1 })
-      .lean();
-
-    res.json({
-      success: true,
-      data: templates,
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error fetching templates:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch templates',
-    } as ApiResponse);
+  const query: Record<string, unknown> = {};
+  if (category) query.category = category;
+  if (q) {
+    query.$or = [
+      { name: { $regex: q, $options: 'i' } },
+      { description: { $regex: q, $options: 'i' } },
+    ];
   }
-};
+
+  const templates = await RuleTemplate.find(query)
+    .sort({ usageCount: -1 })
+    .lean();
+
+  sendSuccess(req, res, templates);
+});
 
 // POST /api/v2/itsm/automation/rules/from-template/:templateId - Create rule from template
-export const createRuleFromTemplate = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { templateId } = req.params;
+export const createRuleFromTemplate = asyncHandler(async (req: Request, res: Response) => {
+  const { templateId } = req.params;
 
-    const template = await RuleTemplate.findById(templateId);
-    if (!template) {
-      res.status(404).json({
-        success: false,
-        error: 'Template not found',
-      } as ApiResponse);
-      return;
-    }
+  const template = await RuleTemplate.findById(templateId);
+  if (!template) return void sendError(req, res, 404, 'Template not found');
 
     const { name, description } = req.body;
 
@@ -588,25 +371,13 @@ export const createRuleFromTemplate = async (req: Request, res: Response): Promi
     // Increment template usage
     await RuleTemplate.findByIdAndUpdate(templateId, { $inc: { usageCount: 1 } });
 
-    res.status(201).json({
-      success: true,
-      data: rule,
-      message: 'Rule created from template successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error creating rule from template:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create rule from template',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, rule, 'Rule created from template successfully', 201);
+});
 
 // GET /api/v2/itsm/automation/stats - Get automation statistics
-export const getAutomationStats = async (req: Request, res: Response): Promise<void> => {
-  try {
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
+export const getAutomationStats = asyncHandler(async (req: Request, res: Response) => {
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
       const ruleRepo = getItsmRepos().automationRule as PgAutomationRuleRepository;
       const logRepo = getItsmRepos().ruleExecutionLog as PgRuleExecutionLogRepository;
       const [ruleStats, recentExecutions, executionStats] = await Promise.all([
@@ -614,15 +385,7 @@ export const getAutomationStats = async (req: Request, res: Response): Promise<v
         logRepo.getRecent(10),
         logRepo.getExecutionStats(),
       ]);
-      res.json({
-        success: true,
-        data: {
-          ...ruleStats,
-          recentExecutions,
-          executionStats,
-        },
-      } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, { ...ruleStats, recentExecutions, executionStats });
     }
 
     // ── MongoDB path ──
@@ -660,22 +423,12 @@ export const getAutomationStats = async (req: Request, res: Response): Promise<v
       ]),
     ]);
 
-    res.json({
-      success: true,
-      data: {
-        totalRules,
-        activeRules,
-        byStatus: statusCounts,
-        byTrigger: triggerCounts,
-        recentExecutions,
-        executionStats,
-      },
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Error fetching automation stats:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch automation statistics',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, {
+      totalRules,
+      activeRules,
+      byStatus: statusCounts,
+      byTrigger: triggerCounts,
+      recentExecutions,
+      executionStats,
+    });
+});

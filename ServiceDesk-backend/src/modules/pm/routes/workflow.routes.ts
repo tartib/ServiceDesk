@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { body, param } from 'express-validator';
 import * as workflowController from '../controllers/workflow.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -11,7 +12,8 @@ router.use(authenticate);
 router.get(
   '/projects/:projectId/workflow',
   [param('projectId').isMongoId().withMessage('Invalid project ID')],
-  (req: Request, res: Response) => workflowController.getWorkflowByProject(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => workflowController.getWorkflowByProject(req, res)
 );
 
 // Reorder statuses (must come before :statusId routes to avoid conflict)
@@ -23,7 +25,8 @@ router.patch(
       .isArray()
       .withMessage('statusOrder must be an array of status IDs'),
   ],
-  (req: Request, res: Response) => workflowController.reorderStatuses(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => workflowController.reorderStatuses(req, res)
 );
 
 // Add new status to workflow
@@ -49,7 +52,8 @@ router.post(
     body('isInitial').optional().isBoolean(),
     body('isFinal').optional().isBoolean(),
   ],
-  (req: Request, res: Response) => workflowController.addStatus(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => workflowController.addStatus(req, res)
 );
 
 // Update existing status
@@ -70,7 +74,8 @@ router.patch(
     body('isInitial').optional().isBoolean(),
     body('isFinal').optional().isBoolean(),
   ],
-  (req: Request, res: Response) => workflowController.updateStatus(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => workflowController.updateStatus(req, res)
 );
 
 // Delete status
@@ -80,7 +85,32 @@ router.delete(
     param('projectId').isMongoId().withMessage('Invalid project ID'),
     param('statusId').trim().notEmpty().withMessage('Status ID is required'),
   ],
-  (req: Request, res: Response) => workflowController.deleteStatus(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => workflowController.deleteStatus(req, res)
+);
+
+// Add transition
+router.post(
+  '/projects/:projectId/workflow/transitions',
+  [
+    param('projectId').isMongoId().withMessage('Invalid project ID'),
+    body('name').trim().notEmpty().withMessage('Transition name is required'),
+    body('fromStatus').trim().notEmpty().withMessage('fromStatus is required'),
+    body('toStatus').trim().notEmpty().withMessage('toStatus is required'),
+  ],
+  handleValidation,
+  (req: Request, res: Response) => workflowController.addTransition(req, res)
+);
+
+// Delete transition
+router.delete(
+  '/projects/:projectId/workflow/transitions/:transitionId',
+  [
+    param('projectId').isMongoId().withMessage('Invalid project ID'),
+    param('transitionId').trim().notEmpty().withMessage('Transition ID is required'),
+  ],
+  handleValidation,
+  (req: Request, res: Response) => workflowController.deleteTransition(req, res)
 );
 
 export default router;

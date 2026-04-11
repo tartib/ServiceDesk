@@ -12,6 +12,9 @@ import {
   IAttachment,
   ITimelineEvent,
   IResolution,
+  MajorIncidentSeverity,
+  IMajorIncidentCommsUpdate,
+  IMajorIncidentBridge,
 } from '../types/itsm.types';
 
 export interface IIncident extends Document {
@@ -38,6 +41,13 @@ export interface IIncident extends Document {
   site_id: string;
   tags?: string[];
   is_major: boolean;
+  severity?: MajorIncidentSeverity;
+  major_declared_at?: Date;
+  major_declared_by?: string;
+  major_declared_by_name?: string;
+  comms_updates: IMajorIncidentCommsUpdate[];
+  major_bridge?: IMajorIncidentBridge;
+  pir_id?: string;
   reopen_count: number;
   first_response_at?: Date;
   created_at: Date;
@@ -240,6 +250,42 @@ const IncidentSchema = new Schema<IIncident>(
       default: false,
       index: true,
     },
+    severity: {
+      type: String,
+      enum: Object.values(MajorIncidentSeverity),
+    },
+    major_declared_at: { type: Date },
+    major_declared_by: { type: String },
+    major_declared_by_name: { type: String },
+    comms_updates: {
+      type: [
+        new Schema(
+          {
+            update_id: { type: String, required: true },
+            message: { type: String, required: true },
+            audience: { type: String, enum: ['internal', 'external', 'all'], required: true },
+            sent_by: { type: String, required: true },
+            sent_by_name: { type: String, required: true },
+            sent_at: { type: Date, default: Date.now },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
+    major_bridge: {
+      type: new Schema(
+        {
+          commander: { type: String },
+          commander_name: { type: String },
+          scribe: { type: String },
+          scribe_name: { type: String },
+          technical_leads: { type: [String], default: [] },
+        },
+        { _id: false }
+      ),
+    },
+    pir_id: { type: String },
     reopen_count: {
       type: Number,
       default: 0,
@@ -308,6 +354,7 @@ IncidentSchema.pre('save', function (next) {
 IncidentSchema.set('toJSON', { virtuals: true });
 IncidentSchema.set('toObject', { virtuals: true });
 
-const Incident = mongoose.model<IIncident>('Incident', IncidentSchema);
+const Incident = (mongoose.models['Incident'] as mongoose.Model<IIncident>) ||
+  mongoose.model<IIncident>('Incident', IncidentSchema);
 
 export default Incident;

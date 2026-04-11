@@ -3,7 +3,7 @@ import ApiError from '../../../utils/ApiError';
 import PrepTask, { IPrepTask } from '../../../models/PrepTask';
 import Inventory from '../../../models/Inventory';
 import { TaskStatus, TaskType, TaskPriority, AssignmentType } from '../../../types';
-import { logTaskEvent } from '../../../services/taskExecutionLogService';
+import { logTaskEvent } from '../../ops/services/taskExecutionLogService';
 import { IPrepTaskService, CreateTaskOptions } from './interfaces/IPrepTaskService';
 
 /**

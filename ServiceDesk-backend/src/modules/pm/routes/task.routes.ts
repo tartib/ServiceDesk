@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { body, param, query } from 'express-validator';
 import * as taskController from '../controllers/task.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -19,7 +20,8 @@ router.post(
     body('storyPoints').optional({ nullable: true, checkFalsy: true }).isNumeric(),
     body('dueDate').optional({ nullable: true, checkFalsy: true }).isISO8601(),
   ],
-  (req: Request, res: Response) => taskController.createTask(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.createTask(req, res)
 );
 
 // Get tasks for project
@@ -34,7 +36,8 @@ router.get(
     query('page').optional().isNumeric(),
     query('limit').optional().isNumeric(),
   ],
-  (req: Request, res: Response) => taskController.getTasks(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.getTasks(req, res)
 );
 
 // Board tasks route moved to board.routes.ts (getFullBoard)
@@ -43,7 +46,8 @@ router.get(
 router.get(
   '/tasks/:taskId',
   [param('taskId').isMongoId().withMessage('Invalid task ID')],
-  (req: Request, res: Response) => taskController.getTask(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.getTask(req, res)
 );
 
 // Update task
@@ -59,8 +63,7 @@ const updateTaskValidation = [
   body('startDate').optional({ nullable: true, checkFalsy: true }).isISO8601(),
 ];
 
-router.put('/tasks/:taskId', updateTaskValidation, (req: Request, res: Response) => taskController.updateTask(req as any, res));
-router.patch('/tasks/:taskId', updateTaskValidation, (req: Request, res: Response) => taskController.updateTask(req as any, res));
+router.patch('/tasks/:taskId', updateTaskValidation, handleValidation, (req: Request, res: Response) => taskController.updateTask(req, res));
 
 // Transition task status
 router.post(
@@ -70,7 +73,8 @@ router.post(
     body('statusId').notEmpty().withMessage('Status ID is required'),
     body('comment').optional(),
   ],
-  (req: Request, res: Response) => taskController.transitionTask(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.transitionTask(req, res)
 );
 
 // Move task (drag & drop on board)
@@ -82,7 +86,8 @@ router.post(
     body('columnOrder').optional().isNumeric(),
     body('sprintId').optional(),
   ],
-  (req: Request, res: Response) => taskController.moveTask(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.moveTask(req, res)
 );
 
 // Reorder tasks (bulk update columnOrder after drag & drop)
@@ -94,21 +99,24 @@ router.post(
     body('tasks.*.taskId').isMongoId().withMessage('Invalid task ID'),
     body('tasks.*.columnOrder').isNumeric().withMessage('columnOrder is required'),
   ],
-  (req: Request, res: Response) => taskController.reorderTasks(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.reorderTasks(req, res)
 );
 
 // Delete task
 router.delete(
   '/tasks/:taskId',
   [param('taskId').isMongoId().withMessage('Invalid task ID')],
-  (req: Request, res: Response) => taskController.deleteTask(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.deleteTask(req, res)
 );
 
 // Clone task
 router.post(
   '/tasks/:taskId/clone',
   [param('taskId').isMongoId().withMessage('Invalid task ID')],
-  (req: Request, res: Response) => taskController.cloneTask(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.cloneTask(req, res)
 );
 
 // ==================== WATCHERS ====================
@@ -117,7 +125,8 @@ router.post(
 router.get(
   '/tasks/:taskId/watchers',
   [param('taskId').isMongoId().withMessage('Invalid task ID')],
-  (req: Request, res: Response) => taskController.getWatchers(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.getWatchers(req, res)
 );
 
 // Add watcher (self or specific user)
@@ -127,7 +136,8 @@ router.post(
     param('taskId').isMongoId().withMessage('Invalid task ID'),
     body('userId').optional().isMongoId().withMessage('Invalid user ID'),
   ],
-  (req: Request, res: Response) => taskController.addWatcher(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.addWatcher(req, res)
 );
 
 // Remove watcher
@@ -137,14 +147,16 @@ router.delete(
     param('taskId').isMongoId().withMessage('Invalid task ID'),
     param('userId').isMongoId().withMessage('Invalid user ID'),
   ],
-  (req: Request, res: Response) => taskController.removeWatcher(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.removeWatcher(req, res)
 );
 
 // Remove self as watcher
 router.delete(
   '/tasks/:taskId/watchers',
   [param('taskId').isMongoId().withMessage('Invalid task ID')],
-  (req: Request, res: Response) => taskController.removeWatcher(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.removeWatcher(req, res)
 );
 
 // ==================== SUBTASK PROGRESS ====================
@@ -153,7 +165,8 @@ router.delete(
 router.get(
   '/tasks/:taskId/progress',
   [param('taskId').isMongoId().withMessage('Invalid task ID')],
-  (req: Request, res: Response) => taskController.getSubtaskProgress(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.getSubtaskProgress(req, res)
 );
 
 // ==================== TASK LINKS ====================
@@ -162,7 +175,8 @@ router.get(
 router.get(
   '/tasks/:taskId/links',
   [param('taskId').isMongoId().withMessage('Invalid task ID')],
-  (req: Request, res: Response) => taskController.getTaskLinks(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.getTaskLinks(req, res)
 );
 
 // Add task link
@@ -173,7 +187,8 @@ router.post(
     body('type').notEmpty().withMessage('Link type is required'),
     body('targetIssueKey').notEmpty().withMessage('Target issue key is required'),
   ],
-  (req: Request, res: Response) => taskController.addTaskLink(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.addTaskLink(req, res)
 );
 
 // Remove task link
@@ -183,7 +198,8 @@ router.delete(
     param('taskId').isMongoId().withMessage('Invalid task ID'),
     param('linkId').isMongoId().withMessage('Invalid link ID'),
   ],
-  (req: Request, res: Response) => taskController.removeTaskLink(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.removeTaskLink(req, res)
 );
 
 // ==================== WEB LINKS ====================
@@ -196,7 +212,8 @@ router.post(
     body('url').notEmpty().withMessage('URL is required'),
     body('title').notEmpty().withMessage('Title is required'),
   ],
-  (req: Request, res: Response) => taskController.addWebLink(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.addWebLink(req, res)
 );
 
 // Remove web link
@@ -206,7 +223,8 @@ router.delete(
     param('taskId').isMongoId().withMessage('Invalid task ID'),
     param('linkId').isMongoId().withMessage('Invalid link ID'),
   ],
-  (req: Request, res: Response) => taskController.removeWebLink(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.removeWebLink(req, res)
 );
 
 // ==================== ISSUE TYPES (WORK TYPES) ====================
@@ -215,7 +233,8 @@ router.delete(
 router.get(
   '/projects/:projectId/issue-types',
   [param('projectId').isMongoId().withMessage('Invalid project ID')],
-  (req: Request, res: Response) => taskController.getIssueTypes(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.getIssueTypes(req, res)
 );
 
 // Add issue type
@@ -228,7 +247,8 @@ router.post(
     body('icon').trim().notEmpty().withMessage('Icon is required'),
     body('color').trim().notEmpty().withMessage('Color is required'),
   ],
-  (req: Request, res: Response) => taskController.addIssueType(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.addIssueType(req, res)
 );
 
 // Update issue type
@@ -238,7 +258,8 @@ router.patch(
     param('projectId').isMongoId().withMessage('Invalid project ID'),
     param('typeId').notEmpty().withMessage('Type ID is required'),
   ],
-  (req: Request, res: Response) => taskController.updateIssueType(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.updateIssueType(req, res)
 );
 
 // Delete issue type
@@ -248,7 +269,8 @@ router.delete(
     param('projectId').isMongoId().withMessage('Invalid project ID'),
     param('typeId').notEmpty().withMessage('Type ID is required'),
   ],
-  (req: Request, res: Response) => taskController.deleteIssueType(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => taskController.deleteIssueType(req, res)
 );
 
 export default router;

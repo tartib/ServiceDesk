@@ -5,7 +5,7 @@
  */
 
 import { Router } from 'express';
-import { authenticate, authorize } from '../../../middleware/auth';
+import { authorize } from '../../../middleware/auth';
 
 // Policy controllers
 import {
@@ -29,9 +29,6 @@ import { getTicketSla, getTicketSlaEvents } from '../controllers/ticketSla.contr
 import { getComplianceReport, getBreachSummary, getStats } from '../controllers/report.controller';
 
 const router = Router();
-
-// All SLA routes require authentication
-router.use(authenticate);
 
 // ── Policies ─────────────────────────────────────────────────
 router.get('/policies', listPolicies);

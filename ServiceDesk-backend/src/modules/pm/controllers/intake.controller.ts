@@ -1,5 +1,4 @@
 import { Response } from 'express';
-import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import ProjectIntake, { IntakeStage } from '../models/ProjectIntake';
 import Project from '../models/Project';
@@ -40,14 +39,6 @@ const STAGE_TRANSITIONS: Record<string, string> = {
  */
 export const createIntakeRequest = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const organizationId = await resolveOrganizationId(userId, req.user?.organizationId);

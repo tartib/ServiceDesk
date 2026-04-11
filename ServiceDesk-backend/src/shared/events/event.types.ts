@@ -383,6 +383,33 @@ export const EVENT_TYPES = {
   SLA_METRIC_MET: 'sla.metric.met',
   SLA_METRIC_BREACHED: 'sla.metric.breached',
   SLA_ESCALATION_TRIGGERED: 'sla.escalation.triggered',
+
+  // Campaigns
+  CAMPAIGN_CREATED: 'campaigns.campaign.created',
+  CAMPAIGN_SCHEDULED: 'campaigns.campaign.scheduled',
+  CAMPAIGN_STARTED: 'campaigns.campaign.started',
+  CAMPAIGN_COMPLETED: 'campaigns.campaign.completed',
+  CAMPAIGN_FAILED: 'campaigns.campaign.failed',
+  CAMPAIGN_PAUSED: 'campaigns.campaign.paused',
+  CAMPAIGN_RESUMED: 'campaigns.campaign.resumed',
+  CAMPAIGN_MESSAGE_SENT: 'campaigns.message.sent',
+  CAMPAIGN_MESSAGE_DELIVERED: 'campaigns.message.delivered',
+  CAMPAIGN_MESSAGE_OPENED: 'campaigns.message.opened',
+  CAMPAIGN_MESSAGE_CLICKED: 'campaigns.message.clicked',
+  CAMPAIGN_MESSAGE_FAILED: 'campaigns.message.failed',
+  CAMPAIGN_JOURNEY_STARTED: 'campaigns.journey.started',
+  CAMPAIGN_JOURNEY_STEP_EXECUTED: 'campaigns.journey.step_executed',
+  CAMPAIGN_JOURNEY_COMPLETED: 'campaigns.journey.completed',
+  CAMPAIGN_TRIGGER_FIRED: 'campaigns.trigger.fired',
+
+  // Gamification
+  GAM_POINTS_AWARDED: 'gamification.points.awarded',
+  GAM_LEVEL_CHANGED: 'gamification.level.changed',
+  GAM_GROWTH_STATE_CHANGED: 'gamification.growth_state.changed',
+  GAM_ACHIEVEMENT_UNLOCKED: 'gamification.achievement.unlocked',
+  GAM_STREAK_UPDATED: 'gamification.streak.updated',
+  GAM_STREAK_BROKEN: 'gamification.streak.broken',
+  GAM_TEAM_MILESTONE: 'gamification.team.milestone',
 } as const;
 
 export type EventType = typeof EVENT_TYPES[keyof typeof EVENT_TYPES];
@@ -398,6 +425,9 @@ export const QUEUES = {
   AUDIT_LOG: 'servicedesk.audit.log',
   SEARCH_INDEX: 'servicedesk.search.index',
   WEBSOCKET_BROADCAST: 'servicedesk.websocket.broadcast',
+  GAMIFICATION: 'servicedesk.gamification.consumers',
+  CAMPAIGNS: 'servicedesk.campaigns.consumers',
+  CAMPAIGNS_TRIGGERS: 'servicedesk.campaigns.triggers',
 } as const;
 
 // ============================================================
@@ -422,4 +452,11 @@ export const ROUTING_PATTERNS = {
   SLA_ALL: 'sla.#',
   SLA_METRIC_ALL: 'sla.metric.*',
   NOTIFICATION_ALL: 'notification.#',
+  GAM_ALL: 'gamification.#',
+  GAM_POINTS_ALL: 'gamification.points.*',
+  GAM_STREAK_ALL: 'gamification.streak.*',
+  CAMPAIGNS_ALL: 'campaigns.#',
+  CAMPAIGNS_CAMPAIGN_ALL: 'campaigns.campaign.*',
+  CAMPAIGNS_MESSAGE_ALL: 'campaigns.message.*',
+  CAMPAIGNS_JOURNEY_ALL: 'campaigns.journey.*',
 } as const;

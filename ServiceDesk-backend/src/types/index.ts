@@ -1,8 +1,31 @@
 export enum UserRole {
-  PREP = 'prep',
-  SUPERVISOR = 'supervisor',
+  ADMIN = 'admin',
   MANAGER = 'manager',
+  SUPERVISOR = 'supervisor',
+  PREP = 'prep',
+  USER = 'user',
 }
+
+/**
+ * Typed role constants for use with authorize() middleware.
+ * Use these instead of raw strings to get compile-time safety.
+ */
+export const ROLES = {
+  ADMIN: UserRole.ADMIN,
+  MANAGER: UserRole.MANAGER,
+  SUPERVISOR: UserRole.SUPERVISOR,
+  PREP: UserRole.PREP,
+  USER: UserRole.USER,
+
+  /** Admin-only operations (metrics, feature flags, integrations) */
+  ADMIN_ONLY: [UserRole.ADMIN] as UserRole[],
+  /** Admin + Manager (delete operations, destructive actions) */
+  ADMIN_MANAGER: [UserRole.ADMIN, UserRole.MANAGER] as UserRole[],
+  /** Admin + Manager + Supervisor (create/update config) */
+  ADMIN_MANAGER_SUPERVISOR: [UserRole.ADMIN, UserRole.MANAGER, UserRole.SUPERVISOR] as UserRole[],
+  /** All operational roles (ITSM / Ops tasks) */
+  TECH_ROLES: [UserRole.PREP, UserRole.SUPERVISOR, UserRole.MANAGER] as UserRole[],
+} as const;
 
 export enum TaskStatus {
   SCHEDULED = 'scheduled',

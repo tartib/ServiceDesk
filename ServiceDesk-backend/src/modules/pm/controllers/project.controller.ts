@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { FilterQuery } from 'mongoose';
 import logger from '../../../utils/logger';
-import { validationResult } from 'express-validator';
 import Project from '../models/Project';
 import type { IProject } from '../models/Project';
 import PMTeam from '../models/Team';
@@ -16,14 +15,6 @@ import { PgTaskRepository } from '../infrastructure/repositories/PgTaskRepositor
 
 export const createProject = async (req: Request, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     let organizationId = req.user?.organizationId;
@@ -260,14 +251,6 @@ export const getProject = async (req: Request, res: Response): Promise<void> => 
 
 export const updateProject = async (req: Request, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const { projectId } = req.params;
     const userId = req.user?.id;
@@ -532,14 +515,6 @@ export const removeProjectMember = async (req: Request, res: Response): Promise<
 // Add member by email or username
 export const addMemberByEmail = async (req: Request, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const { projectId } = req.params;
     const { email, userId, role } = req.body;
@@ -646,14 +621,6 @@ export const addMemberByEmail = async (req: Request, res: Response): Promise<voi
 // Update member role
 export const updateMemberRole = async (req: Request, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const { projectId, memberId } = req.params;
     const { role } = req.body;

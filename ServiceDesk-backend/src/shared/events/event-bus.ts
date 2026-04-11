@@ -22,6 +22,8 @@ export const TOPICS = {
   WORKFLOW: 'servicedesk.workflow',
   NOTIFICATIONS: 'servicedesk.notifications',
   SLA: 'servicedesk.sla',
+  GAMIFICATION: 'servicedesk.gamification',
+  CAMPAIGNS: 'servicedesk.campaigns',
   DLQ: 'servicedesk.dlq',
 } as const;
 
@@ -35,6 +37,8 @@ function topicForEvent(eventType: string): TopicName {
   if (eventType.startsWith('wf.')) return TOPICS.WORKFLOW;
   if (eventType.startsWith('sd.')) return TOPICS.ITSM; // SD events → ITSM topic
   if (eventType.startsWith('sla.')) return TOPICS.SLA;
+  if (eventType.startsWith('gamification.')) return TOPICS.GAMIFICATION;
+  if (eventType.startsWith('campaigns.')) return TOPICS.CAMPAIGNS;
   return TOPICS.NOTIFICATIONS;
 }
 

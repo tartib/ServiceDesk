@@ -12,6 +12,8 @@ import { initAnalyticsConsumer } from './modules/analytics/consumers/analytics.c
 import { initSLAMonitorConsumer } from './shared/events/consumers/sla-monitor.consumer';
 import { initSlaConsumer } from './modules/sla/consumers/sla.consumer';
 import { startSlaSchedulerJob, stopSlaSchedulerJob } from './modules/sla/jobs/slaSchedulerJob';
+import { initGamificationConsumer } from './modules/gamification/consumers/gamification.consumer';
+import { startGamificationJobs, stopGamificationJobs } from './modules/gamification/jobs/gamificationJobs';
 import { initIntegrations, shutdownIntegrations } from './integrations';
 import FeatureFlagService from './shared/feature-flags/FeatureFlagService';
 import { isPostgresRequired, connectPostgres, disconnectPostgres } from './shared/database';
@@ -63,11 +65,16 @@ initializeSocket(httpServer);
       await initAnalyticsConsumer();
       await initSLAMonitorConsumer();
       await initSlaConsumer();
+      await initGamificationConsumer();
       logger.info('📨 Event bus and consumers initialized');
 
       // Start SLA scheduler job (every 30 seconds)
       startSlaSchedulerJob(30_000);
       logger.info('⏱️ SLA scheduler job started');
+
+      // Start gamification jobs (streak break check every 60s, reminders every 5min)
+      startGamificationJobs(60_000, 300_000);
+      logger.info('🎮 Gamification jobs started');
 
       // Initialize integration adapters (after event bus is ready)
       await initIntegrations();
@@ -99,6 +106,7 @@ process.on('SIGTERM', async () => {
   logger.info('👋 SIGTERM RECEIVED. Shutting down gracefully');
   stopWorkflowTimerJob();
   stopSlaSchedulerJob();
+  stopGamificationJobs();
   await shutdownIntegrations();
   await eventBus.disconnect();
   await disconnectPostgres();

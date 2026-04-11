@@ -6,87 +6,66 @@
  */
 
 import { Request, Response } from 'express';
-import { getSlaRepos } from '../infrastructure/repositories/SlaRepositoryFactory';
-import { slaClockEngine } from '../services/SlaClockEngine';
-import {
-  ITicketSlaView,
-  ITicketSlaMetricView,
-  SlaMetricStatus,
-} from '../domain';
-import logger from '../../../utils/logger';
+import SlaInstance from '../models/SlaInstance';
+import SlaPolicy from '../models/SlaPolicy';
+import SlaMetricInstance from '../models/SlaMetricInstance';
+import SlaEvent from '../models/SlaEvent';
+import { SlaMetricStatus } from '../domain';
+import asyncHandler from '../../../utils/asyncHandler';
+import { sendSuccess, sendError } from '../../../utils/ApiResponse';
 
-const asyncHandler = (fn: (req: Request, res: Response) => Promise<void>) =>
-  (req: Request, res: Response) => fn(req, res).catch((err) => {
-    logger.error('[SLA:TicketSlaController] Unhandled error', { error: err });
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  });
+function getTenant(req: Request): string | null {
+  return req.user?.organizationId || req.headers['x-organization-id'] as string || null;
+}
 
 export const getTicketSla = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
-  const tenantId = (req as any).user?.organizationId || req.headers['x-organization-id'] as string;
-  if (!tenantId) return void res.status(400).json({ success: false, message: 'Missing organization context' });
+  const tenantId = getTenant(req);
+  if (!tenantId) return void sendError(req, res, 400, 'Missing organization context');
 
   const { ticketId } = req.params;
-  const instance = await repos.instanceRepo.findByTicket(tenantId, ticketId);
+  const instance = await SlaInstance.findOne({ tenantId, ticketId });
   if (!instance) {
-    return void res.status(404).json({ success: false, message: 'No SLA instance found for this ticket' });
+    return void sendError(req, res, 404, 'No SLA instance found for this ticket');
   }
 
-  const policy = await repos.policyRepo.findById(instance.policyId);
+  const policy = await SlaPolicy.findById(instance.policyId);
   if (!policy) {
-    return void res.status(404).json({ success: false, message: 'SLA policy not found' });
+    return void sendError(req, res, 404, 'SLA policy not found');
   }
 
-  const metrics = await repos.metricRepo.findByInstanceId(instance.id!);
-  const now = new Date();
+  const metrics = await SlaMetricInstance.find({ instanceId: instance._id.toString() });
 
-  const metricViews: ITicketSlaMetricView[] = [];
-  for (const m of metrics) {
-    let remainingSeconds = 0;
-    if (m.status === SlaMetricStatus.RUNNING || m.status === SlaMetricStatus.PAUSED) {
-      const calendar = m.calendarId ? await repos.calendarRepo.resolve(m.calendarId) : null;
-      if (calendar) {
-        remainingSeconds = slaClockEngine.getRemainingSeconds(m, calendar, now);
-      } else {
-        remainingSeconds = m.remainingBusinessSeconds ?? 0;
-      }
-    }
+  const metricViews = metrics.map((m) => ({
+    metricKey: m.metricKey,
+    status: m.status,
+    targetMinutes: m.targetMinutes,
+    startedAt: m.startedAt?.toISOString?.(),
+    stoppedAt: m.stoppedAt?.toISOString?.(),
+    dueAt: m.dueAt?.toISOString?.(),
+    breachedAt: m.breachedAt?.toISOString?.(),
+    elapsedBusinessSeconds: m.elapsedBusinessSeconds,
+    remainingBusinessSeconds: m.remainingBusinessSeconds ?? 0,
+    breached: m.status === SlaMetricStatus.BREACHED,
+    paused: m.status === SlaMetricStatus.PAUSED,
+  }));
 
-    metricViews.push({
-      metricKey: m.metricKey as any,
-      status: m.status as SlaMetricStatus,
-      targetMinutes: m.targetMinutes,
-      startedAt: m.startedAt?.toISOString?.() ?? String(m.startedAt),
-      stoppedAt: m.stoppedAt?.toISOString?.() ?? undefined,
-      dueAt: m.dueAt?.toISOString?.() ?? undefined,
-      breachedAt: m.breachedAt?.toISOString?.() ?? undefined,
-      elapsedBusinessSeconds: m.elapsedBusinessSeconds,
-      remainingBusinessSeconds: remainingSeconds,
-      breached: m.status === SlaMetricStatus.BREACHED,
-      paused: m.status === SlaMetricStatus.PAUSED,
-    });
-  }
-
-  const view: ITicketSlaView = {
+  sendSuccess(req, res, {
     ticketId,
-    ticketType: instance.ticketType as any,
+    ticketType: instance.ticketType,
     policy: {
-      id: policy.id!,
+      id: policy._id.toString(),
       code: policy.code,
       name: policy.name,
       nameAr: policy.nameAr,
     },
-    instanceId: instance.id!,
-    instanceStatus: instance.status as any,
+    instanceId: instance._id.toString(),
+    instanceStatus: instance.status,
     metrics: metricViews,
-  };
-
-  res.json({ success: true, data: view });
+  });
 });
 
 export const getTicketSlaEvents = asyncHandler(async (req: Request, res: Response) => {
-  const repos = getSlaRepos();
   const { ticketId } = req.params;
-  const events = await repos.eventRepo.findByTicket(ticketId, 200);
-  res.json({ success: true, data: events });
+  const events = await SlaEvent.find({ ticketId }).sort({ createdAt: -1 }).limit(200);
+  sendSuccess(req, res, events);
 });

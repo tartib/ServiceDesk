@@ -158,18 +158,38 @@ export const defaultFlags: FeatureFlag[] = [
     category: FeatureFlagCategory.PLATFORM,
   },
 
+  // ── Gamification ────────────────────────────────────────────
+  {
+    name: 'gamification_module_enabled',
+    enabled: true,
+    description: 'Gamification module (points, streaks, achievements, leaderboards)',
+    descriptionAr: 'وحدة التلعيب (النقاط، السلاسل، الإنجازات، لوحات المتصدرين)',
+    rolloutPercentage: 100,
+    category: FeatureFlagCategory.GAMIFICATION,
+  },
+
+  // ── Campaigns & Engagement ────────────────────────────────
+  {
+    name: 'campaigns_module_enabled',
+    enabled: true,
+    description: 'Campaigns & Engagement module (campaigns, templates, segments, journeys, providers, analytics)',
+    descriptionAr: 'وحدة الحملات والتفاعل (الحملات، القوالب، الشرائح، الرحلات، مزودي الخدمة، التحليلات)',
+    rolloutPercentage: 100,
+    category: FeatureFlagCategory.CAMPAIGNS,
+  },
+
   // ── Legacy v1 Routes (Kill Switch) ──────────────────────────
   {
     name: 'legacy_v1_routes_enabled',
-    enabled: true,
-    description: 'Master switch for all legacy v1 API routes (sunset: 2026-09-01)',
+    enabled: false,
+    description: 'Master switch for all legacy v1 API routes — SUNSET 2026-04-10',
     descriptionAr: 'مفتاح رئيسي لجميع مسارات API القديمة v1',
     rolloutPercentage: 100,
     category: FeatureFlagCategory.CORE,
   },
   {
     name: 'legacy_auth_routes',
-    enabled: true,
+    enabled: false,
     description: 'Legacy auth, users, teams, employees routes',
     descriptionAr: 'مسارات المصادقة والمستخدمين والفرق القديمة',
     rolloutPercentage: 100,
@@ -177,41 +197,17 @@ export const defaultFlags: FeatureFlag[] = [
   },
   {
     name: 'legacy_ops_routes',
-    enabled: true,
+    enabled: false,
     description: 'Legacy tasks, categories, inventory, assets routes',
     descriptionAr: 'مسارات المهام والفئات والمخزون والأصول القديمة',
     rolloutPercentage: 100,
     category: FeatureFlagCategory.CORE,
   },
   {
-    name: 'legacy_itsm_v1_routes',
-    enabled: true,
-    description: 'Legacy ITSM v1 routes (incidents, problems, changes, SLAs)',
-    descriptionAr: 'مسارات ITSM v1 القديمة',
-    rolloutPercentage: 100,
-    category: FeatureFlagCategory.CORE,
-  },
-  {
-    name: 'legacy_forms_routes',
-    enabled: true,
-    description: 'Legacy form templates and submissions routes',
-    descriptionAr: 'مسارات قوالب النماذج والتقديمات القديمة',
-    rolloutPercentage: 100,
-    category: FeatureFlagCategory.CORE,
-  },
-  {
-    name: 'legacy_files_routes',
-    enabled: true,
-    description: 'Legacy file storage, folders, workflow diagram routes',
-    descriptionAr: 'مسارات تخزين الملفات والمجلدات القديمة',
-    rolloutPercentage: 100,
-    category: FeatureFlagCategory.CORE,
-  },
-  {
     name: 'legacy_misc_routes',
-    enabled: true,
-    description: 'Legacy knowledge, reports, KPI, alerts, performance, leaderboard routes',
-    descriptionAr: 'مسارات المعرفة والتقارير والمؤشرات القديمة',
+    enabled: false,
+    description: 'Legacy knowledge, KPI, alerts, performance, leaderboard routes',
+    descriptionAr: 'مسارات المعرفة والمؤشرات والتنبيهات القديمة',
     rolloutPercentage: 100,
     category: FeatureFlagCategory.CORE,
   },

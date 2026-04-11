@@ -2,12 +2,14 @@ import { Router, Request, Response } from 'express';
 import { body } from 'express-validator';
 import * as authController from '../controllers/auth.controller';
 import { authenticate } from '../../../middleware/auth';
+import { authLimiter } from '../../../middleware/rateLimiter';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
 /**
  * @swagger
- * /api/v1/pm/auth/register:
+ * /api/v2/pm/auth/register:
  *   post:
  *     summary: تسجيل مستخدم جديد
  *     description: إنشاء حساب مستخدم جديد في النظام
@@ -53,6 +55,7 @@ const router = Router();
  */
 router.post(
   '/register',
+  authLimiter,
   [
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
     body('password')
@@ -64,12 +67,13 @@ router.post(
     body('lastName').trim().notEmpty().withMessage('Last name is required'),
     body('organizationName').optional().trim(),
   ],
-  (req: Request, res: Response) => authController.register(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => authController.register(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/auth/login:
+ * /api/v2/pm/auth/login:
  *   post:
  *     summary: تسجيل الدخول
  *     description: تسجيل الدخول إلى النظام
@@ -101,16 +105,18 @@ router.post(
  */
 router.post(
   '/login',
+  authLimiter,
   [
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
     body('password').notEmpty().withMessage('Password is required'),
   ],
-  (req: Request, res: Response) => authController.login(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => authController.login(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/auth/refresh:
+ * /api/v2/pm/auth/refresh:
  *   post:
  *     summary: تحديث التوكن
  *     description: تحديث رمز الوصول
@@ -124,11 +130,11 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  */
-router.post('/refresh', (req: Request, res: Response) => authController.refreshToken(req as any, res));
+router.post('/refresh', authLimiter, (req: Request, res: Response) => authController.refreshToken(req, res));
 
 /**
  * @swagger
- * /api/v1/pm/auth/logout:
+ * /api/v2/pm/auth/logout:
  *   post:
  *     summary: تسجيل الخروج
  *     description: تسجيل الخروج من النظام
@@ -144,7 +150,7 @@ router.post('/refresh', (req: Request, res: Response) => authController.refreshT
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  */
-router.post('/logout', authenticate, (req: Request, res: Response) => authController.logout(req as any, res));
+router.post('/logout', authenticate, (req: Request, res: Response) => authController.logout(req, res));
 
 router.post(
   '/change-password',
@@ -157,9 +163,10 @@ router.post(
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
       .withMessage('Password must contain uppercase, lowercase, and number'),
   ],
-  (req: Request, res: Response) => authController.changePassword(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => authController.changePassword(req, res)
 );
 
-router.get('/me', authenticate, (req: Request, res: Response) => authController.me(req as any, res));
+router.get('/me', authenticate, (req: Request, res: Response) => authController.me(req, res));
 
 export default router;

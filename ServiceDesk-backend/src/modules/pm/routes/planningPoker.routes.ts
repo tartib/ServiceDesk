@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { body, param, query } from 'express-validator';
 import * as planningPokerController from '../controllers/planningPoker.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -9,7 +10,7 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/v1/pm/tasks/{taskId}/poker:
+ * /api/v2/pm/tasks/{taskId}/poker:
  *   post:
  *     summary: إنشاء جلسة Planning Poker
  *     description: إنشاء جلسة Planning Poker جديدة للمهمة
@@ -48,12 +49,13 @@ router.post(
     body('estimationType').optional({ nullable: true, checkFalsy: true }).isIn(['story_points', 'hours', 'days']),
     // sprintId is completely optional - no validation, handled in controller
   ],
-  (req: Request, res: Response) => planningPokerController.createSession(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => planningPokerController.createSession(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/poker/{sessionId}:
+ * /api/v2/pm/poker/{sessionId}:
  *   get:
  *     summary: الحصول على جلسة Planning Poker
  *     description: استرجاع تفاصيل جلسة Planning Poker
@@ -78,12 +80,13 @@ router.post(
 router.get(
   '/poker/:sessionId',
   [param('sessionId').isMongoId().withMessage('Invalid session ID')],
-  (req: Request, res: Response) => planningPokerController.getSession(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => planningPokerController.getSession(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/sprints/{sprintId}/poker:
+ * /api/v2/pm/sprints/{sprintId}/poker:
  *   get:
  *     summary: الحصول على جلسات Sprint
  *     description: استرجاع جميع جلسات Planning Poker للـ Sprint
@@ -116,12 +119,13 @@ router.get(
     param('sprintId').isMongoId().withMessage('Invalid sprint ID'),
     query('status').optional().isIn(['voting', 'revealed', 'completed']),
   ],
-  (req: Request, res: Response) => planningPokerController.getSprintSessions(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => planningPokerController.getSprintSessions(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/poker/{sessionId}/vote:
+ * /api/v2/pm/poker/{sessionId}/vote:
  *   post:
  *     summary: تقديم تصويت
  *     description: تقديم تصويت في جلسة Planning Poker
@@ -158,12 +162,13 @@ router.post(
     param('sessionId').isMongoId().withMessage('Invalid session ID'),
     body('value').notEmpty().withMessage('Vote value is required'),
   ],
-  (req: Request, res: Response) => planningPokerController.submitVote(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => planningPokerController.submitVote(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/poker/{sessionId}/reveal:
+ * /api/v2/pm/poker/{sessionId}/reveal:
  *   post:
  *     summary: الكشف عن الأصوات
  *     description: الكشف عن جميع الأصوات في الجلسة
@@ -188,12 +193,13 @@ router.post(
 router.post(
   '/poker/:sessionId/reveal',
   [param('sessionId').isMongoId().withMessage('Invalid session ID')],
-  (req: Request, res: Response) => planningPokerController.revealVotes(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => planningPokerController.revealVotes(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/poker/{sessionId}/new-round:
+ * /api/v2/pm/poker/{sessionId}/new-round:
  *   post:
  *     summary: بدء جولة تصويت جديدة
  *     description: بدء جولة تصويت جديدة في الجلسة
@@ -218,12 +224,13 @@ router.post(
 router.post(
   '/poker/:sessionId/new-round',
   [param('sessionId').isMongoId().withMessage('Invalid session ID')],
-  (req: Request, res: Response) => planningPokerController.startNewRound(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => planningPokerController.startNewRound(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/poker/{sessionId}/complete:
+ * /api/v2/pm/poker/{sessionId}/complete:
  *   post:
  *     summary: إكمال الجلسة
  *     description: إكمال جلسة Planning Poker وحفظ التقدير
@@ -260,12 +267,13 @@ router.post(
     param('sessionId').isMongoId().withMessage('Invalid session ID'),
     body('finalEstimate').isNumeric().withMessage('Final estimate is required'),
   ],
-  (req: Request, res: Response) => planningPokerController.completeSession(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => planningPokerController.completeSession(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/poker/{sessionId}:
+ * /api/v2/pm/poker/{sessionId}:
  *   delete:
  *     summary: إلغاء الجلسة
  *     description: إلغاء جلسة Planning Poker
@@ -290,7 +298,8 @@ router.post(
 router.delete(
   '/poker/:sessionId',
   [param('sessionId').isMongoId().withMessage('Invalid session ID')],
-  (req: Request, res: Response) => planningPokerController.cancelSession(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => planningPokerController.cancelSession(req, res)
 );
 
 export default router;

@@ -1,14 +1,13 @@
 import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
 import { ServiceRequest, ServiceRequestStatus, ApprovalDecision, RequestPriority } from '../models';
 import { ServiceCatalog } from '../models';
-// UserRole import removed — authorization now handled by itsmAuthorize middleware
-import { ApiResponse } from '../../../types/pm';
 import logger from '../../../utils/logger';
 import { ItsmEventPublisher } from '../../../shared/events/publishers/itsm.publisher';
 import { getItsmRepos, isItsmPostgres } from '../infrastructure/repositories';
 import { PgServiceRequestRepository } from '../infrastructure/repositories/PgServiceRequestRepository';
 import { PgServiceCatalogRepository } from '../infrastructure/repositories/PgServiceCatalogRepository';
+import asyncHandler from '../../../utils/asyncHandler';
+import { sendSuccess, sendPaginated, sendError } from '../../../utils/ApiResponse';
 
 /**
  * Service Request Controller
@@ -16,18 +15,8 @@ import { PgServiceCatalogRepository } from '../infrastructure/repositories/PgSer
  */
 
 // POST /api/v2/itsm/requests - Submit new service request
-export const createRequest = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
-
-    const { serviceId, formData, onBehalfOf, source = 'web' } = req.body;
+export const createRequest = asyncHandler(async (req: Request, res: Response) => {
+  const { serviceId, formData, onBehalfOf, source = 'web' } = req.body;
     const userId = req.user?.id;
     const userName = req.user?.name || '';
     const userEmail = req.user?.email || '';
@@ -47,13 +36,7 @@ export const createRequest = async (req: Request, res: Response): Promise<void> 
       });
     }
 
-    if (!service) {
-      res.status(404).json({
-        success: false,
-        error: 'Service not found or inactive',
-      } as ApiResponse);
-      return;
-    }
+    if (!service) return void sendError(req, res, 404, 'Service not found or inactive');
 
     // Check visibility permissions
     const itsmRole = req.user?.itsmRole || 'end_user';
@@ -63,11 +46,7 @@ export const createRequest = async (req: Request, res: Response): Promise<void> 
         itsmRole !== 'manager' &&
         !service.allowedRoles?.includes(itsmRole)
       ) {
-        res.status(403).json({
-          success: false,
-          error: 'Access denied to this service',
-        } as ApiResponse);
-        return;
+        return void sendError(req, res, 403, 'Access denied to this service');
       }
     }
 
@@ -181,24 +160,12 @@ export const createRequest = async (req: Request, res: Response): Promise<void> 
       { organizationId: req.user?.organizationId || '', userId: userId || '' }
     ).catch((err) => logger.error('Failed to emit serviceRequestCreated', { err }));
 
-    res.status(201).json({
-      success: true,
-      data: request,
-      message: 'Service request submitted successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Create service request error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to submit service request',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, request, 'Service request submitted successfully', 201);
+});
 
 // GET /api/v2/itsm/requests - List service requests
-export const getRequests = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const {
+export const getRequests = asyncHandler(async (req: Request, res: Response) => {
+  const {
       status,
       serviceId,
       requesterId,
@@ -236,17 +203,7 @@ export const getRequests = async (req: Request, res: Response): Promise<void> =>
         limitNum,
       );
 
-      res.status(200).json({
-        success: true,
-        data: result.data,
-        pagination: {
-          page: result.page,
-          limit: result.limit,
-          total: result.total,
-          totalPages: result.totalPages,
-        },
-      } as ApiResponse);
-      return;
+      return void sendPaginated(req, res, result.data, result.page, result.limit, result.total);
     }
 
     // ── MongoDB path (unchanged) ──
@@ -317,31 +274,14 @@ export const getRequests = async (req: Request, res: Response): Promise<void> =>
       ServiceRequest.countDocuments(query),
     ]);
 
-    res.status(200).json({
-      success: true,
-      data: requests,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        totalPages: Math.ceil(total / limitNum),
-      },
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Get service requests error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch service requests',
-    } as ApiResponse);
-  }
-};
+    sendPaginated(req, res, requests, pageNum, limitNum, total);
+});
 
 // GET /api/v2/itsm/requests/:id - Get single request
-export const getRequest = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const userId = req.user?.id;
-    const itsmRole = req.user?.itsmRole || 'end_user';
+export const getRequest = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const itsmRole = req.user?.itsmRole || 'end_user';
 
     let request: any;
     if (isItsmPostgres()) {
@@ -353,13 +293,7 @@ export const getRequest = async (req: Request, res: Response): Promise<void> => 
       }).lean();
     }
 
-    if (!request) {
-      res.status(404).json({
-        success: false,
-        error: 'Service request not found',
-      } as ApiResponse);
-      return;
-    }
+    if (!request) return void sendError(req, res, 404, 'Service request not found');
 
     // Check permissions
     const reqUserId = request.requester?.userId || request.requesterUserId;
@@ -370,43 +304,23 @@ export const getRequest = async (req: Request, res: Response): Promise<void> => 
       reqUserId === userId ||
       assignedUserId === userId;
 
-    if (!isAuthorized) {
-      res.status(403).json({
-        success: false,
-        error: 'Access denied to this request',
-      } as ApiResponse);
-      return;
-    }
+    if (!isAuthorized) return void sendError(req, res, 403, 'Access denied to this request');
 
-    res.status(200).json({
-      success: true,
-      data: request,
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Get service request error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch service request',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, request);
+});
 
 // POST /api/v2/itsm/requests/:id/approve - Approve request
-export const approveRequest = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { comment } = req.body;
-    const userId = req.user?.id;
-    const userName = req.user?.name || '';
+export const approveRequest = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { comment } = req.body;
+  const userId = req.user?.id;
+  const userName = req.user?.name || '';
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().serviceRequest as PgServiceRequestRepository;
-      const request = await repo.findByIdOrRequestId(id);
-      if (!request) {
-        res.status(404).json({ success: false, error: 'Service request not found' } as ApiResponse);
-        return;
-      }
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().serviceRequest as PgServiceRequestRepository;
+    const request = await repo.findByIdOrRequestId(id);
+    if (!request) return void sendError(req, res, 404, 'Service request not found');
       const rid = (request as any)._id || (request as any).id;
       // Update approval in JSONB
       const approvals = (request as any).approvals || [];
@@ -427,8 +341,7 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
       ).catch((err) => logger.error('Failed to emit serviceRequestApproved', { err }));
 
       const updated = await repo.findById(rid);
-      res.status(200).json({ success: true, data: updated, message: 'Request approved successfully' } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, updated, 'Request approved successfully');
     }
 
     // ── MongoDB path ──
@@ -436,13 +349,7 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
       $or: [{ _id: id }, { requestId: id }],
     });
 
-    if (!request) {
-      res.status(404).json({
-        success: false,
-        error: 'Service request not found',
-      } as ApiResponse);
-      return;
-    }
+    if (!request) return void sendError(req, res, 404, 'Service request not found');
 
     // Update approval
     const approval = request.approvals.find((a) => a.decision === ApprovalDecision.PENDING);
@@ -479,44 +386,23 @@ export const approveRequest = async (req: Request, res: Response): Promise<void>
       { organizationId: req.user?.organizationId || '', userId: userId || '' }
     ).catch((err) => logger.error('Failed to emit serviceRequestApproved', { err }));
 
-    res.status(200).json({
-      success: true,
-      data: request,
-      message: 'Request approved successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Approve request error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to approve request',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, request, 'Request approved successfully');
+});
 
 // POST /api/v2/itsm/requests/:id/reject - Reject request
-export const rejectRequest = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { reason } = req.body;
-    const userId = req.user?.id;
-    const userName = req.user?.name || '';
+export const rejectRequest = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const userId = req.user?.id;
+  const userName = req.user?.name || '';
 
-    if (!reason) {
-      res.status(400).json({
-        success: false,
-        error: 'Rejection reason is required',
-      } as ApiResponse);
-      return;
-    }
+  if (!reason) return void sendError(req, res, 400, 'Rejection reason is required');
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().serviceRequest as PgServiceRequestRepository;
-      const request = await repo.findByIdOrRequestId(id);
-      if (!request) {
-        res.status(404).json({ success: false, error: 'Service request not found' } as ApiResponse);
-        return;
-      }
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().serviceRequest as PgServiceRequestRepository;
+    const request = await repo.findByIdOrRequestId(id);
+    if (!request) return void sendError(req, res, 404, 'Service request not found');
       const rid = (request as any)._id || (request as any).id;
       const approvals = (request as any).approvals || [];
       const pendingIdx = approvals.findIndex((a: any) => a.decision === ApprovalDecision.PENDING);
@@ -530,8 +416,7 @@ export const rejectRequest = async (req: Request, res: Response): Promise<void> 
       } as any);
       await repo.pushToJsonArray(rid, 'stateHistory', { state: 'rejected', enteredAt: new Date(), actorId: userId || '', actorName: userName, action: 'reject', comment: reason });
       const updated = await repo.findById(rid);
-      res.status(200).json({ success: true, data: updated, message: 'Request rejected' } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, updated, 'Request rejected');
     }
 
     // ── MongoDB path ──
@@ -539,13 +424,7 @@ export const rejectRequest = async (req: Request, res: Response): Promise<void> 
       $or: [{ _id: id }, { requestId: id }],
     });
 
-    if (!request) {
-      res.status(404).json({
-        success: false,
-        error: 'Service request not found',
-      } as ApiResponse);
-      return;
-    }
+    if (!request) return void sendError(req, res, 404, 'Service request not found');
 
     // Update approval
     const approval = request.approvals.find((a) => a.decision === ApprovalDecision.PENDING);
@@ -571,47 +450,30 @@ export const rejectRequest = async (req: Request, res: Response): Promise<void> 
 
     await request.save();
 
-    res.status(200).json({
-      success: true,
-      data: request,
-      message: 'Request rejected',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Reject request error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to reject request',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, request, 'Request rejected');
+});
 
 // POST /api/v2/itsm/requests/:id/cancel - Cancel request
-export const cancelRequest = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { reason } = req.body;
-    const userId = req.user?.id;
-    const userName = req.user?.name || '';
+export const cancelRequest = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const userId = req.user?.id;
+  const userName = req.user?.name || '';
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().serviceRequest as PgServiceRequestRepository;
-      const request = await repo.findByIdOrRequestId(id);
-      if (!request) {
-        res.status(404).json({ success: false, error: 'Service request not found' } as ApiResponse);
-        return;
-      }
-      const rid = (request as any)._id || (request as any).id;
-      const reqUserId = (request as any).requester?.userId || (request as any).requesterUserId;
-      const itsmRole = req.user?.itsmRole || 'end_user';
-      if (reqUserId !== userId && itsmRole !== 'manager' && itsmRole !== 'admin') {
-        res.status(403).json({ success: false, error: 'Only the requester or admin can cancel' } as ApiResponse);
-        return;
-      }
-      if ((request as any).status === ServiceRequestStatus.COMPLETED) {
-        res.status(400).json({ success: false, error: 'Cannot cancel a completed request' } as ApiResponse);
-        return;
-      }
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().serviceRequest as PgServiceRequestRepository;
+    const request = await repo.findByIdOrRequestId(id);
+    if (!request) return void sendError(req, res, 404, 'Service request not found');
+    const rid = (request as any)._id || (request as any).id;
+    const reqUserId = (request as any).requester?.userId || (request as any).requesterUserId;
+    const itsmRole = req.user?.itsmRole || 'end_user';
+    if (reqUserId !== userId && itsmRole !== 'manager' && itsmRole !== 'admin') {
+      return void sendError(req, res, 403, 'Only the requester or admin can cancel');
+    }
+    if ((request as any).status === ServiceRequestStatus.COMPLETED) {
+      return void sendError(req, res, 400, 'Cannot cancel a completed request');
+    }
       await repo.updateById(rid, {
         status: ServiceRequestStatus.CANCELLED,
         currentState: 'cancelled',
@@ -627,8 +489,7 @@ export const cancelRequest = async (req: Request, res: Response): Promise<void> 
       ).catch((err) => logger.error('Failed to emit serviceRequestCancelled', { err }));
 
       const updated = await repo.findById(rid);
-      res.status(200).json({ success: true, data: updated, message: 'Request cancelled' } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, updated, 'Request cancelled');
     }
 
     // ── MongoDB path ──
@@ -636,31 +497,17 @@ export const cancelRequest = async (req: Request, res: Response): Promise<void> 
       $or: [{ _id: id }, { requestId: id }],
     });
 
-    if (!request) {
-      res.status(404).json({
-        success: false,
-        error: 'Service request not found',
-      } as ApiResponse);
-      return;
-    }
+    if (!request) return void sendError(req, res, 404, 'Service request not found');
 
     // Only requester or admin/manager can cancel
     const itsmRole = req.user?.itsmRole || 'end_user';
     if (request.requester.userId !== userId && itsmRole !== 'manager' && itsmRole !== 'admin') {
-      res.status(403).json({
-        success: false,
-        error: 'Only the requester or admin can cancel',
-      } as ApiResponse);
-      return;
+      return void sendError(req, res, 403, 'Only the requester or admin can cancel');
     }
 
     // Cannot cancel completed requests
     if (request.status === ServiceRequestStatus.COMPLETED) {
-      res.status(400).json({
-        success: false,
-        error: 'Cannot cancel a completed request',
-      } as ApiResponse);
-      return;
+      return void sendError(req, res, 400, 'Cannot cancel a completed request');
     }
 
     request.status = ServiceRequestStatus.CANCELLED;
@@ -689,36 +536,21 @@ export const cancelRequest = async (req: Request, res: Response): Promise<void> 
       { organizationId: req.user?.organizationId || '', userId: userId || '' }
     ).catch((err) => logger.error('Failed to emit serviceRequestCancelled', { err }));
 
-    res.status(200).json({
-      success: true,
-      data: request,
-      message: 'Request cancelled',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Cancel request error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to cancel request',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, request, 'Request cancelled');
+});
 
 // POST /api/v2/itsm/requests/:id/assign - Assign request to agent
-export const assignRequest = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { assigneeId, assigneeName, team } = req.body;
-    const userId = req.user?.id;
-    const userName = req.user?.name || '';
+export const assignRequest = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { assigneeId, assigneeName, team, teamId } = req.body;
+  const userId = req.user?.id;
+  const userName = req.user?.name || '';
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().serviceRequest as PgServiceRequestRepository;
-      const request = await repo.findByIdOrRequestId(id);
-      if (!request) {
-        res.status(404).json({ success: false, error: 'Service request not found' } as ApiResponse);
-        return;
-      }
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().serviceRequest as PgServiceRequestRepository;
+    const request = await repo.findByIdOrRequestId(id);
+    if (!request) return void sendError(req, res, 404, 'Service request not found');
       const rid = (request as any)._id || (request as any).id;
       const updateData: Record<string, any> = {
         'assignedTo.userId': assigneeId,
@@ -727,6 +559,7 @@ export const assignRequest = async (req: Request, res: Response): Promise<void> 
         'assignedTo.assignedBy': userId || '',
       };
       if (team) updateData.assignedTeam = team;
+      if (teamId) updateData.teamId = teamId;
       await repo.updateById(rid, updateData as any);
       await repo.pushToJsonArray(rid, 'stateHistory', { state: (request as any).currentState, enteredAt: new Date(), actorId: userId || '', actorName: userName, action: 'assign', comment: `Assigned to ${assigneeName}` });
 
@@ -736,8 +569,7 @@ export const assignRequest = async (req: Request, res: Response): Promise<void> 
       ).catch((err) => logger.error('Failed to emit serviceRequestAssigned', { err }));
 
       const updated = await repo.findById(rid);
-      res.status(200).json({ success: true, data: updated, message: 'Request assigned successfully' } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, updated, 'Request assigned successfully');
     }
 
     // ── MongoDB path ──
@@ -745,13 +577,7 @@ export const assignRequest = async (req: Request, res: Response): Promise<void> 
       $or: [{ _id: id }, { requestId: id }],
     });
 
-    if (!request) {
-      res.status(404).json({
-        success: false,
-        error: 'Service request not found',
-      } as ApiResponse);
-      return;
-    }
+    if (!request) return void sendError(req, res, 404, 'Service request not found');
 
     request.assignedTo = {
       userId: assigneeId,
@@ -761,6 +587,9 @@ export const assignRequest = async (req: Request, res: Response): Promise<void> 
     };
     if (team) {
       request.assignedTeam = team;
+    }
+    if (teamId) {
+      request.teamId = teamId;
     }
     request.stateHistory.push({
       state: request.currentState,
@@ -783,45 +612,26 @@ export const assignRequest = async (req: Request, res: Response): Promise<void> 
       { organizationId: req.user?.organizationId || '', userId: userId || '' }
     ).catch((err) => logger.error('Failed to emit serviceRequestAssigned', { err }));
 
-    res.status(200).json({
-      success: true,
-      data: request,
-      message: 'Request assigned successfully',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Assign request error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to assign request',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, request, 'Request assigned successfully');
+});
 
 // POST /api/v2/itsm/requests/:id/comment - Add comment to request
-export const addComment = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { message, isInternal = false } = req.body;
-    const userId = req.user?.id;
-    const userName = req.user?.name || '';
-    const itsmRole = req.user?.itsmRole || 'end_user';
+export const addComment = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { message, isInternal = false } = req.body;
+  const userId = req.user?.id;
+  const userName = req.user?.name || '';
+  const itsmRole = req.user?.itsmRole || 'end_user';
 
-    if (!message || message.trim().length === 0) {
-      res.status(400).json({
-        success: false,
-        error: 'Comment message is required',
-      } as ApiResponse);
-      return;
-    }
+  if (!message || message.trim().length === 0) {
+    return void sendError(req, res, 400, 'Comment message is required');
+  }
 
-    // ── PostgreSQL path ──
-    if (isItsmPostgres()) {
-      const repo = getItsmRepos().serviceRequest as PgServiceRequestRepository;
-      const request = await repo.findByIdOrRequestId(id);
-      if (!request) {
-        res.status(404).json({ success: false, error: 'Service request not found' } as ApiResponse);
-        return;
-      }
+  // ── PostgreSQL path ──
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().serviceRequest as PgServiceRequestRepository;
+    const request = await repo.findByIdOrRequestId(id);
+    if (!request) return void sendError(req, res, 404, 'Service request not found');
       const rid = (request as any)._id || (request as any).id;
       const comment = {
         commentId: `C-${Date.now()}`,
@@ -833,8 +643,7 @@ export const addComment = async (req: Request, res: Response): Promise<void> => 
         createdAt: new Date(),
       };
       await repo.pushToJsonArray(rid, 'comments', comment);
-      res.status(201).json({ success: true, data: comment, message: 'Comment added' } as ApiResponse);
-      return;
+      return void sendSuccess(req, res, comment, 'Comment added', 201);
     }
 
     // ── MongoDB path ──
@@ -842,13 +651,7 @@ export const addComment = async (req: Request, res: Response): Promise<void> => 
       $or: [{ _id: id }, { requestId: id }],
     });
 
-    if (!request) {
-      res.status(404).json({
-        success: false,
-        error: 'Service request not found',
-      } as ApiResponse);
-      return;
-    }
+    if (!request) return void sendError(req, res, 404, 'Service request not found');
 
     const comment = {
       commentId: `C-${Date.now()}`,
@@ -863,16 +666,5 @@ export const addComment = async (req: Request, res: Response): Promise<void> => 
     request.comments.push(comment);
     await request.save();
 
-    res.status(201).json({
-      success: true,
-      data: comment,
-      message: 'Comment added',
-    } as ApiResponse);
-  } catch (error) {
-    logger.error('Add comment error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to add comment',
-    } as ApiResponse);
-  }
-};
+    sendSuccess(req, res, comment, 'Comment added', 201);
+});

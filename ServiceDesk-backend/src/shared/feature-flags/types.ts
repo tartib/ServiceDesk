@@ -32,6 +32,8 @@ export enum FeatureFlagCategory {
   WORKFLOW = 'workflow',
   INTEGRATIONS = 'integrations',
   PLATFORM = 'platform',
+  GAMIFICATION = 'gamification',
+  CAMPAIGNS = 'campaigns',
   EXPERIMENTAL = 'experimental',
 }
 

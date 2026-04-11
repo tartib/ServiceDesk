@@ -16,7 +16,7 @@ export interface IAuthService {
   refreshToken(refreshToken: string): Promise<AuthResponseDTO>;
   logout(userId: string): Promise<void>;
   changePassword(userId: string, dto: ChangePasswordDTO): Promise<void>;
-  verifyToken(token: string): Promise<UserProfileDTO>;
+  verifyAccessToken(token: string): Promise<UserProfileDTO>;
   resetPassword(email: string): Promise<void>;
   confirmResetPassword(token: string, newPassword: string): Promise<void>;
 }

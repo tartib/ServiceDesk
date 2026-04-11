@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { body, param } from 'express-validator';
 import * as boardController from '../controllers/board.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -9,7 +10,7 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/v1/pm/projects/{projectId}/board/config:
+ * /api/v2/pm/projects/{projectId}/board/config:
  *   get:
  *     summary: الحصول على إعدادات لوحة المشروع
  *     description: استرجاع إعدادات لوحة كانبان للمشروع
@@ -54,18 +55,20 @@ router.use(authenticate);
 router.get(
   '/projects/:projectId/board',
   [param('projectId').isMongoId().withMessage('Invalid project ID')],
-  (req: Request, res: Response) => boardController.getFullBoard(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => boardController.getFullBoard(req, res)
 );
 
 router.get(
   '/projects/:projectId/board/config',
   [param('projectId').isMongoId().withMessage('Invalid project ID')],
-  (req: Request, res: Response) => boardController.getBoardByProject(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => boardController.getBoardByProject(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/projects/{projectId}/board/columns:
+ * /api/v2/pm/projects/{projectId}/board/columns:
  *   post:
  *     summary: إنشاء عمود جديد
  *     description: إنشاء عمود جديد في لوحة كانبان
@@ -125,12 +128,13 @@ router.post(
     body('statusId').optional().trim(),
     body('wipLimit').optional().isNumeric(),
   ],
-  (req: Request, res: Response) => boardController.createColumn(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => boardController.createColumn(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/projects/{projectId}/board/columns/{columnId}:
+ * /api/v2/pm/projects/{projectId}/board/columns/{columnId}:
  *   patch:
  *     summary: تحديث العمود
  *     description: تحديث معلومات العمود
@@ -191,12 +195,13 @@ router.patch(
     body('name').optional().trim().notEmpty(),
     body('wipLimit').optional().isNumeric(),
   ],
-  (req: Request, res: Response) => boardController.updateColumn(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => boardController.updateColumn(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/projects/{projectId}/board/columns/{columnId}:
+ * /api/v2/pm/projects/{projectId}/board/columns/{columnId}:
  *   delete:
  *     summary: حذف العمود
  *     description: حذف عمود من اللوحة
@@ -239,12 +244,13 @@ router.delete(
     param('projectId').isMongoId().withMessage('Invalid project ID'),
     param('columnId').notEmpty().withMessage('Column ID is required'),
   ],
-  (req: Request, res: Response) => boardController.deleteColumn(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => boardController.deleteColumn(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/projects/{projectId}/board/columns/reorder:
+ * /api/v2/pm/projects/{projectId}/board/columns/reorder:
  *   patch:
  *     summary: إعادة ترتيب الأعمدة
  *     description: إعادة ترتيب أعمدة اللوحة
@@ -296,12 +302,13 @@ router.patch(
     param('projectId').isMongoId().withMessage('Invalid project ID'),
     body('columnOrder').isArray().withMessage('columnOrder must be an array'),
   ],
-  (req: Request, res: Response) => boardController.reorderColumns(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => boardController.reorderColumns(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/projects/{projectId}/members:
+ * /api/v2/pm/projects/{projectId}/members:
  *   get:
  *     summary: الحصول على أعضاء المشروع
  *     description: استرجاع قائمة أعضاء المشروع للتعيين
@@ -343,7 +350,8 @@ router.patch(
 router.get(
   '/projects/:projectId/members',
   [param('projectId').isMongoId().withMessage('Invalid project ID')],
-  (req: Request, res: Response) => boardController.getProjectMembers(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => boardController.getProjectMembers(req, res)
 );
 
 export default router;

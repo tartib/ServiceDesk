@@ -1,5 +1,4 @@
 import { Response } from 'express';
-import { validationResult } from 'express-validator';
 import Workflow, { defaultWorkflows } from '../models/Workflow';
 import Project from '../models/Project';
 import Task from '../models/Task';
@@ -68,17 +67,6 @@ export const getWorkflowByProject = async (req: PMAuthRequest, res: Response): P
 
 export const addStatus = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string; path?: string }) => ({ 
-          field: e.path || e.type, 
-          message: e.msg 
-        })),
-      } as ApiResponse);
-      return;
-    }
 
     const { projectId } = req.params;
     const { id, name, color, isInitial, isFinal } = req.body;
@@ -199,17 +187,6 @@ export const addStatus = async (req: PMAuthRequest, res: Response): Promise<void
 
 export const updateStatus = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string; path?: string }) => ({ 
-          field: e.path || e.type, 
-          message: e.msg 
-        })),
-      } as ApiResponse);
-      return;
-    }
 
     const { projectId, statusId } = req.params;
     const { name, category, color, isInitial, isFinal } = req.body;
@@ -395,19 +372,121 @@ export const deleteStatus = async (req: PMAuthRequest, res: Response): Promise<v
   }
 };
 
-export const reorderStatuses = async (req: PMAuthRequest, res: Response): Promise<void> => {
+export const addTransition = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string; path?: string }) => ({ 
-          field: e.path || e.type, 
-          message: e.msg 
-        })),
-      } as ApiResponse);
+
+    const { projectId } = req.params;
+    const { id, name, fromStatus, toStatus } = req.body;
+    const userId = req.user?.id;
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      res.status(404).json({ success: false, error: 'Project not found' } as ApiResponse);
       return;
     }
+
+    if (!userId || !permissions.canManageMembers(project.members, userId)) {
+      res.status(403).json({ success: false, error: 'Only project leads can modify workflow transitions' } as ApiResponse);
+      return;
+    }
+
+    const organizationId = project.organizationId;
+    let workflow = await Workflow.findOne({ projectId });
+
+    if (!workflow) {
+      const defaultWorkflow = await Workflow.findOne({
+        organizationId,
+        methodology: project.methodology.code,
+        isDefault: true,
+      });
+      if (!defaultWorkflow) {
+        res.status(404).json({ success: false, error: 'Default workflow not found' } as ApiResponse);
+        return;
+      }
+      workflow = new Workflow({
+        organizationId,
+        projectId,
+        name: `${project.name} Workflow`,
+        methodology: project.methodology.code,
+        isDefault: false,
+        statuses: [...defaultWorkflow.statuses],
+        transitions: [...defaultWorkflow.transitions],
+        createdBy: userId,
+      });
+    }
+
+    const transitionId = id || `t${Date.now()}`;
+    const exists = workflow.transitions.some(t => t.id === transitionId);
+    if (exists) {
+      res.status(400).json({ success: false, error: `Transition with ID '${transitionId}' already exists` } as ApiResponse);
+      return;
+    }
+
+    const fromExists = workflow.statuses.some(s => s.id === fromStatus);
+    const toExists = workflow.statuses.some(s => s.id === toStatus);
+    if (!fromExists || !toExists) {
+      res.status(400).json({ success: false, error: 'fromStatus and toStatus must reference existing workflow statuses' } as ApiResponse);
+      return;
+    }
+
+    workflow.transitions.push({ id: transitionId, name, fromStatus, toStatus });
+    await workflow.save();
+
+    res.status(201).json({
+      success: true,
+      data: { workflow },
+      message: 'Transition added successfully',
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Add transition error:', error);
+    res.status(500).json({ success: false, error: 'Failed to add transition' } as ApiResponse);
+  }
+};
+
+export const deleteTransition = async (req: PMAuthRequest, res: Response): Promise<void> => {
+  try {
+    const { projectId, transitionId } = req.params;
+    const userId = req.user?.id;
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      res.status(404).json({ success: false, error: 'Project not found' } as ApiResponse);
+      return;
+    }
+
+    if (!userId || !permissions.canManageMembers(project.members, userId)) {
+      res.status(403).json({ success: false, error: 'Only project leads can modify workflow transitions' } as ApiResponse);
+      return;
+    }
+
+    const workflow = await Workflow.findOne({ projectId });
+    if (!workflow) {
+      res.status(404).json({ success: false, error: 'Workflow not found' } as ApiResponse);
+      return;
+    }
+
+    const idx = workflow.transitions.findIndex(t => t.id === transitionId);
+    if (idx === -1) {
+      res.status(404).json({ success: false, error: 'Transition not found' } as ApiResponse);
+      return;
+    }
+
+    workflow.transitions.splice(idx, 1);
+    await workflow.save();
+
+    res.status(200).json({
+      success: true,
+      data: { workflow },
+      message: 'Transition deleted successfully',
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Delete transition error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete transition' } as ApiResponse);
+  }
+};
+
+export const reorderStatuses = async (req: PMAuthRequest, res: Response): Promise<void> => {
+  try {
 
     const { projectId } = req.params;
     const { statusOrder } = req.body;

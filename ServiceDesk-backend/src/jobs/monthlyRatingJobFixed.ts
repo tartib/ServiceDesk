@@ -1,9 +1,9 @@
 import cron from 'node-cron';
 import mongoose from 'mongoose';
 import PerformanceModel from '../models/Performance';
-import * as ratingService from '../services/ratingService';
-import * as leaderboardService from '../services/leaderboardService';
-import * as alertService from '../services/alertService';
+import * as ratingService from '../modules/analytics/services/ratingService';
+import * as leaderboardService from '../modules/analytics/services/leaderboardService';
+import * as alertService from '../modules/notifications/services/alertService';
 import logger from '../utils/logger';
 
 interface JobLock {

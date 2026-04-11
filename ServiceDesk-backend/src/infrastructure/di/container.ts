@@ -1,31 +1,18 @@
 import { createContainer, asValue, InjectionMode, AwilixContainer } from 'awilix';
 import logger from '../../utils/logger';
 
-// Import services - they export named functions/objects
-import * as alertService from '../../services/alertService';
-import * as categoryService from '../../services/categoryService';
-import * as dailyReportService from '../../services/dailyReportService';
-import * as dashboardService from '../../services/dashboardService';
-import fileStorageService from '../../services/fileStorage.service';
-import formSubmissionService from '../../services/formSubmissionService';
-import formTemplateService from '../../services/formTemplateService';
-import * as inventoryService from '../../services/inventoryService';
-import * as leaderboardService from '../../services/leaderboardService';
-import * as notificationService from '../../services/notificationService';
-import * as prepTaskService from '../../services/prepTaskService';
-import * as ratingService from '../../services/ratingService';
-import * as reportService from '../../services/reportService';
-import * as taskCommentService from '../../services/taskCommentService';
-import * as taskExecutionLogService from '../../services/taskExecutionLogService';
+// ── Storage & Forms Services (resolved by module controllers) ──
+import fileStorageService from '../../modules/storage/services/fileStorage.service';
+import formTemplateService from '../../modules/forms/services/formTemplateService';
 
-// PM Services
+// ── PM Services ──
 import authService from '../../modules/pm/services/auth.service';
 import { methodologyService } from '../../modules/pm/services/methodology.service';
 import roadmapService from '../../modules/pm/services/roadmap.service';
 import socketService from '../../modules/pm/services/socket.service';
 import workflowService from '../../modules/pm/services/workflow.service';
 
-// Refactored Form Services (Phase 3.1 & 3.2)
+// ── Forms Services ──
 import { FormFieldService } from '../../modules/forms/services/FormFieldService';
 import { FormRuleService } from '../../modules/forms/services/FormRuleService';
 import { FormWorkflowService } from '../../modules/forms/services/FormWorkflowService';
@@ -34,13 +21,13 @@ import { FormSubmissionValidationService } from '../../modules/forms/services/Fo
 import { FormSubmissionTimelineService } from '../../modules/forms/services/FormSubmissionTimelineService';
 import { FormSubmissionCommentService } from '../../modules/forms/services/FormSubmissionCommentService';
 
-// Refactored Analytics Services (Phase 3.3)
+// ── Analytics Services ──
 import { DashboardKPIService } from '../../modules/analytics/services/DashboardKPIService';
 import { DashboardPerformanceService } from '../../modules/analytics/services/DashboardPerformanceService';
 import { DashboardAnalyticsService } from '../../modules/analytics/services/DashboardAnalyticsService';
-import { DashboardService } from '../../modules/analytics/services/DashboardService.refactored';
+import { DashboardService } from '../../modules/analytics/services/DashboardService';
 
-// Refactored Storage Services (Phase 3.4)
+// ── Storage Services ──
 import { FileUploadService } from '../../modules/storage/services/FileUploadService';
 import { FileFolderService } from '../../modules/storage/services/FileFolderService';
 import { FileShareService } from '../../modules/storage/services/FileShareService';
@@ -51,25 +38,9 @@ const container: AwilixContainer = createContainer({
   injectionMode: InjectionMode.PROXY,
 });
 
-// Register services as modules (for named exports) or values (for default exports)
 container.register({
-  // Core services (named exports)
-  alertService: asValue(alertService),
-  categoryService: asValue(categoryService),
-  dailyReportService: asValue(dailyReportService),
-  dashboardService: asValue(dashboardService),
-  inventoryService: asValue(inventoryService),
-  leaderboardService: asValue(leaderboardService),
-  notificationService: asValue(notificationService),
-  prepTaskService: asValue(prepTaskService),
-  ratingService: asValue(ratingService),
-  reportService: asValue(reportService),
-  taskCommentService: asValue(taskCommentService),
-  taskExecutionLogService: asValue(taskExecutionLogService),
-
-  // Services with default exports
+  // Storage & Forms
   fileStorageService: asValue(fileStorageService),
-  formSubmissionService: asValue(formSubmissionService),
   formTemplateService: asValue(formTemplateService),
 
   // PM services
@@ -79,7 +50,7 @@ container.register({
   socketService: asValue(socketService),
   workflowService: asValue(workflowService),
 
-  // Refactored Form Services (Phase 3.1 & 3.2)
+  // Forms Services
   formFieldService: asValue(new FormFieldService()),
   formRuleService: asValue(new FormRuleService()),
   formWorkflowService: asValue(new FormWorkflowService()),
@@ -88,13 +59,13 @@ container.register({
   formSubmissionTimelineService: asValue(new FormSubmissionTimelineService()),
   formSubmissionCommentService: asValue(new FormSubmissionCommentService()),
 
-  // Refactored Analytics Services (Phase 3.3)
+  // Analytics Services
   dashboardKPIService: asValue(new DashboardKPIService()),
   dashboardPerformanceService: asValue(new DashboardPerformanceService()),
   dashboardAnalyticsService: asValue(new DashboardAnalyticsService()),
-  dashboardRefactoredService: asValue(new DashboardService()),
+  dashboardService: asValue(new DashboardService()),
 
-  // Refactored Storage Services (Phase 3.4)
+  // Storage Services
   fileUploadService: asValue(new FileUploadService()),
   fileFolderService: asValue(new FileFolderService()),
   fileShareService: asValue(new FileShareService()),

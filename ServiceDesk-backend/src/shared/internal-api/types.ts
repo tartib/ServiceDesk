@@ -87,9 +87,24 @@ export interface ISlaApi extends IInternalApi {
   onTicketCancelled(tenantId: string, ticketId: string): Promise<void>;
 }
 
+// ── Gamification Internal API ────────────────────────────────
+
+export interface IGamificationApi extends IInternalApi {
+  getProfile(userId: string, organizationId: string): Promise<any | null>;
+  getLeaderboard(organizationId: string, scope?: string, period?: string): Promise<any[]>;
+}
+
 // ── Notifications Internal API ──────────────────────────────
 
 export interface INotificationsApi extends IInternalApi {
   send(userId: string, notification: { title: string; titleAr?: string; body: string; bodyAr?: string; type: string; link?: string }): Promise<void>;
   sendBulk(userIds: string[], notification: { title: string; titleAr?: string; body: string; bodyAr?: string; type: string; link?: string }): Promise<void>;
+}
+
+// ── Campaigns Internal API ──────────────────────────────────
+
+export interface ICampaignsApi extends IInternalApi {
+  sendCampaignMessage(campaignId: string, recipientId: string, channel: string): Promise<any>;
+  getSegmentRecipients(segmentId: string, organizationId: string): Promise<string[]>;
+  getUserPreference(userId: string, organizationId: string): Promise<any | null>;
 }

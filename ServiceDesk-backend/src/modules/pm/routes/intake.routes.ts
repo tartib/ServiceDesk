@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { body, param, query } from 'express-validator';
 import * as intakeController from '../controllers/intake.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -26,13 +27,14 @@ router.post(
     body('preferredMethodology').optional().isIn(['scrum', 'kanban', 'waterfall', 'itil', 'lean', 'okr']),
     body('suggestedTeam').optional().trim(),
   ],
-  (req: Request, res: Response) => intakeController.createIntakeRequest(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => intakeController.createIntakeRequest(req, res)
 );
 
 // Get intake stats (must be before /:intakeId to avoid conflict)
 router.get(
   '/intake/stats',
-  (req: Request, res: Response) => intakeController.getIntakeStats(req as any, res)
+  (req: Request, res: Response) => intakeController.getIntakeStats(req, res)
 );
 
 // Get all intake requests
@@ -46,14 +48,16 @@ router.get(
     query('page').optional().isNumeric(),
     query('limit').optional().isNumeric(),
   ],
-  (req: Request, res: Response) => intakeController.getIntakeRequests(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => intakeController.getIntakeRequests(req, res)
 );
 
 // Get single intake request
 router.get(
   '/intake/:intakeId',
   [param('intakeId').isMongoId().withMessage('Invalid intake ID')],
-  (req: Request, res: Response) => intakeController.getIntakeRequest(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => intakeController.getIntakeRequest(req, res)
 );
 
 // Update intake request
@@ -74,7 +78,8 @@ router.put(
     body('preferredMethodology').optional().isIn(['scrum', 'kanban', 'waterfall', 'itil', 'lean', 'okr']),
     body('suggestedTeam').optional().trim(),
   ],
-  (req: Request, res: Response) => intakeController.updateIntakeRequest(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => intakeController.updateIntakeRequest(req, res)
 );
 
 // Advance to next stage
@@ -84,7 +89,8 @@ router.post(
     param('intakeId').isMongoId().withMessage('Invalid intake ID'),
     body('comment').optional().trim(),
   ],
-  (req: Request, res: Response) => intakeController.advanceStage(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => intakeController.advanceStage(req, res)
 );
 
 // Reject request
@@ -94,14 +100,16 @@ router.post(
     param('intakeId').isMongoId().withMessage('Invalid intake ID'),
     body('comment').trim().notEmpty().withMessage('Comment is required when rejecting'),
   ],
-  (req: Request, res: Response) => intakeController.rejectRequest(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => intakeController.rejectRequest(req, res)
 );
 
 // Cancel request
 router.post(
   '/intake/:intakeId/cancel',
   [param('intakeId').isMongoId().withMessage('Invalid intake ID')],
-  (req: Request, res: Response) => intakeController.cancelRequest(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => intakeController.cancelRequest(req, res)
 );
 
 // Approve request (creates project)
@@ -112,7 +120,8 @@ router.post(
     body('comment').optional().trim(),
     body('projectKey').optional().trim().isLength({ min: 2, max: 10 }),
   ],
-  (req: Request, res: Response) => intakeController.approveRequest(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => intakeController.approveRequest(req, res)
 );
 
 // Add comment
@@ -122,7 +131,8 @@ router.post(
     param('intakeId').isMongoId().withMessage('Invalid intake ID'),
     body('content').trim().notEmpty().withMessage('Comment content is required'),
   ],
-  (req: Request, res: Response) => intakeController.addComment(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => intakeController.addComment(req, res)
 );
 
 // Add/update score
@@ -133,7 +143,8 @@ router.post(
     body('criterion').trim().notEmpty().withMessage('Criterion is required'),
     body('score').isInt({ min: 1, max: 5 }).withMessage('Score must be 1-5'),
   ],
-  (req: Request, res: Response) => intakeController.addScore(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => intakeController.addScore(req, res)
 );
 
 export default router;

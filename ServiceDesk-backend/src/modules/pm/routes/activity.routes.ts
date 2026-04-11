@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { param, query } from 'express-validator';
 import * as activityController from '../controllers/activity.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -9,7 +10,7 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/v1/pm/projects/{projectId}/activity:
+ * /api/v2/pm/projects/{projectId}/activity:
  *   get:
  *     summary: الحصول على سجل نشاط المشروع
  *     description: استرجاع سجل النشاطات في المشروع
@@ -49,7 +50,8 @@ router.get(
     query('page').optional().isNumeric(),
     query('limit').optional().isNumeric(),
   ],
-  (req: Request, res: Response) => activityController.getProjectActivity(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => activityController.getProjectActivity(req, res)
 );
 
 // Alias: frontend uses plural "activities"
@@ -60,12 +62,13 @@ router.get(
     query('page').optional().isNumeric(),
     query('limit').optional().isNumeric(),
   ],
-  (req: Request, res: Response) => activityController.getProjectActivity(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => activityController.getProjectActivity(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/tasks/{taskId}/activity:
+ * /api/v2/pm/tasks/{taskId}/activity:
  *   get:
  *     summary: الحصول على نشاط المهمة
  *     description: استرجاع سجل النشاطات للمهمة
@@ -91,12 +94,13 @@ router.get(
 router.get(
   '/tasks/:taskId/activity',
   [param('taskId').isMongoId().withMessage('Invalid task ID')],
-  (req: Request, res: Response) => activityController.getTaskActivity(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => activityController.getTaskActivity(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/me/activity:
+ * /api/v2/pm/me/activity:
  *   get:
  *     summary: الحصول على نشاطي
  *     description: استرجاع سجل النشاطات الخاص بالمستخدم الحالي
@@ -112,11 +116,11 @@ router.get(
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  */
-router.get('/me/activity', (req: Request, res: Response) => activityController.getUserActivity(req as any, res));
+router.get('/me/activity', (req: Request, res: Response) => activityController.getUserActivity(req, res));
 
 /**
  * @swagger
- * /api/v1/pm/feed:
+ * /api/v2/pm/feed:
  *   get:
  *     summary: الحصول على تغذية المنظمة
  *     description: استرجاع سجل النشاطات العام للمنظمة
@@ -132,6 +136,6 @@ router.get('/me/activity', (req: Request, res: Response) => activityController.g
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  */
-router.get('/feed', (req: Request, res: Response) => activityController.getOrganizationFeed(req as any, res));
+router.get('/feed', (req: Request, res: Response) => activityController.getOrganizationFeed(req, res));
 
 export default router;

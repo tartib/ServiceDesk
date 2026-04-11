@@ -18,143 +18,145 @@ interface DeprecationConfig {
 export const deprecationMap: Record<string, DeprecationConfig> = {
   // Auth routes
   '/api/v1/auth': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/core/auth',
   },
   '/api/v1/pm/auth': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/core/auth',
   },
   
   // User routes
   '/api/v1/users': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/core/users',
   },
   
   // Team routes
   '/api/v1/teams': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/core/teams',
   },
   '/api/v1/pm/teams': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/core/teams',
   },
   
   // OPS routes (tasks → work-orders)
   '/api/v1/tasks': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/ops/work-orders',
   },
   '/api/v1/prep-tasks': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/ops/work-orders',
   },
   
   // PM routes
   '/api/v1/pm/organizations': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/core/organizations',
   },
   '/api/v1/pm/projects': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/pm/projects',
   },
   '/api/v1/pm/sprints': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/pm/sprints',
   },
   '/api/v1/pm/boards': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/pm/boards',
   },
   '/api/v1/pm/tasks': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/pm/tasks',
   },
   
-  // SD routes
+  // Workflow routes
+  '/api/v1/workflows': {
+    sunsetDate: '2026-09-01',
+    successorPath: '/api/v2/workflow-engine/definitions',
+  },
+
+  // OPS routes (categories, inventory, assets)
   '/api/v1/categories': {
-    sunsetDate: '2025-06-01',
-    successorPath: '/api/v2/sd/catalog',
+    sunsetDate: '2026-09-01',
+    successorPath: '/api/v2/ops/categories',
   },
   '/api/v1/inventory': {
-    sunsetDate: '2025-06-01',
-    successorPath: '/api/v2/sd/assets',
+    sunsetDate: '2026-09-01',
+    successorPath: '/api/v2/ops/inventory',
   },
   '/api/v1/assets': {
-    sunsetDate: '2025-06-01',
-    successorPath: '/api/v2/sd/assets',
+    sunsetDate: '2026-09-01',
+    successorPath: '/api/v2/ops/assets',
   },
+
+  // ITSM routes
   '/api/v1/service-requests': {
-    sunsetDate: '2025-06-01',
-    successorPath: '/api/v2/sd/requests',
+    sunsetDate: '2026-09-01',
+    successorPath: '/api/v2/itsm/requests',
   },
   '/api/v1/incidents': {
-    sunsetDate: '2025-06-01',
-    successorPath: '/api/v2/sd/incidents',
+    sunsetDate: '2026-09-01',
+    successorPath: '/api/v2/itsm/incidents',
   },
   '/api/v1/problems': {
-    sunsetDate: '2025-06-01',
-    successorPath: '/api/v2/sd/problems',
+    sunsetDate: '2026-09-01',
+    successorPath: '/api/v2/itsm/problems',
   },
   '/api/v1/changes': {
-    sunsetDate: '2025-06-01',
-    successorPath: '/api/v2/sd/changes',
+    sunsetDate: '2026-09-01',
+    successorPath: '/api/v2/itsm/changes',
   },
   
   // Knowledge base
   '/api/v1/knowledge': {
-    sunsetDate: '2025-06-01',
-    successorPath: '/api/v2/sd/knowledge',
+    sunsetDate: '2026-09-01',
+    successorPath: '/api/v2/itsm/knowledge',
   },
   
   // Forms routes
   '/api/v1/forms': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/forms',
   },
   
   // File Storage routes
   '/api/v1/files': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/storage/files',
   },
   '/api/v1/folders': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/storage/folders',
-  },
-  
-  // Reports
-  '/api/v1/reports': {
-    sunsetDate: '2025-06-01',
-    successorPath: '/api/v2/analytics/reports',
   },
   
   // Additional routes
   '/api/v1/alerts': {
-    sunsetDate: '2025-06-01',
-    successorPath: '/api/v2/sd/alerts',
+    sunsetDate: '2026-09-01',
+    successorPath: '/api/v2/notifications/alerts',
   },
   '/api/v1/kpi': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/analytics/kpi',
   },
   '/api/v1/performance': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/analytics/performance',
   },
   '/api/v1/leaderboard': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/analytics/leaderboard',
   },
   '/api/v1/rating': {
-    sunsetDate: '2025-06-01',
-    successorPath: '/api/v2/sd/ratings',
+    sunsetDate: '2026-09-01',
+    successorPath: '/api/v2/analytics/ratings',
   },
   '/api/v1/employee': {
-    sunsetDate: '2025-06-01',
+    sunsetDate: '2026-09-01',
     successorPath: '/api/v2/core/employees',
   },
 };

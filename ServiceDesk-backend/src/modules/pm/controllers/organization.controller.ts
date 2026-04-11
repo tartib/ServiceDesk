@@ -1,20 +1,11 @@
 import { Request, Response } from 'express';
 import logger from '../../../utils/logger';
-import { validationResult } from 'express-validator';
 import Organization from '../models/Organization';
 import User from '../../../models/User';
 import { ApiResponse, OrganizationRole } from '../../../types/pm';
 
 export const createOrganization = async (req: Request, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: any) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const { name, description, settings } = req.body;
@@ -155,14 +146,6 @@ export const getOrganization = async (req: Request, res: Response): Promise<void
 
 export const updateOrganization = async (req: Request, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: any) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const { organizationId } = req.params;
     const userId = req.user?.id;

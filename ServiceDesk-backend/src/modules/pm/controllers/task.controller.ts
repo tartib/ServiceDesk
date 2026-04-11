@@ -1,5 +1,4 @@
 import { Response } from 'express';
-import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import Task from '../models/Task';
 import Project from '../models/Project';
@@ -16,17 +15,6 @@ import { PgProjectRepository } from '../infrastructure/repositories/PgProjectRep
 
 export const createTask = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string; path?: string }) => ({ 
-          field: e.path || e.type, 
-          message: e.msg 
-        })),
-      } as ApiResponse);
-      return;
-    }
 
     const userId = req.user?.id;
     const { projectId } = req.params;
@@ -338,14 +326,6 @@ export const getTask = async (req: PMAuthRequest, res: Response): Promise<void> 
 
 export const updateTask = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string }) => ({ field: e.type, message: e.msg })),
-      } as ApiResponse);
-      return;
-    }
 
     const { taskId } = req.params;
     const userId = req.user?.id;
@@ -752,17 +732,6 @@ export const getBoardTasks = async (req: PMAuthRequest, res: Response): Promise<
 
 export const moveTask = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        errors: errors.array().map((e: { type?: string; msg: string; path?: string }) => ({
-          field: e.path || e.type,
-          message: e.msg
-        })),
-      } as ApiResponse);
-      return;
-    }
 
     const { taskId } = req.params;
     const { statusId, columnOrder, sprintId } = req.body;

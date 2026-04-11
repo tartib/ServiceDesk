@@ -14,7 +14,7 @@ interface ICounterMethods {}
 
 interface CounterModel extends Model<ICounter, Record<string, never>, ICounterMethods> {
   getNextSequence(counterId: string): Promise<{ sequence: number; year: number }>;
-  generateId(prefix: 'INC' | 'PRB' | 'CHG' | 'REL' | 'SRQ' | 'SRV' | 'SLA' | 'SITE' | 'CAT' | 'USR'): Promise<string>;
+  generateId(prefix: 'INC' | 'PRB' | 'CHG' | 'REL' | 'SRQ' | 'SRV' | 'SLA' | 'SITE' | 'CAT' | 'USR' | 'PIR' | 'CCAL'): Promise<string>;
 }
 
 const CounterSchema = new Schema<ICounter, CounterModel, ICounterMethods>({
@@ -66,7 +66,7 @@ CounterSchema.statics.getNextSequence = async function (
  * @param prefix - INC, PRB, CHG, REL, SRQ
  */
 CounterSchema.statics.generateId = async function (
-  prefix: 'INC' | 'PRB' | 'CHG' | 'REL' | 'SRQ' | 'SRV' | 'SLA' | 'SITE' | 'CAT' | 'USR'
+  prefix: 'INC' | 'PRB' | 'CHG' | 'REL' | 'SRQ' | 'SRV' | 'SLA' | 'SITE' | 'CAT' | 'USR' | 'PIR' | 'CCAL'
 ): Promise<string> {
   const { sequence, year } = await this.getNextSequence(prefix);
   return `${prefix}-${year}-${String(sequence).padStart(5, '0')}`;

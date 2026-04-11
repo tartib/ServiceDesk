@@ -3,12 +3,12 @@
  * تحكم تعريفات سير العمل
  */
 
-import { Response } from 'express';
-import { validationResult } from 'express-validator';
+import { Request, Response } from 'express';
 import workflowDefinitionService from '../services/workflowDefinition.service';
-import { PMAuthRequest } from '../../../types/pm';
+import asyncHandler from '../../../utils/asyncHandler';
+import { sendSuccess, sendPaginated, sendError } from '../../../utils/ApiResponse';
 
-function resolveOrgId(req: PMAuthRequest): string | undefined {
+function resolveOrgId(req: Request): string | undefined {
   if (req.body?.organizationId) return req.body.organizationId;
   if (req.user?.organizationId) return req.user.organizationId;
   const orgs = req.user?.organizations;
@@ -16,197 +16,122 @@ function resolveOrgId(req: PMAuthRequest): string | undefined {
   return undefined;
 }
 
-export async function createDefinition(req: PMAuthRequest, res: Response) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
+export const createDefinition = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return void sendError(req, res, 401, 'Unauthorized');
 
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  const organizationId = resolveOrgId(req);
+  if (!organizationId) return void sendError(req, res, 400, 'organizationId is required');
 
-    const organizationId = resolveOrgId(req);
-    if (!organizationId) {
-      return res.status(400).json({ success: false, message: 'organizationId is required' });
-    }
+  const definition = await workflowDefinitionService.create({
+    organizationId,
+    projectId: req.body.projectId,
+    name: req.body.name,
+    nameAr: req.body.nameAr,
+    description: req.body.description,
+    descriptionAr: req.body.descriptionAr,
+    entityType: req.body.entityType,
+    states: req.body.states,
+    transitions: req.body.transitions,
+    initialState: req.body.initialState,
+    finalStates: req.body.finalStates,
+    settings: req.body.settings,
+    tags: req.body.tags,
+    createdBy: userId,
+  });
 
-    const definition = await workflowDefinitionService.create({
-      organizationId,
-      projectId: req.body.projectId,
-      name: req.body.name,
-      nameAr: req.body.nameAr,
-      description: req.body.description,
-      descriptionAr: req.body.descriptionAr,
-      entityType: req.body.entityType,
-      states: req.body.states,
-      transitions: req.body.transitions,
-      initialState: req.body.initialState,
-      finalStates: req.body.finalStates,
-      settings: req.body.settings,
-      tags: req.body.tags,
-      createdBy: userId,
-    });
+  sendSuccess(req, res, definition, 'Definition created', 201);
+});
 
-    return res.status(201).json({ success: true, data: definition });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-}
+export const getDefinition = asyncHandler(async (req: Request, res: Response) => {
+  const definition = await workflowDefinitionService.findById(req.params.id);
+  if (!definition) return void sendError(req, res, 404, 'Definition not found');
+  sendSuccess(req, res, definition);
+});
 
-export async function getDefinition(req: PMAuthRequest, res: Response) {
-  try {
-    const definition = await workflowDefinitionService.findById(req.params.id);
-    if (!definition) {
-      return res.status(404).json({ success: false, message: 'Definition not found' });
-    }
-    return res.json({ success: true, data: definition });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-}
+export const listDefinitions = asyncHandler(async (req: Request, res: Response) => {
+  const organizationId = (req.query.organizationId as string) || resolveOrgId(req);
+  if (!organizationId) return void sendError(req, res, 400, 'organizationId is required');
 
-export async function listDefinitions(req: PMAuthRequest, res: Response) {
-  try {
-    const organizationId = (req.query.organizationId as string) || resolveOrgId(req);
-    if (!organizationId) {
-      return res.status(400).json({ success: false, message: 'organizationId is required' });
-    }
+  const page = req.query.page ? parseInt(req.query.page as string) : 1;
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
 
-    const result = await workflowDefinitionService.list({
-      organizationId,
-      entityType: req.query.entityType as string,
-      status: req.query.status as string,
-      projectId: req.query.projectId as string,
-      search: req.query.search as string,
-      page: req.query.page ? parseInt(req.query.page as string) : undefined,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
-    });
+  const result = await workflowDefinitionService.list({
+    organizationId,
+    entityType: req.query.entityType as string,
+    status: req.query.status as string,
+    projectId: req.query.projectId as string,
+    search: req.query.search as string,
+    page,
+    limit,
+  });
 
-    return res.json({
-      success: true,
-      data: result.definitions,
-      pagination: {
-        total: result.total,
-        page: req.query.page ? parseInt(req.query.page as string) : 1,
-        limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
-      },
-    });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-}
+  sendPaginated(req, res, result.definitions, page, limit, result.total);
+});
 
-export async function updateDefinition(req: PMAuthRequest, res: Response) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
+export const updateDefinition = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return void sendError(req, res, 401, 'Unauthorized');
 
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  const definition = await workflowDefinitionService.update(
+    req.params.id,
+    req.body,
+    userId
+  );
 
-    const definition = await workflowDefinitionService.update(
-      req.params.id,
-      req.body,
-      userId
-    );
+  if (!definition) return void sendError(req, res, 404, 'Definition not found');
+  sendSuccess(req, res, definition);
+});
 
-    if (!definition) {
-      return res.status(404).json({ success: false, message: 'Definition not found' });
-    }
+export const deleteDefinition = asyncHandler(async (req: Request, res: Response) => {
+  const deleted = await workflowDefinitionService.delete(req.params.id);
+  if (!deleted) return void sendError(req, res, 404, 'Definition not found');
+  sendSuccess(req, res, null, 'Definition deleted');
+});
 
-    return res.json({ success: true, data: definition });
-  } catch (error: any) {
-    return res.status(400).json({ success: false, message: error.message });
-  }
-}
+export const publishDefinition = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return void sendError(req, res, 401, 'Unauthorized');
 
-export async function deleteDefinition(req: PMAuthRequest, res: Response) {
-  try {
-    const deleted = await workflowDefinitionService.delete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ success: false, message: 'Definition not found' });
-    }
-    return res.json({ success: true, message: 'Definition deleted' });
-  } catch (error: any) {
-    return res.status(400).json({ success: false, message: error.message });
-  }
-}
+  const definition = await workflowDefinitionService.publish(req.params.id, userId);
+  if (!definition) return void sendError(req, res, 404, 'Definition not found');
+  sendSuccess(req, res, definition);
+});
 
-export async function publishDefinition(req: PMAuthRequest, res: Response) {
-  try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+export const deprecateDefinition = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return void sendError(req, res, 401, 'Unauthorized');
 
-    const definition = await workflowDefinitionService.publish(req.params.id, userId);
-    if (!definition) {
-      return res.status(404).json({ success: false, message: 'Definition not found' });
-    }
+  const definition = await workflowDefinitionService.deprecate(req.params.id, userId);
+  if (!definition) return void sendError(req, res, 404, 'Definition not found');
+  sendSuccess(req, res, definition);
+});
 
-    return res.json({ success: true, data: definition });
-  } catch (error: any) {
-    return res.status(400).json({ success: false, message: error.message });
-  }
-}
+export const getVersions = asyncHandler(async (req: Request, res: Response) => {
+  const organizationId = (req.query.organizationId as string) || resolveOrgId(req);
+  if (!organizationId) return void sendError(req, res, 400, 'organizationId is required');
 
-export async function deprecateDefinition(req: PMAuthRequest, res: Response) {
-  try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  const definition = await workflowDefinitionService.findById(req.params.id);
+  if (!definition) return void sendError(req, res, 404, 'Definition not found');
 
-    const definition = await workflowDefinitionService.deprecate(req.params.id, userId);
-    if (!definition) {
-      return res.status(404).json({ success: false, message: 'Definition not found' });
-    }
+  const versions = await workflowDefinitionService.getVersions(
+    organizationId,
+    definition.name
+  );
 
-    return res.json({ success: true, data: definition });
-  } catch (error: any) {
-    return res.status(400).json({ success: false, message: error.message });
-  }
-}
+  sendSuccess(req, res, versions);
+});
 
-export async function getVersions(req: PMAuthRequest, res: Response) {
-  try {
-    const organizationId = (req.query.organizationId as string) || resolveOrgId(req);
-    if (!organizationId) {
-      return res.status(400).json({ success: false, message: 'organizationId is required' });
-    }
+export const createNewVersion = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return void sendError(req, res, 401, 'Unauthorized');
 
-    const definition = await workflowDefinitionService.findById(req.params.id);
-    if (!definition) {
-      return res.status(404).json({ success: false, message: 'Definition not found' });
-    }
+  const definition = await workflowDefinitionService.createNewVersion(
+    req.params.id,
+    req.body,
+    userId
+  );
 
-    const versions = await workflowDefinitionService.getVersions(
-      organizationId,
-      definition.name
-    );
-
-    return res.json({ success: true, data: versions });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-export async function createNewVersion(req: PMAuthRequest, res: Response) {
-  try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-    const definition = await workflowDefinitionService.createNewVersion(
-      req.params.id,
-      req.body,
-      userId
-    );
-
-    if (!definition) {
-      return res.status(404).json({ success: false, message: 'Source definition not found' });
-    }
-
-    return res.status(201).json({ success: true, data: definition });
-  } catch (error: any) {
-    return res.status(400).json({ success: false, message: error.message });
-  }
-}
+  if (!definition) return void sendError(req, res, 404, 'Source definition not found');
+  sendSuccess(req, res, definition, 'New version created', 201);
+});

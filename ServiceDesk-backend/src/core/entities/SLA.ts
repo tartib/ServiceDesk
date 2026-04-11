@@ -251,6 +251,7 @@ SLASchema.statics.findApplicable = async function (
 SLASchema.set('toJSON', { virtuals: true });
 SLASchema.set('toObject', { virtuals: true });
 
-const SLA = mongoose.model<ISLA>('SLA', SLASchema);
+const SLA = (mongoose.models['SLA'] as mongoose.Model<ISLA>) ||
+  mongoose.model<ISLA>('SLA', SLASchema);
 
 export default SLA;

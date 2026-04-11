@@ -14,10 +14,10 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
-// Admin-only guard
+// Admin-only guard — feature flags control production traffic routing
 router.use((req, res, next) => {
   const user = (req as any).user;
-  if (!user || !['admin', 'manager'].includes(user.role)) {
+  if (!user || user.role !== 'admin') {
     return res.status(403).json({
       success: false,
       message: 'Access denied. Admin role required.',

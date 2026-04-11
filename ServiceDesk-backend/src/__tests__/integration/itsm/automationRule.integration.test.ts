@@ -49,7 +49,8 @@ describe('ITSM Automation Rules — Integration Tests', () => {
       const res = await authReq(request(app).post('/api/v2/itsm/automation/rules'), adminUser)
         .send({ name: '' });
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      // Mongoose validation: name is required
+      expect(res.status).toBe(500);
     });
 
     it('should reject creation by end_user', async () => {

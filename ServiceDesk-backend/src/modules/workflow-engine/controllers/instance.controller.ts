@@ -3,9 +3,7 @@
  * تحكم نماذج سير العمل — Start, Transition, Query
  */
 
-import { Response } from 'express';
-import { validationResult } from 'express-validator';
-import { PMAuthRequest } from '../../../types/pm';
+import { Request, Response } from 'express';
 import { getWorkflowEngine } from '../services/workflowEngineFactory';
 import workflowInstanceService from '../services/workflowInstance.service';
 import workflowEventService from '../services/workflowEvent.service';
@@ -14,308 +12,230 @@ import logger from '../../../utils/logger';
 import { isWfPostgres, getWfRepos } from '../infrastructure/repositories';
 import { PgWfInstanceRepository } from '../infrastructure/repositories/PgWfInstanceRepository';
 import { PgWfEventRepository } from '../infrastructure/repositories/PgWfEventRepository';
+import asyncHandler from '../../../utils/asyncHandler';
+import { sendSuccess, sendPaginated, sendError } from '../../../utils/ApiResponse';
 
-export async function startWorkflow(req: PMAuthRequest, res: Response) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
+export const startWorkflow = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return void sendError(req, res, 401, 'Unauthorized');
 
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  const organizationId = req.body.organizationId || req.user?.organizationId;
+  if (!organizationId) return void sendError(req, res, 400, 'organizationId is required');
 
-    const organizationId = req.body.organizationId || req.user?.organizationId;
-    if (!organizationId) {
-      return res.status(400).json({ success: false, message: 'organizationId is required' });
-    }
+  const engine = getWorkflowEngine();
+  const instance = await engine.startWorkflow({
+    definitionId: req.body.definitionId,
+    organizationId,
+    entityType: req.body.entityType,
+    entityId: req.body.entityId,
+    actorId: userId,
+    actorName: req.user?.name,
+    actorRoles: req.user?.role ? [req.user.role] : [],
+    initialVariables: req.body.variables,
+    metadata: req.body.metadata,
+  });
 
-    const engine = getWorkflowEngine();
-    const instance = await engine.startWorkflow({
+  // Emit event
+  WorkflowEventPublisher.instanceStarted(
+    {
+      instanceId: (instance as any)._id?.toString() || (instance as any).id,
       definitionId: req.body.definitionId,
-      organizationId,
-      entityType: req.body.entityType,
-      entityId: req.body.entityId,
-      actorId: userId,
-      actorName: req.user?.name,
-      actorRoles: req.user?.role ? [req.user.role] : [],
-      initialVariables: req.body.variables,
-      metadata: req.body.metadata,
-    });
+      definitionName: req.body.definitionName || '',
+      startedBy: userId,
+      initialState: (instance as any).currentState || '',
+    },
+    { organizationId, userId }
+  ).catch((err) => logger.error('Failed to emit wf.instance.started', { err }));
 
-    // Emit event
-    WorkflowEventPublisher.instanceStarted(
-      {
-        instanceId: (instance as any)._id?.toString() || (instance as any).id,
-        definitionId: req.body.definitionId,
-        definitionName: req.body.definitionName || '',
-        startedBy: userId,
-        initialState: (instance as any).currentState || '',
-      },
-      { organizationId, userId }
-    ).catch((err) => logger.error('Failed to emit wf.instance.started', { err }));
+  sendSuccess(req, res, instance, 'Workflow started', 201);
+});
 
-    return res.status(201).json({ success: true, data: instance });
-  } catch (error: any) {
-    return res.status(400).json({ success: false, message: error.message });
+export const executeTransition = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return void sendError(req, res, 401, 'Unauthorized');
+
+  const engine = getWorkflowEngine();
+  const result = await engine.executeTransition({
+    instanceId: req.params.id,
+    transitionId: req.body.transitionId,
+    actorId: userId,
+    actorName: req.user?.name,
+    actorRoles: req.user?.role ? [req.user.role] : [],
+    data: req.body.data,
+    comment: req.body.comment,
+    signature: req.body.signature,
+  });
+
+  if (!result.success) {
+    return void sendError(req, res, 400, result.error || 'Transition failed');
   }
-}
 
-export async function executeTransition(req: PMAuthRequest, res: Response) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
-
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-    const engine = getWorkflowEngine();
-    const result = await engine.executeTransition({
+  // Emit event
+  WorkflowEventPublisher.instanceTransitioned(
+    {
       instanceId: req.params.id,
-      transitionId: req.body.transitionId,
-      actorId: userId,
-      actorName: req.user?.name,
-      actorRoles: req.user?.role ? [req.user.role] : [],
-      data: req.body.data,
-      comment: req.body.comment,
-      signature: req.body.signature,
-    });
+      definitionId: (result as any).definitionId || '',
+      fromState: (result as any).fromState || '',
+      toState: (result as any).toState || (result as any).currentState || '',
+      transitionedBy: userId,
+      transitionName: req.body.transitionId,
+    },
+    { organizationId: req.user?.organizationId || '', userId }
+  ).catch((err) => logger.error('Failed to emit wf.instance.transitioned', { err }));
 
-    if (!result.success) {
-      return res.status(400).json({ success: false, message: result.error, data: result });
-    }
+  sendSuccess(req, res, result);
+});
 
-    // Emit event
-    WorkflowEventPublisher.instanceTransitioned(
+export const getAvailableTransitions = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return void sendError(req, res, 401, 'Unauthorized');
+
+  const engine = getWorkflowEngine();
+  const transitions = await engine.getAvailableTransitions({
+    instanceId: req.params.id,
+    actorId: userId,
+    actorRoles: req.user?.role ? [req.user.role] : [],
+  });
+
+  sendSuccess(req, res, transitions);
+});
+
+export const getInstance = asyncHandler(async (req: Request, res: Response) => {
+  const engine = getWorkflowEngine();
+  const result = await engine.getCurrentState(req.params.id);
+
+  if (!result) return void sendError(req, res, 404, 'Instance not found');
+
+  sendSuccess(req, res, {
+    instance: result.instance,
+    currentState: result.state,
+    definitionName: result.definition.name,
+  });
+});
+
+export const listInstances = asyncHandler(async (req: Request, res: Response) => {
+  const organizationId = req.query.organizationId as string || req.user?.organizationId;
+  if (!organizationId) return void sendError(req, res, 400, 'organizationId is required');
+
+  const page = req.query.page ? parseInt(req.query.page as string) : 1;
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+
+  // ── PostgreSQL path ──
+  if (isWfPostgres()) {
+    const repo = getWfRepos().instance as PgWfInstanceRepository;
+    const result = await repo.searchInstances(
       {
-        instanceId: req.params.id,
-        definitionId: (result as any).definitionId || '',
-        fromState: (result as any).fromState || '',
-        toState: (result as any).toState || (result as any).currentState || '',
-        transitionedBy: userId,
-        transitionName: req.body.transitionId,
+        organizationId,
+        entityType: req.query.entityType as string,
+        status: req.query.status as string,
+        assigneeId: req.query.assigneeId as string,
+        definitionId: req.query.definitionId as string,
+        currentState: req.query.currentState as string,
       },
-      { organizationId: req.user?.organizationId || '', userId }
-    ).catch((err) => logger.error('Failed to emit wf.instance.transitioned', { err }));
-
-    return res.json({ success: true, data: result });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-export async function getAvailableTransitions(req: PMAuthRequest, res: Response) {
-  try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-    const engine = getWorkflowEngine();
-    const transitions = await engine.getAvailableTransitions({
-      instanceId: req.params.id,
-      actorId: userId,
-      actorRoles: req.user?.role ? [req.user.role] : [],
-    });
-
-    return res.json({ success: true, data: transitions });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-export async function getInstance(req: PMAuthRequest, res: Response) {
-  try {
-    const engine = getWorkflowEngine();
-    const result = await engine.getCurrentState(req.params.id);
-
-    if (!result) {
-      return res.status(404).json({ success: false, message: 'Instance not found' });
-    }
-
-    return res.json({
-      success: true,
-      data: {
-        instance: result.instance,
-        currentState: result.state,
-        definitionName: result.definition.name,
-      },
-    });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-export async function listInstances(req: PMAuthRequest, res: Response) {
-  try {
-    const organizationId = req.query.organizationId as string || req.user?.organizationId;
-    if (!organizationId) {
-      return res.status(400).json({ success: false, message: 'organizationId is required' });
-    }
-
-    const page = req.query.page ? parseInt(req.query.page as string) : 1;
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-
-    // ── PostgreSQL path ──
-    if (isWfPostgres()) {
-      const repo = getWfRepos().instance as PgWfInstanceRepository;
-      const result = await repo.searchInstances(
-        {
-          organizationId,
-          entityType: req.query.entityType as string,
-          status: req.query.status as string,
-          assigneeId: req.query.assigneeId as string,
-          definitionId: req.query.definitionId as string,
-          currentState: req.query.currentState as string,
-        },
-        page,
-        limit,
-      );
-      return res.json({
-        success: true,
-        data: result.data,
-        pagination: { total: result.total, page, limit },
-      });
-    }
-
-    // ── MongoDB path ──
-    const result = await workflowInstanceService.list({
-      organizationId,
-      entityType: req.query.entityType as string,
-      status: req.query.status as string,
-      assigneeId: req.query.assigneeId as string,
-      definitionId: req.query.definitionId as string,
-      currentState: req.query.currentState as string,
       page,
       limit,
-    });
-
-    return res.json({
-      success: true,
-      data: result.instances,
-      pagination: { total: result.total, page, limit },
-    });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+    );
+    return void sendPaginated(req, res, result.data, page, limit, result.total);
   }
-}
 
-export async function getInstanceEvents(req: PMAuthRequest, res: Response) {
-  try {
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+  // ── MongoDB path ──
+  const result = await workflowInstanceService.list({
+    organizationId,
+    entityType: req.query.entityType as string,
+    status: req.query.status as string,
+    assigneeId: req.query.assigneeId as string,
+    definitionId: req.query.definitionId as string,
+    currentState: req.query.currentState as string,
+    page,
+    limit,
+  });
 
-    // ── PostgreSQL path ──
-    if (isWfPostgres()) {
-      const repo = getWfRepos().event as PgWfEventRepository;
-      const events = await repo.getByInstance(req.params.id, limit);
-      return res.json({ success: true, data: events });
-    }
+  sendPaginated(req, res, result.instances, page, limit, result.total);
+});
 
-    // ── MongoDB path ──
-    const events = await workflowEventService.getByInstance(req.params.id, limit);
-    return res.json({ success: true, data: events });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+export const getInstanceEvents = asyncHandler(async (req: Request, res: Response) => {
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+
+  // ── PostgreSQL path ──
+  if (isWfPostgres()) {
+    const repo = getWfRepos().event as PgWfEventRepository;
+    const events = await repo.getByInstance(req.params.id, limit);
+    return void sendSuccess(req, res, events);
   }
-}
 
-export async function cancelWorkflow(req: PMAuthRequest, res: Response) {
-  try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  // ── MongoDB path ──
+  const events = await workflowEventService.getByInstance(req.params.id, limit);
+  sendSuccess(req, res, events);
+});
 
-    const engine = getWorkflowEngine();
-    const instance = await engine.cancelWorkflow({
+export const cancelWorkflow = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return void sendError(req, res, 401, 'Unauthorized');
+
+  const engine = getWorkflowEngine();
+  const instance = await engine.cancelWorkflow({
+    instanceId: req.params.id,
+    actorId: userId,
+    actorName: req.user?.name,
+    reason: req.body.reason,
+  });
+
+  if (!instance) return void sendError(req, res, 404, 'Active instance not found');
+
+  // Emit event
+  WorkflowEventPublisher.instanceCancelled(
+    {
       instanceId: req.params.id,
-      actorId: userId,
-      actorName: req.user?.name,
+      definitionId: (instance as any).definitionId?.toString() || '',
+      cancelledBy: userId,
       reason: req.body.reason,
-    });
+    },
+    { organizationId: req.user?.organizationId || '', userId }
+  ).catch((err) => logger.error('Failed to emit wf.instance.cancelled', { err }));
 
-    if (!instance) {
-      return res.status(404).json({ success: false, message: 'Active instance not found' });
-    }
+  sendSuccess(req, res, instance);
+});
 
-    // Emit event
-    WorkflowEventPublisher.instanceCancelled(
-      {
-        instanceId: req.params.id,
-        definitionId: (instance as any).definitionId?.toString() || '',
-        cancelledBy: userId,
-        reason: req.body.reason,
-      },
-      { organizationId: req.user?.organizationId || '', userId }
-    ).catch((err) => logger.error('Failed to emit wf.instance.cancelled', { err }));
+export const suspendWorkflow = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return void sendError(req, res, 401, 'Unauthorized');
 
-    return res.json({ success: true, data: instance });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-}
+  const engine = getWorkflowEngine();
+  const instance = await engine.suspendWorkflow({
+    instanceId: req.params.id,
+    actorId: userId,
+    actorName: req.user?.name,
+    reason: req.body.reason,
+  });
 
-export async function suspendWorkflow(req: PMAuthRequest, res: Response) {
-  try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  if (!instance) return void sendError(req, res, 404, 'Active instance not found');
+  sendSuccess(req, res, instance);
+});
 
-    const engine = getWorkflowEngine();
-    const instance = await engine.suspendWorkflow({
-      instanceId: req.params.id,
-      actorId: userId,
-      actorName: req.user?.name,
-      reason: req.body.reason,
-    });
+export const resumeWorkflow = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return void sendError(req, res, 401, 'Unauthorized');
 
-    if (!instance) {
-      return res.status(404).json({ success: false, message: 'Active instance not found' });
-    }
+  const engine = getWorkflowEngine();
+  const instance = await engine.resumeWorkflow({
+    instanceId: req.params.id,
+    actorId: userId,
+    actorName: req.user?.name,
+  });
 
-    return res.json({ success: true, data: instance });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-}
+  if (!instance) return void sendError(req, res, 404, 'Suspended instance not found');
+  sendSuccess(req, res, instance);
+});
 
-export async function resumeWorkflow(req: PMAuthRequest, res: Response) {
-  try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+export const migrateInstances = asyncHandler(async (req: Request, res: Response) => {
+  const result = await workflowInstanceService.migrateInstances({
+    fromDefinitionId: req.body.fromDefinitionId,
+    toDefinitionId: req.body.toDefinitionId,
+    toVersion: req.body.toVersion,
+    stateMapping: req.body.stateMapping,
+    strategy: req.body.strategy || 'keep_state',
+    initialState: req.body.initialState,
+  });
 
-    const engine = getWorkflowEngine();
-    const instance = await engine.resumeWorkflow({
-      instanceId: req.params.id,
-      actorId: userId,
-      actorName: req.user?.name,
-    });
-
-    if (!instance) {
-      return res.status(404).json({ success: false, message: 'Suspended instance not found' });
-    }
-
-    return res.json({ success: true, data: instance });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-export async function migrateInstances(req: PMAuthRequest, res: Response) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
-
-    const result = await workflowInstanceService.migrateInstances({
-      fromDefinitionId: req.body.fromDefinitionId,
-      toDefinitionId: req.body.toDefinitionId,
-      toVersion: req.body.toVersion,
-      stateMapping: req.body.stateMapping,
-      strategy: req.body.strategy || 'keep_state',
-      initialState: req.body.initialState,
-    });
-
-    return res.json({ success: true, data: result });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-}
+  sendSuccess(req, res, result);
+});

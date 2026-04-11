@@ -13,7 +13,7 @@
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "no-console": "warn",
-    "no-restricted-imports": ["warn", {
+    "no-restricted-imports": ["error", {
       "patterns": [
         {
           "group": ["**/modules/*/controllers/*", "**/modules/*/engine/*", "**/modules/*/services/*"],

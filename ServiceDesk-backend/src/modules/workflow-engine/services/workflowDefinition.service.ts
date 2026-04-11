@@ -53,30 +53,51 @@ class WorkflowDefinitionService implements IWFDefinitionStore {
     tags?: string[];
     createdBy: string;
   }): Promise<IWFDefinition> {
-    // Upsert: if a draft v1 with the same org+name exists, update it instead of creating a duplicate
+    // Upsert: if any record with the same org+name+version:1 exists, create a new version instead
     const existing = await WorkflowDefinition.findOne({
       organizationId: data.organizationId,
       name: data.name,
       version: 1,
-      status: WFDefinitionStatus.DRAFT,
     });
 
     if (existing) {
-      Object.assign(existing, {
-        nameAr: data.nameAr,
-        description: data.description,
-        descriptionAr: data.descriptionAr,
-        entityType: data.entityType,
-        states: data.states,
-        transitions: data.transitions,
-        initialState: data.initialState,
-        finalStates: data.finalStates,
-        settings: data.settings,
-        tags: data.tags,
-        updatedBy: data.createdBy,
-      });
-      await existing.save();
-      return existing.toJSON();
+      if (existing.status === WFDefinitionStatus.DRAFT) {
+        // Update the existing draft in-place
+        Object.assign(existing, {
+          nameAr: data.nameAr,
+          description: data.description,
+          descriptionAr: data.descriptionAr,
+          entityType: data.entityType,
+          states: data.states,
+          transitions: data.transitions,
+          initialState: data.initialState,
+          finalStates: data.finalStates,
+          settings: data.settings,
+          tags: data.tags,
+          updatedBy: data.createdBy,
+        });
+        await existing.save();
+        return existing.toJSON();
+      } else {
+        // Published/archived — get the latest version and create v+1
+        const latest = await WorkflowDefinition.findOne({
+          organizationId: data.organizationId,
+          name: data.name,
+        }).sort({ version: -1 });
+        const nextVersion = (latest?.version ?? 0) + 1;
+        const newDraft = new WorkflowDefinition({
+          ...data,
+          version: nextVersion,
+          isLatest: true,
+          status: WFDefinitionStatus.DRAFT,
+        });
+        if (latest) {
+          latest.isLatest = false;
+          await latest.save();
+        }
+        await newDraft.save();
+        return newDraft.toJSON();
+      }
     }
 
     const definition = new WorkflowDefinition({

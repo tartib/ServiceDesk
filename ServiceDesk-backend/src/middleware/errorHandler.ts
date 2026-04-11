@@ -33,6 +33,7 @@ export const errorHandler = (err: ApiError, req: Request, res: Response, _next: 
     success: false,
     statusCode,
     message,
+    requestId: req.correlationId,
     ...(env.NODE_ENV === 'development' && { stack: err.stack }),
   };
 

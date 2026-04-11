@@ -53,27 +53,37 @@ CREATE TABLE IF NOT EXISTS user_organizations (
   PRIMARY KEY (user_id, organization_id)
 );
 
--- ── Platform Teams (src/models/Team.ts) ─────────────────────
+-- ── Platform Teams (src/models/Team.ts) — Unified Enterprise Model ──────
 CREATE TABLE IF NOT EXISTS teams (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   mongo_id        VARCHAR(24),
-  name            VARCHAR(200) NOT NULL UNIQUE,
+  name            VARCHAR(200) NOT NULL,
   name_ar         VARCHAR(200) NOT NULL,
   description     TEXT,
   description_ar  TEXT,
-  type            VARCHAR(30) NOT NULL DEFAULT 'support',
+  type            VARCHAR(30)  NOT NULL DEFAULT 'support',
+  scope           VARCHAR(20)  NOT NULL DEFAULT 'global',
+  visibility      VARCHAR(20)  NOT NULL DEFAULT 'public',
+  organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
+  project_id      UUID,
   leader_id       UUID REFERENCES users(id) ON DELETE SET NULL,
+  capacity        JSONB,
   is_active       BOOLEAN NOT NULL DEFAULT TRUE,
   created_by      UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (name, organization_id, project_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_teams_type      ON teams (type);
-CREATE INDEX IF NOT EXISTS idx_teams_active    ON teams (is_active);
-CREATE INDEX IF NOT EXISTS idx_teams_mongo_id  ON teams (mongo_id);
+CREATE INDEX IF NOT EXISTS idx_teams_type            ON teams (type);
+CREATE INDEX IF NOT EXISTS idx_teams_scope           ON teams (scope);
+CREATE INDEX IF NOT EXISTS idx_teams_visibility      ON teams (visibility);
+CREATE INDEX IF NOT EXISTS idx_teams_active          ON teams (is_active);
+CREATE INDEX IF NOT EXISTS idx_teams_organization    ON teams (organization_id);
+CREATE INDEX IF NOT EXISTS idx_teams_project         ON teams (project_id);
+CREATE INDEX IF NOT EXISTS idx_teams_mongo_id        ON teams (mongo_id);
 
--- Team members (embedded array in Mongoose)
+-- Team members (role extended: leader | maintainer | member | observer)
 CREATE TABLE IF NOT EXISTS team_members (
   team_id    UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
   user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -82,6 +92,44 @@ CREATE TABLE IF NOT EXISTS team_members (
   added_by   UUID REFERENCES users(id) ON DELETE SET NULL,
   PRIMARY KEY (team_id, user_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members (user_id);
+
+-- Team audit log
+CREATE TABLE IF NOT EXISTS team_audit_logs (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  team_id         UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  action          VARCHAR(30) NOT NULL,
+  actor_id        UUID REFERENCES users(id) ON DELETE SET NULL,
+  target_user_id  UUID REFERENCES users(id) ON DELETE SET NULL,
+  before_data     JSONB,
+  after_data      JSONB,
+  note            TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_audit_team       ON team_audit_logs (team_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_team_audit_actor      ON team_audit_logs (actor_id);
+CREATE INDEX IF NOT EXISTS idx_team_audit_action     ON team_audit_logs (action);
+
+-- Team queues (ITSM helpdesk inbox per team)
+CREATE TABLE IF NOT EXISTS team_queues (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  team_id         UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  name            VARCHAR(100) NOT NULL,
+  name_ar         VARCHAR(100),
+  ticket_types    JSONB NOT NULL DEFAULT '[]',
+  priority_rules  JSONB NOT NULL DEFAULT '[]',
+  sla_id          UUID,
+  is_default      BOOLEAN NOT NULL DEFAULT FALSE,
+  is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+  created_by      UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_queues_team      ON team_queues (team_id);
+CREATE INDEX IF NOT EXISTS idx_team_queues_default   ON team_queues (team_id, is_default);
 
 -- Add FK to user_teams
 ALTER TABLE user_teams

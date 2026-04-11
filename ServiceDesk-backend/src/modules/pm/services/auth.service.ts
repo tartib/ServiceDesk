@@ -1,9 +1,12 @@
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../../../models/User';
 import Organization from '../models/Organization';
 import { OrganizationRole, MethodologyCode } from '../../../types/pm';
-import env from '../../../config/env';
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from '../../../utils/jwt';
 
 interface RegisterInput {
   email: string;
@@ -18,31 +21,18 @@ interface LoginInput {
   password: string;
 }
 
-interface TokenPayload {
-  userId: string;
-  email: string;
-  organizationId?: string;
-}
-
 interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
 }
 
+// Hash refresh token before persisting — never store raw tokens
+function hashToken(token: string): string {
+  return bcrypt.hashSync(token, 6);
+}
+
 class AuthService {
-  private readonly jwtSecret: string;
-  private readonly jwtRefreshSecret: string;
-  private readonly jwtExpiresIn: string;
-  private readonly jwtRefreshExpiresIn: string;
-
-  constructor() {
-    this.jwtSecret = env.JWT_SECRET;
-    this.jwtRefreshSecret = env.JWT_REFRESH_SECRET || env.JWT_SECRET;
-    this.jwtExpiresIn = env.JWT_EXPIRE;
-    this.jwtRefreshExpiresIn = env.JWT_REFRESH_EXPIRE;
-  }
-
   async register(input: RegisterInput): Promise<{ user: any; tokens: AuthTokens; organization?: any }> {
     const { email, password, firstName, lastName, organizationName } = input;
 
@@ -51,12 +41,9 @@ class AuthService {
       throw new Error('Email already registered');
     }
 
-    const salt = await bcrypt.genSalt(12);
-    const passwordHash = await bcrypt.hash(password, salt);
-
     const user = new User({
       email: email.toLowerCase(),
-      passwordHash,
+      password,
       profile: {
         firstName,
         lastName,
@@ -92,13 +79,10 @@ class AuthService {
 
     await user.save();
 
-    const tokens = this.generateTokens({
-      userId: user._id.toString(),
-      email: user.email,
-      organizationId: organization?._id.toString(),
-    });
+    const tokens = this.buildTokens(user, organization?._id.toString());
 
-    (user as any).refreshToken = tokens.refreshToken;
+    // Persist hashed refresh token
+    user.refreshTokenHash = hashToken(tokens.refreshToken);
     await user.save();
 
     return { user, tokens, organization };
@@ -116,51 +100,46 @@ class AuthService {
       throw new Error('Account is not active');
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       throw new Error('Invalid credentials');
     }
 
     const defaultOrg = user.organizations[0];
-    const tokens = this.generateTokens({
-      userId: user._id.toString(),
-      email: user.email,
-      organizationId: defaultOrg?.organizationId.toString(),
-    });
+    const tokens = this.buildTokens(user, defaultOrg?.organizationId.toString());
 
-    (user as any).refreshToken = tokens.refreshToken;
-    (user as any).lastLoginAt = new Date();
+    // Persist hashed refresh token
+    user.refreshTokenHash = hashToken(tokens.refreshToken);
     await user.save();
 
     return { user, tokens };
   }
 
   async refreshTokens(refreshToken: string): Promise<AuthTokens> {
-    try {
-      const decoded = jwt.verify(refreshToken, this.jwtRefreshSecret) as TokenPayload;
+    const decoded = verifyRefreshToken(refreshToken);
 
-      const user = await User.findById(decoded.userId).select('+refreshToken');
-      if (!user || (user as any).refreshToken !== refreshToken) {
-        throw new Error('Invalid refresh token');
-      }
-
-      const tokens = this.generateTokens({
-        userId: user._id.toString(),
-        email: user.email,
-        organizationId: decoded.organizationId,
-      });
-
-      (user as any).refreshToken = tokens.refreshToken;
-      await user.save();
-
-      return tokens;
-    } catch {
+    const user = await User.findById(decoded.userId).select('+refreshTokenHash');
+    if (!user || !user.refreshTokenHash) {
       throw new Error('Invalid refresh token');
     }
+
+    // Validate stored hash matches the presented token
+    const valid = bcrypt.compareSync(refreshToken, user.refreshTokenHash);
+    if (!valid) {
+      throw new Error('Invalid refresh token');
+    }
+
+    const tokens = this.buildTokens(user, decoded.organizationId);
+
+    // Rotate: persist new hashed refresh token
+    user.refreshTokenHash = hashToken(tokens.refreshToken);
+    await user.save();
+
+    return tokens;
   }
 
   async logout(userId: string): Promise<void> {
-    await User.findByIdAndUpdate(userId, { refreshToken: null });
+    await User.findByIdAndUpdate(userId, { $unset: { refreshTokenHash: 1 } });
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
@@ -169,30 +148,28 @@ class AuthService {
       throw new Error('User not found');
     }
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       throw new Error('Current password is incorrect');
     }
 
     user.password = newPassword;
-    (user as any).refreshToken = undefined;
+    // Invalidate refresh token — user must re-login
+    user.refreshTokenHash = undefined;
     await user.save();
   }
 
-  private generateTokens(payload: TokenPayload): AuthTokens {
-    // Include 'id' for compatibility with v1 auth middleware (verifyToken expects 'id')
-    const tokenData = { ...payload, id: payload.userId };
-    const accessToken = jwt.sign(tokenData, this.jwtSecret, {
-      expiresIn: this.jwtExpiresIn as string,
-    } as jwt.SignOptions);
-
-    const refreshToken = jwt.sign(payload, this.jwtRefreshSecret, {
-      expiresIn: this.jwtRefreshExpiresIn as string,
-    } as jwt.SignOptions);
+  private buildTokens(user: any, organizationId?: string): AuthTokens {
+    const payload = {
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role || 'prep',
+      organizationId,
+    };
 
     return {
-      accessToken,
-      refreshToken,
+      accessToken: generateAccessToken(payload),
+      refreshToken: generateRefreshToken(payload),
       expiresIn: 7 * 24 * 60 * 60,
     };
   }

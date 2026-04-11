@@ -1,6 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
+import { validationResult } from 'express-validator';
 import Joi from 'joi';
 import ApiError from '../../utils/ApiError';
+
+/**
+ * Express-validator catch-all middleware.
+ *
+ * Place after `body()` / `param()` / `query()` chains.
+ * Throws a unified ApiError(400) with the same `{ errors: [{ field, message }] }`
+ * shape used by the Joi `validate()` middleware below.
+ *
+ * Usage:
+ *   router.post('/', [body('name').notEmpty()], handleValidation, controller);
+ */
+export const handleValidation = (req: Request, _res: Response, next: NextFunction): void => {
+  const result = validationResult(req);
+  if (!result.isEmpty()) {
+    const errors = result.array().map((err) => ({
+      field: (err as any).path ?? (err as any).param ?? 'unknown',
+      message: err.msg,
+    }));
+    throw new ApiError(400, 'Validation failed', { errors });
+  }
+  next();
+};
 
 export interface ValidationResult {
   valid: boolean;

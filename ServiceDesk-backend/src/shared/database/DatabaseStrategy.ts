@@ -13,7 +13,7 @@ import { PostgresRepository, PgTableConfig } from './PostgresRepository';
 
 export type DatabaseType = 'mongodb' | 'postgresql';
 
-export type ModuleName = 'itsm' | 'pm' | 'forms' | 'analytics' | 'storage' | 'workflow' | 'platform' | 'sla';
+export type ModuleName = 'itsm' | 'pm' | 'forms' | 'analytics' | 'storage' | 'workflow' | 'platform' | 'sla' | 'gamification' | 'campaigns';
 
 interface DatabaseStrategyConfig {
   itsm: DatabaseType;
@@ -24,6 +24,8 @@ interface DatabaseStrategyConfig {
   workflow: DatabaseType;
   platform: DatabaseType;
   sla: DatabaseType;
+  gamification: DatabaseType;
+  campaigns: DatabaseType;
   default: DatabaseType;
 }
 
@@ -41,6 +43,8 @@ function getConfig(): DatabaseStrategyConfig {
     workflow: (process.env.DB_STRATEGY_WORKFLOW as DatabaseType) || 'mongodb',
     platform: (process.env.DB_STRATEGY_PLATFORM as DatabaseType) || 'mongodb',
     sla: (process.env.DB_STRATEGY_SLA as DatabaseType) || 'mongodb',
+    gamification: (process.env.DB_STRATEGY_GAMIFICATION as DatabaseType) || 'mongodb',
+    campaigns: (process.env.DB_STRATEGY_CAMPAIGNS as DatabaseType) || 'mongodb',
     default: 'mongodb',
   };
 }

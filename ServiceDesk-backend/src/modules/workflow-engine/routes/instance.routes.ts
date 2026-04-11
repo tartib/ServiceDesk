@@ -1,16 +1,14 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { body, param } from 'express-validator';
-import { authenticate } from '../../../middleware/auth';
+import { authorize } from '../../../middleware/auth';
 import * as instanceController from '../controllers/instance.controller';
 
 const router = Router();
 
-router.use(authenticate);
-
 // List instances
 router.get(
   '/',
-  (req: Request, res: Response) => instanceController.listInstances(req as any, res)
+  instanceController.listInstances
 );
 
 // Start workflow
@@ -21,14 +19,14 @@ router.post(
     body('entityType').trim().notEmpty().withMessage('Entity type is required'),
     body('entityId').trim().notEmpty().withMessage('Entity ID is required'),
   ],
-  (req: Request, res: Response) => instanceController.startWorkflow(req as any, res)
+  instanceController.startWorkflow
 );
 
 // Get instance
 router.get(
   '/:id',
   [param('id').isMongoId().withMessage('Invalid instance ID')],
-  (req: Request, res: Response) => instanceController.getInstance(req as any, res)
+  instanceController.getInstance
 );
 
 // Execute transition
@@ -38,54 +36,58 @@ router.post(
     param('id').isMongoId().withMessage('Invalid instance ID'),
     body('transitionId').trim().notEmpty().withMessage('Transition ID is required'),
   ],
-  (req: Request, res: Response) => instanceController.executeTransition(req as any, res)
+  instanceController.executeTransition
 );
 
 // Get available transitions
 router.get(
   '/:id/transitions',
   [param('id').isMongoId().withMessage('Invalid instance ID')],
-  (req: Request, res: Response) => instanceController.getAvailableTransitions(req as any, res)
+  instanceController.getAvailableTransitions
 );
 
 // Get instance events (audit trail)
 router.get(
   '/:id/events',
   [param('id').isMongoId().withMessage('Invalid instance ID')],
-  (req: Request, res: Response) => instanceController.getInstanceEvents(req as any, res)
+  instanceController.getInstanceEvents
 );
 
-// Cancel workflow
+// Cancel workflow (admin/manager only)
 router.post(
   '/:id/cancel',
+  authorize('admin', 'manager'),
   [param('id').isMongoId().withMessage('Invalid instance ID')],
-  (req: Request, res: Response) => instanceController.cancelWorkflow(req as any, res)
+  instanceController.cancelWorkflow
 );
 
-// Suspend workflow
+// Suspend workflow (admin/manager only)
 router.post(
   '/:id/suspend',
+  authorize('admin', 'manager'),
   [param('id').isMongoId().withMessage('Invalid instance ID')],
-  (req: Request, res: Response) => instanceController.suspendWorkflow(req as any, res)
+  instanceController.suspendWorkflow
 );
 
-// Resume workflow
+// Resume workflow (admin/manager only)
 router.post(
   '/:id/resume',
+  authorize('admin', 'manager'),
   [param('id').isMongoId().withMessage('Invalid instance ID')],
-  (req: Request, res: Response) => instanceController.resumeWorkflow(req as any, res)
+  instanceController.resumeWorkflow
 );
 
-// Migrate instances
+// Migrate instances (admin only — affects all instances)
 router.post(
   '/migrate',
+  authorize('admin'),
   [
     body('fromDefinitionId').isMongoId().withMessage('Invalid source definition ID'),
     body('toDefinitionId').isMongoId().withMessage('Invalid target definition ID'),
     body('toVersion').isInt({ min: 1 }).withMessage('Version must be a positive integer'),
     body('strategy').isIn(['keep_state', 'reset', 'map_states']).withMessage('Invalid migration strategy'),
   ],
-  (req: Request, res: Response) => instanceController.migrateInstances(req as any, res)
+  instanceController.migrateInstances
 );
 
 export default router;

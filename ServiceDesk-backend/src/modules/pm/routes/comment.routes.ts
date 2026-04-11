@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { body, param } from 'express-validator';
 import * as commentController from '../controllers/comment.controller';
 import { authenticate } from '../../../middleware/auth';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 const router = Router();
 
@@ -9,7 +10,7 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/v1/pm/tasks/{taskId}/comments:
+ * /api/v2/pm/tasks/{taskId}/comments:
  *   post:
  *     summary: إنشاء تعليق على المهمة
  *     description: إضافة تعليق جديد على المهمة
@@ -50,12 +51,13 @@ router.post(
     body('content').trim().notEmpty().withMessage('Content is required'),
     body('parentId').optional().isMongoId(),
   ],
-  (req: Request, res: Response) => commentController.createComment(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => commentController.createComment(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/tasks/{taskId}/comments:
+ * /api/v2/pm/tasks/{taskId}/comments:
  *   get:
  *     summary: الحصول على تعليقات المهمة
  *     description: استرجاع جميع التعليقات على المهمة
@@ -80,12 +82,13 @@ router.post(
 router.get(
   '/tasks/:taskId/comments',
   [param('taskId').isMongoId().withMessage('Invalid task ID')],
-  (req: Request, res: Response) => commentController.getComments(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => commentController.getComments(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/comments/{commentId}:
+ * /api/v2/pm/comments/{commentId}:
  *   put:
  *     summary: تحديث التعليق
  *     description: تحديث محتوى التعليق
@@ -122,12 +125,13 @@ router.put(
     param('commentId').isMongoId().withMessage('Invalid comment ID'),
     body('content').trim().notEmpty().withMessage('Content is required'),
   ],
-  (req: Request, res: Response) => commentController.updateComment(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => commentController.updateComment(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/comments/{commentId}:
+ * /api/v2/pm/comments/{commentId}:
  *   delete:
  *     summary: حذف التعليق
  *     description: حذف التعليق من النظام
@@ -152,12 +156,13 @@ router.put(
 router.delete(
   '/comments/:commentId',
   [param('commentId').isMongoId().withMessage('Invalid comment ID')],
-  (req: Request, res: Response) => commentController.deleteComment(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => commentController.deleteComment(req, res)
 );
 
 /**
  * @swagger
- * /api/v1/pm/comments/{commentId}/reactions:
+ * /api/v2/pm/comments/{commentId}/reactions:
  *   post:
  *     summary: إضافة رد فعل على التعليق
  *     description: إضافة أو تبديل رد فعل (emoji) على التعليق
@@ -195,7 +200,8 @@ router.post(
     param('commentId').isMongoId().withMessage('Invalid comment ID'),
     body('emoji').trim().notEmpty().withMessage('Emoji is required'),
   ],
-  (req: Request, res: Response) => commentController.addReaction(req as any, res)
+  handleValidation,
+  (req: Request, res: Response) => commentController.addReaction(req, res)
 );
 
 export default router;
