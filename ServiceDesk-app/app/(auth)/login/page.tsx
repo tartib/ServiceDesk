@@ -16,137 +16,137 @@ import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 type LoginFormData = { email: string; password: string; rememberMe?: boolean };
 
 export default function LoginPage() {
-  const [error, setError] = useState<string>('');
-  const [showPassword, setShowPassword] = useState(false);
-  const { mutate: login, isPending } = useLogin();
-  const { t } = useLanguage();
+ const [error, setError] = useState<string>('');
+ const [showPassword, setShowPassword] = useState(false);
+ const { mutate: login, isPending } = useLogin();
+ const { t } = useLanguage();
 
-  const loginSchema = useMemo(() => z.object({
-    email: z.string().email(t('validation.invalidEmail')),
-    password: z.string().min(6, t('validation.passwordMinLength')),
-    rememberMe: z.boolean().optional(),
-  }), [t]);
+ const loginSchema = useMemo(() => z.object({
+ email: z.string().email(t('validation.invalidEmail')),
+ password: z.string().min(6, t('validation.passwordMinLength')),
+ rememberMe: z.boolean().optional(),
+ }), [t]);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-  });
+ const {
+ register,
+ handleSubmit,
+ formState: { errors },
+ } = useForm<LoginFormData>({
+ resolver: zodResolver(loginSchema),
+ });
 
-  const onSubmit = (data: LoginFormData) => {
-    setError('');
-    // Trim whitespace from inputs to prevent authentication issues
-    const trimmedData = {
-      email: data.email.trim(),
-      password: data.password.trim(),
-      rememberMe: data.rememberMe,
-    };
-    login(trimmedData, {
-      onError: (err: Error & { response?: { data?: { message?: string } } }) => {
-        setError(err.response?.data?.message || t('auth.loginFailed'));
-      },
-    });
-  };
+ const onSubmit = (data: LoginFormData) => {
+ setError('');
+ // Trim whitespace from inputs to prevent authentication issues
+ const trimmedData = {
+ email: data.email.trim(),
+ password: data.password.trim(),
+ rememberMe: data.rememberMe,
+ };
+ login(trimmedData, {
+ onError: (err: Error & { response?: { data?: { error?: string; message?: string } } }) => {
+ setError(err.response?.data?.error || err.response?.data?.message || t('auth.loginFailed'));
+ },
+ });
+ };
 
-  return (
-    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">{t('auth.welcomeBack')}</CardTitle>
-          <CardDescription className="text-center">
-            {t('auth.signIn')} {t('app.name')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form data-testid="login-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {error && (
-              <div data-testid="login-error" className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                <AlertCircle className="h-4 w-4" />
-                <span>{error}</span>
-              </div>
-            )}
+ return (
+ <div className="h-screen flex items-center justify-center bg-muted px-4">
+ <Card className="w-full max-w-md">
+ <CardHeader className="space-y-1">
+ <CardTitle className="text-2xl font-bold text-center">{t('auth.welcomeBack')}</CardTitle>
+ <CardDescription className="text-center">
+ {t('auth.signIn')} {t('app.name')}
+ </CardDescription>
+ </CardHeader>
+ <CardContent>
+ <form data-testid="login-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+ {error && (
+ <div data-testid="login-error" className="flex items-center gap-2 text-sm text-destructive bg-destructive-soft p-3 rounded-md">
+ <AlertCircle className="h-4 w-4" />
+ <span>{error}</span>
+ </div>
+ )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email">{t('auth.email')}</Label>
-              <Input
-                id="email"
-                data-testid="email-input"
-                type="email"
-                placeholder="you@example.com"
-                {...register('email')}
-                disabled={isPending}
-              />
-              {errors.email && (
-                <p data-testid="email-error" className="text-sm text-red-600">{errors.email.message}</p>
-              )}
-            </div>
+ <div className="space-y-2">
+ <Label htmlFor="email">{t('auth.email')}</Label>
+ <Input
+ id="email"
+ data-testid="email-input"
+ type="email"
+ placeholder="you@example.com"
+ {...register('email')}
+ disabled={isPending}
+ />
+ {errors.email && (
+ <p data-testid="email-error" className="text-sm text-destructive">{errors.email.message}</p>
+ )}
+ </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">{t('auth.password')}</Label>
-                <Link data-testid="forgot-password-link" href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                  {t('auth.forgotPassword')}
-                </Link>
-              </div>
-              <div className="relative">
-                <Input
-                  id="password"
-                  data-testid="password-input"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  {...register('password')}
-                  disabled={isPending}
-                />
-                <button
-                  type="button"
-                  data-testid="toggle-password-btn"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p data-testid="password-error" className="text-sm text-red-600">{errors.password.message}</p>
-              )}
-            </div>
+ <div className="space-y-2">
+ <div className="flex items-center justify-between">
+ <Label htmlFor="password">{t('auth.password')}</Label>
+ <Link data-testid="forgot-password-link" href="/forgot-password" className="text-sm text-brand hover:underline">
+ {t('auth.forgotPassword')}
+ </Link>
+ </div>
+ <div className="relative">
+ <Input
+ id="password"
+ data-testid="password-input"
+ type={showPassword ? 'text' : 'password'}
+ placeholder="••••••••"
+ {...register('password')}
+ disabled={isPending}
+ />
+ <button
+ type="button"
+ data-testid="toggle-password-btn"
+ onClick={() => setShowPassword(!showPassword)}
+ className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+ >
+ {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+ </button>
+ </div>
+ {errors.password && (
+ <p data-testid="password-error" className="text-sm text-destructive">{errors.password.message}</p>
+ )}
+ </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="rememberMe"
-                {...register('rememberMe')}
-                className="h-4 w-4 rounded border-gray-300"
-                disabled={isPending}
-              />
-              <Label htmlFor="rememberMe" className="text-sm font-normal">
-                {t('auth.rememberMe')}
-              </Label>
-            </div>
+ <div className="flex items-center space-x-2">
+ <input
+ type="checkbox"
+ id="rememberMe"
+ {...register('rememberMe')}
+ className="h-4 w-4 rounded border-border"
+ disabled={isPending}
+ />
+ <Label htmlFor="rememberMe" className="text-sm font-normal">
+ {t('auth.rememberMe')}
+ </Label>
+ </div>
 
-            <Button data-testid="login-submit-btn" type="submit" className="w-full" disabled={isPending}>
-              {isPending ? (
-                <>
-                  <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" />
-                  {t('common.loading')}
-                </>
-              ) : (
-                t('auth.signIn')
-              )}
-            </Button>
+ <Button data-testid="login-submit-btn" type="submit" className="w-full" disabled={isPending}>
+ {isPending ? (
+ <>
+ <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" />
+ {t('common.loading')}
+ </>
+ ) : (
+ t('auth.signIn')
+ )}
+ </Button>
 
-            <div className="text-center text-sm text-gray-600">
-              {t('auth.dontHaveAccount')}{' '}
-              <Link data-testid="register-link" href="/register" className="text-blue-600 hover:underline font-medium">
-                {t('auth.signUp')}
-              </Link>
-            </div>
-          </form>
+ <div className="text-center text-sm text-muted-foreground">
+ {t('auth.dontHaveAccount')}{' '}
+ <Link data-testid="register-link" href="/register" className="text-brand hover:underline font-medium">
+ {t('auth.signUp')}
+ </Link>
+ </div>
+ </form>
 
-        </CardContent>
-      </Card>
-    </div>
-  );
+ </CardContent>
+ </Card>
+ </div>
+ );
 }

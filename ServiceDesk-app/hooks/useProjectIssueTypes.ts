@@ -12,11 +12,11 @@ export interface IssueType {
 }
 
 const DEFAULT_ISSUE_TYPES: IssueType[] = [
-  { id: 'epic', name: 'Epic', icon: '⚡', color: 'text-purple-400' },
-  { id: 'feature', name: 'Feature', icon: '📦', color: 'text-orange-400' },
-  { id: 'task', name: 'Task', icon: '✓', color: 'text-blue-400' },
-  { id: 'story', name: 'Story', icon: '📖', color: 'text-green-400' },
-  { id: 'bug', name: 'Bug', icon: '🐛', color: 'text-red-400' },
+  { id: 'epic', name: 'Epic', icon: '⚡', color: 'text-info' },
+  { id: 'feature', name: 'Feature', icon: '📦', color: 'text-warning' },
+  { id: 'task', name: 'Task', icon: '✓', color: 'text-brand' },
+  { id: 'story', name: 'Story', icon: '📖', color: 'text-success' },
+  { id: 'bug', name: 'Bug', icon: '🐛', color: 'text-destructive' },
 ];
 
 export function useProjectIssueTypes(projectId: string | undefined) {

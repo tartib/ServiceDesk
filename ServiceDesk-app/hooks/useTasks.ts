@@ -22,7 +22,7 @@ export const useAllTasks = (projectId: string) => {
   return useQuery({
     queryKey: ['tasks', 'all', projectId],
     queryFn: async () => {
-      const response = await api.get(`/projects/${projectId}/tasks`);
+      const response = await api.get(`/pm/projects/${projectId}/tasks`);
       return normalizeList<Task>(response);
     },
     enabled: !!projectId,
@@ -37,7 +37,7 @@ export const useTodayTasks = (projectId: string) => {
   return useQuery({
     queryKey: ['tasks', 'today', projectId],
     queryFn: async () => {
-      const response = await api.get(`/projects/${projectId}/tasks`, {
+      const response = await api.get(`/pm/projects/${projectId}/tasks`, {
         params: { dueDate: new Date().toISOString().split('T')[0] },
       });
       return normalizeList<Task>(response);
@@ -54,7 +54,7 @@ export const useMyTasks = (projectId: string) => {
   return useQuery({
     queryKey: ['tasks', 'my-tasks', projectId],
     queryFn: async () => {
-      const response = await api.get(`/projects/${projectId}/tasks`, {
+      const response = await api.get(`/pm/projects/${projectId}/tasks`, {
         params: { assignee: 'me' },
       });
       return normalizeList<Task>(response);
@@ -72,7 +72,7 @@ export const useTasksByStatus = (projectId: string, status: TaskStatus) => {
   return useQuery({
     queryKey: ['tasks', 'status', projectId, status],
     queryFn: async () => {
-      const response = await api.get(`/projects/${projectId}/tasks`, {
+      const response = await api.get(`/pm/projects/${projectId}/tasks`, {
         params: { status },
       });
       return normalizeList<Task>(response);
@@ -89,7 +89,7 @@ export const useProductTasks = (projectId: string, productId: string) => {
   return useQuery({
     queryKey: ['tasks', 'product', projectId, productId],
     queryFn: async () => {
-      const response = await api.get(`/projects/${projectId}/tasks`, {
+      const response = await api.get(`/pm/projects/${projectId}/tasks`, {
         params: { product: productId },
       });
       return normalizeList<Task>(response);
@@ -108,7 +108,7 @@ export const useTask = (taskId: string) => {
   return useQuery({
     queryKey: ['tasks', taskId],
     queryFn: async () => {
-      const response = await api.get(`/tasks/${taskId}`);
+      const response = await api.get(`/pm/tasks/${taskId}`);
       return normalizeEntity<Task>(response);
     },
     enabled: !!taskId,
@@ -125,7 +125,7 @@ export const useStartTask = () => {
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      const response = await api.post(`/tasks/${taskId}/transition`, {
+      const response = await api.post(`/pm/tasks/${taskId}/transition`, {
         statusId: 'in-progress',
       });
       return normalizeEntity<Task>(response);
@@ -148,7 +148,7 @@ export const useCompleteTask = () => {
 
   return useMutation({
     mutationFn: async ({ taskId, notes }: { taskId: string; notes?: string }) => {
-      const response = await api.post(`/tasks/${taskId}/transition`, {
+      const response = await api.post(`/pm/tasks/${taskId}/transition`, {
         statusId: 'done',
         comment: notes,
       });
@@ -174,7 +174,7 @@ export const useCreateTask = () => {
   return useMutation({
     mutationFn: async (data: TaskFormData & { projectId: string }) => {
       const { projectId, ...taskData } = data;
-      const response = await api.post(`/projects/${projectId}/tasks`, taskData);
+      const response = await api.post(`/pm/projects/${projectId}/tasks`, taskData);
       return normalizeEntity<Task>(response);
     },
     onSuccess: (_, variables) => {
@@ -195,7 +195,7 @@ export const useAssignTask = () => {
 
   return useMutation({
     mutationFn: async ({ taskId, userId }: { taskId: string; userId: string }) => {
-      const response = await api.put(`/tasks/${taskId}`, { assignee: userId });
+      const response = await api.patch(`/pm/tasks/${taskId}`, { assignee: userId });
       return normalizeEntity<Task>(response);
     },
     onSuccess: (_, variables) => {
@@ -217,7 +217,7 @@ export const useMarkTaskLate = () => {
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      const response = await api.patch(`/tasks/${taskId}`, { isLate: true });
+      const response = await api.patch(`/pm/tasks/${taskId}`, { isLate: true });
       return normalizeEntity<Task>(response);
     },
     onSuccess: (_, taskId) => {
@@ -239,7 +239,7 @@ export const useUpdateTaskUsage = () => {
 
   return useMutation({
     mutationFn: async ({ taskId, inventoryUsage }: { taskId: string; inventoryUsage: InventoryUsageItem[] }) => {
-      const response = await api.patch(`/tasks/${taskId}`, { inventoryUsage });
+      const response = await api.patch(`/pm/tasks/${taskId}`, { inventoryUsage });
       return normalizeEntity<Task>(response);
     },
     onSuccess: (_, variables) => {

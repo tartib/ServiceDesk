@@ -310,24 +310,24 @@ export function useFulfillServiceRequest() {
 // Helper functions
 export function getStatusColor(status: ServiceRequestStatus): string {
   const colors: Record<ServiceRequestStatus, string> = {
-    [ServiceRequestStatus.SUBMITTED]: 'bg-blue-100 text-blue-800',
-    [ServiceRequestStatus.PENDING_APPROVAL]: 'bg-yellow-100 text-yellow-800',
-    [ServiceRequestStatus.APPROVED]: 'bg-green-100 text-green-800',
-    [ServiceRequestStatus.REJECTED]: 'bg-red-100 text-red-800',
-    [ServiceRequestStatus.IN_PROGRESS]: 'bg-purple-100 text-purple-800',
-    [ServiceRequestStatus.ON_HOLD]: 'bg-gray-100 text-gray-800',
-    [ServiceRequestStatus.FULFILLED]: 'bg-green-100 text-green-800',
-    [ServiceRequestStatus.CANCELLED]: 'bg-red-100 text-red-800',
+    [ServiceRequestStatus.SUBMITTED]: 'bg-brand-soft text-brand',
+    [ServiceRequestStatus.PENDING_APPROVAL]: 'bg-warning-soft text-warning',
+    [ServiceRequestStatus.APPROVED]: 'bg-success-soft text-success',
+    [ServiceRequestStatus.REJECTED]: 'bg-destructive-soft text-destructive',
+    [ServiceRequestStatus.IN_PROGRESS]: 'bg-info-soft text-info',
+    [ServiceRequestStatus.ON_HOLD]: 'bg-muted text-foreground',
+    [ServiceRequestStatus.FULFILLED]: 'bg-success-soft text-success',
+    [ServiceRequestStatus.CANCELLED]: 'bg-destructive-soft text-destructive',
   };
-  return colors[status] || 'bg-gray-100 text-gray-800';
+  return colors[status] || 'bg-muted text-foreground';
 }
 
 export function getPriorityColor(priority: Priority): string {
   const colors: Record<Priority, string> = {
-    [Priority.LOW]: 'bg-gray-100 text-gray-800',
-    [Priority.MEDIUM]: 'bg-blue-100 text-blue-800',
-    [Priority.HIGH]: 'bg-orange-100 text-orange-800',
-    [Priority.CRITICAL]: 'bg-red-100 text-red-800',
+    [Priority.LOW]: 'bg-muted text-foreground',
+    [Priority.MEDIUM]: 'bg-brand-soft text-brand',
+    [Priority.HIGH]: 'bg-warning-soft text-warning',
+    [Priority.CRITICAL]: 'bg-destructive-soft text-destructive',
   };
-  return colors[priority] || 'bg-gray-100 text-gray-800';
+  return colors[priority] || 'bg-muted text-foreground';
 }

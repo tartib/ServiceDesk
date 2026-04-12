@@ -683,39 +683,39 @@ export interface CreateChangeDTO {
 
 export const getPriorityColor = (priority: Priority): string => {
   const colors: Record<Priority, string> = {
-    [Priority.CRITICAL]: 'bg-red-600 text-white',
-    [Priority.HIGH]: 'bg-orange-500 text-white',
-    [Priority.MEDIUM]: 'bg-yellow-500 text-black',
-    [Priority.LOW]: 'bg-green-500 text-white',
+    [Priority.CRITICAL]: 'bg-destructive text-destructive-foreground',
+    [Priority.HIGH]: 'bg-warning text-warning-foreground',
+    [Priority.MEDIUM]: 'bg-warning text-warning-foreground',
+    [Priority.LOW]: 'bg-success text-success-foreground',
   };
-  return colors[priority] || 'bg-gray-500 text-white';
+  return colors[priority] || 'bg-muted text-muted-foreground';
 };
 
 export const getStatusColor = (status: IncidentStatus | ProblemStatus | ChangeStatus): string => {
   const colors: Record<string, string> = {
     // Incident statuses
-    open: 'bg-blue-500 text-white',
-    in_progress: 'bg-yellow-500 text-black',
-    pending: 'bg-orange-500 text-white',
-    resolved: 'bg-green-500 text-white',
-    closed: 'bg-gray-500 text-white',
-    cancelled: 'bg-gray-400 text-white',
+    open: 'bg-brand text-brand-foreground',
+    in_progress: 'bg-warning text-warning-foreground',
+    pending: 'bg-warning text-warning-foreground',
+    resolved: 'bg-success text-success-foreground',
+    closed: 'bg-muted text-muted-foreground',
+    cancelled: 'bg-muted text-muted-foreground',
     // Problem statuses
-    logged: 'bg-blue-500 text-white',
-    rca_in_progress: 'bg-yellow-500 text-black',
-    known_error: 'bg-purple-500 text-white',
+    logged: 'bg-brand text-brand-foreground',
+    rca_in_progress: 'bg-warning text-warning-foreground',
+    known_error: 'bg-info text-info-foreground',
     // Change statuses
-    draft: 'bg-gray-400 text-white',
-    submitted: 'bg-blue-400 text-white',
-    cab_review: 'bg-yellow-500 text-black',
-    approved: 'bg-green-400 text-white',
-    rejected: 'bg-red-500 text-white',
-    scheduled: 'bg-indigo-500 text-white',
-    implementing: 'bg-orange-500 text-white',
-    completed: 'bg-green-600 text-white',
-    failed: 'bg-red-600 text-white',
+    draft: 'bg-muted text-muted-foreground',
+    submitted: 'bg-brand text-brand-foreground',
+    cab_review: 'bg-warning text-warning-foreground',
+    approved: 'bg-success text-success-foreground',
+    rejected: 'bg-destructive text-destructive-foreground',
+    scheduled: 'bg-info text-info-foreground',
+    implementing: 'bg-warning text-warning-foreground',
+    completed: 'bg-success text-success-foreground',
+    failed: 'bg-destructive text-destructive-foreground',
   };
-  return colors[status] || 'bg-gray-500 text-white';
+  return colors[status] || 'bg-muted text-muted-foreground';
 };
 
 export const formatSLATime = (minutes: number): string => {

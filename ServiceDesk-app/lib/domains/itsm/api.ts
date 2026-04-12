@@ -7,7 +7,7 @@
 
 import api from '@/lib/axios';
 
-const BASE = '/api/v2/itsm';
+const BASE = '/itsm';
 
 // ── Incidents ──────────────────────────────────────────────────
 

@@ -13,105 +13,105 @@ import Link from 'next/link';
 import { useCreateWorkflow } from '@/hooks/useWorkflows';
 
 export default function NewWorkflowPage() {
-  const { locale } = useLanguage();
-  const router = useRouter();
-  const createWorkflow = useCreateWorkflow();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+ const { locale } = useLanguage();
+ const router = useRouter();
+ const createWorkflow = useCreateWorkflow();
+ const [name, setName] = useState('');
+ const [description, setDescription] = useState('');
+ const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCreate = async () => {
-    if (!name.trim()) return;
-    setIsSubmitting(true);
-    try {
-      const workflow = await createWorkflow.mutateAsync({
-        name: name.trim(),
-        description: description.trim() || undefined,
-        entityType: 'ticket',
-        states: [
-          { code: 'open', name: 'Open', category: 'todo', type: 'start', color: '#3B82F6', order: 0, position: { x: 250, y: 50 } },
-          { code: 'in_progress', name: 'In Progress', category: 'in_progress', type: 'normal', color: '#F59E0B', order: 1, position: { x: 250, y: 200 } },
-          { code: 'closed', name: 'Closed', category: 'done', type: 'end', color: '#10B981', order: 2, position: { x: 250, y: 350 } },
-        ],
-        transitions: [
-          { transitionId: 't-open-ip', name: 'Start', fromState: 'open', toState: 'in_progress', ui: { buttonLabel: 'Start' } },
-          { transitionId: 't-ip-closed', name: 'Close', fromState: 'in_progress', toState: 'closed', ui: { buttonLabel: 'Close' } },
-        ],
-        initialState: 'open',
-        finalStates: ['closed'],
-      });
-      router.push(`/workflows/${workflow._id}`);
-    } catch (error) {
-      console.error('Error creating workflow:', error);
-      setIsSubmitting(false);
-    }
-  };
+ const handleCreate = async () => {
+ if (!name.trim()) return;
+ setIsSubmitting(true);
+ try {
+ const workflow = await createWorkflow.mutateAsync({
+ name: name.trim(),
+ description: description.trim() || undefined,
+ entityType: 'ticket',
+ states: [
+ { code: 'open', name: 'Open', category: 'todo', type: 'start', color: '#3B82F6', order: 0, position: { x: 250, y: 50 } },
+ { code: 'in_progress', name: 'In Progress', category: 'in_progress', type: 'normal', color: '#F59E0B', order: 1, position: { x: 250, y: 200 } },
+ { code: 'closed', name: 'Closed', category: 'done', type: 'end', color: '#10B981', order: 2, position: { x: 250, y: 350 } },
+ ],
+ transitions: [
+ { transitionId: 't-open-ip', name: 'Start', fromState: 'open', toState: 'in_progress', ui: { buttonLabel: 'Start' } },
+ { transitionId: 't-ip-closed', name: 'Close', fromState: 'in_progress', toState: 'closed', ui: { buttonLabel: 'Close' } },
+ ],
+ initialState: 'open',
+ finalStates: ['closed'],
+ });
+ router.push(`/workflows/${workflow._id}`);
+ } catch (error) {
+ console.error('Error creating workflow:', error);
+ setIsSubmitting(false);
+ }
+ };
 
-  return (
-    <DashboardLayout>
-      <div className="container mx-auto py-6 max-w-lg">
-        {/* Back link */}
-        <Link href="/workflows" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
-          <ArrowLeft className="h-4 w-4" />
-          {locale === 'ar' ? 'رجوع إلى سير العمل' : 'Back to Workflows'}
-        </Link>
+ return (
+ <DashboardLayout>
+ <div className="container mx-auto py-6 max-w-lg">
+ {/* Back link */}
+ <Link href="/workflows" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
+ <ArrowLeft className="h-4 w-4" />
+ {locale === 'ar' ? 'رجوع إلى سير العمل' : 'Back to Workflows'}
+ </Link>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Workflow className="h-5 w-5 text-purple-600" />
-              </div>
-              <CardTitle>
-                {locale === 'ar' ? 'إنشاء سير عمل جديد' : 'Create New Workflow'}
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="workflow-name">
-                {locale === 'ar' ? 'اسم سير العمل' : 'Workflow Name'} *
-              </Label>
-              <Input
-                id="workflow-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={locale === 'ar' ? 'أدخل اسم سير العمل' : 'Enter workflow name'}
-                className="mt-1"
-                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-              />
-            </div>
-            <div>
-              <Label htmlFor="workflow-desc">
-                {locale === 'ar' ? 'الوصف (اختياري)' : 'Description (optional)'}
-              </Label>
-              <Input
-                id="workflow-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={locale === 'ar' ? 'أدخل وصف سير العمل' : 'Enter workflow description'}
-                className="mt-1"
-              />
-            </div>
-            <div className="flex gap-3 pt-2">
-              <Button
-                onClick={handleCreate}
-                disabled={!name.trim() || isSubmitting}
-                className="flex-1"
-              >
-                {isSubmitting
-                  ? (locale === 'ar' ? 'جاري الإنشاء...' : 'Creating...')
-                  : (locale === 'ar' ? 'إنشاء والفتح في المحرر' : 'Create & Open Editor')}
-              </Button>
-              <Link href="/workflows">
-                <Button variant="outline">
-                  {locale === 'ar' ? 'إلغاء' : 'Cancel'}
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </DashboardLayout>
-  );
+ <Card>
+ <CardHeader>
+ <div className="flex items-center gap-3">
+ <div className="w-10 h-10 rounded-lg bg-info-soft flex items-center justify-center">
+ <Workflow className="h-5 w-5 text-info" />
+ </div>
+ <CardTitle>
+ {locale === 'ar' ? 'إنشاء سير عمل جديد' : 'Create New Workflow'}
+ </CardTitle>
+ </div>
+ </CardHeader>
+ <CardContent className="space-y-4">
+ <div>
+ <Label htmlFor="workflow-name">
+ {locale === 'ar' ? 'اسم سير العمل' : 'Workflow Name'} *
+ </Label>
+ <Input
+ id="workflow-name"
+ value={name}
+ onChange={(e) => setName(e.target.value)}
+ placeholder={locale === 'ar' ? 'أدخل اسم سير العمل' : 'Enter workflow name'}
+ className="mt-1"
+ onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+ />
+ </div>
+ <div>
+ <Label htmlFor="workflow-desc">
+ {locale === 'ar' ? 'الوصف (اختياري)' : 'Description (optional)'}
+ </Label>
+ <Input
+ id="workflow-desc"
+ value={description}
+ onChange={(e) => setDescription(e.target.value)}
+ placeholder={locale === 'ar' ? 'أدخل وصف سير العمل' : 'Enter workflow description'}
+ className="mt-1"
+ />
+ </div>
+ <div className="flex gap-3 pt-2">
+ <Button
+ onClick={handleCreate}
+ disabled={!name.trim() || isSubmitting}
+ className="flex-1"
+ >
+ {isSubmitting
+ ? (locale === 'ar' ? 'جاري الإنشاء...' : 'Creating...')
+ : (locale === 'ar' ? 'إنشاء والفتح في المحرر' : 'Create & Open Editor')}
+ </Button>
+ <Link href="/workflows">
+ <Button variant="outline">
+ {locale === 'ar' ? 'إلغاء' : 'Cancel'}
+ </Button>
+ </Link>
+ </div>
+ </CardContent>
+ </Card>
+ </div>
+ </DashboardLayout>
+ );
 }

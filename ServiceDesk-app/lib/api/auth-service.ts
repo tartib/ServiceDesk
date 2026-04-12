@@ -82,8 +82,8 @@ class AuthService {
         },
       } as LoginResponse;
     } catch (error) {
-      const err = error as AxiosError;
-      console.error('Login failed:', err.response?.data || err.message);
+      const err = error as AxiosError<{ error?: string; message?: string }>;
+      console.error('Login failed:', err.response?.data?.error || err.response?.data?.message || err.message);
       throw error;
     }
   }

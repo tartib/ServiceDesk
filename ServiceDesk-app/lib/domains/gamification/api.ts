@@ -4,7 +4,7 @@
 
 import api from '@/lib/axios';
 
-const BASE = '/api/v2/gamification';
+const BASE = '/gamification';
 
 // ── Profile ──────────────────────────────────────────────────
 

@@ -21,6 +21,19 @@
     "tasks": "المهام",
     "tasksDesc": "إشعارات المهام المسندة والتحديثات",
     "mentions": "الإشارات",
-    "mentionsDesc": "عندما يتم الإشارة إليك في تعليق"
+    "mentionsDesc": "عندما يتم الإشارة إليك في تعليق",
+    "brandAssets": "الهوية والعناصر البصرية",
+    "brandAssetsDescription": "تخصيص الشعار وأيقونة الموقع وألوان العلامة التجارية",
+    "brandName": "اسم العلامة التجارية",
+    "logoUrl": "رابط الشعار",
+    "faviconUrl": "رابط أيقونة الموقع",
+    "primaryColor": "اللون الأساسي",
+    "accentColor": "اللون الثانوي",
+    "colourPalette": "لوحة الألوان",
+    "colourPaletteDescription": "معاينة مباشرة لرموز الألوان في نظام التصميم",
+    "brandColours": "العلامة التجارية",
+    "statusColours": "الحالة",
+    "neutralColours": "المحايدات",
+    "softVariant": "ناعم"
   }
 }

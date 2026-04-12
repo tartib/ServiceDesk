@@ -24,36 +24,36 @@ export const formatTime = (date: string | Date) => {
 export const getTaskStatusColor = (status: TaskStatus): string => {
   switch (status) {
     case 'scheduled':
-      return 'bg-purple-100 text-purple-800 border-purple-200'
+      return 'bg-info-soft text-info border-info/20'
     case 'in_progress':
-      return 'bg-blue-100 text-blue-800 border-blue-200'
+      return 'bg-brand-soft text-brand border-brand-border'
     case 'completed':
     case 'done':
-      return 'bg-green-100 text-green-800 border-green-200'
+      return 'bg-success-soft text-success border-success/20'
     case 'overdue':
     case 'late':
-      return 'bg-red-100 text-red-800 border-red-200'
+      return 'bg-destructive-soft text-destructive border-destructive/20'
     case 'pending':
-      return 'bg-gray-100 text-gray-800 border-gray-200'
+      return 'bg-muted text-foreground border-border'
     case 'stock_issue':
-      return 'bg-orange-100 text-orange-800 border-orange-200'
+      return 'bg-warning-soft text-warning border-warning/20'
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200'
+      return 'bg-muted text-foreground border-border'
   }
 }
 
 export const getTaskPriorityColor = (priority: TaskPriority): string => {
   switch (priority) {
     case 'critical':
-      return 'bg-red-100 text-red-800 border-red-200'
+      return 'bg-destructive-soft text-destructive border-destructive/20'
     case 'high':
-      return 'bg-orange-100 text-orange-800 border-orange-200'
+      return 'bg-warning-soft text-warning border-warning/20'
     case 'medium':
-      return 'bg-blue-100 text-blue-800 border-blue-200'
+      return 'bg-brand-soft text-brand border-brand-border'
     case 'low':
-      return 'bg-gray-100 text-gray-800 border-gray-200'
+      return 'bg-muted text-foreground border-border'
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200'
+      return 'bg-muted text-foreground border-border'
   }
 }
 
@@ -77,13 +77,13 @@ export const getTaskTypeLabel = (type: TaskType): string => {
 export const getStockStatusColor = (status: StockStatus): string => {
   switch (status) {
     case 'in_stock':
-      return 'bg-green-100 text-green-800 border-green-200'
+      return 'bg-success-soft text-success border-success/20'
     case 'low_stock':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      return 'bg-warning-soft text-warning border-warning/20'
     case 'out_of_stock':
-      return 'bg-red-100 text-red-800 border-red-200'
+      return 'bg-destructive-soft text-destructive border-destructive/20'
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200'
+      return 'bg-muted text-foreground border-border'
   }
 }
 

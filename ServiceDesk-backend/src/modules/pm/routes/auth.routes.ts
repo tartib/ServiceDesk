@@ -4,6 +4,7 @@ import * as authController from '../controllers/auth.controller';
 import { authenticate } from '../../../middleware/auth';
 import { authLimiter } from '../../../middleware/rateLimiter';
 import { handleValidation } from '../../../shared/middleware/validate';
+import { skipCsrf } from '../../../shared/middleware/csrf';
 
 const router = Router();
 
@@ -55,6 +56,7 @@ const router = Router();
  */
 router.post(
   '/register',
+  skipCsrf,
   authLimiter,
   [
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
@@ -105,6 +107,7 @@ router.post(
  */
 router.post(
   '/login',
+  skipCsrf,
   authLimiter,
   [
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
@@ -130,7 +133,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  */
-router.post('/refresh', authLimiter, (req: Request, res: Response) => authController.refreshToken(req, res));
+router.post('/refresh', skipCsrf, authLimiter, (req: Request, res: Response) => authController.refreshToken(req, res));
 
 /**
  * @swagger

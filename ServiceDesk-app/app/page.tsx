@@ -4,11 +4,11 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  const router = useRouter();
+ const router = useRouter();
 
-  useEffect(() => {
-    router.replace('/homePage');
-  }, [router]);
+ useEffect(() => {
+ router.replace('/homePage');
+ }, [router]);
 
-  return null;
+ return null;
 }

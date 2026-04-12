@@ -5,993 +5,993 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Plus, ChevronDown, X, AlertTriangle, Upload } from 'lucide-react';
 import {
-  ProjectHeader,
-  ProjectNavTabs,
-  ProjectToolbar,
-  SprintSection,
-  TaskCard,
-  LoadingState,
-  TaskDetailPanel,
-  QuickCreateTask,
-  CSVImportModal,
-  DraggableBacklogItem,
+ ProjectHeader,
+ ProjectNavTabs,
+ ProjectToolbar,
+ SprintSection,
+ TaskCard,
+ LoadingState,
+ TaskDetailPanel,
+ QuickCreateTask,
+ CSVImportModal,
+ DraggableBacklogItem,
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
-  DndContext,
-  DragEndEvent,
-  DragOverEvent,
-  DragOverlay,
-  DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  closestCenter,
-  useDroppable,
+ DndContext,
+ DragEndEvent,
+ DragOverEvent,
+ DragOverlay,
+ DragStartEvent,
+ PointerSensor,
+ useSensor,
+ useSensors,
+ closestCenter,
+ useDroppable,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { toast } from 'sonner';
 
 interface Task {
-  _id: string;
-  key: string;
-  title: string;
-  type: string;
-  status: { id: string; name: string; category: string };
-  priority: string;
-  storyPoints?: number;
-  assignee?: {
-    _id: string;
-    name?: string;
-    email?: string;
-    profile?: { firstName?: string; lastName?: string; avatar?: string };
-  };
-  sprint?: { _id: string; name: string };
-  team?: { _id: string; name: string };
-  labels?: string[];
-  dueDate?: string;
-  startDate?: string;
-  parent?: { _id: string; key: string; title: string };
-  reporter?: {
-    _id: string;
-    name?: string;
-    email?: string;
-    profile?: { firstName?: string; lastName?: string; avatar?: string };
-  };
-  description?: string;
+ _id: string;
+ key: string;
+ title: string;
+ type: string;
+ status: { id: string; name: string; category: string };
+ priority: string;
+ storyPoints?: number;
+ assignee?: {
+ _id: string;
+ name?: string;
+ email?: string;
+ profile?: { firstName?: string; lastName?: string; avatar?: string };
+ };
+ sprint?: { _id: string; name: string };
+ team?: { _id: string; name: string };
+ labels?: string[];
+ dueDate?: string;
+ startDate?: string;
+ parent?: { _id: string; key: string; title: string };
+ reporter?: {
+ _id: string;
+ name?: string;
+ email?: string;
+ profile?: { firstName?: string; lastName?: string; avatar?: string };
+ };
+ description?: string;
 }
 
 interface Sprint {
-  _id: string;
-  name: string;
-  number: number;
-  status: 'planning' | 'active' | 'completed';
-  startDate: string;
-  endDate: string;
-  stats?: { totalTasks: number; completedTasks: number; totalPoints: number; completedPoints: number };
+ _id: string;
+ name: string;
+ number: number;
+ status: 'planning' | 'active' | 'completed';
+ startDate: string;
+ endDate: string;
+ stats?: { totalTasks: number; completedTasks: number; totalPoints: number; completedPoints: number };
 }
 
 interface TeamData {
-  _id: string;
-  name: string;
-  description?: string;
-  members: Array<{ userId: string; role: string }>;
+ _id: string;
+ name: string;
+ description?: string;
+ members: Array<{ userId: string; role: string }>;
 }
 
 interface TeamResponse {
-  team?: TeamData;
-  _id?: string;
-  name?: string;
-  description?: string;
-  members?: Array<{ userId: string; role: string }>;
+ team?: TeamData;
+ _id?: string;
+ name?: string;
+ description?: string;
+ members?: Array<{ userId: string; role: string }>;
 }
 
 // Backlog droppable zone wrapper
 function BacklogDropZone({ children }: {
-  backlogTasks?: Task[];
-  isDragActive?: boolean;
-  children: React.ReactNode;
+ backlogTasks?: Task[];
+ isDragActive?: boolean;
+ children: React.ReactNode;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: 'backlog' });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`bg-white border border-gray-200 rounded-lg overflow-visible transition-colors ${
-        isOver ? 'ring-2 ring-blue-400 bg-blue-50/30' : ''
-      }`}
-    >
-      {children}
-    </div>
-  );
+ const { setNodeRef, isOver } = useDroppable({ id: 'backlog' });
+ return (
+ <div
+ ref={setNodeRef}
+ className={`bg-background border border-border rounded-lg overflow-visible transition-colors ${
+ isOver ? 'ring-2 ring-brand-border bg-brand-surface' : ''
+ }`}
+ >
+ {children}
+ </div>
+ );
 }
 
 export default function BacklogPage() {
-  const params = useParams();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedIssue = searchParams?.get('selectedIssue');
-  const projectId = params?.projectId as string;
-  
-  const { methodology } = useMethodology(projectId);
-  const { t } = useLanguage();
+ const params = useParams();
+ const router = useRouter();
+ const searchParams = useSearchParams();
+ const selectedIssue = searchParams?.get('selectedIssue');
+ const projectId = params?.projectId as string;
+ 
+ const { methodology } = useMethodology(projectId);
+ const { t } = useLanguage();
 
-  const [project, setProject] = useState<{ name: string; key: string; organization?: string; organizationId?: string } | null>(null);
-  const [backlogTasks, setBacklogTasks] = useState<Task[]>([]);
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [expandedSprints, setExpandedSprints] = useState<Set<string>>(new Set());
-  const [sprintTasks, setSprintTasks] = useState<Record<string, Task[]>>({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [showNewSprintModal, setShowNewSprintModal] = useState(false);
-  const [newSprintData, setNewSprintData] = useState({ name: '', startDate: '', endDate: '', goal: '' });
-  
-  // Task Detail Panel
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [taskDetail, setTaskDetail] = useState<Task | null>(null);
-  const [projectMembers, setProjectMembers] = useState<Array<{
-    _id: string;
-    name?: string;
-    email?: string;
-    profile?: { firstName?: string; lastName?: string; avatar?: string };
-  }>>([]);
-  const [allSprints, setAllSprints] = useState<Sprint[]>([]);
-  const [teams, setTeams] = useState<Array<{
-    _id: string;
-    name: string;
-    description?: string;
-    members: Array<{ userId: string; role: string }>;
-  }>>([]);
-  
-  // US2: Complete Sprint Modal
-  const [showCompleteSprintModal, setShowCompleteSprintModal] = useState(false);
-  const [completingSprintId, setCompletingSprintId] = useState<string | null>(null);
-  const [incompleteTasksDestination, setIncompleteTasksDestination] = useState<'backlog' | 'next'>('backlog');
-  
-  // US6: Selected tasks for bulk operations
-  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
-  
-  // US7: Delete Sprint Confirmation
-  const [showDeleteSprintModal, setShowDeleteSprintModal] = useState(false);
-  const [deletingSprintId, setDeletingSprintId] = useState<string | null>(null);
-  
-  // Create Task in Backlog
-  const [showCreateBacklogTask, setShowCreateBacklogTask] = useState(false);
-  
-  // CSV Import Modal
-  const [showCSVImport, setShowCSVImport] = useState(false);
+ const [project, setProject] = useState<{ name: string; key: string; organization?: string; organizationId?: string } | null>(null);
+ const [backlogTasks, setBacklogTasks] = useState<Task[]>([]);
+ const [sprints, setSprints] = useState<Sprint[]>([]);
+ const [expandedSprints, setExpandedSprints] = useState<Set<string>>(new Set());
+ const [sprintTasks, setSprintTasks] = useState<Record<string, Task[]>>({});
+ const [isLoading, setIsLoading] = useState(true);
+ const [showNewSprintModal, setShowNewSprintModal] = useState(false);
+ const [newSprintData, setNewSprintData] = useState({ name: '', startDate: '', endDate: '', goal: '' });
+ 
+ // Task Detail Panel
+ const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+ const [taskDetail, setTaskDetail] = useState<Task | null>(null);
+ const [projectMembers, setProjectMembers] = useState<Array<{
+ _id: string;
+ name?: string;
+ email?: string;
+ profile?: { firstName?: string; lastName?: string; avatar?: string };
+ }>>([]);
+ const [allSprints, setAllSprints] = useState<Sprint[]>([]);
+ const [teams, setTeams] = useState<Array<{
+ _id: string;
+ name: string;
+ description?: string;
+ members: Array<{ userId: string; role: string }>;
+ }>>([]);
+ 
+ // US2: Complete Sprint Modal
+ const [showCompleteSprintModal, setShowCompleteSprintModal] = useState(false);
+ const [completingSprintId, setCompletingSprintId] = useState<string | null>(null);
+ const [incompleteTasksDestination, setIncompleteTasksDestination] = useState<'backlog' | 'next'>('backlog');
+ 
+ // US6: Selected tasks for bulk operations
+ const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+ 
+ // US7: Delete Sprint Confirmation
+ const [showDeleteSprintModal, setShowDeleteSprintModal] = useState(false);
+ const [deletingSprintId, setDeletingSprintId] = useState<string | null>(null);
+ 
+ // Create Task in Backlog
+ const [showCreateBacklogTask, setShowCreateBacklogTask] = useState(false);
+ 
+ // CSV Import Modal
+ const [showCSVImport, setShowCSVImport] = useState(false);
 
-  // Drag & Drop state
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [isDragActive, setIsDragActive] = useState(false);
+ // Drag & Drop state
+ const [activeTask, setActiveTask] = useState<Task | null>(null);
+ const [isDragActive, setIsDragActive] = useState(false);
 
-  // DnD Sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
-  );
+ // DnD Sensors
+ const sensors = useSensors(
+ useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+ );
 
-  // Memoize backlog task IDs to prevent infinite re-render loop in @dnd-kit
-  const backlogTaskIds = useMemo(() => backlogTasks.map(t => t._id), [backlogTasks]);
+ // Memoize backlog task IDs to prevent infinite re-render loop in @dnd-kit
+ const backlogTaskIds = useMemo(() => backlogTasks.map(t => t._id), [backlogTasks]);
 
-  // Helper: find task anywhere
-  const findTaskById = useCallback((taskId: string): Task | null => {
-    const bt = backlogTasks.find(t => t._id === taskId);
-    if (bt) return bt;
-    for (const tasks of Object.values(sprintTasks)) {
-      const st = tasks.find(t => t._id === taskId);
-      if (st) return st;
-    }
-    return null;
-  }, [backlogTasks, sprintTasks]);
+ // Helper: find task anywhere
+ const findTaskById = useCallback((taskId: string): Task | null => {
+ const bt = backlogTasks.find(t => t._id === taskId);
+ if (bt) return bt;
+ for (const tasks of Object.values(sprintTasks)) {
+ const st = tasks.find(t => t._id === taskId);
+ if (st) return st;
+ }
+ return null;
+ }, [backlogTasks, sprintTasks]);
 
-  // Helper: resolve overId to a container
-  const resolveOverContainer = useCallback((overId: string): string | null => {
-    if (overId === 'backlog' || overId.startsWith('sprint-')) return overId;
-    if (backlogTasks.some(t => t._id === overId)) return 'backlog';
-    for (const sid of Object.keys(sprintTasks)) {
-      if (sprintTasks[sid]?.some(t => t._id === overId)) return `sprint-${sid}`;
-    }
-    return null;
-  }, [backlogTasks, sprintTasks]);
+ // Helper: resolve overId to a container
+ const resolveOverContainer = useCallback((overId: string): string | null => {
+ if (overId === 'backlog' || overId.startsWith('sprint-')) return overId;
+ if (backlogTasks.some(t => t._id === overId)) return 'backlog';
+ for (const sid of Object.keys(sprintTasks)) {
+ if (sprintTasks[sid]?.some(t => t._id === overId)) return `sprint-${sid}`;
+ }
+ return null;
+ }, [backlogTasks, sprintTasks]);
 
-  // Persist reorder to backend
-  const persistReorder = useCallback(async (taskList: Task[]) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token || taskList.length === 0) return;
-    const payload = taskList.map((t, i) => ({ taskId: t._id, columnOrder: i }));
-    try {
-      await fetch(`${API_URL}/pm/projects/${projectId}/tasks/reorder`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ tasks: payload }),
-      });
-    } catch (err) {
-      console.error('[DnD] persistReorder failed:', err);
-    }
-  }, [projectId]);
+ // Persist reorder to backend
+ const persistReorder = useCallback(async (taskList: Task[]) => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token || taskList.length === 0) return;
+ const payload = taskList.map((t, i) => ({ taskId: t._id, columnOrder: i }));
+ try {
+ await fetch(`${API_URL}/pm/projects/${projectId}/tasks/reorder`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+ body: JSON.stringify({ tasks: payload }),
+ });
+ } catch (err) {
+ console.error('[DnD] persistReorder failed:', err);
+ }
+ }, [projectId]);
 
-  // Persist move task to different sprint
-  const persistMove = useCallback(async (taskId: string, sprintId: string | null, order: number) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) return;
-    try {
-      await fetch(`${API_URL}/pm/tasks/${taskId}/move`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ sprintId, columnOrder: order }),
-      });
-    } catch (err) {
-      console.error('[DnD] persistMove failed:', err);
-    }
-  }, []);
+ // Persist move task to different sprint
+ const persistMove = useCallback(async (taskId: string, sprintId: string | null, order: number) => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ try {
+ await fetch(`${API_URL}/pm/tasks/${taskId}/move`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+ body: JSON.stringify({ sprintId, columnOrder: order }),
+ });
+ } catch (err) {
+ console.error('[DnD] persistMove failed:', err);
+ }
+ }, []);
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const taskId = event.active.id as string;
-    setIsDragActive(true);
-    setActiveTask(findTaskById(taskId));
-  }, [findTaskById]);
+ const handleDragStart = useCallback((event: DragStartEvent) => {
+ const taskId = event.active.id as string;
+ setIsDragActive(true);
+ setActiveTask(findTaskById(taskId));
+ }, [findTaskById]);
 
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over) return;
+ const handleDragOver = useCallback((event: DragOverEvent) => {
+ const { active, over } = event;
+ if (!over) return;
 
-    const activeId = active.id as string;
-    const overId = over.id as string;
+ const activeId = active.id as string;
+ const overId = over.id as string;
 
-    const sourceContainer = resolveOverContainer(activeId);
-    const destContainer = resolveOverContainer(overId);
+ const sourceContainer = resolveOverContainer(activeId);
+ const destContainer = resolveOverContainer(overId);
 
-    if (!sourceContainer || !destContainer || sourceContainer === destContainer) return;
+ if (!sourceContainer || !destContainer || sourceContainer === destContainer) return;
 
-    // Don't allow drop into completed sprints
-    if (destContainer.startsWith('sprint-')) {
-      const sid = destContainer.replace('sprint-', '');
-      if (sprints.find(s => s._id === sid)?.status === 'completed') return;
-    }
+ // Don't allow drop into completed sprints
+ if (destContainer.startsWith('sprint-')) {
+ const sid = destContainer.replace('sprint-', '');
+ if (sprints.find(s => s._id === sid)?.status === 'completed') return;
+ }
 
-    // Optimistic cross-container move
-    const task = findTaskById(activeId);
-    if (!task) return;
+ // Optimistic cross-container move
+ const task = findTaskById(activeId);
+ if (!task) return;
 
-    // Remove from source
-    if (sourceContainer === 'backlog') {
-      setBacklogTasks(prev => prev.filter(t => t._id !== activeId));
-    } else {
-      const srcSid = sourceContainer.replace('sprint-', '');
-      setSprintTasks(prev => ({
-        ...prev,
-        [srcSid]: (prev[srcSid] || []).filter(t => t._id !== activeId),
-      }));
-    }
+ // Remove from source
+ if (sourceContainer === 'backlog') {
+ setBacklogTasks(prev => prev.filter(t => t._id !== activeId));
+ } else {
+ const srcSid = sourceContainer.replace('sprint-', '');
+ setSprintTasks(prev => ({
+ ...prev,
+ [srcSid]: (prev[srcSid] || []).filter(t => t._id !== activeId),
+ }));
+ }
 
-    // Add to dest
-    if (destContainer === 'backlog') {
-      setBacklogTasks(prev => {
-        if (prev.some(t => t._id === activeId)) return prev;
-        const idx = prev.findIndex(t => t._id === overId);
-        const arr = [...prev];
-        arr.splice(idx >= 0 ? idx : arr.length, 0, task);
-        return arr;
-      });
-    } else {
-      const dstSid = destContainer.replace('sprint-', '');
-      setSprintTasks(prev => {
-        const existing = prev[dstSid] || [];
-        if (existing.some(t => t._id === activeId)) return prev;
-        const idx = existing.findIndex(t => t._id === overId);
-        const arr = [...existing];
-        arr.splice(idx >= 0 ? idx : arr.length, 0, task);
-        return { ...prev, [dstSid]: arr };
-      });
-      // Auto-expand
-      setExpandedSprints(prev => new Set([...prev, dstSid]));
-    }
-  }, [resolveOverContainer, findTaskById, sprints]);
+ // Add to dest
+ if (destContainer === 'backlog') {
+ setBacklogTasks(prev => {
+ if (prev.some(t => t._id === activeId)) return prev;
+ const idx = prev.findIndex(t => t._id === overId);
+ const arr = [...prev];
+ arr.splice(idx >= 0 ? idx : arr.length, 0, task);
+ return arr;
+ });
+ } else {
+ const dstSid = destContainer.replace('sprint-', '');
+ setSprintTasks(prev => {
+ const existing = prev[dstSid] || [];
+ if (existing.some(t => t._id === activeId)) return prev;
+ const idx = existing.findIndex(t => t._id === overId);
+ const arr = [...existing];
+ arr.splice(idx >= 0 ? idx : arr.length, 0, task);
+ return { ...prev, [dstSid]: arr };
+ });
+ // Auto-expand
+ setExpandedSprints(prev => new Set([...prev, dstSid]));
+ }
+ }, [resolveOverContainer, findTaskById, sprints]);
 
-  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveTask(null);
-    setIsDragActive(false);
+ const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+ const { active, over } = event;
+ setActiveTask(null);
+ setIsDragActive(false);
 
-    if (!over) return;
+ if (!over) return;
 
-    const activeId = active.id as string;
-    const overId = over.id as string;
+ const activeId = active.id as string;
+ const overId = over.id as string;
 
-    // Where is it now?
-    const currentContainer = resolveOverContainer(activeId);
-    const overContainer = resolveOverContainer(overId);
+ // Where is it now?
+ const currentContainer = resolveOverContainer(activeId);
+ const overContainer = resolveOverContainer(overId);
 
-    if (!currentContainer) return;
+ if (!currentContainer) return;
 
-    // Same container — reorder
-    if (currentContainer === overContainer || !overContainer) {
-      if (currentContainer === 'backlog') {
-        setBacklogTasks(prev => {
-          const oldIdx = prev.findIndex(t => t._id === activeId);
-          const newIdx = prev.findIndex(t => t._id === overId);
-          if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) {
-            persistReorder(prev);
-            return prev;
-          }
-          const reordered = arrayMove(prev, oldIdx, newIdx);
-          persistReorder(reordered);
-          return reordered;
-        });
-      } else {
-        const sid = currentContainer.replace('sprint-', '');
-        setSprintTasks(prev => {
-          const list = prev[sid] || [];
-          const oldIdx = list.findIndex(t => t._id === activeId);
-          const newIdx = list.findIndex(t => t._id === overId);
-          if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) {
-            persistReorder(list);
-            return prev;
-          }
-          const reordered = arrayMove(list, oldIdx, newIdx);
-          persistReorder(reordered);
-          return { ...prev, [sid]: reordered };
-        });
-      }
-      return;
-    }
+ // Same container — reorder
+ if (currentContainer === overContainer || !overContainer) {
+ if (currentContainer === 'backlog') {
+ setBacklogTasks(prev => {
+ const oldIdx = prev.findIndex(t => t._id === activeId);
+ const newIdx = prev.findIndex(t => t._id === overId);
+ if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) {
+ persistReorder(prev);
+ return prev;
+ }
+ const reordered = arrayMove(prev, oldIdx, newIdx);
+ persistReorder(reordered);
+ return reordered;
+ });
+ } else {
+ const sid = currentContainer.replace('sprint-', '');
+ setSprintTasks(prev => {
+ const list = prev[sid] || [];
+ const oldIdx = list.findIndex(t => t._id === activeId);
+ const newIdx = list.findIndex(t => t._id === overId);
+ if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) {
+ persistReorder(list);
+ return prev;
+ }
+ const reordered = arrayMove(list, oldIdx, newIdx);
+ persistReorder(reordered);
+ return { ...prev, [sid]: reordered };
+ });
+ }
+ return;
+ }
 
-    // Cross-container — already moved optimistically in onDragOver, just persist
-    const destSprintId = currentContainer === 'backlog' ? null : currentContainer.replace('sprint-', '');
+ // Cross-container — already moved optimistically in onDragOver, just persist
+ const destSprintId = currentContainer === 'backlog' ? null : currentContainer.replace('sprint-', '');
 
-    if (currentContainer === 'backlog') {
-      setBacklogTasks(prev => {
-        const idx = Math.max(0, prev.findIndex(t => t._id === activeId));
-        persistMove(activeId, null, idx);
-        persistReorder(prev);
-        return prev;
-      });
-    } else if (destSprintId) {
-      setSprintTasks(prev => {
-        const list = prev[destSprintId] || [];
-        const idx = Math.max(0, list.findIndex(t => t._id === activeId));
-        persistMove(activeId, destSprintId, idx);
-        persistReorder(list);
-        return prev;
-      });
-    }
+ if (currentContainer === 'backlog') {
+ setBacklogTasks(prev => {
+ const idx = Math.max(0, prev.findIndex(t => t._id === activeId));
+ persistMove(activeId, null, idx);
+ persistReorder(prev);
+ return prev;
+ });
+ } else if (destSprintId) {
+ setSprintTasks(prev => {
+ const list = prev[destSprintId] || [];
+ const idx = Math.max(0, list.findIndex(t => t._id === activeId));
+ persistMove(activeId, destSprintId, idx);
+ persistReorder(list);
+ return prev;
+ });
+ }
 
-    const name = destSprintId ? sprints.find(s => s._id === destSprintId)?.name || 'Sprint' : 'Backlog';
-    toast.success(`Moved to ${name}`, { duration: 2000 });
-  }, [resolveOverContainer, sprints, persistReorder, persistMove]);
+ const name = destSprintId ? sprints.find(s => s._id === destSprintId)?.name || 'Sprint' : 'Backlog';
+ toast.success(`Moved to ${name}`, { duration: 2000 });
+ }, [resolveOverContainer, sprints, persistReorder, persistMove]);
 
-  const fetchData = useCallback(async (token: string) => {
-    try {
-      const [projectRes, sprintsRes, backlogRes, membersRes, teamsRes] = await Promise.all([
-        fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/pm/projects/${projectId}/sprints`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/pm/projects/${projectId}/backlog`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/pm/projects/${projectId}/members`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/pm/projects/${projectId}/teams`, { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
-      const projectData = await projectRes.json();
-      const sprintsData = await sprintsRes.json();
-      const backlogData = await backlogRes.json();
-      const membersData = await membersRes.json();
-      const teamsData = await teamsRes.json();
-      
-      if (projectData.success) setProject(projectData.data.project);
-      if (sprintsData.success) {
-        setSprints(sprintsData.data.sprints || []);
-        setAllSprints(sprintsData.data.sprints || []);
-      }
-      if (backlogData.success) setBacklogTasks(backlogData.data.tasks || []);
-      if (membersData.success) {
-        const members = membersData.data?.members || [];
-        
-        const mappedMembers = members
-          .map((m: { userId?: { _id: string; profile?: { firstName: string; lastName: string; avatar?: string } }; user?: { _id: string; profile?: { firstName: string; lastName: string; avatar?: string } }; _id?: string; profile?: { firstName: string; lastName: string; avatar?: string } }) => {
-            // Backend returns { userId: { _id, profile, email }, role }
-            const userObj = m.userId || m.user;
-            const userId = userObj?._id || m._id;
-            const userProfile = userObj?.profile || m.profile;
-            
-            if (!userId || !userProfile) {
-              console.warn('⚠️ Skipping member with missing data:', m);
-              return null;
-            }
-            
-            return {
-              _id: userId,
-              profile: userProfile
-            };
-          })
-          .filter((m: { _id: string; profile: { firstName: string; lastName: string; avatar?: string } } | null): m is { _id: string; profile: { firstName: string; lastName: string; avatar?: string } } => m !== null);
-        
-        setProjectMembers(mappedMembers);
-      } else {
-        console.error('❌ Members API failed:', membersData);
-      }
-      if (teamsData.success) {
-        const teamsArray = teamsData.data?.teams || [];
-        const extractedTeams = teamsArray.map((item: TeamResponse) => 
-          'team' in item ? item.team : item
-        ).filter((team: TeamData | undefined): team is TeamData => Boolean(team && team._id && team.name));
-        setTeams(extractedTeams);
-      }
-    } catch (error) { console.error('Failed to fetch data:', error); }
-    finally { setIsLoading(false); }
-  }, [projectId]);
+ const fetchData = useCallback(async (token: string) => {
+ try {
+ const [projectRes, sprintsRes, backlogRes, membersRes, teamsRes] = await Promise.all([
+ fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
+ fetch(`${API_URL}/pm/projects/${projectId}/sprints`, { headers: { Authorization: `Bearer ${token}` } }),
+ fetch(`${API_URL}/pm/projects/${projectId}/backlog`, { headers: { Authorization: `Bearer ${token}` } }),
+ fetch(`${API_URL}/pm/projects/${projectId}/members`, { headers: { Authorization: `Bearer ${token}` } }),
+ fetch(`${API_URL}/pm/projects/${projectId}/teams`, { headers: { Authorization: `Bearer ${token}` } }),
+ ]);
+ const projectData = await projectRes.json();
+ const sprintsData = await sprintsRes.json();
+ const backlogData = await backlogRes.json();
+ const membersData = await membersRes.json();
+ const teamsData = await teamsRes.json();
+ 
+ if (projectData.success) setProject(projectData.data.project);
+ if (sprintsData.success) {
+ setSprints(sprintsData.data.sprints || []);
+ setAllSprints(sprintsData.data.sprints || []);
+ }
+ if (backlogData.success) setBacklogTasks(backlogData.data.tasks || []);
+ if (membersData.success) {
+ const members = membersData.data?.members || [];
+ 
+ const mappedMembers = members
+ .map((m: { userId?: { _id: string; profile?: { firstName: string; lastName: string; avatar?: string } }; user?: { _id: string; profile?: { firstName: string; lastName: string; avatar?: string } }; _id?: string; profile?: { firstName: string; lastName: string; avatar?: string } }) => {
+ // Backend returns { userId: { _id, profile, email }, role }
+ const userObj = m.userId || m.user;
+ const userId = userObj?._id || m._id;
+ const userProfile = userObj?.profile || m.profile;
+ 
+ if (!userId || !userProfile) {
+ console.warn('⚠️ Skipping member with missing data:', m);
+ return null;
+ }
+ 
+ return {
+ _id: userId,
+ profile: userProfile
+ };
+ })
+ .filter((m: { _id: string; profile: { firstName: string; lastName: string; avatar?: string } } | null): m is { _id: string; profile: { firstName: string; lastName: string; avatar?: string } } => m !== null);
+ 
+ setProjectMembers(mappedMembers);
+ } else {
+ console.error('❌ Members API failed:', membersData);
+ }
+ if (teamsData.success) {
+ const teamsArray = teamsData.data?.teams || [];
+ const extractedTeams = teamsArray.map((item: TeamResponse) => 
+ 'team' in item ? item.team : item
+ ).filter((team: TeamData | undefined): team is TeamData => Boolean(team && team._id && team.name));
+ setTeams(extractedTeams);
+ }
+ } catch (error) { console.error('Failed to fetch data:', error); }
+ finally { setIsLoading(false); }
+ }, [projectId]);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) { router.push('/login'); return; }
-    fetchData(token);
-  }, [projectId, router, fetchData]);
+ useEffect(() => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) { router.push('/login'); return; }
+ fetchData(token);
+ }, [projectId, router, fetchData]);
 
-  // Fetch task detail when selectedIssue changes
-  useEffect(() => {
-    if (selectedIssue) {
-      const allTasks = [...backlogTasks, ...Object.values(sprintTasks).flat()];
-      const task = allTasks.find(t => t.key === selectedIssue);
-      if (task) {
-        setSelectedTask(task);
-        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-        if (token) {
-          fetch(`${API_URL}/pm/tasks/${task._id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-            .then(res => res.json())
-            .then(data => {
-              if (data.success) setTaskDetail(data.data.task);
-            })
-            .catch(error => console.error('Failed to fetch task detail:', error));
-        }
-      }
-    } else {
-      setSelectedTask(null);
-      setTaskDetail(null);
-    }
-  }, [selectedIssue, backlogTasks, sprintTasks]);
+ // Fetch task detail when selectedIssue changes
+ useEffect(() => {
+ if (selectedIssue) {
+ const allTasks = [...backlogTasks, ...Object.values(sprintTasks).flat()];
+ const task = allTasks.find(t => t.key === selectedIssue);
+ if (task) {
+ setSelectedTask(task);
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (token) {
+ fetch(`${API_URL}/pm/tasks/${task._id}`, {
+ headers: { Authorization: `Bearer ${token}` },
+ })
+ .then(res => res.json())
+ .then(data => {
+ if (data.success) setTaskDetail(data.data.task);
+ })
+ .catch(error => console.error('Failed to fetch task detail:', error));
+ }
+ }
+ } else {
+ setSelectedTask(null);
+ setTaskDetail(null);
+ }
+ }, [selectedIssue, backlogTasks, sprintTasks]);
 
-  const fetchSprintTasks = async (sprintId: string) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_URL}/pm/sprints/${sprintId}`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.success) setSprintTasks(prev => ({ ...prev, [sprintId]: data.data.tasks || [] }));
-    } catch (error) { console.error('Failed to fetch sprint tasks:', error); }
-  };
+ const fetchSprintTasks = async (sprintId: string) => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ try {
+ const res = await fetch(`${API_URL}/pm/sprints/${sprintId}`, { headers: { Authorization: `Bearer ${token}` } });
+ const data = await res.json();
+ if (data.success) setSprintTasks(prev => ({ ...prev, [sprintId]: data.data.tasks || [] }));
+ } catch (error) { console.error('Failed to fetch sprint tasks:', error); }
+ };
 
-  const toggleSprint = (sprintId: string) => {
-    const newExpanded = new Set(expandedSprints);
-    if (newExpanded.has(sprintId)) { newExpanded.delete(sprintId); }
-    else { newExpanded.add(sprintId); if (!sprintTasks[sprintId]) fetchSprintTasks(sprintId); }
-    setExpandedSprints(newExpanded);
-  };
+ const toggleSprint = (sprintId: string) => {
+ const newExpanded = new Set(expandedSprints);
+ if (newExpanded.has(sprintId)) { newExpanded.delete(sprintId); }
+ else { newExpanded.add(sprintId); if (!sprintTasks[sprintId]) fetchSprintTasks(sprintId); }
+ setExpandedSprints(newExpanded);
+ };
 
-  const handleCreateSprint = async () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token || !newSprintData.startDate || !newSprintData.endDate) {
-      console.error('❌ Create sprint: missing token or dates', { token: !!token, startDate: newSprintData.startDate, endDate: newSprintData.endDate });
-      return;
-    }
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-    const orgId = project?.organizationId || project?.organization;
-    if (orgId) headers['X-Organization-ID'] = orgId;
-    try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}/sprints`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(newSprintData),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setShowNewSprintModal(false);
-        setNewSprintData({ name: '', startDate: '', endDate: '', goal: '' });
-        fetchData(token);
-      } else {
-        console.error('❌ Create sprint failed:', data.error || data.errors);
-        alert(data.error || 'Failed to create sprint');
-      }
-    } catch (error) {
-      console.error('❌ Failed to create sprint:', error);
-      alert('Failed to create sprint. Check console for details.');
-    }
-  };
+ const handleCreateSprint = async () => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token || !newSprintData.startDate || !newSprintData.endDate) {
+ console.error('❌ Create sprint: missing token or dates', { token: !!token, startDate: newSprintData.startDate, endDate: newSprintData.endDate });
+ return;
+ }
+ const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+ const orgId = project?.organizationId || project?.organization;
+ if (orgId) headers['X-Organization-ID'] = orgId;
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/${projectId}/sprints`, {
+ method: 'POST',
+ headers,
+ body: JSON.stringify(newSprintData),
+ });
+ const data = await res.json();
+ if (data.success) {
+ setShowNewSprintModal(false);
+ setNewSprintData({ name: '', startDate: '', endDate: '', goal: '' });
+ fetchData(token);
+ } else {
+ console.error('❌ Create sprint failed:', data.error || data.errors);
+ alert(data.error || 'Failed to create sprint');
+ }
+ } catch (error) {
+ console.error('❌ Failed to create sprint:', error);
+ alert('Failed to create sprint. Check console for details.');
+ }
+ };
 
-  const handleStartSprint = async (sprintId: string) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) return;
-    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-    if (project?.organization) headers['X-Organization-ID'] = project.organization;
-    try {
-      await fetch(`${API_URL}/pm/sprints/${sprintId}/start`, { method: 'POST', headers });
-      fetchData(token);
-    } catch (error) { console.error('Failed to start sprint:', error); }
-  };
+ const handleStartSprint = async (sprintId: string) => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+ if (project?.organization) headers['X-Organization-ID'] = project.organization;
+ try {
+ await fetch(`${API_URL}/pm/sprints/${sprintId}/start`, { method: 'POST', headers });
+ fetchData(token);
+ } catch (error) { console.error('Failed to start sprint:', error); }
+ };
 
-  const handleMoveToSprint = async (taskId: string, sprintId: string | null) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) return;
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-    if (project?.organization) headers['X-Organization-ID'] = project.organization;
-    try {
-      await fetch(`${API_URL}/pm/tasks/${taskId}/move`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ sprintId }),
-      });
-      fetchData(token);
-      if (sprintId) fetchSprintTasks(sprintId);
-    } catch (error) { console.error('Failed to move task:', error); }
-  };
+ const handleMoveToSprint = async (taskId: string, sprintId: string | null) => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+ if (project?.organization) headers['X-Organization-ID'] = project.organization;
+ try {
+ await fetch(`${API_URL}/pm/tasks/${taskId}/move`, {
+ method: 'POST',
+ headers,
+ body: JSON.stringify({ sprintId }),
+ });
+ fetchData(token);
+ if (sprintId) fetchSprintTasks(sprintId);
+ } catch (error) { console.error('Failed to move task:', error); }
+ };
 
-  // US2: Complete Sprint Handler
-  const handleCompleteSprint = async () => {
-    if (!completingSprintId) return;
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) return;
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-    if (project?.organization) headers['X-Organization-ID'] = project.organization;
-    try {
-      await fetch(`${API_URL}/pm/sprints/${completingSprintId}/complete`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ moveIncompleteTo: incompleteTasksDestination }),
-      });
-      setShowCompleteSprintModal(false);
-      setCompletingSprintId(null);
-      fetchData(token);
-    } catch (error) { console.error('Failed to complete sprint:', error); }
-  };
+ // US2: Complete Sprint Handler
+ const handleCompleteSprint = async () => {
+ if (!completingSprintId) return;
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+ if (project?.organization) headers['X-Organization-ID'] = project.organization;
+ try {
+ await fetch(`${API_URL}/pm/sprints/${completingSprintId}/complete`, {
+ method: 'POST',
+ headers,
+ body: JSON.stringify({ moveIncompleteTo: incompleteTasksDestination }),
+ });
+ setShowCompleteSprintModal(false);
+ setCompletingSprintId(null);
+ fetchData(token);
+ } catch (error) { console.error('Failed to complete sprint:', error); }
+ };
 
-  // US4: Create Task in Sprint
-  const handleCreateTaskInSprint = async (sprintId: string, summary: string) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token || !summary.trim()) return;
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-    if (project?.organization) headers['X-Organization-ID'] = project.organization;
-    try {
-      await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ title: summary, sprintId, type: 'task' }),
-      });
-      fetchSprintTasks(sprintId);
-    } catch (error) { console.error('Failed to create task:', error); }
-  };
+ // US4: Create Task in Sprint
+ const handleCreateTaskInSprint = async (sprintId: string, summary: string) => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token || !summary.trim()) return;
+ const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+ if (project?.organization) headers['X-Organization-ID'] = project.organization;
+ try {
+ await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
+ method: 'POST',
+ headers,
+ body: JSON.stringify({ title: summary, sprintId, type: 'task' }),
+ });
+ fetchSprintTasks(sprintId);
+ } catch (error) { console.error('Failed to create task:', error); }
+ };
 
-  // US6: Task Selection Handler
-  const handleTaskSelect = (taskId: string, selected: boolean) => {
-    setSelectedTasks(prev => {
-      const newSet = new Set(prev);
-      if (selected) newSet.add(taskId);
-      else newSet.delete(taskId);
-      return newSet;
-    });
-  };
+ // US6: Task Selection Handler
+ const handleTaskSelect = (taskId: string, selected: boolean) => {
+ setSelectedTasks(prev => {
+ const newSet = new Set(prev);
+ if (selected) newSet.add(taskId);
+ else newSet.delete(taskId);
+ return newSet;
+ });
+ };
 
-  // US7: Rename Sprint Handler
-  const handleRenameSprint = async (sprintId: string, newName: string) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) return;
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-    if (project?.organization) headers['X-Organization-ID'] = project.organization;
-    try {
-      await fetch(`${API_URL}/pm/sprints/${sprintId}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({ name: newName }),
-      });
-      fetchData(token);
-    } catch (error) { console.error('Failed to rename sprint:', error); }
-  };
+ // US7: Rename Sprint Handler
+ const handleRenameSprint = async (sprintId: string, newName: string) => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+ if (project?.organization) headers['X-Organization-ID'] = project.organization;
+ try {
+ await fetch(`${API_URL}/pm/sprints/${sprintId}`, {
+ method: 'PATCH',
+ headers,
+ body: JSON.stringify({ name: newName }),
+ });
+ fetchData(token);
+ } catch (error) { console.error('Failed to rename sprint:', error); }
+ };
 
-  // US7: Delete Sprint Handler
-  const handleDeleteSprint = async () => {
-    if (!deletingSprintId) return;
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) return;
-    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-    if (project?.organization) headers['X-Organization-ID'] = project.organization;
-    try {
-      await fetch(`${API_URL}/pm/sprints/${deletingSprintId}`, {
-        method: 'DELETE',
-        headers,
-      });
-      setShowDeleteSprintModal(false);
-      setDeletingSprintId(null);
-      fetchData(token);
-    } catch (error) { console.error('Failed to delete sprint:', error); }
-  };
+ // US7: Delete Sprint Handler
+ const handleDeleteSprint = async () => {
+ if (!deletingSprintId) return;
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+ if (project?.organization) headers['X-Organization-ID'] = project.organization;
+ try {
+ await fetch(`${API_URL}/pm/sprints/${deletingSprintId}`, {
+ method: 'DELETE',
+ headers,
+ });
+ setShowDeleteSprintModal(false);
+ setDeletingSprintId(null);
+ fetchData(token);
+ } catch (error) { console.error('Failed to delete sprint:', error); }
+ };
 
-  // Create Task in Backlog Handler
-  const handleTaskCreated = () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (token) {
-      fetchData(token);
-      setShowCreateBacklogTask(false);
-    }
-  };
+ // Create Task in Backlog Handler
+ const handleTaskCreated = () => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (token) {
+ fetchData(token);
+ setShowCreateBacklogTask(false);
+ }
+ };
 
-  if (isLoading) {
-    return <LoadingState />;
-  }
+ if (isLoading) {
+ return <LoadingState />;
+ }
 
-  return (
-    <div className="flex flex-col h-full bg-gray-50">
-      {/* Project Header */}
-      <ProjectHeader 
-        projectKey={project?.key} 
-        projectName={project?.name}
-        projectId={projectId}
-      />
+ return (
+ <div className="flex flex-col h-full bg-muted/50">
+ {/* Project Header */}
+ <ProjectHeader 
+ projectKey={project?.key} 
+ projectName={project?.name}
+ projectId={projectId}
+ />
 
-      {/* Navigation Tabs */}
-      <ProjectNavTabs projectId={projectId} methodology={methodology || 'scrum'} />
+ {/* Navigation Tabs */}
+ <ProjectNavTabs projectId={projectId} methodology={methodology || 'scrum'} />
 
-      {/* Toolbar */}
-      <ProjectToolbar
-        searchPlaceholder={t('projects.backlog.title')}
-        members={projectMembers}
-        showStats
-        showBranch
-        rightActions={
-          <button
-            onClick={() => setShowCSVImport(true)}
-            className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 rounded-lg text-sm transition-colors"
-            title="Import from CSV"
-          >
-            <Upload className="h-4 w-4" />
-            <span className="hidden sm:inline">Import CSV</span>
-          </button>
-        }
-      />
+ {/* Toolbar */}
+ <ProjectToolbar
+ searchPlaceholder={t('projects.backlog.title')}
+ members={projectMembers}
+ showStats
+ showBranch
+ rightActions={
+ <button
+ onClick={() => setShowCSVImport(true)}
+ className="flex items-center gap-2 px-3 py-1.5 text-muted-foreground hover:text-foreground border border-border hover:border-border rounded-lg text-sm transition-colors"
+ title="Import from CSV"
+ >
+ <Upload className="h-4 w-4" />
+ <span className="hidden sm:inline">Import CSV</span>
+ </button>
+ }
+ />
 
-      {/* CSV Import Modal */}
-      <CSVImportModal
-        projectId={projectId}
-        isOpen={showCSVImport}
-        onClose={() => setShowCSVImport(false)}
-        onImportComplete={() => {
-          const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-          if (token) fetchData(token);
-        }}
-      />
+ {/* CSV Import Modal */}
+ <CSVImportModal
+ projectId={projectId}
+ isOpen={showCSVImport}
+ onClose={() => setShowCSVImport(false)}
+ onImportComplete={() => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (token) fetchData(token);
+ }}
+ />
 
 
-      {/* Backlog + Detail Panel Container */}
-      <div className="flex-1 flex min-h-0">
-        {/* Backlog Content wrapped in DndContext */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-        <div className="flex-1 px-2 sm:px-4 py-2 space-y-2 overflow-y-auto">
-        {/* Sprints (hide completed) */}
-        {sprints.filter(s => s.status !== 'completed').map((sprint) => (
-          <SprintSection
-            key={sprint._id}
-            id={sprint._id}
-            name={sprint.name}
-            startDate={sprint.startDate}
-            endDate={sprint.endDate}
-            status={sprint.status}
-            stats={sprint.stats}
-            tasks={sprintTasks[sprint._id] || []}
-            isExpanded={expandedSprints.has(sprint._id)}
-            onToggle={() => toggleSprint(sprint._id)}
-            onStartSprint={() => handleStartSprint(sprint._id)}
-            onCompleteSprint={() => { setCompletingSprintId(sprint._id); setShowCompleteSprintModal(true); }}
-            onTaskClick={(task) => router.push(`/projects/${projectId}/backlog?selectedIssue=${task.key}`)}
-            onCreateTask={(summary) => handleCreateTaskInSprint(sprint._id, summary)}
-            onTaskSelect={handleTaskSelect}
-            selectedTasks={selectedTasks}
-            onRenameSprint={(newName) => handleRenameSprint(sprint._id, newName)}
-            onDeleteSprint={() => { setDeletingSprintId(sprint._id); setShowDeleteSprintModal(true); }}
-            onMoveWorkItems={() => {}}
-            onReorderSprint={() => {}}
-            isDragActive={isDragActive}
-          />
-        ))}
+ {/* Backlog + Detail Panel Container */}
+ <div className="flex-1 flex min-h-0">
+ {/* Backlog Content wrapped in DndContext */}
+ <DndContext
+ sensors={sensors}
+ collisionDetection={closestCenter}
+ onDragStart={handleDragStart}
+ onDragOver={handleDragOver}
+ onDragEnd={handleDragEnd}
+ >
+ <div className="flex-1 px-2 sm:px-4 py-2 space-y-2 overflow-y-auto">
+ {/* Sprints (hide completed) */}
+ {sprints.filter(s => s.status !== 'completed').map((sprint) => (
+ <SprintSection
+ key={sprint._id}
+ id={sprint._id}
+ name={sprint.name}
+ startDate={sprint.startDate}
+ endDate={sprint.endDate}
+ status={sprint.status}
+ stats={sprint.stats}
+ tasks={sprintTasks[sprint._id] || []}
+ isExpanded={expandedSprints.has(sprint._id)}
+ onToggle={() => toggleSprint(sprint._id)}
+ onStartSprint={() => handleStartSprint(sprint._id)}
+ onCompleteSprint={() => { setCompletingSprintId(sprint._id); setShowCompleteSprintModal(true); }}
+ onTaskClick={(task) => router.push(`/projects/${projectId}/backlog?selectedIssue=${task.key}`)}
+ onCreateTask={(summary) => handleCreateTaskInSprint(sprint._id, summary)}
+ onTaskSelect={handleTaskSelect}
+ selectedTasks={selectedTasks}
+ onRenameSprint={(newName) => handleRenameSprint(sprint._id, newName)}
+ onDeleteSprint={() => { setDeletingSprintId(sprint._id); setShowDeleteSprintModal(true); }}
+ onMoveWorkItems={() => {}}
+ onReorderSprint={() => {}}
+ isDragActive={isDragActive}
+ />
+ ))}
 
-        {/* Backlog Section */}
-        <BacklogDropZone backlogTasks={backlogTasks} isDragActive={isDragActive}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 py-2.5 gap-2">
-            <div className="flex items-center gap-3">
-              <input type="checkbox" className="w-4 h-4 rounded border-gray-300 bg-white" />
-              <ChevronDown className="h-4 w-4 text-gray-500" />
-              <span className="font-medium text-gray-900">{t('projects.backlog.title')}</span>
-              <span className="text-gray-500 text-sm">({backlogTasks.length} {t('projects.common.items') || 'items'})</span>
-            </div>
-            <button 
-              onClick={() => setShowNewSprintModal(true)} 
-              className="px-3 py-1.5 text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 rounded-lg text-sm transition-colors"
-            >
-              {t('projects.backlog.createSprint')}
-            </button>
-          </div>
-          <div className="border-t border-gray-200">
-            <SortableContext items={backlogTaskIds} strategy={verticalListSortingStrategy}>
-            {backlogTasks.length === 0 ? (
-              <div className="px-3 py-8 text-gray-400 text-sm text-center">{t('projects.backlog.noItems') || 'No items in backlog'}</div>
-            ) : (
-              <div>
-                {backlogTasks.map((task) => (
-                  <DraggableBacklogItem
-                    key={task._id}
-                    task={task}
-                    onClick={() => router.push(`/projects/${projectId}/backlog?selectedIssue=${task.key}`)}
-                  />
-                ))}
-              </div>
-            )}
-            </SortableContext>
-            {/* Create button */}
-            <div className="border-t border-gray-100">
-              {showCreateBacklogTask ? (
-                <div className="p-3">
-                  <QuickCreateTask
-                    projectId={projectId}
-                    organizationId={project?.organization}
-                    teamMembers={projectMembers}
-                    onTaskCreated={handleTaskCreated}
-                    onCancel={() => setShowCreateBacklogTask(false)}
-                  />
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowCreateBacklogTask(true)}
-                  className="flex items-center gap-2 px-3 py-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-50 w-full text-sm transition-colors"
-                  aria-label={t('projects.backlog.createTask') || 'Create task'}
-                >
-                  <Plus className="h-4 w-4" />{t('projects.common.create')}
-                </button>
-              )}
-            </div>
-          </div>
-        </BacklogDropZone>
-        </div>
+ {/* Backlog Section */}
+ <BacklogDropZone backlogTasks={backlogTasks} isDragActive={isDragActive}>
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 py-2.5 gap-2">
+ <div className="flex items-center gap-3">
+ <input type="checkbox" className="w-4 h-4 rounded border-border bg-background" />
+ <ChevronDown className="h-4 w-4 text-muted-foreground" />
+ <span className="font-medium text-foreground">{t('projects.backlog.title')}</span>
+ <span className="text-muted-foreground text-sm">({backlogTasks.length} {t('projects.common.items') || 'items'})</span>
+ </div>
+ <button 
+ onClick={() => setShowNewSprintModal(true)} 
+ className="px-3 py-1.5 text-muted-foreground hover:text-foreground border border-border hover:border-border rounded-lg text-sm transition-colors"
+ >
+ {t('projects.backlog.createSprint')}
+ </button>
+ </div>
+ <div className="border-t border-border">
+ <SortableContext items={backlogTaskIds} strategy={verticalListSortingStrategy}>
+ {backlogTasks.length === 0 ? (
+ <div className="px-3 py-8 text-muted-foreground text-sm text-center">{t('projects.backlog.noItems') || 'No items in backlog'}</div>
+ ) : (
+ <div>
+ {backlogTasks.map((task) => (
+ <DraggableBacklogItem
+ key={task._id}
+ task={task}
+ onClick={() => router.push(`/projects/${projectId}/backlog?selectedIssue=${task.key}`)}
+ />
+ ))}
+ </div>
+ )}
+ </SortableContext>
+ {/* Create button */}
+ <div className="border-t border-border">
+ {showCreateBacklogTask ? (
+ <div className="p-3">
+ <QuickCreateTask
+ projectId={projectId}
+ organizationId={project?.organization}
+ teamMembers={projectMembers}
+ onTaskCreated={handleTaskCreated}
+ onCancel={() => setShowCreateBacklogTask(false)}
+ />
+ </div>
+ ) : (
+ <button
+ onClick={() => setShowCreateBacklogTask(true)}
+ className="flex items-center gap-2 px-3 py-2.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 w-full text-sm transition-colors"
+ aria-label={t('projects.backlog.createTask') || 'Create task'}
+ >
+ <Plus className="h-4 w-4" />{t('projects.common.create')}
+ </button>
+ )}
+ </div>
+ </div>
+ </BacklogDropZone>
+ </div>
 
-        {/* Drag Overlay — ghost card following cursor */}
-        <DragOverlay>
-          {activeTask ? (
-            <div className="bg-white border-2 border-blue-500 rounded-lg shadow-xl p-2 opacity-90 w-80">
-              <TaskCard
-                taskKey={activeTask.key}
-                title={activeTask.title}
-                type={activeTask.type}
-                priority={activeTask.priority}
-                status={activeTask.status}
-                assignee={activeTask.assignee}
-                variant="compact"
-              />
-            </div>
-          ) : null}
-        </DragOverlay>
-        </DndContext>
+ {/* Drag Overlay — ghost card following cursor */}
+ <DragOverlay>
+ {activeTask ? (
+ <div className="bg-background border-2 border-brand rounded-lg shadow-xl p-2 opacity-90 w-80">
+ <TaskCard
+ taskKey={activeTask.key}
+ title={activeTask.title}
+ type={activeTask.type}
+ priority={activeTask.priority}
+ status={activeTask.status}
+ assignee={activeTask.assignee}
+ variant="compact"
+ />
+ </div>
+ ) : null}
+ </DragOverlay>
+ </DndContext>
 
-        {/* Task Detail Panel */}
-        {selectedIssue && selectedTask && (
-          <TaskDetailPanel
-            task={selectedTask}
-            taskDetail={taskDetail}
-            projectId={projectId}
-            onClose={() => router.push(`/projects/${projectId}/backlog`)}
-            onTaskUpdate={() => {
-              const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-              if (token) {
-                fetchData(token);
-                // Refetch task detail to show updated info (sprint, type, etc.)
-                if (selectedTask) {
-                  fetch(`${API_URL}/pm/tasks/${selectedTask._id}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  })
-                    .then(res => res.json())
-                    .then(data => {
-                      if (data.success) {
-                        setTaskDetail(data.data.task);
-                        setSelectedTask(data.data.task); // Update selectedTask to reflect changes
-                      }
-                    })
-                    .catch(error => console.error('Failed to fetch task detail:', error));
-                }
-              }
-            }}
-            teamMembers={projectMembers}
-            sprints={allSprints}
-            availableLabels={[]}
-            availableTeams={teams}
-          />
-        )}
-      </div>
+ {/* Task Detail Panel */}
+ {selectedIssue && selectedTask && (
+ <TaskDetailPanel
+ task={selectedTask}
+ taskDetail={taskDetail}
+ projectId={projectId}
+ onClose={() => router.push(`/projects/${projectId}/backlog`)}
+ onTaskUpdate={() => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (token) {
+ fetchData(token);
+ // Refetch task detail to show updated info (sprint, type, etc.)
+ if (selectedTask) {
+ fetch(`${API_URL}/pm/tasks/${selectedTask._id}`, {
+ headers: { Authorization: `Bearer ${token}` },
+ })
+ .then(res => res.json())
+ .then(data => {
+ if (data.success) {
+ setTaskDetail(data.data.task);
+ setSelectedTask(data.data.task); // Update selectedTask to reflect changes
+ }
+ })
+ .catch(error => console.error('Failed to fetch task detail:', error));
+ }
+ }
+ }}
+ teamMembers={projectMembers}
+ sprints={allSprints}
+ availableLabels={[]}
+ availableTeams={teams}
+ />
+ )}
+ </div>
 
-      {/* Create Sprint Modal */}
-      {showNewSprintModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">{t('projects.backlog.createSprint')}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">{t('projects.sprints.sprintName')}</label>
-                <input 
-                  type="text" 
-                  value={newSprintData.name} 
-                  onChange={(e) => setNewSprintData({ ...newSprintData, name: e.target.value })} 
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
-                  placeholder={t('projects.sprints.sprintName')} 
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1">{t('projects.sprints.startDate')}</label>
-                  <input 
-                    type="date" 
-                    value={newSprintData.startDate} 
-                    onChange={(e) => setNewSprintData({ ...newSprintData, startDate: e.target.value })} 
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1">{t('projects.sprints.endDate')}</label>
-                  <input 
-                    type="date" 
-                    value={newSprintData.endDate} 
-                    onChange={(e) => setNewSprintData({ ...newSprintData, endDate: e.target.value })} 
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">{t('projects.backlog.sprintGoal')}</label>
-                <textarea 
-                  value={newSprintData.goal} 
-                  onChange={(e) => setNewSprintData({ ...newSprintData, goal: e.target.value })} 
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 resize-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
-                  rows={2} 
-                  placeholder={t('projects.backlog.goalPlaceholder') || 'What do we want to achieve?'} 
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={() => setShowNewSprintModal(false)} 
-                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  {t('projects.common.cancel')}
-                </button>
-                <button 
-                  onClick={handleCreateSprint} 
-                  disabled={!newSprintData.startDate || !newSprintData.endDate} 
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg transition-colors"
-                >
-                  {t('projects.common.create')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+ {/* Create Sprint Modal */}
+ {showNewSprintModal && (
+ <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+ <div className="bg-background border border-border rounded-xl p-4 sm:p-6 w-full max-w-md shadow-xl">
+ <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-4">{t('projects.backlog.createSprint')}</h2>
+ <div className="space-y-4">
+ <div>
+ <label className="block text-sm text-foreground mb-1">{t('projects.sprints.sprintName')}</label>
+ <input 
+ type="text" 
+ value={newSprintData.name} 
+ onChange={(e) => setNewSprintData({ ...newSprintData, name: e.target.value })} 
+ className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand focus:ring-1 focus:ring-ring" 
+ placeholder={t('projects.sprints.sprintName')} 
+ />
+ </div>
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+ <div>
+ <label className="block text-sm text-foreground mb-1">{t('projects.sprints.startDate')}</label>
+ <input 
+ type="date" 
+ value={newSprintData.startDate} 
+ onChange={(e) => setNewSprintData({ ...newSprintData, startDate: e.target.value })} 
+ className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand focus:ring-1 focus:ring-ring" 
+ />
+ </div>
+ <div>
+ <label className="block text-sm text-foreground mb-1">{t('projects.sprints.endDate')}</label>
+ <input 
+ type="date" 
+ value={newSprintData.endDate} 
+ onChange={(e) => setNewSprintData({ ...newSprintData, endDate: e.target.value })} 
+ className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand focus:ring-1 focus:ring-ring" 
+ />
+ </div>
+ </div>
+ <div>
+ <label className="block text-sm text-foreground mb-1">{t('projects.backlog.sprintGoal')}</label>
+ <textarea 
+ value={newSprintData.goal} 
+ onChange={(e) => setNewSprintData({ ...newSprintData, goal: e.target.value })} 
+ className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground resize-none focus:outline-none focus:border-brand focus:ring-1 focus:ring-ring" 
+ rows={2} 
+ placeholder={t('projects.backlog.goalPlaceholder') || 'What do we want to achieve?'} 
+ />
+ </div>
+ <div className="flex gap-3 pt-2">
+ <button 
+ onClick={() => setShowNewSprintModal(false)} 
+ className="flex-1 px-4 py-2.5 border border-border text-foreground rounded-lg hover:bg-muted/50 transition-colors"
+ >
+ {t('projects.common.cancel')}
+ </button>
+ <button 
+ onClick={handleCreateSprint} 
+ disabled={!newSprintData.startDate || !newSprintData.endDate} 
+ className="flex-1 bg-brand hover:bg-brand-strong disabled:bg-brand-soft disabled:cursor-not-allowed text-brand-foreground px-4 py-2.5 rounded-lg transition-colors"
+ >
+ {t('projects.common.create')}
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ )}
 
-      {/* US2: Complete Sprint Modal */}
-      {showCompleteSprintModal && completingSprintId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 w-full max-w-md shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-                {t('projects.backlog.completeSprint') || 'Complete Sprint'}
-              </h2>
-              <button 
-                onClick={() => { setShowCompleteSprintModal(false); setCompletingSprintId(null); }}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm text-yellow-700">
-                    {t('projects.sprints.completeSprintWarning') || 'Completing this sprint will close it. Any incomplete tasks will be moved based on your selection below.'}
-                  </p>
-                </div>
-              </div>
+ {/* US2: Complete Sprint Modal */}
+ {showCompleteSprintModal && completingSprintId && (
+ <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+ <div className="bg-background border border-border rounded-xl p-4 sm:p-6 w-full max-w-md shadow-xl">
+ <div className="flex items-center justify-between mb-4">
+ <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+ {t('projects.backlog.completeSprint') || 'Complete Sprint'}
+ </h2>
+ <button 
+ onClick={() => { setShowCompleteSprintModal(false); setCompletingSprintId(null); }}
+ className="p-1 text-muted-foreground hover:text-muted-foreground rounded"
+ >
+ <X className="h-5 w-5" />
+ </button>
+ </div>
+ 
+ <div className="space-y-4">
+ <div className="flex items-start gap-3 p-3 bg-warning-soft border border-warning/30 rounded-lg">
+ <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+ <div>
+ <p className="text-sm text-warning">
+ {t('projects.sprints.completeSprintWarning') || 'Completing this sprint will close it. Any incomplete tasks will be moved based on your selection below.'}
+ </p>
+ </div>
+ </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('projects.sprints.moveIncompleteTasks') || 'Move incomplete tasks to:'}
-                </label>
-                <div className="space-y-2">
-                  <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                    incompleteTasksDestination === 'backlog' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="destination"
-                      value="backlog"
-                      checked={incompleteTasksDestination === 'backlog'}
-                      onChange={() => setIncompleteTasksDestination('backlog')}
-                    />
-                    <span className="text-gray-900">{t('projects.backlog.title') || 'Backlog'}</span>
-                  </label>
-                  <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                    incompleteTasksDestination === 'next' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="destination"
-                      value="next"
-                      checked={incompleteTasksDestination === 'next'}
-                      onChange={() => setIncompleteTasksDestination('next')}
-                    />
-                    <span className="text-gray-900">{t('projects.sprints.nextSprint') || 'Next Sprint'}</span>
-                  </label>
-                </div>
-              </div>
+ <div>
+ <label className="block text-sm font-medium text-foreground mb-2">
+ {t('projects.sprints.moveIncompleteTasks') || 'Move incomplete tasks to:'}
+ </label>
+ <div className="space-y-2">
+ <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+ incompleteTasksDestination === 'backlog' ? 'border-brand bg-brand-surface' : 'border-border hover:border-border'
+ }`}>
+ <input
+ type="radio"
+ name="destination"
+ value="backlog"
+ checked={incompleteTasksDestination === 'backlog'}
+ onChange={() => setIncompleteTasksDestination('backlog')}
+ />
+ <span className="text-foreground">{t('projects.backlog.title') || 'Backlog'}</span>
+ </label>
+ <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+ incompleteTasksDestination === 'next' ? 'border-brand bg-brand-surface' : 'border-border hover:border-border'
+ }`}>
+ <input
+ type="radio"
+ name="destination"
+ value="next"
+ checked={incompleteTasksDestination === 'next'}
+ onChange={() => setIncompleteTasksDestination('next')}
+ />
+ <span className="text-foreground">{t('projects.sprints.nextSprint') || 'Next Sprint'}</span>
+ </label>
+ </div>
+ </div>
 
-              <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={() => { setShowCompleteSprintModal(false); setCompletingSprintId(null); }}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  {t('projects.common.cancel') || 'Cancel'}
-                </button>
-                <button 
-                  onClick={handleCompleteSprint}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition-colors"
-                >
-                  {t('projects.backlog.completeSprint') || 'Complete Sprint'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+ <div className="flex gap-3 pt-2">
+ <button 
+ onClick={() => { setShowCompleteSprintModal(false); setCompletingSprintId(null); }}
+ className="flex-1 px-4 py-2.5 border border-border text-foreground rounded-lg hover:bg-muted/50 transition-colors"
+ >
+ {t('projects.common.cancel') || 'Cancel'}
+ </button>
+ <button 
+ onClick={handleCompleteSprint}
+ className="flex-1 bg-brand hover:bg-brand-strong text-brand-foreground px-4 py-2.5 rounded-lg transition-colors"
+ >
+ {t('projects.backlog.completeSprint') || 'Complete Sprint'}
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ )}
 
-      {/* US7: Delete Sprint Confirmation Modal */}
-      {showDeleteSprintModal && deletingSprintId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 w-full max-w-md shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg sm:text-xl font-semibold text-red-600">
-                {t('projects.sprints.deleteSprint') || 'Delete Sprint'}
-              </h2>
-              <button 
-                onClick={() => { setShowDeleteSprintModal(false); setDeletingSprintId(null); }}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm text-red-700">
-                    {t('projects.sprints.deleteSprintWarning') || 'Are you sure you want to delete this sprint? Tasks in this sprint will be moved to the backlog.'}
-                  </p>
-                </div>
-              </div>
+ {/* US7: Delete Sprint Confirmation Modal */}
+ {showDeleteSprintModal && deletingSprintId && (
+ <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+ <div className="bg-background border border-border rounded-xl p-4 sm:p-6 w-full max-w-md shadow-xl">
+ <div className="flex items-center justify-between mb-4">
+ <h2 className="text-lg sm:text-xl font-semibold text-destructive">
+ {t('projects.sprints.deleteSprint') || 'Delete Sprint'}
+ </h2>
+ <button 
+ onClick={() => { setShowDeleteSprintModal(false); setDeletingSprintId(null); }}
+ className="p-1 text-muted-foreground hover:text-muted-foreground rounded"
+ >
+ <X className="h-5 w-5" />
+ </button>
+ </div>
+ 
+ <div className="space-y-4">
+ <div className="flex items-start gap-3 p-3 bg-destructive-soft border border-destructive/30 rounded-lg">
+ <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+ <div>
+ <p className="text-sm text-destructive">
+ {t('projects.sprints.deleteSprintWarning') || 'Are you sure you want to delete this sprint? Tasks in this sprint will be moved to the backlog.'}
+ </p>
+ </div>
+ </div>
 
-              <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={() => { setShowDeleteSprintModal(false); setDeletingSprintId(null); }}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  {t('projects.common.cancel') || 'Cancel'}
-                </button>
-                <button 
-                  onClick={handleDeleteSprint}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg transition-colors"
-                >
-                  {t('projects.common.delete') || 'Delete'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+ <div className="flex gap-3 pt-2">
+ <button 
+ onClick={() => { setShowDeleteSprintModal(false); setDeletingSprintId(null); }}
+ className="flex-1 px-4 py-2.5 border border-border text-foreground rounded-lg hover:bg-muted/50 transition-colors"
+ >
+ {t('projects.common.cancel') || 'Cancel'}
+ </button>
+ <button 
+ onClick={handleDeleteSprint}
+ className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground px-4 py-2.5 rounded-lg transition-colors"
+ >
+ {t('projects.common.delete') || 'Delete'}
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ )}
+ </div>
+ );
 }

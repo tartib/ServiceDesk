@@ -7,6 +7,7 @@ import { body } from 'express-validator';
 import { authenticate } from '../../../middleware/auth';
 import { authLimiter } from '../../../middleware/rateLimiter';
 import { handleValidation } from '../../../shared/middleware/validate';
+import { skipCsrf } from '../../../shared/middleware/csrf';
 import * as authCtrl from '../controllers/auth.controller';
 
 const router = Router();
@@ -14,6 +15,7 @@ const router = Router();
 // Public
 router.post(
   '/register',
+  skipCsrf,
   authLimiter,
   [
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
@@ -33,6 +35,7 @@ router.post(
 
 router.post(
   '/login',
+  skipCsrf,
   authLimiter,
   [
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
@@ -42,7 +45,7 @@ router.post(
   authCtrl.login
 );
 
-router.post('/refresh', authCtrl.refreshToken);
+router.post('/refresh', skipCsrf, authCtrl.refreshToken);
 router.post('/logout', authenticate, authCtrl.logout);
 
 // Protected

@@ -73,6 +73,16 @@ if (env.NODE_ENV !== 'development') {
 }
 
 // CSRF Protection (conditional - skipped for API tokens, required for form submissions)
+// Skip CSRF for public auth endpoints (no Bearer token, cross-origin cookie not reliable)
+app.use((req, _res, next) => {
+  if (
+    req.path.match(/\/auth\/(login|register|refresh)$/) &&
+    req.method === 'POST'
+  ) {
+    (req as any).skipCsrf = true;
+  }
+  next();
+});
 app.use(csrfProtectionConditional);
 
 // Serve static files (uploaded images) - before helmet to avoid CORP issues

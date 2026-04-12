@@ -4,877 +4,877 @@ import { API_URL } from '@/lib/api/config';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  Users,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  Calendar,
-  Edit3,
-  Save,
-  FileText,
-  Send,
-  ChevronLeft,
-  ChevronRight,
-  Crown,
-  RefreshCw,
-  BarChart3,
-  X,
+ Users,
+ Clock,
+ CheckCircle,
+ AlertTriangle,
+ Calendar,
+ Edit3,
+ Save,
+ FileText,
+ Send,
+ ChevronLeft,
+ ChevronRight,
+ Crown,
+ RefreshCw,
+ BarChart3,
+ X,
 } from 'lucide-react';
 import {
-  ProjectHeader,
-  ProjectNavTabs,
-  LoadingState,
+ ProjectHeader,
+ ProjectNavTabs,
+ LoadingState,
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
 
 interface StandupEntry {
-  _id: string;
-  projectId: string;
-  organizationId: string;
-  userId: {
-    _id: string;
-    email: string;
-    profile?: {
-      firstName?: string;
-      lastName?: string;
-      avatar?: string;
-    };
-  } | string;
-  isTeamStandup: boolean;
-  yesterday: string;
-  today: string;
-  blockers: string[];
-  status: 'draft' | 'published';
-  writtenBy?: {
-    _id: string;
-    email: string;
-    profile?: {
-      firstName?: string;
-      lastName?: string;
-    };
-  } | string;
-  date: string;
-  createdAt: string;
-  updatedAt: string;
+ _id: string;
+ projectId: string;
+ organizationId: string;
+ userId: {
+ _id: string;
+ email: string;
+ profile?: {
+ firstName?: string;
+ lastName?: string;
+ avatar?: string;
+ };
+ } | string;
+ isTeamStandup: boolean;
+ yesterday: string;
+ today: string;
+ blockers: string[];
+ status: 'draft' | 'published';
+ writtenBy?: {
+ _id: string;
+ email: string;
+ profile?: {
+ firstName?: string;
+ lastName?: string;
+ };
+ } | string;
+ date: string;
+ createdAt: string;
+ updatedAt: string;
 }
 
 interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  role: string;
+ id: string;
+ name: string;
+ email: string;
+ avatar?: string;
+ role: string;
 }
 
 interface ProjectMember {
-  _id: string;
-  userId: {
-    _id: string;
-    email: string;
-    profile?: {
-      firstName?: string;
-      lastName?: string;
-      avatar?: string;
-    };
-  };
-  role: string;
+ _id: string;
+ userId: {
+ _id: string;
+ email: string;
+ profile?: {
+ firstName?: string;
+ lastName?: string;
+ avatar?: string;
+ };
+ };
+ role: string;
 }
 
 interface Project {
-  _id: string;
-  name: string;
-  key: string;
+ _id: string;
+ name: string;
+ key: string;
 }
 
 const getTodayStr = () => new Date().toISOString().split('T')[0];
 
 export default function StandupPage() {
-  const params = useParams();
-  const router = useRouter();
-  const projectId = params?.projectId as string;
-  
-  const { methodology } = useMethodology(projectId);
+ const params = useParams();
+ const router = useRouter();
+ const projectId = params?.projectId as string;
+ 
+ const { methodology } = useMethodology(projectId);
 
-  const [project, setProject] = useState<Project | null>(null);
-  const [members, setMembers] = useState<TeamMember[]>([]);
-  const [standups, setStandups] = useState<StandupEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayStr());
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(() => {
-    const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() };
-  });
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [currentUserRole, setCurrentUserRole] = useState<string>('member');
-  
-  // Form state
-  const [showForm, setShowForm] = useState(false);
-  const [editingStandup, setEditingStandup] = useState<StandupEntry | null>(null);
-  const [formData, setFormData] = useState({ yesterday: '', today: '', blockers: '' });
-  const [isSaving, setIsSaving] = useState(false);
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
-  const [myStandupData, setMyStandupData] = useState<StandupEntry | null>(null);
-  
-  // Summary view
-  const [showSummary, setShowSummary] = useState(false);
+ const [project, setProject] = useState<Project | null>(null);
+ const [members, setMembers] = useState<TeamMember[]>([]);
+ const [standups, setStandups] = useState<StandupEntry[]>([]);
+ const [isLoading, setIsLoading] = useState(true);
+ const [selectedDate, setSelectedDate] = useState<string>(getTodayStr());
+ const [showCalendar, setShowCalendar] = useState(false);
+ const [calendarMonth, setCalendarMonth] = useState(() => {
+ const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() };
+ });
+ const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+ const [currentUserRole, setCurrentUserRole] = useState<string>('member');
+ 
+ // Form state
+ const [showForm, setShowForm] = useState(false);
+ const [editingStandup, setEditingStandup] = useState<StandupEntry | null>(null);
+ const [formData, setFormData] = useState({ yesterday: '', today: '', blockers: '' });
+ const [isSaving, setIsSaving] = useState(false);
+ const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+ const [myStandupData, setMyStandupData] = useState<StandupEntry | null>(null);
+ 
+ // Summary view
+ const [showSummary, setShowSummary] = useState(false);
 
-  const isLeader = currentUserRole === 'lead' || currentUserRole === 'manager';
-  const isToday = selectedDate === getTodayStr();
+ const isLeader = currentUserRole === 'lead' || currentUserRole === 'manager';
+ const isToday = selectedDate === getTodayStr();
 
-  const formatDisplayDate = (dateStr: string) => {
-    const d = new Date(dateStr + 'T00:00:00');
-    const today = new Date(); today.setHours(0,0,0,0);
-    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
-    if (d.getTime() === today.getTime()) return 'Today';
-    if (d.getTime() === yesterday.getTime()) return 'Yesterday';
-    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  };
+ const formatDisplayDate = (dateStr: string) => {
+ const d = new Date(dateStr + 'T00:00:00');
+ const today = new Date(); today.setHours(0,0,0,0);
+ const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+ if (d.getTime() === today.getTime()) return 'Today';
+ if (d.getTime() === yesterday.getTime()) return 'Yesterday';
+ return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+ };
 
-  const getCalendarDays = (year: number, month: number) => {
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrevMonth = new Date(year, month, 0).getDate();
-    const days: { day: number; current: boolean; dateStr: string }[] = [];
-    for (let i = firstDay - 1; i >= 0; i--) {
-      const d = daysInPrevMonth - i;
-      const m = month === 0 ? 11 : month - 1;
-      const y = month === 0 ? year - 1 : year;
-      days.push({ day: d, current: false, dateStr: `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
-    }
-    for (let d = 1; d <= daysInMonth; d++) {
-      days.push({ day: d, current: true, dateStr: `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
-    }
-    const remaining = 7 - (days.length % 7);
-    if (remaining < 7) {
-      for (let d = 1; d <= remaining; d++) {
-        const m = month === 11 ? 0 : month + 1;
-        const y = month === 11 ? year + 1 : year;
-        days.push({ day: d, current: false, dateStr: `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
-      }
-    }
-    return days;
-  };
+ const getCalendarDays = (year: number, month: number) => {
+ const firstDay = new Date(year, month, 1).getDay();
+ const daysInMonth = new Date(year, month + 1, 0).getDate();
+ const daysInPrevMonth = new Date(year, month, 0).getDate();
+ const days: { day: number; current: boolean; dateStr: string }[] = [];
+ for (let i = firstDay - 1; i >= 0; i--) {
+ const d = daysInPrevMonth - i;
+ const m = month === 0 ? 11 : month - 1;
+ const y = month === 0 ? year - 1 : year;
+ days.push({ day: d, current: false, dateStr: `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
+ }
+ for (let d = 1; d <= daysInMonth; d++) {
+ days.push({ day: d, current: true, dateStr: `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
+ }
+ const remaining = 7 - (days.length % 7);
+ if (remaining < 7) {
+ for (let d = 1; d <= remaining; d++) {
+ const m = month === 11 ? 0 : month + 1;
+ const y = month === 11 ? year + 1 : year;
+ days.push({ day: d, current: false, dateStr: `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
+ }
+ }
+ return days;
+ };
 
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+ const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  const fetchProject = useCallback(async (token: string) => {
-    try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setProject(data.data.project);
-    } catch (error) {
-      console.error('Failed to fetch project:', error);
-    }
-  }, [projectId]);
+ const fetchProject = useCallback(async (token: string) => {
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
+ headers: { Authorization: `Bearer ${token}` },
+ });
+ const data = await res.json();
+ if (data.success) setProject(data.data.project);
+ } catch (error) {
+ console.error('Failed to fetch project:', error);
+ }
+ }, [projectId]);
 
-  const fetchMembers = useCallback(async (token: string) => {
-    try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}/members`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && data.data?.members) {
-        const membersList: TeamMember[] = data.data.members.map((member: ProjectMember) => {
-          const firstName = member.userId?.profile?.firstName || '';
-          const lastName = member.userId?.profile?.lastName || '';
-          const name = firstName || lastName 
-            ? `${firstName} ${lastName}`.trim() 
-            : member.userId?.email || 'Unknown';
-          return {
-            id: member.userId?._id || member._id,
-            name,
-            email: member.userId?.email || '',
-            avatar: member.userId?.profile?.avatar,
-            role: member.role,
-          };
-        });
-        setMembers(membersList);
-        
-        // Find current user's role
-        const currentMember = data.data.members.find((m: ProjectMember) => m.userId?._id === currentUserId);
-        if (currentMember) {
-          setCurrentUserRole(currentMember.role);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch members:', error);
-    }
-  }, [projectId, currentUserId]);
+ const fetchMembers = useCallback(async (token: string) => {
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/${projectId}/members`, {
+ headers: { Authorization: `Bearer ${token}` },
+ });
+ const data = await res.json();
+ if (data.success && data.data?.members) {
+ const membersList: TeamMember[] = data.data.members.map((member: ProjectMember) => {
+ const firstName = member.userId?.profile?.firstName || '';
+ const lastName = member.userId?.profile?.lastName || '';
+ const name = firstName || lastName 
+ ? `${firstName} ${lastName}`.trim() 
+ : member.userId?.email || 'Unknown';
+ return {
+ id: member.userId?._id || member._id,
+ name,
+ email: member.userId?.email || '',
+ avatar: member.userId?.profile?.avatar,
+ role: member.role,
+ };
+ });
+ setMembers(membersList);
+ 
+ // Find current user's role
+ const currentMember = data.data.members.find((m: ProjectMember) => m.userId?._id === currentUserId);
+ if (currentMember) {
+ setCurrentUserRole(currentMember.role);
+ }
+ }
+ } catch (error) {
+ console.error('Failed to fetch members:', error);
+ }
+ }, [projectId, currentUserId]);
 
-  const fetchStandups = useCallback(async (token: string) => {
-    try {
-      const endpoint = isToday
-        ? `${API_URL}/pm/projects/${projectId}/standups/today`
-        : `${API_URL}/pm/projects/${projectId}/standups?date=${selectedDate}`;
-      
-      const res = await fetch(endpoint, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && data.data?.standups) {
-        setStandups(data.data.standups);
-      } else {
-        setStandups([]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch standups:', error);
-      setStandups([]);
-    } finally {
-      setIsLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, selectedDate]);
+ const fetchStandups = useCallback(async (token: string) => {
+ try {
+ const endpoint = isToday
+ ? `${API_URL}/pm/projects/${projectId}/standups/today`
+ : `${API_URL}/pm/projects/${projectId}/standups?date=${selectedDate}`;
+ 
+ const res = await fetch(endpoint, {
+ headers: { Authorization: `Bearer ${token}` },
+ });
+ const data = await res.json();
+ if (data.success && data.data?.standups) {
+ setStandups(data.data.standups);
+ } else {
+ setStandups([]);
+ }
+ } catch (error) {
+ console.error('Failed to fetch standups:', error);
+ setStandups([]);
+ } finally {
+ setIsLoading(false);
+ }
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [projectId, selectedDate]);
 
-  // Fetch current user's standup using /me endpoint
-  const fetchMyStandup = useCallback(async (token: string) => {
-    try {
-      const res = await fetch(`${API_URL}/pm/projects/${projectId}/standups/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && data.data?.standup) {
-        setMyStandupData(data.data.standup);
-      } else {
-        setMyStandupData(null);
-      }
-    } catch (error) {
-      console.error('Failed to fetch my standup:', error);
-      setMyStandupData(null);
-    }
-  }, [projectId]);
+ // Fetch current user's standup using /me endpoint
+ const fetchMyStandup = useCallback(async (token: string) => {
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/${projectId}/standups/me`, {
+ headers: { Authorization: `Bearer ${token}` },
+ });
+ const data = await res.json();
+ if (data.success && data.data?.standup) {
+ setMyStandupData(data.data.standup);
+ } else {
+ setMyStandupData(null);
+ }
+ } catch (error) {
+ console.error('Failed to fetch my standup:', error);
+ setMyStandupData(null);
+ }
+ }, [projectId]);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    
-    // Get current user ID from token
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setCurrentUserId(payload.userId || payload.id || payload.sub);
-    } catch {
-      console.error('Failed to parse token');
-    }
-    
-    fetchProject(token);
-  }, [projectId, router, fetchProject]);
+ useEffect(() => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) {
+ router.push('/login');
+ return;
+ }
+ 
+ // Get current user ID from token
+ try {
+ const payload = JSON.parse(atob(token.split('.')[1]));
+ setCurrentUserId(payload.userId || payload.id || payload.sub);
+ } catch {
+ console.error('Failed to parse token');
+ }
+ 
+ fetchProject(token);
+ }, [projectId, router, fetchProject]);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (token && currentUserId) {
-      fetchMembers(token);
-      fetchMyStandup(token);
-    }
-  }, [currentUserId, fetchMembers, fetchMyStandup]);
+ useEffect(() => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (token && currentUserId) {
+ fetchMembers(token);
+ fetchMyStandup(token);
+ }
+ }, [currentUserId, fetchMembers, fetchMyStandup]);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (token) {
-      fetchStandups(token);
-    }
-  }, [selectedDate, fetchStandups]);
+ useEffect(() => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (token) {
+ fetchStandups(token);
+ }
+ }, [selectedDate, fetchStandups]);
 
-  const handleRefresh = () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (token) {
-      setIsLoading(true);
-      fetchStandups(token);
-      fetchMyStandup(token);
-    }
-  };
+ const handleRefresh = () => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (token) {
+ setIsLoading(true);
+ fetchStandups(token);
+ fetchMyStandup(token);
+ }
+ };
 
-  // Helper to get user ID from standup (userId can be object or string)
-  const getStandupUserId = (standup: StandupEntry): string => {
-    if (typeof standup.userId === 'string') return standup.userId;
-    return standup.userId._id;
-  };
+ // Helper to get user ID from standup (userId can be object or string)
+ const getStandupUserId = (standup: StandupEntry): string => {
+ if (typeof standup.userId === 'string') return standup.userId;
+ return standup.userId._id;
+ };
 
-  // Helper to get writtenBy name
-  const getWrittenByName = (standup: StandupEntry): string | null => {
-    if (!standup.writtenBy) return null;
-    if (typeof standup.writtenBy === 'string') return null;
-    const { profile, email } = standup.writtenBy;
-    if (profile?.firstName || profile?.lastName) {
-      return `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
-    }
-    return email || null;
-  };
+ // Helper to get writtenBy name
+ const getWrittenByName = (standup: StandupEntry): string | null => {
+ if (!standup.writtenBy) return null;
+ if (typeof standup.writtenBy === 'string') return null;
+ const { profile, email } = standup.writtenBy;
+ if (profile?.firstName || profile?.lastName) {
+ return `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
+ }
+ return email || null;
+ };
 
-  // Helper to get writtenBy ID
-  const getWrittenById = (standup: StandupEntry): string | null => {
-    if (!standup.writtenBy) return null;
-    if (typeof standup.writtenBy === 'string') return standup.writtenBy;
-    return standup.writtenBy._id;
-  };
+ // Helper to get writtenBy ID
+ const getWrittenById = (standup: StandupEntry): string | null => {
+ if (!standup.writtenBy) return null;
+ if (typeof standup.writtenBy === 'string') return standup.writtenBy;
+ return standup.writtenBy._id;
+ };
 
-  const getUserStandup = (userId: string) => {
-    return standups.find(s => getStandupUserId(s) === userId);
-  };
+ const getUserStandup = (userId: string) => {
+ return standups.find(s => getStandupUserId(s) === userId);
+ };
 
-  // Use myStandupData from /me endpoint for current user's standup (more reliable)
-  const myStandup = myStandupData || (currentUserId ? getUserStandup(currentUserId) : null);
-  const canWriteStandup = isToday && !myStandup;
-  const canEditStandup = isToday && myStandup;
+ // Use myStandupData from /me endpoint for current user's standup (more reliable)
+ const myStandup = myStandupData || (currentUserId ? getUserStandup(currentUserId) : null);
+ const canWriteStandup = isToday && !myStandup;
+ const canEditStandup = isToday && myStandup;
 
-  const handleOpenForm = (memberId?: string) => {
-    if (memberId && memberId !== currentUserId) {
-      // Leader writing for someone else
-      setSelectedMemberId(memberId);
-      const existingStandup = getUserStandup(memberId);
-      if (existingStandup) {
-        setEditingStandup(existingStandup);
-        setFormData({
-          yesterday: existingStandup.yesterday,
-          today: existingStandup.today,
-          blockers: existingStandup.blockers.join('\n'),
-        });
-      } else {
-        setEditingStandup(null);
-        setFormData({ yesterday: '', today: '', blockers: '' });
-      }
-    } else {
-      // Writing own standup
-      setSelectedMemberId(null);
-      if (myStandup) {
-        setEditingStandup(myStandup);
-        setFormData({
-          yesterday: myStandup.yesterday,
-          today: myStandup.today,
-          blockers: myStandup.blockers.join('\n'),
-        });
-      } else {
-        setEditingStandup(null);
-        setFormData({ yesterday: '', today: '', blockers: '' });
-      }
-    }
-    setShowForm(true);
-  };
+ const handleOpenForm = (memberId?: string) => {
+ if (memberId && memberId !== currentUserId) {
+ // Leader writing for someone else
+ setSelectedMemberId(memberId);
+ const existingStandup = getUserStandup(memberId);
+ if (existingStandup) {
+ setEditingStandup(existingStandup);
+ setFormData({
+ yesterday: existingStandup.yesterday,
+ today: existingStandup.today,
+ blockers: existingStandup.blockers.join('\n'),
+ });
+ } else {
+ setEditingStandup(null);
+ setFormData({ yesterday: '', today: '', blockers: '' });
+ }
+ } else {
+ // Writing own standup
+ setSelectedMemberId(null);
+ if (myStandup) {
+ setEditingStandup(myStandup);
+ setFormData({
+ yesterday: myStandup.yesterday,
+ today: myStandup.today,
+ blockers: myStandup.blockers.join('\n'),
+ });
+ } else {
+ setEditingStandup(null);
+ setFormData({ yesterday: '', today: '', blockers: '' });
+ }
+ }
+ setShowForm(true);
+ };
 
-  const handleSaveStandup = async (status: 'draft' | 'published') => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-    if (!token || !formData.today.trim()) return;
+ const handleSaveStandup = async (status: 'draft' | 'published') => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token || !formData.today.trim()) return;
 
-    setIsSaving(true);
-    try {
-      const targetUserId = selectedMemberId || currentUserId;
-      const blockers = formData.blockers.split('\n').filter(b => b.trim());
-      
-      const url = editingStandup
-        ? `${API_URL}/pm/standups/${editingStandup._id}`
-        : `${API_URL}/pm/projects/${projectId}/standups`;
-      
-      const res = await fetch(url, {
-        method: editingStandup ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          userId: targetUserId,
-          yesterday: formData.yesterday,
-          today: formData.today,
-          blockers,
-          status,
-        }),
-      });
-      
-      const data = await res.json();
-      if (data.success) {
-        setShowForm(false);
-        setFormData({ yesterday: '', today: '', blockers: '' });
-        setEditingStandup(null);
-        setSelectedMemberId(null);
-        fetchStandups(token);
-      }
-    } catch (error) {
-      console.error('Failed to save standup:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+ setIsSaving(true);
+ try {
+ const targetUserId = selectedMemberId || currentUserId;
+ const blockers = formData.blockers.split('\n').filter(b => b.trim());
+ 
+ const url = editingStandup
+ ? `${API_URL}/pm/standups/${editingStandup._id}`
+ : `${API_URL}/pm/projects/${projectId}/standups`;
+ 
+ const res = await fetch(url, {
+ method: editingStandup ? 'PUT' : 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ Authorization: `Bearer ${token}`,
+ },
+ body: JSON.stringify({
+ userId: targetUserId,
+ yesterday: formData.yesterday,
+ today: formData.today,
+ blockers,
+ status,
+ }),
+ });
+ 
+ const data = await res.json();
+ if (data.success) {
+ setShowForm(false);
+ setFormData({ yesterday: '', today: '', blockers: '' });
+ setEditingStandup(null);
+ setSelectedMemberId(null);
+ fetchStandups(token);
+ }
+ } catch (error) {
+ console.error('Failed to save standup:', error);
+ } finally {
+ setIsSaving(false);
+ }
+ };
 
-  const getStats = () => {
-    const submitted = standups.filter(s => s.status === 'published').length;
-    const drafts = standups.filter(s => s.status === 'draft').length;
-    const pending = members.length - standups.length;
-    const allBlockers = standups.flatMap(s => s.blockers);
-    
-    return { submitted, drafts, pending, blockers: allBlockers };
-  };
+ const getStats = () => {
+ const submitted = standups.filter(s => s.status === 'published').length;
+ const drafts = standups.filter(s => s.status === 'draft').length;
+ const pending = members.length - standups.length;
+ const allBlockers = standups.flatMap(s => s.blockers);
+ 
+ return { submitted, drafts, pending, blockers: allBlockers };
+ };
 
-  const stats = getStats();
+ const stats = getStats();
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-  };
+ const formatTime = (dateString: string) => {
+ return new Date(dateString).toLocaleTimeString('en-US', { 
+ hour: '2-digit', 
+ minute: '2-digit' 
+ });
+ };
 
-  if (isLoading) {
-    return <LoadingState />;
-  }
+ if (isLoading) {
+ return <LoadingState />;
+ }
 
-  return (
-    <div className="flex flex-col h-full bg-gray-50">
-      <ProjectHeader 
-        projectKey={project?.key} 
-        projectName={project?.name}
-        projectId={projectId}
-      />
+ return (
+ <div className="flex flex-col h-full bg-muted/50">
+ <ProjectHeader 
+ projectKey={project?.key} 
+ projectName={project?.name}
+ projectId={projectId}
+ />
 
-      <ProjectNavTabs projectId={projectId} methodology={methodology || 'scrum'} />
+ <ProjectNavTabs projectId={projectId} methodology={methodology || 'scrum'} />
 
-      {/* Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Daily Standup</h2>
-            </div>
-            
-            {/* Date Navigation */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => {
-                  const d = new Date(selectedDate + 'T00:00:00');
-                  d.setDate(d.getDate() - 1);
-                  setSelectedDate(d.toISOString().split('T')[0]);
-                }}
-                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
+ {/* Toolbar */}
+ <div className="bg-background border-b border-border px-4 py-3">
+ <div className="flex items-center justify-between">
+ <div className="flex items-center gap-4">
+ <div className="flex items-center gap-2">
+ <Users className="h-5 w-5 text-brand" />
+ <h2 className="text-lg font-semibold text-foreground">Daily Standup</h2>
+ </div>
+ 
+ {/* Date Navigation */}
+ <div className="flex items-center gap-1">
+ <button
+ onClick={() => {
+ const d = new Date(selectedDate + 'T00:00:00');
+ d.setDate(d.getDate() - 1);
+ setSelectedDate(d.toISOString().split('T')[0]);
+ }}
+ className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+ >
+ <ChevronLeft className="h-4 w-4" />
+ </button>
 
-              <div className="relative">
-                <button
-                  onClick={() => { setShowCalendar(!showCalendar); setCalendarMonth({ year: new Date(selectedDate + 'T00:00:00').getFullYear(), month: new Date(selectedDate + 'T00:00:00').getMonth() }); }}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
-                >
-                  <Calendar className="h-4 w-4" />
-                  {formatDisplayDate(selectedDate)}
-                </button>
+ <div className="relative">
+ <button
+ onClick={() => { setShowCalendar(!showCalendar); setCalendarMonth({ year: new Date(selectedDate + 'T00:00:00').getFullYear(), month: new Date(selectedDate + 'T00:00:00').getMonth() }); }}
+ className="flex items-center gap-2 px-3 py-1.5 bg-muted hover:bg-muted rounded-lg text-sm font-medium text-foreground transition-colors"
+ >
+ <Calendar className="h-4 w-4" />
+ {formatDisplayDate(selectedDate)}
+ </button>
 
-                {showCalendar && (
-                  <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-3 w-72">
-                    {/* Calendar Header */}
-                    <div className="flex items-center justify-between mb-2">
-                      <button onClick={() => setCalendarMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 })} className="p-1 hover:bg-gray-100 rounded">
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      <span className="text-sm font-semibold text-gray-900">{monthNames[calendarMonth.month]} {calendarMonth.year}</span>
-                      <button onClick={() => setCalendarMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 })} className="p-1 hover:bg-gray-100 rounded">
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
-                    {/* Day headers */}
-                    <div className="grid grid-cols-7 gap-0.5 mb-1">
-                      {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
-                        <div key={d} className="text-center text-xs font-medium text-gray-400 py-1">{d}</div>
-                      ))}
-                    </div>
-                    {/* Days */}
-                    <div className="grid grid-cols-7 gap-0.5">
-                      {getCalendarDays(calendarMonth.year, calendarMonth.month).map((day, i) => {
-                        const isSelected = day.dateStr === selectedDate;
-                        const isTodayDate = day.dateStr === getTodayStr();
-                        const isFuture = day.dateStr > getTodayStr();
-                        return (
-                          <button
-                            key={i}
-                            disabled={isFuture}
-                            onClick={() => { setSelectedDate(day.dateStr); setShowCalendar(false); }}
-                            className={`text-center py-1.5 text-xs rounded-lg transition-colors ${
-                              isSelected ? 'bg-blue-600 text-white font-bold' :
-                              isTodayDate ? 'bg-blue-50 text-blue-600 font-semibold' :
-                              !day.current ? 'text-gray-300' :
-                              isFuture ? 'text-gray-200 cursor-not-allowed' :
-                              'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
-                            {day.day}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {/* Quick links */}
-                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
-                      <button
-                        onClick={() => { setSelectedDate(getTodayStr()); setShowCalendar(false); }}
-                        className="flex-1 text-xs text-center py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg font-medium"
-                      >
-                        Today
-                      </button>
-                      <button
-                        onClick={() => {
-                          const y = new Date(); y.setDate(y.getDate() - 1);
-                          setSelectedDate(y.toISOString().split('T')[0]); setShowCalendar(false);
-                        }}
-                        className="flex-1 text-xs text-center py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium"
-                      >
-                        Yesterday
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+ {showCalendar && (
+ <div className="absolute top-full mt-1 left-0 bg-background border border-border rounded-xl shadow-xl z-50 p-3 w-72">
+ {/* Calendar Header */}
+ <div className="flex items-center justify-between mb-2">
+ <button onClick={() => setCalendarMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 })} className="p-1 hover:bg-muted rounded">
+ <ChevronLeft className="h-4 w-4" />
+ </button>
+ <span className="text-sm font-semibold text-foreground">{monthNames[calendarMonth.month]} {calendarMonth.year}</span>
+ <button onClick={() => setCalendarMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 })} className="p-1 hover:bg-muted rounded">
+ <ChevronRight className="h-4 w-4" />
+ </button>
+ </div>
+ {/* Day headers */}
+ <div className="grid grid-cols-7 gap-0.5 mb-1">
+ {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
+ <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">{d}</div>
+ ))}
+ </div>
+ {/* Days */}
+ <div className="grid grid-cols-7 gap-0.5">
+ {getCalendarDays(calendarMonth.year, calendarMonth.month).map((day, i) => {
+ const isSelected = day.dateStr === selectedDate;
+ const isTodayDate = day.dateStr === getTodayStr();
+ const isFuture = day.dateStr > getTodayStr();
+ return (
+ <button
+ key={i}
+ disabled={isFuture}
+ onClick={() => { setSelectedDate(day.dateStr); setShowCalendar(false); }}
+ className={`text-center py-1.5 text-xs rounded-lg transition-colors ${
+ isSelected ? 'bg-brand text-brand-foreground font-bold' :
+ isTodayDate ? 'bg-brand-surface text-brand font-semibold' :
+ !day.current ? 'text-muted-foreground' :
+ isFuture ? 'text-muted-foreground cursor-not-allowed' :
+ 'text-foreground hover:bg-muted'
+ }`}
+ >
+ {day.day}
+ </button>
+ );
+ })}
+ </div>
+ {/* Quick links */}
+ <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
+ <button
+ onClick={() => { setSelectedDate(getTodayStr()); setShowCalendar(false); }}
+ className="flex-1 text-xs text-center py-1.5 text-brand hover:bg-brand-surface rounded-lg font-medium"
+ >
+ Today
+ </button>
+ <button
+ onClick={() => {
+ const y = new Date(); y.setDate(y.getDate() - 1);
+ setSelectedDate(y.toISOString().split('T')[0]); setShowCalendar(false);
+ }}
+ className="flex-1 text-xs text-center py-1.5 text-muted-foreground hover:bg-muted rounded-lg font-medium"
+ >
+ Yesterday
+ </button>
+ </div>
+ </div>
+ )}
+ </div>
 
-              <button
-                onClick={() => {
-                  const d = new Date(selectedDate + 'T00:00:00');
-                  d.setDate(d.getDate() + 1);
-                  const next = d.toISOString().split('T')[0];
-                  if (next <= getTodayStr()) setSelectedDate(next);
-                }}
-                disabled={selectedDate >= getTodayStr()}
-                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
+ <button
+ onClick={() => {
+ const d = new Date(selectedDate + 'T00:00:00');
+ d.setDate(d.getDate() + 1);
+ const next = d.toISOString().split('T')[0];
+ if (next <= getTodayStr()) setSelectedDate(next);
+ }}
+ disabled={selectedDate >= getTodayStr()}
+ className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+ >
+ <ChevronRight className="h-4 w-4" />
+ </button>
 
-              {!isToday && (
-                <button
-                  onClick={() => setSelectedDate(getTodayStr())}
-                  className="px-2.5 py-1.5 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg font-medium transition-colors"
-                >
-                  Jump to Today
-                </button>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleRefresh}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className="h-5 w-5" />
-            </button>
-            
-            {isLeader && (
-              <button
-                onClick={() => setShowSummary(!showSummary)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  showSummary ? 'bg-purple-100 text-purple-700' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <BarChart3 className="h-4 w-4" />
-                Summary
-              </button>
-            )}
-            
-            {isToday && (canWriteStandup || canEditStandup) && (
-              <button
-                onClick={() => handleOpenForm()}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-              >
-                {canEditStandup ? <Edit3 className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                {canEditStandup ? 'Edit My Standup' : 'Write Standup'}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+ {!isToday && (
+ <button
+ onClick={() => setSelectedDate(getTodayStr())}
+ className="px-2.5 py-1.5 text-xs bg-brand-surface text-brand hover:bg-brand-soft rounded-lg font-medium transition-colors"
+ >
+ Jump to Today
+ </button>
+ )}
+ </div>
+ </div>
+ 
+ <div className="flex items-center gap-2">
+ <button
+ onClick={handleRefresh}
+ className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+ title="Refresh"
+ >
+ <RefreshCw className="h-5 w-5" />
+ </button>
+ 
+ {isLeader && (
+ <button
+ onClick={() => setShowSummary(!showSummary)}
+ className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+ showSummary ? 'bg-info-soft text-info' : 'text-muted-foreground hover:bg-muted'
+ }`}
+ >
+ <BarChart3 className="h-4 w-4" />
+ Summary
+ </button>
+ )}
+ 
+ {isToday && (canWriteStandup || canEditStandup) && (
+ <button
+ onClick={() => handleOpenForm()}
+ className="flex items-center gap-2 px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand-strong transition-colors text-sm font-medium"
+ >
+ {canEditStandup ? <Edit3 className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+ {canEditStandup ? 'Edit My Standup' : 'Write Standup'}
+ </button>
+ )}
+ </div>
+ </div>
+ </div>
 
-      {/* Stats Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-600">{members.length} Team Members</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-500" />
-            <span className="text-sm text-green-600">{stats.submitted} Submitted</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-yellow-500" />
-            <span className="text-sm text-yellow-600">{stats.drafts} Drafts</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-500">{stats.pending} Pending</span>
-          </div>
-          {stats.blockers.length > 0 && (
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-500" />
-              <span className="text-sm text-red-600">{stats.blockers.length} Blockers</span>
-            </div>
-          )}
-        </div>
-      </div>
+ {/* Stats Bar */}
+ <div className="bg-background border-b border-border px-4 py-3">
+ <div className="flex items-center gap-6">
+ <div className="flex items-center gap-2">
+ <Users className="h-4 w-4 text-muted-foreground" />
+ <span className="text-sm text-muted-foreground">{members.length} Team Members</span>
+ </div>
+ <div className="flex items-center gap-2">
+ <CheckCircle className="h-4 w-4 text-success" />
+ <span className="text-sm text-success">{stats.submitted} Submitted</span>
+ </div>
+ <div className="flex items-center gap-2">
+ <FileText className="h-4 w-4 text-warning" />
+ <span className="text-sm text-warning">{stats.drafts} Drafts</span>
+ </div>
+ <div className="flex items-center gap-2">
+ <Clock className="h-4 w-4 text-muted-foreground" />
+ <span className="text-sm text-muted-foreground">{stats.pending} Pending</span>
+ </div>
+ {stats.blockers.length > 0 && (
+ <div className="flex items-center gap-2">
+ <AlertTriangle className="h-4 w-4 text-destructive" />
+ <span className="text-sm text-destructive">{stats.blockers.length} Blockers</span>
+ </div>
+ )}
+ </div>
+ </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto">
-          {/* Summary Panel (Leader only) */}
-          {showSummary && isLeader && (
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-5 mb-6">
-              <h3 className="font-semibold text-purple-900 mb-4 flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Daily Summary
-              </h3>
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="bg-white rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-green-600">{stats.submitted}</div>
-                  <div className="text-xs text-gray-500">Submitted</div>
-                </div>
-                <div className="bg-white rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-gray-600">{stats.pending}</div>
-                  <div className="text-xs text-gray-500">Pending</div>
-                </div>
-                <div className="bg-white rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-red-600">{stats.blockers.length}</div>
-                  <div className="text-xs text-gray-500">Blockers</div>
-                </div>
-              </div>
-              {stats.blockers.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-purple-800 mb-2">All Blockers:</h4>
-                  <ul className="space-y-1">
-                    {stats.blockers.map((blocker, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-red-700">
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                        {blocker}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
+ {/* Main Content */}
+ <div className="flex-1 overflow-y-auto p-6">
+ <div className="max-w-4xl mx-auto">
+ {/* Summary Panel (Leader only) */}
+ {showSummary && isLeader && (
+ <div className="bg-info-soft border border-info/20 rounded-xl p-5 mb-6">
+ <h3 className="font-semibold text-info mb-4 flex items-center gap-2">
+ <BarChart3 className="h-5 w-5" />
+ Daily Summary
+ </h3>
+ <div className="grid grid-cols-3 gap-4 mb-4">
+ <div className="bg-background rounded-lg p-3 text-center">
+ <div className="text-2xl font-bold text-success">{stats.submitted}</div>
+ <div className="text-xs text-muted-foreground">Submitted</div>
+ </div>
+ <div className="bg-background rounded-lg p-3 text-center">
+ <div className="text-2xl font-bold text-muted-foreground">{stats.pending}</div>
+ <div className="text-xs text-muted-foreground">Pending</div>
+ </div>
+ <div className="bg-background rounded-lg p-3 text-center">
+ <div className="text-2xl font-bold text-destructive">{stats.blockers.length}</div>
+ <div className="text-xs text-muted-foreground">Blockers</div>
+ </div>
+ </div>
+ {stats.blockers.length > 0 && (
+ <div>
+ <h4 className="text-sm font-medium text-info mb-2">All Blockers:</h4>
+ <ul className="space-y-1">
+ {stats.blockers.map((blocker, i) => (
+ <li key={i} className="flex items-center gap-2 text-sm text-destructive">
+ <AlertTriangle className="h-3.5 w-3.5" />
+ {blocker}
+ </li>
+ ))}
+ </ul>
+ </div>
+ )}
+ </div>
+ )}
 
-          {/* Standups List */}
-          <div className="space-y-4">
-            {members.map((member) => {
-              const standup = getUserStandup(member.id);
-              const isCurrentUser = member.id === currentUserId;
-              
-              return (
-                <div
-                  key={member.id}
-                  className={`bg-white border rounded-xl p-5 transition-all ${
-                    standup?.status === 'published'
-                      ? 'border-green-200'
-                      : standup?.status === 'draft'
-                      ? 'border-yellow-200'
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Avatar */}
-                    <div className="relative">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-medium ${
-                        standup?.status === 'published' ? 'bg-green-100 text-green-700' :
-                        standup?.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-gray-100 text-gray-500'
-                      }`}>
-                        {member.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                      </div>
-                      {standup?.status === 'published' && (
-                        <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                          <CheckCircle className="h-3 w-3 text-white" />
-                        </span>
-                      )}
-                      {member.role === 'lead' && (
-                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center">
-                          <Crown className="h-3 w-3 text-yellow-800" />
-                        </span>
-                      )}
-                    </div>
+ {/* Standups List */}
+ <div className="space-y-4">
+ {members.map((member) => {
+ const standup = getUserStandup(member.id);
+ const isCurrentUser = member.id === currentUserId;
+ 
+ return (
+ <div
+ key={member.id}
+ className={`bg-background border rounded-xl p-5 transition-all ${
+ standup?.status === 'published'
+ ? 'border-success/30'
+ : standup?.status === 'draft'
+ ? 'border-warning/30'
+ : 'border-border'
+ }`}
+ >
+ <div className="flex items-start gap-4">
+ {/* Avatar */}
+ <div className="relative">
+ <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-medium ${
+ standup?.status === 'published' ? 'bg-success-soft text-success' :
+ standup?.status === 'draft' ? 'bg-warning-soft text-warning' :
+ 'bg-muted text-muted-foreground'
+ }`}>
+ {member.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+ </div>
+ {standup?.status === 'published' && (
+ <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-success rounded-full flex items-center justify-center">
+ <CheckCircle className="h-3 w-3 text-white" />
+ </span>
+ )}
+ {member.role === 'lead' && (
+ <span className="absolute -top-1 -right-1 w-5 h-5 bg-warning/50 rounded-full flex items-center justify-center">
+ <Crown className="h-3 w-3 text-warning" />
+ </span>
+ )}
+ </div>
 
-                    {/* Content */}
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-semibold text-gray-900">
-                            {member.name}
-                            {isCurrentUser && <span className="text-blue-600 text-sm ml-2">(You)</span>}
-                          </h3>
-                          {standup?.status === 'published' && (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                              Published
-                            </span>
-                          )}
-                          {standup?.status === 'draft' && (
-                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
-                              Draft
-                            </span>
-                          )}
-                          {!standup && (
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-medium rounded-full">
-                              Pending
-                            </span>
-                          )}
-                          {standup && getWrittenByName(standup) && getWrittenById(standup) !== getStandupUserId(standup) && (
-                            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full flex items-center gap-1">
-                              <Crown className="h-3 w-3" />
-                              Written by {getWrittenByName(standup)}
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          {standup && (
-                            <span className="text-xs text-gray-500">
-                              {formatTime(standup.updatedAt)}
-                            </span>
-                          )}
-                          {/* Edit button for own standup */}
-                          {isCurrentUser && standup && isToday && (
-                            <button
-                              onClick={() => handleOpenForm()}
-                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            >
-                              <Edit3 className="h-4 w-4" />
-                            </button>
-                          )}
-                          {/* Leader can write for others */}
-                          {isLeader && !isCurrentUser && isToday && (
-                            <button
-                              onClick={() => handleOpenForm(member.id)}
-                              className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                              title="Write standup for this member"
-                            >
-                              <Edit3 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
+ {/* Content */}
+ <div className="flex-1">
+ <div className="flex items-center justify-between mb-2">
+ <div className="flex items-center gap-3">
+ <h3 className="font-semibold text-foreground">
+ {member.name}
+ {isCurrentUser && <span className="text-brand text-sm ml-2">(You)</span>}
+ </h3>
+ {standup?.status === 'published' && (
+ <span className="px-2 py-0.5 bg-success-soft text-success text-xs font-medium rounded-full">
+ Published
+ </span>
+ )}
+ {standup?.status === 'draft' && (
+ <span className="px-2 py-0.5 bg-warning-soft text-warning text-xs font-medium rounded-full">
+ Draft
+ </span>
+ )}
+ {!standup && (
+ <span className="px-2 py-0.5 bg-muted text-muted-foreground text-xs font-medium rounded-full">
+ Pending
+ </span>
+ )}
+ {standup && getWrittenByName(standup) && getWrittenById(standup) !== getStandupUserId(standup) && (
+ <span className="px-2 py-0.5 bg-info-soft text-info text-xs font-medium rounded-full flex items-center gap-1">
+ <Crown className="h-3 w-3" />
+ Written by {getWrittenByName(standup)}
+ </span>
+ )}
+ </div>
+ 
+ <div className="flex items-center gap-2">
+ {standup && (
+ <span className="text-xs text-muted-foreground">
+ {formatTime(standup.updatedAt)}
+ </span>
+ )}
+ {/* Edit button for own standup */}
+ {isCurrentUser && standup && isToday && (
+ <button
+ onClick={() => handleOpenForm()}
+ className="p-1.5 text-muted-foreground hover:text-brand hover:bg-brand-surface rounded-lg transition-colors"
+ >
+ <Edit3 className="h-4 w-4" />
+ </button>
+ )}
+ {/* Leader can write for others */}
+ {isLeader && !isCurrentUser && isToday && (
+ <button
+ onClick={() => handleOpenForm(member.id)}
+ className="p-1.5 text-muted-foreground hover:text-info hover:bg-info-soft rounded-lg transition-colors"
+ title="Write standup for this member"
+ >
+ <Edit3 className="h-4 w-4" />
+ </button>
+ )}
+ </div>
+ </div>
 
-                      {/* Standup Content */}
-                      {standup ? (
-                        <div className="space-y-2 text-sm">
-                          {standup.yesterday && (
-                            <div className="flex items-start gap-2">
-                              <span className="text-gray-500 w-20 shrink-0">Yesterday:</span>
-                              <span className="text-gray-700">{standup.yesterday}</span>
-                            </div>
-                          )}
-                          <div className="flex items-start gap-2">
-                            <span className="text-gray-500 w-20 shrink-0">Today:</span>
-                            <span className="text-gray-700">{standup.today}</span>
-                          </div>
-                          {standup.blockers.length > 0 && (
-                            <div className="flex items-start gap-2">
-                              <span className="text-red-500 w-20 shrink-0">Blockers:</span>
-                              <div className="space-y-1">
-                                {standup.blockers.map((blocker, i) => (
-                                  <div key={i} className="flex items-center gap-2 text-red-600">
-                                    <AlertTriangle className="h-3.5 w-3.5" />
-                                    <span>{blocker}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-400 italic">No standup submitted yet</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+ {/* Standup Content */}
+ {standup ? (
+ <div className="space-y-2 text-sm">
+ {standup.yesterday && (
+ <div className="flex items-start gap-2">
+ <span className="text-muted-foreground w-20 shrink-0">Yesterday:</span>
+ <span className="text-foreground">{standup.yesterday}</span>
+ </div>
+ )}
+ <div className="flex items-start gap-2">
+ <span className="text-muted-foreground w-20 shrink-0">Today:</span>
+ <span className="text-foreground">{standup.today}</span>
+ </div>
+ {standup.blockers.length > 0 && (
+ <div className="flex items-start gap-2">
+ <span className="text-destructive w-20 shrink-0">Blockers:</span>
+ <div className="space-y-1">
+ {standup.blockers.map((blocker, i) => (
+ <div key={i} className="flex items-center gap-2 text-destructive">
+ <AlertTriangle className="h-3.5 w-3.5" />
+ <span>{blocker}</span>
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
+ </div>
+ ) : (
+ <p className="text-sm text-muted-foreground italic">No standup submitted yet</p>
+ )}
+ </div>
+ </div>
+ </div>
+ );
+ })}
+ </div>
+ </div>
+ </div>
 
-      {/* Standup Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {editingStandup ? 'Edit Standup' : 'Write Standup'}
-                {selectedMemberId && (
-                  <span className="text-purple-600 text-sm ml-2">
-                    (for {members.find(m => m.id === selectedMemberId)?.name})
-                  </span>
-                )}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowForm(false);
-                  setFormData({ yesterday: '', today: '', blockers: '' });
-                  setEditingStandup(null);
-                  setSelectedMemberId(null);
-                }}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  What did you do yesterday? <span className="text-gray-400">(optional)</span>
-                </label>
-                <textarea
-                  value={formData.yesterday}
-                  onChange={(e) => setFormData(prev => ({ ...prev, yesterday: e.target.value }))}
-                  placeholder="Completed authentication API, Fixed bugs..."
-                  rows={2}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  What will you do today? <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={formData.today}
-                  onChange={(e) => setFormData(prev => ({ ...prev, today: e.target.value }))}
-                  placeholder="Working on task board UI, Code review..."
-                  rows={2}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Any blockers? <span className="text-gray-400">(one per line)</span>
-                </label>
-                <textarea
-                  value={formData.blockers}
-                  onChange={(e) => setFormData(prev => ({ ...prev, blockers: e.target.value }))}
-                  placeholder="Waiting for backend API&#10;Need access to production logs"
-                  rows={2}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-              <button
-                onClick={() => handleSaveStandup('draft')}
-                disabled={isSaving || !formData.today.trim()}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium disabled:opacity-50"
-              >
-                <Save className="h-4 w-4" />
-                Save Draft
-              </button>
-              <button
-                onClick={() => handleSaveStandup('published')}
-                disabled={isSaving || !formData.today.trim()}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
-              >
-                <Send className="h-4 w-4" />
-                {isSaving ? 'Saving...' : 'Publish'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+ {/* Standup Form Modal */}
+ {showForm && (
+ <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+ <div className="bg-background rounded-xl shadow-xl w-full max-w-lg">
+ <div className="flex items-center justify-between p-4 border-b border-border">
+ <h3 className="text-lg font-semibold text-foreground">
+ {editingStandup ? 'Edit Standup' : 'Write Standup'}
+ {selectedMemberId && (
+ <span className="text-info text-sm ml-2">
+ (for {members.find(m => m.id === selectedMemberId)?.name})
+ </span>
+ )}
+ </h3>
+ <button
+ onClick={() => {
+ setShowForm(false);
+ setFormData({ yesterday: '', today: '', blockers: '' });
+ setEditingStandup(null);
+ setSelectedMemberId(null);
+ }}
+ className="p-1 text-muted-foreground hover:text-muted-foreground rounded"
+ >
+ <X className="h-5 w-5" />
+ </button>
+ </div>
+ 
+ <div className="p-4 space-y-4">
+ <div>
+ <label className="block text-sm font-medium text-foreground mb-1">
+ What did you do yesterday? <span className="text-muted-foreground">(optional)</span>
+ </label>
+ <textarea
+ value={formData.yesterday}
+ onChange={(e) => setFormData(prev => ({ ...prev, yesterday: e.target.value }))}
+ placeholder="Completed authentication API, Fixed bugs..."
+ rows={2}
+ className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+ />
+ </div>
+ 
+ <div>
+ <label className="block text-sm font-medium text-foreground mb-1">
+ What will you do today? <span className="text-destructive">*</span>
+ </label>
+ <textarea
+ value={formData.today}
+ onChange={(e) => setFormData(prev => ({ ...prev, today: e.target.value }))}
+ placeholder="Working on task board UI, Code review..."
+ rows={2}
+ className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+ />
+ </div>
+ 
+ <div>
+ <label className="block text-sm font-medium text-foreground mb-1">
+ Any blockers? <span className="text-muted-foreground">(one per line)</span>
+ </label>
+ <textarea
+ value={formData.blockers}
+ onChange={(e) => setFormData(prev => ({ ...prev, blockers: e.target.value }))}
+ placeholder="Waiting for backend API&#10;Need access to production logs"
+ rows={2}
+ className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+ />
+ </div>
+ </div>
+ 
+ <div className="flex items-center justify-end gap-3 p-4 border-t border-border bg-muted/50 rounded-b-xl">
+ <button
+ onClick={() => handleSaveStandup('draft')}
+ disabled={isSaving || !formData.today.trim()}
+ className="flex items-center gap-2 px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted transition-colors text-sm font-medium disabled:opacity-50"
+ >
+ <Save className="h-4 w-4" />
+ Save Draft
+ </button>
+ <button
+ onClick={() => handleSaveStandup('published')}
+ disabled={isSaving || !formData.today.trim()}
+ className="flex items-center gap-2 px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand-strong transition-colors text-sm font-medium disabled:opacity-50"
+ >
+ <Send className="h-4 w-4" />
+ {isSaving ? 'Saving...' : 'Publish'}
+ </button>
+ </div>
+ </div>
+ </div>
+ )}
+ </div>
+ );
 }

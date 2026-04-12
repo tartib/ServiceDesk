@@ -8,606 +8,606 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+ Card,
+ CardContent,
+ CardHeader,
+ CardTitle,
 } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+ Dialog,
+ DialogContent,
+ DialogHeader,
+ DialogTitle,
+ DialogDescription,
+ DialogFooter,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
-  ArrowLeft,
-  Clock,
-  User,
-  Calendar,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  FileText,
-  Play,
-  UserCheck,
-  Loader2,
+ ArrowLeft,
+ Clock,
+ User,
+ Calendar,
+ CheckCircle,
+ XCircle,
+ AlertTriangle,
+ FileText,
+ Play,
+ UserCheck,
+ Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useServiceCatalogItem } from '@/hooks/useServiceCatalog';
 import {
-  useServiceRequest,
-  useUpdateServiceRequestStatus,
-  useApproveServiceRequest,
-  useAssignServiceRequest,
-  useFulfillServiceRequest,
-  ServiceRequestStatus,
-  getStatusColor,
-  getPriorityColor,
+ useServiceRequest,
+ useUpdateServiceRequestStatus,
+ useApproveServiceRequest,
+ useAssignServiceRequest,
+ useFulfillServiceRequest,
+ ServiceRequestStatus,
+ getStatusColor,
+ getPriorityColor,
 } from '@/hooks/useServiceRequests';
 
 export default function ServiceRequestDetailPage() {
-  const params = useParams();
-  const { locale } = useLanguage();
-  const { user } = useAuthStore();
-  const id = params.id as string;
+ const params = useParams();
+ const { locale } = useLanguage();
+ const { user } = useAuthStore();
+ const id = params.id as string;
 
-  const { data: request, isLoading, error, refetch } = useServiceRequest(id);
-  const { data: catalogService } = useServiceCatalogItem(request?.service_id || '');
+ const { data: request, isLoading, error, refetch } = useServiceRequest(id);
+ const { data: catalogService } = useServiceCatalogItem(request?.service_id || '');
 
-  // Build lookup map: field_id → { label, label_ar, type }
-  const fieldDefs = useMemo(() => {
-    const map = new Map<string, { label: string; label_ar?: string; type: string }>();
-    const svc = catalogService as { form?: Array<{ field_id: string; label: string; label_ar?: string; type: string }> } | undefined;
-    if (svc?.form) {
-      svc.form.forEach((f) => map.set(f.field_id, { label: f.label, label_ar: f.label_ar, type: f.type }));
-    }
-    return map;
-  }, [catalogService]);
+ // Build lookup map: field_id → { label, label_ar, type }
+ const fieldDefs = useMemo(() => {
+ const map = new Map<string, { label: string; label_ar?: string; type: string }>();
+ const svc = catalogService as { form?: Array<{ field_id: string; label: string; label_ar?: string; type: string }> } | undefined;
+ if (svc?.form) {
+ svc.form.forEach((f) => map.set(f.field_id, { label: f.label, label_ar: f.label_ar, type: f.type }));
+ }
+ return map;
+ }, [catalogService]);
 
-  const updateStatus = useUpdateServiceRequestStatus();
-  const approveRequest = useApproveServiceRequest();
-  const assignRequest = useAssignServiceRequest();
-  const fulfillRequest = useFulfillServiceRequest();
+ const updateStatus = useUpdateServiceRequestStatus();
+ const approveRequest = useApproveServiceRequest();
+ const assignRequest = useAssignServiceRequest();
+ const fulfillRequest = useFulfillServiceRequest();
 
-  // Modal state
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [showFulfillDialog, setShowFulfillDialog] = useState(false);
-  const [fulfillNotes, setFulfillNotes] = useState('');
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
+ // Modal state
+ const [showRejectDialog, setShowRejectDialog] = useState(false);
+ const [rejectReason, setRejectReason] = useState('');
+ const [showFulfillDialog, setShowFulfillDialog] = useState(false);
+ const [fulfillNotes, setFulfillNotes] = useState('');
+ const [showCancelDialog, setShowCancelDialog] = useState(false);
 
-  const statusLabels: Record<ServiceRequestStatus, { en: string; ar: string }> = {
-    [ServiceRequestStatus.SUBMITTED]: { en: 'Submitted', ar: 'مقدم' },
-    [ServiceRequestStatus.PENDING_APPROVAL]: { en: 'Pending Approval', ar: 'بانتظار الموافقة' },
-    [ServiceRequestStatus.APPROVED]: { en: 'Approved', ar: 'موافق عليه' },
-    [ServiceRequestStatus.REJECTED]: { en: 'Rejected', ar: 'مرفوض' },
-    [ServiceRequestStatus.IN_PROGRESS]: { en: 'In Progress', ar: 'قيد التنفيذ' },
-    [ServiceRequestStatus.ON_HOLD]: { en: 'On Hold', ar: 'معلق' },
-    [ServiceRequestStatus.FULFILLED]: { en: 'Fulfilled', ar: 'منجز' },
-    [ServiceRequestStatus.CANCELLED]: { en: 'Cancelled', ar: 'ملغي' },
-  };
+ const statusLabels: Record<ServiceRequestStatus, { en: string; ar: string }> = {
+ [ServiceRequestStatus.SUBMITTED]: { en: 'Submitted', ar: 'مقدم' },
+ [ServiceRequestStatus.PENDING_APPROVAL]: { en: 'Pending Approval', ar: 'بانتظار الموافقة' },
+ [ServiceRequestStatus.APPROVED]: { en: 'Approved', ar: 'موافق عليه' },
+ [ServiceRequestStatus.REJECTED]: { en: 'Rejected', ar: 'مرفوض' },
+ [ServiceRequestStatus.IN_PROGRESS]: { en: 'In Progress', ar: 'قيد التنفيذ' },
+ [ServiceRequestStatus.ON_HOLD]: { en: 'On Hold', ar: 'معلق' },
+ [ServiceRequestStatus.FULFILLED]: { en: 'Fulfilled', ar: 'منجز' },
+ [ServiceRequestStatus.CANCELLED]: { en: 'Cancelled', ar: 'ملغي' },
+ };
 
-  const handleApprove = async () => {
-    if (!request || !user) return;
-    await approveRequest.mutateAsync({
-      id: request.request_id,
-      decision: 'approve',
-      approver_id: user.id || '',
-      approver_name: user.name || 'Unknown',
-    });
-    refetch();
-  };
+ const handleApprove = async () => {
+ if (!request || !user) return;
+ await approveRequest.mutateAsync({
+ id: request.request_id,
+ decision: 'approve',
+ approver_id: user.id || '',
+ approver_name: user.name || 'Unknown',
+ });
+ refetch();
+ };
 
-  const handleReject = async () => {
-    if (!request || !user) return;
-    await approveRequest.mutateAsync({
-      id: request.request_id,
-      decision: 'reject',
-      approver_id: user.id || '',
-      approver_name: user.name || 'Unknown',
-      comments: rejectReason,
-    });
-    setShowRejectDialog(false);
-    setRejectReason('');
-    refetch();
-  };
+ const handleReject = async () => {
+ if (!request || !user) return;
+ await approveRequest.mutateAsync({
+ id: request.request_id,
+ decision: 'reject',
+ approver_id: user.id || '',
+ approver_name: user.name || 'Unknown',
+ comments: rejectReason,
+ });
+ setShowRejectDialog(false);
+ setRejectReason('');
+ refetch();
+ };
 
-  const handleAssign = async () => {
-    if (!request || !user) return;
-    await assignRequest.mutateAsync({
-      id: request.request_id,
-      technician_id: user.id || '',
-      name: user.name || 'Unknown',
-      email: user.email || '',
-    });
-    refetch();
-  };
+ const handleAssign = async () => {
+ if (!request || !user) return;
+ await assignRequest.mutateAsync({
+ id: request.request_id,
+ technician_id: user.id || '',
+ name: user.name || 'Unknown',
+ email: user.email || '',
+ });
+ refetch();
+ };
 
-  const handleStartWork = async () => {
-    if (!request || !user) return;
-    await updateStatus.mutateAsync({
-      id: request.request_id,
-      status: ServiceRequestStatus.IN_PROGRESS,
-      user_id: user.id || '',
-      user_name: user.name || 'Unknown',
-    });
-    refetch();
-  };
+ const handleStartWork = async () => {
+ if (!request || !user) return;
+ await updateStatus.mutateAsync({
+ id: request.request_id,
+ status: ServiceRequestStatus.IN_PROGRESS,
+ user_id: user.id || '',
+ user_name: user.name || 'Unknown',
+ });
+ refetch();
+ };
 
-  const handleFulfill = async () => {
-    if (!request || !user) return;
-    await fulfillRequest.mutateAsync({
-      id: request.request_id,
-      fulfilled_by: user.id || '',
-      fulfilled_by_name: user.name || 'Unknown',
-      notes: fulfillNotes || undefined,
-    });
-    setShowFulfillDialog(false);
-    setFulfillNotes('');
-    refetch();
-  };
+ const handleFulfill = async () => {
+ if (!request || !user) return;
+ await fulfillRequest.mutateAsync({
+ id: request.request_id,
+ fulfilled_by: user.id || '',
+ fulfilled_by_name: user.name || 'Unknown',
+ notes: fulfillNotes || undefined,
+ });
+ setShowFulfillDialog(false);
+ setFulfillNotes('');
+ refetch();
+ };
 
-  const handleCancel = async () => {
-    if (!request || !user) return;
-    await updateStatus.mutateAsync({
-      id: request.request_id,
-      status: ServiceRequestStatus.CANCELLED,
-      user_id: user.id || '',
-      user_name: user.name || 'Unknown',
-    });
-    setShowCancelDialog(false);
-    refetch();
-  };
+ const handleCancel = async () => {
+ if (!request || !user) return;
+ await updateStatus.mutateAsync({
+ id: request.request_id,
+ status: ServiceRequestStatus.CANCELLED,
+ user_id: user.id || '',
+ user_name: user.name || 'Unknown',
+ });
+ setShowCancelDialog(false);
+ refetch();
+ };
 
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+ if (isLoading) {
+ return (
+ <DashboardLayout>
+ <div className="flex justify-center items-center h-64">
+ <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+ </div>
+ </DashboardLayout>
+ );
+ }
 
-  if (error || !request) {
-    return (
-      <DashboardLayout>
-        <div className="container mx-auto py-6">
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">
-                {locale === 'ar' ? 'الطلب غير موجود' : 'Request not found'}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {locale === 'ar' ? 'لم يتم العثور على الطلب المطلوب' : 'The requested service request could not be found'}
-              </p>
-              <Link href="/itsm-dashboard/service-requests">
-                <Button>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  {locale === 'ar' ? 'العودة للقائمة' : 'Back to List'}
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
-  }
+ if (error || !request) {
+ return (
+ <DashboardLayout>
+ <div className="container mx-auto py-6">
+ <Card>
+ <CardContent className="flex flex-col items-center justify-center py-12">
+ <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+ <h3 className="text-lg font-medium mb-2">
+ {locale === 'ar' ? 'الطلب غير موجود' : 'Request not found'}
+ </h3>
+ <p className="text-muted-foreground mb-4">
+ {locale === 'ar' ? 'لم يتم العثور على الطلب المطلوب' : 'The requested service request could not be found'}
+ </p>
+ <Link href="/itsm-dashboard/service-requests">
+ <Button>
+ <ArrowLeft className="h-4 w-4 mr-2" />
+ {locale === 'ar' ? 'العودة للقائمة' : 'Back to List'}
+ </Button>
+ </Link>
+ </CardContent>
+ </Card>
+ </div>
+ </DashboardLayout>
+ );
+ }
 
-  const canApprove = request.status === ServiceRequestStatus.PENDING_APPROVAL || request.status === ServiceRequestStatus.SUBMITTED;
-  const canAssign = request.status === ServiceRequestStatus.APPROVED && !request.assigned_to;
-  const canStartWork = request.status === ServiceRequestStatus.APPROVED && request.assigned_to;
-  const canFulfill = request.status === ServiceRequestStatus.IN_PROGRESS;
-  const canCancel = ![ServiceRequestStatus.FULFILLED, ServiceRequestStatus.CANCELLED, ServiceRequestStatus.REJECTED].includes(request.status);
+ const canApprove = request.status === ServiceRequestStatus.PENDING_APPROVAL || request.status === ServiceRequestStatus.SUBMITTED;
+ const canAssign = request.status === ServiceRequestStatus.APPROVED && !request.assigned_to;
+ const canStartWork = request.status === ServiceRequestStatus.APPROVED && request.assigned_to;
+ const canFulfill = request.status === ServiceRequestStatus.IN_PROGRESS;
+ const canCancel = ![ServiceRequestStatus.FULFILLED, ServiceRequestStatus.CANCELLED, ServiceRequestStatus.REJECTED].includes(request.status);
 
-  return (
-    <DashboardLayout>
-      <div className="container mx-auto py-6 max-w-4xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Link href="/itsm-dashboard/service-requests">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold">{request.request_id}</h1>
-                <Badge className={getStatusColor(request.status)}>
-                  {locale === 'ar' ? statusLabels[request.status].ar : statusLabels[request.status].en}
-                </Badge>
-                <Badge className={getPriorityColor(request.priority)}>
-                  {request.priority}
-                </Badge>
-                {request.sla?.breach_flag && (
-                  <Badge variant="destructive" className="gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    SLA
-                  </Badge>
-                )}
-              </div>
-              <p className="text-muted-foreground">{request.service_name}</p>
-            </div>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {canApprove && (
-              <>
-                <Button onClick={handleApprove} className="bg-green-600 hover:bg-green-700">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  {locale === 'ar' ? 'موافقة' : 'Approve'}
-                </Button>
-                <Button onClick={() => { setShowRejectDialog(true); setRejectReason(''); }} variant="destructive">
-                  <XCircle className="h-4 w-4 mr-2" />
-                  {locale === 'ar' ? 'رفض' : 'Reject'}
-                </Button>
-              </>
-            )}
-            {canAssign && (
-              <Button onClick={handleAssign} className="bg-blue-600 hover:bg-blue-700">
-                <UserCheck className="h-4 w-4 mr-2" />
-                {locale === 'ar' ? 'تعيين لي' : 'Assign to me'}
-              </Button>
-            )}
-            {canStartWork && (
-              <Button onClick={handleStartWork} className="bg-purple-600 hover:bg-purple-700">
-                <Play className="h-4 w-4 mr-2" />
-                {locale === 'ar' ? 'بدء العمل' : 'Start Work'}
-              </Button>
-            )}
-            {canFulfill && (
-              <Button onClick={() => { setShowFulfillDialog(true); setFulfillNotes(''); }} className="bg-green-600 hover:bg-green-700">
-                <CheckCircle className="h-4 w-4 mr-2" />
-                {locale === 'ar' ? 'تنفيذ' : 'Fulfill'}
-              </Button>
-            )}
-            {canCancel && (
-              <Button onClick={() => setShowCancelDialog(true)} variant="outline" className="text-destructive">
-                {locale === 'ar' ? 'إلغاء' : 'Cancel'}
-              </Button>
-            )}
-          </div>
-        </div>
+ return (
+ <DashboardLayout>
+ <div className="container mx-auto py-6 max-w-4xl">
+ {/* Header */}
+ <div className="flex items-center justify-between mb-6">
+ <div className="flex items-center gap-4">
+ <Link href="/itsm-dashboard/service-requests">
+ <Button variant="ghost" size="icon">
+ <ArrowLeft className="h-5 w-5" />
+ </Button>
+ </Link>
+ <div>
+ <div className="flex items-center gap-3">
+ <h1 className="text-2xl font-bold">{request.request_id}</h1>
+ <Badge className={getStatusColor(request.status)}>
+ {locale === 'ar' ? statusLabels[request.status].ar : statusLabels[request.status].en}
+ </Badge>
+ <Badge className={getPriorityColor(request.priority)}>
+ {request.priority}
+ </Badge>
+ {request.sla?.breach_flag && (
+ <Badge variant="destructive" className="gap-1">
+ <AlertTriangle className="h-3 w-3" />
+ SLA
+ </Badge>
+ )}
+ </div>
+ <p className="text-muted-foreground">{request.service_name}</p>
+ </div>
+ </div>
+ <div className="flex gap-2 flex-wrap">
+ {canApprove && (
+ <>
+ <Button onClick={handleApprove} className="bg-success hover:bg-success/80">
+ <CheckCircle className="h-4 w-4 mr-2" />
+ {locale === 'ar' ? 'موافقة' : 'Approve'}
+ </Button>
+ <Button onClick={() => { setShowRejectDialog(true); setRejectReason(''); }} variant="destructive">
+ <XCircle className="h-4 w-4 mr-2" />
+ {locale === 'ar' ? 'رفض' : 'Reject'}
+ </Button>
+ </>
+ )}
+ {canAssign && (
+ <Button onClick={handleAssign} className="bg-brand hover:bg-brand-strong">
+ <UserCheck className="h-4 w-4 mr-2" />
+ {locale === 'ar' ? 'تعيين لي' : 'Assign to me'}
+ </Button>
+ )}
+ {canStartWork && (
+ <Button onClick={handleStartWork} className="bg-info hover:bg-info">
+ <Play className="h-4 w-4 mr-2" />
+ {locale === 'ar' ? 'بدء العمل' : 'Start Work'}
+ </Button>
+ )}
+ {canFulfill && (
+ <Button onClick={() => { setShowFulfillDialog(true); setFulfillNotes(''); }} className="bg-success hover:bg-success/80">
+ <CheckCircle className="h-4 w-4 mr-2" />
+ {locale === 'ar' ? 'تنفيذ' : 'Fulfill'}
+ </Button>
+ )}
+ {canCancel && (
+ <Button onClick={() => setShowCancelDialog(true)} variant="outline" className="text-destructive">
+ {locale === 'ar' ? 'إلغاء' : 'Cancel'}
+ </Button>
+ )}
+ </div>
+ </div>
 
-        <div className="grid gap-6">
-          {/* Request Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{locale === 'ar' ? 'تفاصيل الطلب' : 'Request Details'}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'الخدمة' : 'Service'}</p>
-                  <p className="font-medium">{request.service_name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'معرف الخدمة' : 'Service ID'}</p>
-                  <p className="font-medium">{request.service_id}</p>
-                </div>
-              </div>
-              {request.form_data && Object.keys(request.form_data).length > 0 && (() => {
-                const entries = Object.entries(request.form_data);
-                const justification = entries.find(([k]) => k === 'justification');
-                const fields = entries.filter(([k]) => k !== 'justification');
+ <div className="grid gap-6">
+ {/* Request Details */}
+ <Card>
+ <CardHeader>
+ <CardTitle>{locale === 'ar' ? 'تفاصيل الطلب' : 'Request Details'}</CardTitle>
+ </CardHeader>
+ <CardContent className="space-y-4">
+ <div className="grid grid-cols-2 gap-4">
+ <div>
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'الخدمة' : 'Service'}</p>
+ <p className="font-medium">{request.service_name}</p>
+ </div>
+ <div>
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'معرف الخدمة' : 'Service ID'}</p>
+ <p className="font-medium">{request.service_id}</p>
+ </div>
+ </div>
+ {request.form_data && Object.keys(request.form_data).length > 0 && (() => {
+ const entries = Object.entries(request.form_data);
+ const justification = entries.find(([k]) => k === 'justification');
+ const fields = entries.filter(([k]) => k !== 'justification');
 
-                const formatValue = (key: string, val: unknown) => {
-                  const strVal = String(val ?? '');
-                  if (!strVal) return <span className="text-muted-foreground italic text-sm">{locale === 'ar' ? 'غير محدد' : 'N/A'}</span>;
-                  const def = fieldDefs.get(key);
-                  const type = def?.type || '';
-                  if (type === 'checkbox' || strVal === 'true' || strVal === 'false') {
-                    return strVal === 'true'
-                      ? <CheckCircle className="h-4 w-4 text-green-600" />
-                      : <XCircle className="h-4 w-4 text-muted-foreground" />;
-                  }
-                  if ((type === 'date' || type === 'datetime') && !isNaN(Date.parse(strVal))) {
-                    return <span className="text-sm font-medium">{new Date(strVal).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}</span>;
-                  }
-                  if (strVal.includes(',') && (type === 'multiselect' || type === 'multi_select')) {
-                    return (
-                      <div className="flex flex-wrap gap-1">
-                        {strVal.split(',').filter(Boolean).map((v, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs">{v.trim()}</Badge>
-                        ))}
-                      </div>
-                    );
-                  }
-                  return <span className="text-sm font-medium">{strVal}</span>;
-                };
+ const formatValue = (key: string, val: unknown) => {
+ const strVal = String(val ?? '');
+ if (!strVal) return <span className="text-muted-foreground italic text-sm">{locale === 'ar' ? 'غير محدد' : 'N/A'}</span>;
+ const def = fieldDefs.get(key);
+ const type = def?.type || '';
+ if (type === 'checkbox' || strVal === 'true' || strVal === 'false') {
+ return strVal === 'true'
+ ? <CheckCircle className="h-4 w-4 text-success" />
+ : <XCircle className="h-4 w-4 text-muted-foreground" />;
+ }
+ if ((type === 'date' || type === 'datetime') && !isNaN(Date.parse(strVal))) {
+ return <span className="text-sm font-medium">{new Date(strVal).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}</span>;
+ }
+ if (strVal.includes(',') && (type === 'multiselect' || type === 'multi_select')) {
+ return (
+ <div className="flex flex-wrap gap-1">
+ {strVal.split(',').filter(Boolean).map((v, i) => (
+ <Badge key={i} variant="secondary" className="text-xs">{v.trim()}</Badge>
+ ))}
+ </div>
+ );
+ }
+ return <span className="text-sm font-medium">{strVal}</span>;
+ };
 
-                const getLabel = (key: string) => {
-                  const def = fieldDefs.get(key);
-                  if (def) return locale === 'ar' ? (def.label_ar || def.label) : def.label;
-                  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                };
+ const getLabel = (key: string) => {
+ const def = fieldDefs.get(key);
+ if (def) return locale === 'ar' ? (def.label_ar || def.label) : def.label;
+ return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+ };
 
-                return (
-                  <div className="border-t pt-4 space-y-4">
-                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                      {locale === 'ar' ? 'بيانات النموذج' : 'Form Data'}
-                    </p>
-                    {fields.length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {fields.map(([key, value]) => (
-                          <div key={key} className="bg-muted/50 border rounded-lg p-3">
-                            <p className="text-xs text-muted-foreground mb-1">{getLabel(key)}</p>
-                            {formatValue(key, value)}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {justification && String(justification[1]).trim() && (
-                      <div className="bg-muted/50 border rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">
-                          {locale === 'ar' ? 'سبب الطلب' : 'Justification'}
-                        </p>
-                        <p className="text-sm font-medium whitespace-pre-wrap">{String(justification[1])}</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </CardContent>
-          </Card>
+ return (
+ <div className="border-t pt-4 space-y-4">
+ <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+ {locale === 'ar' ? 'بيانات النموذج' : 'Form Data'}
+ </p>
+ {fields.length > 0 && (
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ {fields.map(([key, value]) => (
+ <div key={key} className="bg-muted/50 border rounded-lg p-3">
+ <p className="text-xs text-muted-foreground mb-1">{getLabel(key)}</p>
+ {formatValue(key, value)}
+ </div>
+ ))}
+ </div>
+ )}
+ {justification && String(justification[1]).trim() && (
+ <div className="bg-muted/50 border rounded-lg p-3">
+ <p className="text-xs text-muted-foreground mb-1">
+ {locale === 'ar' ? 'سبب الطلب' : 'Justification'}
+ </p>
+ <p className="text-sm font-medium whitespace-pre-wrap">{String(justification[1])}</p>
+ </div>
+ )}
+ </div>
+ );
+ })()}
+ </CardContent>
+ </Card>
 
-          {/* Requester Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{locale === 'ar' ? 'معلومات مقدم الطلب' : 'Requester Information'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'الاسم' : 'Name'}</p>
-                    <p className="font-medium">{request.requester.name}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'البريد الإلكتروني' : 'Email'}</p>
-                  <p className="font-medium">{request.requester.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'القسم' : 'Department'}</p>
-                  <p className="font-medium">{request.requester.department}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+ {/* Requester Info */}
+ <Card>
+ <CardHeader>
+ <CardTitle>{locale === 'ar' ? 'معلومات مقدم الطلب' : 'Requester Information'}</CardTitle>
+ </CardHeader>
+ <CardContent>
+ <div className="grid grid-cols-2 gap-4">
+ <div className="flex items-center gap-2">
+ <User className="h-4 w-4 text-muted-foreground" />
+ <div>
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'الاسم' : 'Name'}</p>
+ <p className="font-medium">{request.requester.name}</p>
+ </div>
+ </div>
+ <div>
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'البريد الإلكتروني' : 'Email'}</p>
+ <p className="font-medium">{request.requester.email}</p>
+ </div>
+ <div>
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'القسم' : 'Department'}</p>
+ <p className="font-medium">{request.requester.department}</p>
+ </div>
+ </div>
+ </CardContent>
+ </Card>
 
-          {/* Assignment Info */}
-          {request.assigned_to && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{locale === 'ar' ? 'معلومات التعيين' : 'Assignment Information'}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'معين إلى' : 'Assigned To'}</p>
-                      <p className="font-medium">{request.assigned_to.name}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'البريد الإلكتروني' : 'Email'}</p>
-                    <p className="font-medium">{request.assigned_to.email}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+ {/* Assignment Info */}
+ {request.assigned_to && (
+ <Card>
+ <CardHeader>
+ <CardTitle>{locale === 'ar' ? 'معلومات التعيين' : 'Assignment Information'}</CardTitle>
+ </CardHeader>
+ <CardContent>
+ <div className="grid grid-cols-2 gap-4">
+ <div className="flex items-center gap-2">
+ <UserCheck className="h-4 w-4 text-muted-foreground" />
+ <div>
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'معين إلى' : 'Assigned To'}</p>
+ <p className="font-medium">{request.assigned_to.name}</p>
+ </div>
+ </div>
+ <div>
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'البريد الإلكتروني' : 'Email'}</p>
+ <p className="font-medium">{request.assigned_to.email}</p>
+ </div>
+ </div>
+ </CardContent>
+ </Card>
+ )}
 
-          {/* SLA Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{locale === 'ar' ? 'اتفاقية مستوى الخدمة' : 'SLA Information'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'موعد الاستجابة' : 'Response Due'}</p>
-                    <p className="font-medium">
-                      {new Date(request.sla.response_due).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'موعد الحل' : 'Resolution Due'}</p>
-                    <p className="font-medium">
-                      {new Date(request.sla.resolution_due).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              {request.sla.breach_flag && (
-                <div className="mt-4 p-3 bg-red-50 dark:bg-red-950 rounded-lg flex items-center gap-2 text-red-600">
-                  <AlertTriangle className="h-5 w-5" />
-                  <span>{locale === 'ar' ? 'تم تجاوز اتفاقية مستوى الخدمة' : 'SLA has been breached'}</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+ {/* SLA Info */}
+ <Card>
+ <CardHeader>
+ <CardTitle>{locale === 'ar' ? 'اتفاقية مستوى الخدمة' : 'SLA Information'}</CardTitle>
+ </CardHeader>
+ <CardContent>
+ <div className="grid grid-cols-2 gap-4">
+ <div className="flex items-center gap-2">
+ <Clock className="h-4 w-4 text-muted-foreground" />
+ <div>
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'موعد الاستجابة' : 'Response Due'}</p>
+ <p className="font-medium">
+ {new Date(request.sla.response_due).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ </p>
+ </div>
+ </div>
+ <div className="flex items-center gap-2">
+ <Calendar className="h-4 w-4 text-muted-foreground" />
+ <div>
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'موعد الحل' : 'Resolution Due'}</p>
+ <p className="font-medium">
+ {new Date(request.sla.resolution_due).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ </p>
+ </div>
+ </div>
+ </div>
+ {request.sla.breach_flag && (
+ <div className="mt-4 p-3 bg-destructive-soft rounded-lg flex items-center gap-2 text-destructive">
+ <AlertTriangle className="h-5 w-5" />
+ <span>{locale === 'ar' ? 'تم تجاوز اتفاقية مستوى الخدمة' : 'SLA has been breached'}</span>
+ </div>
+ )}
+ </CardContent>
+ </Card>
 
-          {/* Timeline */}
-          {request.timeline && request.timeline.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{locale === 'ar' ? 'سجل الأحداث' : 'Timeline'}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {request.timeline.map((event, index) => (
-                    <div key={index} className="flex gap-4 items-start">
-                      <div className="w-2 h-2 mt-2 rounded-full bg-primary"></div>
-                      <div className="flex-1">
-                        <p className="font-medium">{event.event}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {event.by_name || event.by} • {new Date(event.time).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+ {/* Timeline */}
+ {request.timeline && request.timeline.length > 0 && (
+ <Card>
+ <CardHeader>
+ <CardTitle>{locale === 'ar' ? 'سجل الأحداث' : 'Timeline'}</CardTitle>
+ </CardHeader>
+ <CardContent>
+ <div className="space-y-4">
+ {request.timeline.map((event, index) => (
+ <div key={index} className="flex gap-4 items-start">
+ <div className="w-2 h-2 mt-2 rounded-full bg-brand"></div>
+ <div className="flex-1">
+ <p className="font-medium">{event.event}</p>
+ <p className="text-sm text-muted-foreground">
+ {event.by_name || event.by} • {new Date(event.time).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ </p>
+ </div>
+ </div>
+ ))}
+ </div>
+ </CardContent>
+ </Card>
+ )}
 
-          {/* Fulfillment Info */}
-          {request.fulfillment && request.fulfillment.fulfilled_at && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{locale === 'ar' ? 'معلومات التنفيذ' : 'Fulfillment Information'}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'تم التنفيذ بواسطة' : 'Fulfilled By'}</p>
-                    <p className="font-medium">{request.fulfillment.fulfilled_by_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'تاريخ التنفيذ' : 'Fulfilled At'}</p>
-                    <p className="font-medium">
-                      {new Date(request.fulfillment.fulfilled_at).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
-                    </p>
-                  </div>
-                </div>
-                {request.fulfillment.notes && (
-                  <div className="mt-4">
-                    <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'ملاحظات' : 'Notes'}</p>
-                    <p className="mt-1 p-3 bg-muted rounded-lg">{request.fulfillment.notes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
+ {/* Fulfillment Info */}
+ {request.fulfillment && request.fulfillment.fulfilled_at && (
+ <Card>
+ <CardHeader>
+ <CardTitle>{locale === 'ar' ? 'معلومات التنفيذ' : 'Fulfillment Information'}</CardTitle>
+ </CardHeader>
+ <CardContent>
+ <div className="grid grid-cols-2 gap-4">
+ <div>
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'تم التنفيذ بواسطة' : 'Fulfilled By'}</p>
+ <p className="font-medium">{request.fulfillment.fulfilled_by_name}</p>
+ </div>
+ <div>
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'تاريخ التنفيذ' : 'Fulfilled At'}</p>
+ <p className="font-medium">
+ {new Date(request.fulfillment.fulfilled_at).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ </p>
+ </div>
+ </div>
+ {request.fulfillment.notes && (
+ <div className="mt-4">
+ <p className="text-sm text-muted-foreground">{locale === 'ar' ? 'ملاحظات' : 'Notes'}</p>
+ <p className="mt-1 p-3 bg-muted rounded-lg">{request.fulfillment.notes}</p>
+ </div>
+ )}
+ </CardContent>
+ </Card>
+ )}
+ </div>
+ </div>
 
-      {/* Reject Dialog */}
-      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{locale === 'ar' ? 'رفض الطلب' : 'Reject Request'}</DialogTitle>
-            <DialogDescription>
-              {locale === 'ar'
-                ? `رفض الطلب ${request.request_id}`
-                : `Reject request ${request.request_id}`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Label>{locale === 'ar' ? 'سبب الرفض' : 'Rejection Reason'}</Label>
-            <Textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder={locale === 'ar' ? 'اشرح سبب الرفض...' : 'Explain why this request is being rejected...'}
-              rows={4}
-              dir={locale === 'ar' ? 'rtl' : 'ltr'}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
-              {locale === 'ar' ? 'تراجع' : 'Go Back'}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleReject}
-              disabled={approveRequest.isPending}
-            >
-              {approveRequest.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {locale === 'ar' ? 'رفض' : 'Reject'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+ {/* Reject Dialog */}
+ <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+ <DialogContent className="sm:max-w-md">
+ <DialogHeader>
+ <DialogTitle>{locale === 'ar' ? 'رفض الطلب' : 'Reject Request'}</DialogTitle>
+ <DialogDescription>
+ {locale === 'ar'
+ ? `رفض الطلب ${request.request_id}`
+ : `Reject request ${request.request_id}`}
+ </DialogDescription>
+ </DialogHeader>
+ <div className="space-y-3 py-2">
+ <Label>{locale === 'ar' ? 'سبب الرفض' : 'Rejection Reason'}</Label>
+ <Textarea
+ value={rejectReason}
+ onChange={(e) => setRejectReason(e.target.value)}
+ placeholder={locale === 'ar' ? 'اشرح سبب الرفض...' : 'Explain why this request is being rejected...'}
+ rows={4}
+ dir={locale === 'ar' ? 'rtl' : 'ltr'}
+ />
+ </div>
+ <DialogFooter>
+ <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+ {locale === 'ar' ? 'تراجع' : 'Go Back'}
+ </Button>
+ <Button
+ variant="destructive"
+ onClick={handleReject}
+ disabled={approveRequest.isPending}
+ >
+ {approveRequest.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+ {locale === 'ar' ? 'رفض' : 'Reject'}
+ </Button>
+ </DialogFooter>
+ </DialogContent>
+ </Dialog>
 
-      {/* Fulfill Dialog */}
-      <Dialog open={showFulfillDialog} onOpenChange={setShowFulfillDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{locale === 'ar' ? 'تنفيذ الطلب' : 'Fulfill Request'}</DialogTitle>
-            <DialogDescription>
-              {locale === 'ar'
-                ? `تأكيد تنفيذ الطلب ${request.request_id}`
-                : `Confirm fulfillment of request ${request.request_id}`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Label>{locale === 'ar' ? 'ملاحظات التنفيذ' : 'Fulfillment Notes'}</Label>
-            <Textarea
-              value={fulfillNotes}
-              onChange={(e) => setFulfillNotes(e.target.value)}
-              placeholder={locale === 'ar' ? 'أضف ملاحظات حول التنفيذ...' : 'Add notes about the fulfillment...'}
-              rows={4}
-              dir={locale === 'ar' ? 'rtl' : 'ltr'}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowFulfillDialog(false)}>
-              {locale === 'ar' ? 'تراجع' : 'Go Back'}
-            </Button>
-            <Button
-              className="bg-green-600 hover:bg-green-700"
-              onClick={handleFulfill}
-              disabled={fulfillRequest.isPending}
-            >
-              {fulfillRequest.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {locale === 'ar' ? 'تنفيذ' : 'Fulfill'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+ {/* Fulfill Dialog */}
+ <Dialog open={showFulfillDialog} onOpenChange={setShowFulfillDialog}>
+ <DialogContent className="sm:max-w-md">
+ <DialogHeader>
+ <DialogTitle>{locale === 'ar' ? 'تنفيذ الطلب' : 'Fulfill Request'}</DialogTitle>
+ <DialogDescription>
+ {locale === 'ar'
+ ? `تأكيد تنفيذ الطلب ${request.request_id}`
+ : `Confirm fulfillment of request ${request.request_id}`}
+ </DialogDescription>
+ </DialogHeader>
+ <div className="space-y-3 py-2">
+ <Label>{locale === 'ar' ? 'ملاحظات التنفيذ' : 'Fulfillment Notes'}</Label>
+ <Textarea
+ value={fulfillNotes}
+ onChange={(e) => setFulfillNotes(e.target.value)}
+ placeholder={locale === 'ar' ? 'أضف ملاحظات حول التنفيذ...' : 'Add notes about the fulfillment...'}
+ rows={4}
+ dir={locale === 'ar' ? 'rtl' : 'ltr'}
+ />
+ </div>
+ <DialogFooter>
+ <Button variant="outline" onClick={() => setShowFulfillDialog(false)}>
+ {locale === 'ar' ? 'تراجع' : 'Go Back'}
+ </Button>
+ <Button
+ className="bg-success hover:bg-success/80"
+ onClick={handleFulfill}
+ disabled={fulfillRequest.isPending}
+ >
+ {fulfillRequest.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+ {locale === 'ar' ? 'تنفيذ' : 'Fulfill'}
+ </Button>
+ </DialogFooter>
+ </DialogContent>
+ </Dialog>
 
-      {/* Cancel Confirmation Dialog */}
-      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <DialogTitle>{locale === 'ar' ? 'إلغاء الطلب' : 'Cancel Request'}</DialogTitle>
-                <DialogDescription>
-                  {locale === 'ar' ? 'هذا الإجراء لا يمكن التراجع عنه' : 'This action cannot be undone'}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              {locale === 'ar'
-                ? `هل أنت متأكد من إلغاء الطلب ${request.request_id}؟`
-                : `Are you sure you want to cancel request ${request.request_id}?`}
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
-              {locale === 'ar' ? 'تراجع' : 'Go Back'}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleCancel}
-              disabled={updateStatus.isPending}
-            >
-              {updateStatus.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {locale === 'ar' ? 'إلغاء الطلب' : 'Cancel Request'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </DashboardLayout>
-  );
+ {/* Cancel Confirmation Dialog */}
+ <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+ <DialogContent className="sm:max-w-md">
+ <DialogHeader>
+ <div className="flex items-center gap-3">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive-soft">
+ <AlertTriangle className="h-5 w-5 text-destructive" />
+ </div>
+ <div>
+ <DialogTitle>{locale === 'ar' ? 'إلغاء الطلب' : 'Cancel Request'}</DialogTitle>
+ <DialogDescription>
+ {locale === 'ar' ? 'هذا الإجراء لا يمكن التراجع عنه' : 'This action cannot be undone'}
+ </DialogDescription>
+ </div>
+ </div>
+ </DialogHeader>
+ <div className="py-4">
+ <p className="text-sm text-muted-foreground">
+ {locale === 'ar'
+ ? `هل أنت متأكد من إلغاء الطلب ${request.request_id}؟`
+ : `Are you sure you want to cancel request ${request.request_id}?`}
+ </p>
+ </div>
+ <DialogFooter>
+ <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+ {locale === 'ar' ? 'تراجع' : 'Go Back'}
+ </Button>
+ <Button
+ variant="destructive"
+ onClick={handleCancel}
+ disabled={updateStatus.isPending}
+ >
+ {updateStatus.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+ {locale === 'ar' ? 'إلغاء الطلب' : 'Cancel Request'}
+ </Button>
+ </DialogFooter>
+ </DialogContent>
+ </Dialog>
+ </DashboardLayout>
+ );
 }

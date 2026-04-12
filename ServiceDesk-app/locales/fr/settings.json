@@ -21,6 +21,19 @@
     "tasks": "Tâches",
     "tasksDesc": "Affectations de tâches et mises à jour",
     "mentions": "Mentions",
-    "mentionsDesc": "Lorsque quelqu'un vous mentionne dans un commentaire"
+    "mentionsDesc": "Lorsque quelqu'un vous mentionne dans un commentaire",
+    "brandAssets": "Kit de marque et ressources",
+    "brandAssetsDescription": "Personnalisez votre logo, favicon et couleurs de marque",
+    "brandName": "Nom de la marque",
+    "logoUrl": "URL du logo",
+    "faviconUrl": "URL du favicon",
+    "primaryColor": "Couleur principale",
+    "accentColor": "Couleur secondaire",
+    "colourPalette": "Palette de couleurs",
+    "colourPaletteDescription": "Aperçu en direct des jetons de couleur du système de design",
+    "brandColours": "Marque",
+    "statusColours": "Statut",
+    "neutralColours": "Neutres",
+    "softVariant": "Doux"
   }
 }

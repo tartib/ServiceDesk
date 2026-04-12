@@ -21,6 +21,19 @@
     "tasks": "Tasks",
     "tasksDesc": "Task assignments and updates",
     "mentions": "Mentions",
-    "mentionsDesc": "When someone mentions you in a comment"
+    "mentionsDesc": "When someone mentions you in a comment",
+    "brandAssets": "Brand & Assets Kit",
+    "brandAssetsDescription": "Customize your logo, favicon, and brand colors",
+    "brandName": "Brand Name",
+    "logoUrl": "Logo URL",
+    "faviconUrl": "Favicon URL",
+    "primaryColor": "Primary Color",
+    "accentColor": "Accent Color",
+    "colourPalette": "Brand Colour Palette",
+    "colourPaletteDescription": "Live preview of your design system colour tokens",
+    "brandColours": "Brand",
+    "statusColours": "Status",
+    "neutralColours": "Neutrals",
+    "softVariant": "Soft"
   }
 }
