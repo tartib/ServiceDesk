@@ -11,6 +11,7 @@ import organizationRoutes from './organization.routes';
 import teamRoutes from './team.routes';
 import employeeRoutes from './employee.routes';
 import leaveRequestRoutes from './leaveRequest.routes';
+import brandSettingsRoutes from './brandSettings.routes';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/organizations', organizationRoutes);
 router.use('/teams', teamRoutes);
 router.use('/employees', employeeRoutes);
 router.use('/leave-requests', leaveRequestRoutes);
+router.use('/brand-settings', brandSettingsRoutes);
 
 export default router;

@@ -91,7 +91,7 @@ export default function SprintsPage() {
  const sprintData = data.data?.sprints || data.data || [];
  // Map API response to Sprint interface
  const mappedSprints: Sprint[] = sprintData.map((s: { _id?: string; id?: string; name: string; goal?: string; startDate: string; endDate: string; status: string; stats?: { totalTasks: number; completedTasks: number; totalPoints: number; completedPoints: number }; progress?: number; velocity?: number | { planned?: number; completed?: number }; team?: string[] }) => ({
- id: s.id,
+ id: s._id || s.id,
  name: s.name,
  goal: s.goal,
  startDate: s.startDate,

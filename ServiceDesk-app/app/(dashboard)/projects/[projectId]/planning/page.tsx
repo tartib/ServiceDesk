@@ -175,7 +175,7 @@ export default function SprintPlanningPage() {
  
  // Map API tasks to BacklogItem format
  const backlogItems: BacklogItem[] = backlogTasks.map((task: ApiTask) => ({
- id: task.id,
+ id: task._id || task.id,
  key: task.key || `${project?.key}-${task.number || ''}`,
  title: task.title || task.summary,
  type: (task.type?.toLowerCase() || 'task') as 'story' | 'bug' | 'task',
@@ -196,6 +196,7 @@ export default function SprintPlanningPage() {
  }, [projectId, project?.key]);
 
  const fetchSprintTasks = useCallback(async (token: string, sprintId: string) => {
+ if (!sprintId) return;
  try {
  const res = await fetch(`${API_URL}/pm/projects/${projectId}/tasks?sprintId=${sprintId}`, {
  headers: { Authorization: `Bearer ${token}` },
@@ -205,7 +206,7 @@ export default function SprintPlanningPage() {
  if (data.success) {
  const tasks = data.data?.tasks || data.data || [];
  const items: BacklogItem[] = tasks.map((task: ApiTask) => ({
- id: task.id,
+ id: task._id || task.id,
  key: task.key || `${project?.key}-${task.number || ''}`,
  title: task.title || task.summary,
  type: task.type?.toLowerCase() || 'task',
@@ -222,7 +223,7 @@ export default function SprintPlanningPage() {
  }, [projectId, project?.key]);
 
  const selectSprint = useCallback((sprintData: ApiSprint, token: string) => {
- const sprintId = sprintData.id || '';
+ const sprintId = sprintData._id || sprintData.id || '';
  setSprint({
  id: sprintId,
  name: sprintData.name,

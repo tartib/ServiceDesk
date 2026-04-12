@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { useBrandSettings, useSaveBrandSettings, useResetBrandSettings } from '@/hooks/useBrandSettings';
+import { DEFAULT_BRAND_KIT } from '@/lib/domains/settings/api';
 import {
   Settings,
   Globe,
@@ -40,46 +42,106 @@ export default function SettingsPage() {
  mentions: true,
  });
 
- const defaultBrandKit = {
-    brandName: '',
-    logoUrl: '',
-    faviconUrl: '',
-    primaryColor: '#4f46e5',
-    accentColor: '#06b6d4',
-  };
+  const { data: savedSettings } = useBrandSettings();
+  const saveMutation = useSaveBrandSettings();
+  const resetMutation = useResetBrandSettings();
 
-  const [brandKit, setBrandKit] = useState(defaultBrandKit);
+  const [brandKit, setBrandKit] = useState(DEFAULT_BRAND_KIT);
+  const [themeOverrides, setThemeOverrides] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
+  const probeRef = useRef<HTMLDivElement | null>(null);
+
+  const cssVarToHex = useCallback((token: string): string => {
+    if (themeOverrides[token]) return themeOverrides[token];
+    if (typeof window === 'undefined') return '#888888';
+    const probe = probeRef.current ?? document.createElement('div');
+    if (!probeRef.current) {
+      probe.style.display = 'none';
+      document.body.appendChild(probe);
+      probeRef.current = probe;
+    }
+    const raw = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+    if (!raw) return '#888888';
+    probe.style.color = raw;
+    const rgb = getComputedStyle(probe).color;
+    const m = rgb.match(/\d+/g);
+    if (!m) return '#888888';
+    return '#' + m.slice(0, 3).map((v) => Number(v).toString(16).padStart(2, '0')).join('');
+  }, [themeOverrides]);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
+    if (savedSettings) {
+      setBrandKit(savedSettings.brandKit);
+      setThemeOverrides(savedSettings.themeOverrides);
+      return;
+    }
+    // Offline fallback: load from localStorage
     try {
       const saved = localStorage.getItem('brandKit');
       if (saved) setBrandKit(JSON.parse(saved));
+      const savedOverrides = localStorage.getItem('themeOverrides');
+      if (savedOverrides) setThemeOverrides(JSON.parse(savedOverrides));
     } catch {}
-  }, []);
+  }, [savedSettings]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    Object.entries(themeOverrides).forEach(([token, value]) => {
+      root.style.setProperty(token, value);
+    });
+  }, [themeOverrides]);
 
   const handleBrandKitChange = useCallback(
-    (key: keyof typeof defaultBrandKit, value: string) => {
+    (key: keyof typeof DEFAULT_BRAND_KIT, value: string) => {
       setBrandKit((prev) => ({ ...prev, [key]: value }));
       setIsDirty(true);
     },
     [],
   );
 
+  const handleThemeOverride = useCallback((token: string, value: string) => {
+    setThemeOverrides((prev) => ({ ...prev, [token]: value }));
+    setIsDirty(true);
+  }, []);
+
   const handleSaveBrandKit = useCallback(() => {
-    localStorage.setItem('brandKit', JSON.stringify(brandKit));
-    setIsDirty(false);
-    toast.success(t('settings.brandSaved'));
-  }, [brandKit, t]);
+    saveMutation.mutate(
+      { brandKit, themeOverrides },
+      {
+        onSuccess: () => {
+          setIsDirty(false);
+          toast.success(t('settings.brandSaved'));
+        },
+        onError: () => {
+          // Fallback: persist to localStorage
+          localStorage.setItem('brandKit', JSON.stringify(brandKit));
+          localStorage.setItem('themeOverrides', JSON.stringify(themeOverrides));
+          setIsDirty(false);
+          toast.success(t('settings.brandSaved'));
+        },
+      },
+    );
+  }, [brandKit, themeOverrides, t, saveMutation]);
 
   const handleResetBrandKit = useCallback(() => {
-    setBrandKit(defaultBrandKit);
-    localStorage.removeItem('brandKit');
+    const root = document.documentElement;
+    Object.keys(themeOverrides).forEach((token) => {
+      root.style.removeProperty(token);
+    });
+    setBrandKit(DEFAULT_BRAND_KIT);
+    setThemeOverrides({});
     setIsDirty(false);
-    toast.info(t('settings.brandReset'));
-  }, [t]);
+    resetMutation.mutate(undefined, {
+      onSuccess: () => toast.info(t('settings.brandReset')),
+      onError: () => {
+        localStorage.removeItem('brandKit');
+        localStorage.removeItem('themeOverrides');
+        toast.info(t('settings.brandReset'));
+      },
+    });
+  }, [themeOverrides, t, resetMutation]);
 
  const handleNotificationChange = (key: keyof typeof notifications) => {
  setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -280,6 +342,14 @@ export default function SettingsPage() {
  </CardHeader>
 
  <CardContent className="space-y-6">
+ <Tabs defaultValue="customize">
+ <TabsList>
+ <TabsTrigger value="customize">{t('settings.tabCustomize')}</TabsTrigger>
+ <TabsTrigger value="palette">{t('settings.tabPalette')}</TabsTrigger>
+ </TabsList>
+
+ {/* ── Tab: Customize ── */}
+ <TabsContent value="customize" className="space-y-6 pt-2">
  <div className="grid gap-4 md:grid-cols-2">
  <div className="space-y-2">
  <Label htmlFor="brandName">{t('settings.brandName')}</Label>
@@ -318,16 +388,12 @@ export default function SettingsPage() {
  id="primaryColor"
  type="color"
  value={brandKit.primaryColor}
- onChange={(e) =>
- handleBrandKitChange('primaryColor', e.target.value)
- }
+ onChange={(e) => handleBrandKitChange('primaryColor', e.target.value)}
  className="h-10 w-16 p-1"
  />
  <Input
  value={brandKit.primaryColor}
- onChange={(e) =>
- handleBrandKitChange('primaryColor', e.target.value)
- }
+ onChange={(e) => handleBrandKitChange('primaryColor', e.target.value)}
  />
  </div>
  </div>
@@ -339,16 +405,12 @@ export default function SettingsPage() {
  id="accentColor"
  type="color"
  value={brandKit.accentColor}
- onChange={(e) =>
- handleBrandKitChange('accentColor', e.target.value)
- }
+ onChange={(e) => handleBrandKitChange('accentColor', e.target.value)}
  className="h-10 w-16 p-1"
  />
  <Input
  value={brandKit.accentColor}
- onChange={(e) =>
- handleBrandKitChange('accentColor', e.target.value)
- }
+ onChange={(e) => handleBrandKitChange('accentColor', e.target.value)}
  />
  </div>
  </div>
@@ -358,7 +420,6 @@ export default function SettingsPage() {
  <div className="text-sm font-medium">
  {brandKit.brandName || 'Brand Preview'}
  </div>
-
  <div className="flex items-center gap-3">
  <div
  className="h-10 w-10 rounded-lg border"
@@ -370,23 +431,12 @@ export default function SettingsPage() {
  </div>
  </div>
  </div>
- </CardContent>
- </Card>
+ </TabsContent>
 
- {/* Brand Colour Palette */}
- <Card>
- <CardHeader>
- <CardTitle className="flex items-center gap-2">
- <Pipette className="h-5 w-5" />
- {t('settings.colourPalette')}
- </CardTitle>
- <CardDescription>
- {t('settings.colourPaletteDescription')}
- </CardDescription>
- </CardHeader>
+ {/* ── Tab: Palette ── */}
+ <TabsContent value="palette" className="space-y-6 pt-2">
+ <p className="text-xs text-muted-foreground">{t('settings.paletteEditable')}</p>
 
- <CardContent className="space-y-6">
- {/* Brand */}
  <div className="space-y-3">
  <p className="text-sm font-medium">{t('settings.brandColours')}</p>
  <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
@@ -398,18 +448,25 @@ export default function SettingsPage() {
  { token: '--brand-soft', label: 'brand-soft' },
  { token: '--brand-border', label: 'brand-border' },
  ].map(({ token, label }) => (
- <div key={token} className="flex flex-col items-center gap-1.5">
+ <label key={token} className="flex flex-col items-center gap-1.5 cursor-pointer group">
+ <div className="relative h-10 w-10">
  <div
- className="h-10 w-10 rounded-lg border shadow-sm"
- style={{ backgroundColor: `var(${token})` }}
+ className="absolute inset-0 rounded-lg border shadow-sm transition-shadow group-hover:ring-2 group-hover:ring-brand-border"
+ style={{ backgroundColor: themeOverrides[token] || `var(${token})` }}
  />
- <span className="text-[10px] text-muted-foreground leading-tight text-center">{label}</span>
+ <input
+ type="color"
+ className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+ value={cssVarToHex(token)}
+ onChange={(e) => handleThemeOverride(token, e.target.value)}
+ />
  </div>
+ <span className="text-[10px] text-muted-foreground leading-tight text-center">{label}</span>
+ </label>
  ))}
  </div>
  </div>
 
- {/* Status */}
  <div className="space-y-3">
  <p className="text-sm font-medium">{t('settings.statusColours')}</p>
  <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
@@ -423,18 +480,25 @@ export default function SettingsPage() {
  { token: '--info', label: 'info' },
  { token: '--info-soft', label: 'info-soft' },
  ].map(({ token, label }) => (
- <div key={token} className="flex flex-col items-center gap-1.5">
+ <label key={token} className="flex flex-col items-center gap-1.5 cursor-pointer group">
+ <div className="relative h-10 w-10">
  <div
- className="h-10 w-10 rounded-lg border shadow-sm"
- style={{ backgroundColor: `var(${token})` }}
+ className="absolute inset-0 rounded-lg border shadow-sm transition-shadow group-hover:ring-2 group-hover:ring-brand-border"
+ style={{ backgroundColor: themeOverrides[token] || `var(${token})` }}
  />
- <span className="text-[10px] text-muted-foreground leading-tight text-center">{label}</span>
+ <input
+ type="color"
+ className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+ value={cssVarToHex(token)}
+ onChange={(e) => handleThemeOverride(token, e.target.value)}
+ />
  </div>
+ <span className="text-[10px] text-muted-foreground leading-tight text-center">{label}</span>
+ </label>
  ))}
  </div>
  </div>
 
- {/* Neutrals */}
  <div className="space-y-3">
  <p className="text-sm font-medium">{t('settings.neutralColours')}</p>
  <div className="grid grid-cols-4 gap-3">
@@ -444,15 +508,36 @@ export default function SettingsPage() {
  { token: '--muted-foreground', label: 'muted-fg' },
  { token: '--border', label: 'border' },
  ].map(({ token, label }) => (
- <div key={token} className="flex flex-col items-center gap-1.5">
+ <label key={token} className="flex flex-col items-center gap-1.5 cursor-pointer group">
+ <div className="relative h-10 w-10">
  <div
- className="h-10 w-10 rounded-lg border shadow-sm"
- style={{ backgroundColor: `var(${token})` }}
+ className="absolute inset-0 rounded-lg border shadow-sm transition-shadow group-hover:ring-2 group-hover:ring-brand-border"
+ style={{ backgroundColor: themeOverrides[token] || `var(${token})` }}
  />
- <span className="text-[10px] text-muted-foreground leading-tight text-center">{label}</span>
+ <input
+ type="color"
+ className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+ value={cssVarToHex(token)}
+ onChange={(e) => handleThemeOverride(token, e.target.value)}
+ />
  </div>
+ <span className="text-[10px] text-muted-foreground leading-tight text-center">{label}</span>
+ </label>
  ))}
  </div>
+ </div>
+ </TabsContent>
+ </Tabs>
+
+ <div className="flex items-center gap-3 border-t pt-4">
+ <Button onClick={handleSaveBrandKit} disabled={!isDirty} className="gap-2">
+ <Save className="h-4 w-4" />
+ {t('settings.save')}
+ </Button>
+ <Button variant="outline" onClick={handleResetBrandKit} className="gap-2">
+ <RotateCcw className="h-4 w-4" />
+ {t('settings.reset')}
+ </Button>
  </div>
  </CardContent>
  </Card>
