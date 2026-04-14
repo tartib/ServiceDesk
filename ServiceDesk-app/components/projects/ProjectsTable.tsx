@@ -19,11 +19,13 @@ interface Project {
  createdBy?: {
  name: string;
  };
+ isStarred?: boolean;
 }
 
 interface ProjectsTableProps {
  projects: Project[];
  onProjectClick: (project: Project) => void;
+ onStar?: (projectId: string) => void;
  currentPage?: number;
  totalPages?: number;
  onPageChange?: (page: number) => void;
@@ -32,6 +34,7 @@ interface ProjectsTableProps {
 export default function ProjectsTable({
  projects,
  onProjectClick,
+ onStar,
  currentPage = 1,
  totalPages = 1,
  onPageChange,
@@ -72,6 +75,8 @@ export default function ProjectsTable({
  lead={project.lead}
  createdBy={project.createdBy}
  onClick={() => onProjectClick(project)}
+ onStar={() => onStar?.(project._id)}
+ isStarred={project.isStarred}
  variant="table"
  />
  ))}
@@ -91,6 +96,8 @@ export default function ProjectsTable({
  lead={project.lead}
  createdBy={project.createdBy}
  onClick={() => onProjectClick(project)}
+ onStar={() => onStar?.(project._id)}
+ isStarred={project.isStarred}
  variant="card"
  />
  ))}

@@ -5,6 +5,12 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { User } from 'lucide-react';
 
+interface TaskLabel {
+ _id: string;
+ name: string;
+ color: string;
+}
+
 interface Task {
  _id: string;
  key: string;
@@ -26,6 +32,7 @@ interface Task {
  };
  };
  storyPoints?: number;
+ labels?: string[];
 }
 
 interface DraggableTaskCardProps {
@@ -33,6 +40,7 @@ interface DraggableTaskCardProps {
  onClick: () => void;
  getTypeIcon: (type: string) => string;
  getPriorityColor: (priority: string) => string;
+ resolvedLabels?: TaskLabel[];
 }
 
 function DraggableTaskCardInner({
@@ -40,6 +48,7 @@ function DraggableTaskCardInner({
  onClick,
  getTypeIcon,
  getPriorityColor,
+ resolvedLabels = [],
 }: DraggableTaskCardProps) {
  const {
  attributes,
@@ -69,7 +78,20 @@ function DraggableTaskCardInner({
  isDragging ? 'shadow-lg ring-2 ring-ring' : ''
  }`}
  >
- <p data-testid="task-title" className="text-sm text-foreground mb-3">{task.title}</p>
+ <p data-testid="task-title" className="text-sm text-foreground mb-3 line-clamp-2">{task.title}</p>
+ {resolvedLabels.length > 0 && (
+ <div className="flex flex-wrap gap-1 mb-2">
+ {resolvedLabels.map((label) => (
+ <span
+ key={label._id}
+ className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+ style={{ backgroundColor: `${label.color}22`, color: label.color, border: `1px solid ${label.color}55` }}
+ >
+ {label.name}
+ </span>
+ ))}
+ </div>
+ )}
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
  <span data-testid="task-key" className="text-xs text-brand bg-brand-soft px-1.5 py-0.5 rounded">

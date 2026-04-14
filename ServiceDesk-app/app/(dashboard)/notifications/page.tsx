@@ -4,8 +4,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useNotifications, useMarkNotificationAsRead, useMarkAllAsRead } from '@/hooks/useNotifications';
-import { Bell, CheckCheck } from 'lucide-react';
+import { useNotifications, useMarkNotificationAsRead, useMarkAllAsRead, useDeleteNotification } from '@/hooks/useNotifications';
+import { Bell, CheckCheck, Trash2 } from 'lucide-react';
 import { formatTimeAgo } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -13,6 +13,7 @@ export default function NotificationsPage() {
  const { data: notificationsData, isLoading } = useNotifications();
  const { mutate: markAsRead } = useMarkNotificationAsRead();
  const { mutate: markAllAsRead } = useMarkAllAsRead();
+ const { mutate: deleteNotification } = useDeleteNotification();
  const { t } = useLanguage();
 
  const notifications = notificationsData?.notifications || [];
@@ -101,7 +102,7 @@ export default function NotificationsPage() {
  className="hover:shadow-sm transition-shadow opacity-75"
  >
  <CardContent className="p-4">
- <div className="flex items-start justify-between">
+ <div className="flex items-start justify-between gap-2">
  <div className="flex-1">
  <div className="flex items-center gap-2 mb-1">
  <h3 className="font-medium">{notification.title}</h3>
@@ -114,6 +115,17 @@ export default function NotificationsPage() {
  {formatTimeAgo(notification.createdAt)}
  </p>
  </div>
+ <Button
+ variant="ghost"
+ size="icon"
+ className="shrink-0 text-muted-foreground hover:text-destructive"
+ onClick={(e) => {
+ e.stopPropagation();
+ if (notification.id) deleteNotification(notification.id);
+ }}
+ >
+ <Trash2 className="h-4 w-4" />
+ </Button>
  </div>
  </CardContent>
  </Card>

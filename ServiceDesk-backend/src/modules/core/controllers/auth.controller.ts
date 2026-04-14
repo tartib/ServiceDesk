@@ -6,12 +6,20 @@ import asyncHandler from '../../../utils/asyncHandler';
 import logger from '../../../utils/logger';
 
 export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
-  const { name, phone, fcmToken } = req.body;
+  const { name, email, phone, fcmToken } = req.body;
 
   const user = await User.findById(req.user?.id);
 
   if (!user) {
     throw new ApiError(404, 'User not found');
+  }
+
+  if (email && email !== user.email) {
+    const existing = await User.findOne({ email, _id: { $ne: user._id } });
+    if (existing) {
+      throw new ApiError(409, 'Email is already in use');
+    }
+    user.email = email;
   }
 
   if (name) user.name = name;

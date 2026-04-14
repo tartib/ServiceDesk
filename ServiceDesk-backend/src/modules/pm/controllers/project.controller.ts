@@ -1333,3 +1333,67 @@ export const removeProjectTeamMember = async (req: Request, res: Response): Prom
     } as ApiResponse);
   }
 };
+
+// Star a project
+export const starProject = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.user?.id;
+
+    const project = await Project.findByIdAndUpdate(
+      projectId,
+      { $addToSet: { starredBy: userId } },
+      { new: true }
+    );
+
+    if (!project) {
+      res.status(404).json({ success: false, error: 'Project not found' } as ApiResponse);
+      return;
+    }
+
+    res.json({ success: true, data: { starred: true } } as ApiResponse);
+  } catch (error) {
+    logger.error('Star project error:', error);
+    res.status(500).json({ success: false, error: 'Failed to star project' } as ApiResponse);
+  }
+};
+
+// Unstar a project
+export const unstarProject = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.user?.id;
+
+    const project = await Project.findByIdAndUpdate(
+      projectId,
+      { $pull: { starredBy: userId } },
+      { new: true }
+    );
+
+    if (!project) {
+      res.status(404).json({ success: false, error: 'Project not found' } as ApiResponse);
+      return;
+    }
+
+    res.json({ success: true, data: { starred: false } } as ApiResponse);
+  } catch (error) {
+    logger.error('Unstar project error:', error);
+    res.status(500).json({ success: false, error: 'Failed to unstar project' } as ApiResponse);
+  }
+};
+
+// Get user's starred projects
+export const getStarredProjects = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    const projects = await Project.find({ starredBy: userId })
+      .select('_id name key methodology status')
+      .lean();
+
+    res.json({ success: true, data: { projects } } as ApiResponse);
+  } catch (error) {
+    logger.error('Get starred projects error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch starred projects' } as ApiResponse);
+  }
+};

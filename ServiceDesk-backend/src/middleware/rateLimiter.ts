@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import env from '../config/env';
 
 const isTest = env.NODE_ENV === 'test';
+const isDev = env.NODE_ENV === 'development';
 
 const noopLimiter = (_req: Request, _res: Response, next: NextFunction) => next();
 
@@ -16,7 +17,7 @@ export const apiLimiter = isTest
       legacyHeaders: false,
     });
 
-export const authLimiter = isTest
+export const authLimiter = isTest || isDev
   ? noopLimiter
   : rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes

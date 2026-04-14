@@ -77,6 +77,7 @@ export interface IProject {
   startDate?: Date;
   targetEndDate?: Date;
   actualEndDate?: Date;
+  starredBy: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
   createdBy: mongoose.Types.ObjectId;
@@ -186,6 +187,7 @@ const ProjectSchema = new Schema<IProject>(
     startDate: { type: Date },
     targetEndDate: { type: Date },
     actualEndDate: { type: Date },
+    starredBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',

@@ -8,7 +8,7 @@
 import mongoose from 'mongoose';
 import Project from '../models/Project';
 import logger from '../../../utils/logger';
-import { notificationService } from '../../notifications/services/NotificationService';
+import { notificationDispatcher } from '../../notifications/services/NotificationDispatcher';
 import { NotificationSource, NotificationType as UnifiedType } from '../../notifications/domain/interfaces';
 
 type NotificationType = 'task' | 'comment' | 'mention' | 'assignment' | 'deadline' | 'system';
@@ -41,7 +41,7 @@ export const notifyUser = async (
   payload: NotificationPayload
 ): Promise<void> => {
   try {
-    await notificationService.create({
+    await notificationDispatcher.dispatch({
       userId: userId.toString(),
       type: PM_TYPE_MAP[payload.type] ?? UnifiedType.SYSTEM,
       source: NotificationSource.PM,
@@ -71,7 +71,7 @@ export const notifyUsers = async (
       (id) => id !== excludeStr
     );
     if (unique.length === 0) return;
-    await notificationService.createBulk(unique, {
+    await notificationDispatcher.dispatchBulk(unique, {
       type: PM_TYPE_MAP[payload.type] ?? UnifiedType.SYSTEM,
       source: NotificationSource.PM,
       title: payload.title,

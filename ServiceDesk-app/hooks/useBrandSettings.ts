@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { brandSettingsApi, BrandSettingsData } from '@/lib/domains/settings/api';
+import { brandSettingsApi, BrandSettingsData, DEFAULT_BRAND_KIT } from '@/lib/domains/settings/api';
 
 const BRAND_SETTINGS_KEY = ['brand-settings'] as const;
 
@@ -41,4 +41,17 @@ export function useResetBrandSettings() {
       } catch {}
     },
   });
+}
+
+export function useBrandName(): string {
+  const { data } = useBrandSettings();
+  if (data?.brandKit?.brandName) return data.brandKit.brandName;
+  try {
+    const stored = localStorage.getItem('brandKit');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed?.brandName) return parsed.brandName;
+    }
+  } catch {}
+  return DEFAULT_BRAND_KIT.brandName;
 }

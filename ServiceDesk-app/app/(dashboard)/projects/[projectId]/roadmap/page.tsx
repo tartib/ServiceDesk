@@ -24,6 +24,8 @@ import {
  AlertTriangle,
  ArrowLeft,
  ArrowRight,
+ FileText,
+ X,
 } from 'lucide-react';
 import {
  ProjectHeader,
@@ -136,6 +138,19 @@ export default function RoadmapPage() {
  const timelineRef = useRef<HTMLDivElement>(null);
  const previousZoomLevel = useRef<'day' | 'week' | 'month' | 'quarter'>('month');
  
+ // Export & Settings panel states
+ const [showExportMenu, setShowExportMenu] = useState(false);
+ const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+ const [timelineSettings, setTimelineSettings] = useState(() => {
+   if (typeof window !== 'undefined') {
+     try {
+       const saved = localStorage.getItem(`roadmap_settings_${projectId}`);
+       if (saved) return JSON.parse(saved);
+     } catch {}
+   }
+   return { showWeekends: true, colorBy: 'status' as 'status' | 'priority' | 'type', showProgress: true, showLabels: true };
+ });
+
  // Inline Create states
  const [isCreating, setIsCreating] = useState(false);
  const [newItemSummary, setNewItemSummary] = useState('');
@@ -649,6 +664,50 @@ export default function RoadmapPage() {
  return { epics, others, childrenMap, standaloneTasks };
  }, [tasks, searchQuery, selectedTypes, selectedStatuses, selectedAssignees]);
 
+ // Persist timeline settings
+ useEffect(() => {
+   try { localStorage.setItem(`roadmap_settings_${projectId}`, JSON.stringify(timelineSettings)); } catch {}
+ }, [timelineSettings, projectId]);
+
+ // Export functions
+ const exportCSV = useCallback(() => {
+   const { epics, standaloneTasks, childrenMap } = groupedTasks;
+   const allTasks = [...epics];
+   epics.forEach(e => { const children = childrenMap.get(e._id) || []; allTasks.push(...children); });
+   allTasks.push(...standaloneTasks);
+   const header = 'Key,Title,Type,Status,Priority,Assignee,Start Date,Due Date,Story Points';
+   const rows = allTasks.map(t => {
+     const assigneeName = t.assignee?.name || (t.assignee?.profile ? `${t.assignee.profile.firstName} ${t.assignee.profile.lastName}` : '');
+     return [t.key, `"${(t.title || '').replace(/"/g, '""')}"`, t.type, t.status?.name || '', t.priority || '', `"${assigneeName}"`, t.startDate || t.startDateRFC3339 || '', t.dueDate || t.dueDateRFC3339 || '', t.storyPoints ?? ''].join(',');
+   });
+   const csv = [header, ...rows].join('\n');
+   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+   const url = URL.createObjectURL(blob);
+   const a = document.createElement('a');
+   a.href = url; a.download = `${project?.key || 'roadmap'}-timeline.csv`; a.click();
+   URL.revokeObjectURL(url);
+   setShowExportMenu(false);
+ }, [groupedTasks, project?.key]);
+
+ const exportJSON = useCallback(() => {
+   const { epics, standaloneTasks, childrenMap } = groupedTasks;
+   const allTasks = [...epics];
+   epics.forEach(e => { const children = childrenMap.get(e._id) || []; allTasks.push(...children); });
+   allTasks.push(...standaloneTasks);
+   const json = JSON.stringify(allTasks.map(t => ({
+     key: t.key, title: t.title, type: t.type, status: t.status?.name, priority: t.priority,
+     assignee: t.assignee?.name || (t.assignee?.profile ? `${t.assignee.profile.firstName} ${t.assignee.profile.lastName}` : null),
+     startDate: t.startDate || t.startDateRFC3339 || null, dueDate: t.dueDate || t.dueDateRFC3339 || null,
+     storyPoints: t.storyPoints ?? null, labels: t.labels || [],
+   })), null, 2);
+   const blob = new Blob([json], { type: 'application/json' });
+   const url = URL.createObjectURL(blob);
+   const a = document.createElement('a');
+   a.href = url; a.download = `${project?.key || 'roadmap'}-timeline.json`; a.click();
+   URL.revokeObjectURL(url);
+   setShowExportMenu(false);
+ }, [groupedTasks, project?.key]);
+
  // Handle zoom level change with scroll position preservation
  const handleZoomChange = useCallback((newZoom: 'day' | 'week' | 'month' | 'quarter') => {
  if (!timelineRef.current) {
@@ -934,16 +993,28 @@ export default function RoadmapPage() {
  >
  <Eye className="h-4 w-4" />
  </button>
+ <div className="relative">
  <button
- onClick={() => {
- alert('Export feature coming soon!');
- }}
+ onClick={() => { setShowExportMenu(!showExportMenu); setShowSettingsPanel(false); }}
  aria-label="Export timeline"
- className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+ className={`p-2 rounded-lg transition-colors ${showExportMenu ? 'bg-brand-soft text-brand' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
  title="Export"
  >
  <Download className="h-4 w-4" />
  </button>
+ {showExportMenu && (
+ <div className="absolute end-0 top-full mt-1 w-48 bg-background border border-border rounded-xl shadow-lg z-dropdown py-1">
+ <button onClick={exportCSV} className="w-full px-4 py-2 text-start text-sm hover:bg-muted flex items-center gap-2">
+ <FileText className="h-4 w-4" />
+ Export as CSV
+ </button>
+ <button onClick={exportJSON} className="w-full px-4 py-2 text-start text-sm hover:bg-muted flex items-center gap-2">
+ <Download className="h-4 w-4" />
+ Export as JSON
+ </button>
+ </div>
+ )}
+ </div>
  <button
  onClick={() => {
  navigator.clipboard.writeText(window.location.href);
@@ -955,18 +1026,56 @@ export default function RoadmapPage() {
  >
  <Share2 className="h-4 w-4" />
  </button>
+ <div className="relative">
  <button
- onClick={() => {
- alert('Settings panel coming soon!');
- }}
+ onClick={() => { setShowSettingsPanel(!showSettingsPanel); setShowExportMenu(false); }}
  aria-label="Timeline settings"
  aria-haspopup="menu"
- aria-expanded="false"
- className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+ aria-expanded={showSettingsPanel}
+ className={`p-2 rounded-lg transition-colors ${showSettingsPanel ? 'bg-brand-soft text-brand' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
  title="Settings"
  >
  <Settings className="h-4 w-4" />
  </button>
+ {showSettingsPanel && (
+ <div className="absolute end-0 top-full mt-1 w-64 bg-background border border-border rounded-xl shadow-lg z-dropdown p-4 space-y-3">
+ <div className="flex items-center justify-between">
+ <span className="text-sm font-semibold">Timeline Settings</span>
+ <button onClick={() => setShowSettingsPanel(false)} className="p-1 hover:bg-muted rounded">
+ <X className="h-3.5 w-3.5" />
+ </button>
+ </div>
+ <label className="flex items-center justify-between text-sm cursor-pointer">
+ <span>Show weekends</span>
+ <input type="checkbox" checked={timelineSettings.showWeekends}
+ onChange={e => setTimelineSettings((s: typeof timelineSettings) => ({ ...s, showWeekends: e.target.checked }))}
+ className="rounded border-border" />
+ </label>
+ <label className="flex items-center justify-between text-sm cursor-pointer">
+ <span>Show progress bars</span>
+ <input type="checkbox" checked={timelineSettings.showProgress}
+ onChange={e => setTimelineSettings((s: typeof timelineSettings) => ({ ...s, showProgress: e.target.checked }))}
+ className="rounded border-border" />
+ </label>
+ <label className="flex items-center justify-between text-sm cursor-pointer">
+ <span>Show labels</span>
+ <input type="checkbox" checked={timelineSettings.showLabels}
+ onChange={e => setTimelineSettings((s: typeof timelineSettings) => ({ ...s, showLabels: e.target.checked }))}
+ className="rounded border-border" />
+ </label>
+ <div className="space-y-1">
+ <span className="text-sm">Color by</span>
+ <select value={timelineSettings.colorBy}
+ onChange={e => setTimelineSettings((s: typeof timelineSettings) => ({ ...s, colorBy: e.target.value as 'status' | 'priority' | 'type' }))}
+ className="w-full text-sm border border-border rounded-lg px-2 py-1.5 bg-background">
+ <option value="status">Status</option>
+ <option value="priority">Priority</option>
+ <option value="type">Type</option>
+ </select>
+ </div>
+ </div>
+ )}
+ </div>
  <button
  onClick={() => {
  if (document.fullscreenElement) {

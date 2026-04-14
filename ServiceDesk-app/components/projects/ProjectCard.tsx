@@ -21,6 +21,7 @@ interface ProjectCardProps {
  onStar?: () => void;
  onMore?: () => void;
  variant?: 'table' | 'card';
+ isStarred?: boolean;
 }
 
 const methodologyColors: Record<string, string> = {
@@ -42,6 +43,7 @@ function ProjectCard({
  onStar,
  onMore,
  variant = 'card',
+ isStarred = false,
 }: ProjectCardProps) {
  const methodologyColor = methodologyColors[methodology?.code?.toLowerCase()] || 'bg-muted text-foreground border-border';
  const leadName = lead?.name || createdBy?.name;
@@ -60,7 +62,7 @@ function ProjectCard({
  <div className="flex items-center gap-1">
  <button
  onClick={(e) => { e.stopPropagation(); onStar?.(); }}
- className="p-1.5 text-muted-foreground hover:text-warning transition-colors"
+ className={`p-1.5 transition-colors ${isStarred ? 'fill-warning text-warning' : 'text-muted-foreground hover:text-warning'}`}
  aria-label="Star project"
  >
  <Star className="h-4 w-4" />
@@ -108,7 +110,7 @@ function ProjectCard({
  <td className="px-4 py-3">
  <button
  onClick={(e) => { e.stopPropagation(); onStar?.(); }}
- className="text-muted-foreground hover:text-warning transition-colors"
+ className={`transition-colors ${isStarred ? 'fill-warning text-warning' : 'text-muted-foreground hover:text-warning'}`}
  aria-label="Star project"
  >
  <Star className="h-4 w-4" />

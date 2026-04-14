@@ -1,13 +1,18 @@
 /**
  * Notification Dispatcher
  *
- * Multi-channel dispatch layer. Currently only in-app is implemented;
- * email, push, and Slack are placeholder hooks for future integration.
+ * Multi-channel dispatch layer.
+ * - in_app: fully implemented via NotificationService
+ * - email:  wired to EmailAdapter (SMTP)
+ * - push:   stub (not yet implemented)
+ * - slack:  stub (not yet implemented)
  */
 
 import { NotificationChannel, CreateNotificationDTO } from '../domain/interfaces';
 import { notificationService } from './NotificationService';
+import { emailAdapter } from '../../../integrations/channels/email.adapter';
 import logger from '../../../utils/logger';
+import mongoose from 'mongoose';
 
 export class NotificationDispatcher {
   /**
@@ -53,35 +58,86 @@ export class NotificationDispatcher {
     // Always persist in-app
     await notificationService.createBulk(userIds, data);
 
-    // Additional channels (future)
+    // Additional channels — send in parallel
     if (channel === NotificationChannel.EMAIL) {
-      for (const uid of userIds) {
-        await this.sendEmail({ ...data, userId: uid });
-      }
+      await Promise.all(userIds.map((uid) => this.sendEmail({ ...data, userId: uid })));
     }
   }
 
-  // ── Channel Implementations (stubs) ──────────────────────────
+  /**
+   * Returns which channels are currently operational.
+   */
+  getChannelCapabilities(): Record<string, boolean> {
+    return {
+      in_app: true,
+      email: emailAdapter.enabled,
+      push: false,
+      slack: false,
+    };
+  }
+
+  // ── Channel Implementations ──────────────────────────────────
 
   private async sendEmail(data: CreateNotificationDTO): Promise<void> {
-    // TODO: Integrate with integration layer email adapter
-    logger.debug('Email dispatch placeholder', {
-      userId: data.userId,
-      title: data.title,
-    });
+    if (!emailAdapter.enabled) {
+      logger.warn('[NotificationDispatcher] Email adapter disabled — skipping email send', {
+        userId: data.userId,
+        title: data.title,
+      });
+      return;
+    }
+
+    // Resolve user email from User model
+    let recipientEmail: string | undefined;
+    try {
+      const User = mongoose.model('User');
+      const user = await User.findById(data.userId).select('email').lean() as { email?: string } | null;
+      recipientEmail = user?.email;
+    } catch {
+      logger.warn('[NotificationDispatcher] Could not resolve user email', { userId: data.userId });
+    }
+
+    if (!recipientEmail) {
+      logger.warn('[NotificationDispatcher] No email address for user — skipping', { userId: data.userId });
+      return;
+    }
+
+    try {
+      const result = await emailAdapter.handleOutbound({
+        adapter: 'email',
+        action: 'send',
+        target: recipientEmail,
+        data: {
+          eventType: data.type || 'notification',
+          eventData: {
+            title: data.title,
+            message: data.message,
+            source: data.source,
+            level: data.level,
+            relatedEntityId: data.relatedEntityId,
+            relatedEntityType: data.relatedEntityType,
+            ...(data.metadata || {}),
+          },
+        },
+      });
+
+      if (!result.success) {
+        logger.warn('[NotificationDispatcher] Email send failed', { error: result.error, userId: data.userId });
+      }
+    } catch (err: any) {
+      logger.error('[NotificationDispatcher] Email send error', { error: err.message, userId: data.userId });
+    }
   }
 
   private async sendPush(data: CreateNotificationDTO): Promise<void> {
-    // TODO: Integrate with push notification service (FCM / APNs)
-    logger.debug('Push dispatch placeholder', {
+    logger.warn('[NotificationDispatcher] Push notifications not yet implemented — skipping', {
       userId: data.userId,
       title: data.title,
     });
   }
 
   private async sendSlack(data: CreateNotificationDTO): Promise<void> {
-    // TODO: Integrate with integration layer Slack adapter
-    logger.debug('Slack dispatch placeholder', {
+    logger.warn('[NotificationDispatcher] Slack notifications not yet implemented — skipping', {
       userId: data.userId,
       title: data.title,
     });

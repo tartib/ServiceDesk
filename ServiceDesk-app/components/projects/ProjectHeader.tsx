@@ -1,6 +1,7 @@
 'use client';
 
 import { API_URL } from '@/lib/api/config';
+import { fetchWithCsrf } from '@/lib/api/csrf';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -8,7 +9,8 @@ import {
  MoreHorizontal, 
  Share2, 
  Zap, 
- Maximize2, 
+ Maximize2,
+ Minimize2,
  Star,
  UserPlus,
  FileCode,
@@ -72,6 +74,7 @@ export default function ProjectHeader({
  
  // State
  const [isStarred, setIsStarred] = useState(initialStarred);
+ const [isFullscreen, setIsFullscreen] = useState(false);
  const [showMoreMenu, setShowMoreMenu] = useState(false);
  const [showAddPeopleModal, setShowAddPeopleModal] = useState(false);
  const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -101,6 +104,25 @@ export default function ProjectHeader({
  const backgroundPickerRef = useRef<HTMLDivElement>(null);
  const projectInfoRef = useRef<HTMLDivElement>(null);
 
+ // Fetch starred state on mount
+ useEffect(() => {
+ if (!projectId) return;
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ fetch(`${API_URL}/pm/projects/${projectId}`, {
+ headers: { Authorization: `Bearer ${token}` },
+ })
+ .then(r => r.json())
+ .then(data => {
+ if (data.success) {
+ const userId = JSON.parse(atob(token.split('.')[1])).id;
+ const starredBy: string[] = data.data?.project?.starredBy || data.data?.starredBy || [];
+ setIsStarred(starredBy.includes(userId));
+ }
+ })
+ .catch(() => {});
+ }, [projectId]);
+
  // Close dropdowns on outside click
  useEffect(() => {
  const handleClickOutside = (event: MouseEvent) => {
@@ -125,14 +147,42 @@ export default function ProjectHeader({
  onStarToggle?.(newStarred);
  
  // API call to save starred status
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
  try {
- await fetch(`/api/v2/pm/projects/${projectId}/star`, {
+ const res = await fetchWithCsrf(`${API_URL}/pm/projects/${projectId}/star`, {
  method: newStarred ? 'POST' : 'DELETE',
- headers: { 'Content-Type': 'application/json' },
+ headers: {
+ 'Content-Type': 'application/json',
+ ...(token ? { Authorization: `Bearer ${token}` } : {}),
+ },
  });
+ if (!res.ok) throw new Error('Star toggle failed');
  } catch (error) {
  console.error('Failed to update starred status:', error);
  setIsStarred(!newStarred); // Revert on error
+ }
+ };
+
+ const handleShare = async () => {
+ try {
+ await navigator.clipboard.writeText(window.location.href);
+ toast.success('Link copied to clipboard');
+ } catch {
+ toast.error('Failed to copy link');
+ }
+ };
+
+ const handleAutomations = () => {
+ if (projectId) {
+ router.push(`/projects/${projectId}/settings`);
+ }
+ };
+
+ const handleFullscreen = () => {
+ if (!document.fullscreenElement) {
+ document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+ } else {
+ document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
  }
  };
 
@@ -329,20 +379,6 @@ export default function ProjectHeader({
  
  {/* Quick Actions - Hidden on mobile */}
  <div className="hidden sm:flex items-center gap-1">
- {/* US1: Star/Favorite Button */}
- <button 
- onClick={handleStarToggle}
- className={`p-1.5 rounded transition-colors ${
- isStarred 
- ? 'text-warning hover:text-warning hover:bg-warning-soft' 
- : 'text-muted-foreground hover:text-foreground hover:bg-muted'
- }`}
- aria-label={isStarred ? t('projects.header.removeFromStarred') || 'Remove from starred' : t('projects.header.addToStarred') || 'Add to starred'}
- title={isStarred ? t('projects.header.removeFromStarred') || 'Remove from starred' : t('projects.header.addToStarred') || 'Add to starred'}
- >
- <Star className={`h-4 w-4 ${isStarred ? 'fill-current' : ''}`} />
- </button>
-
  {/* US2: Add People Button */}
  <button 
  data-testid="add-people-btn"
@@ -483,23 +519,42 @@ export default function ProjectHeader({
  
  {/* Right Actions */}
  <div className="flex items-center gap-1 sm:gap-2">
+ {/* Star Button — visible on all sizes here */}
+ <button
+ onClick={handleStarToggle}
+ className={`p-2 rounded transition-colors ${
+ isStarred
+ ? 'text-warning hover:text-warning hover:bg-warning-soft'
+ : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+ }`}
+ aria-label={isStarred ? 'Remove from starred' : 'Add to starred'}
+ title={isStarred ? 'Remove from starred' : 'Add to starred'}
+ >
+ <Star className={`h-4 w-4 ${isStarred ? 'fill-current' : ''}`} />
+ </button>
  <button 
+ onClick={handleShare}
  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
  aria-label={t('projects.common.share') || 'Share'}
+ title="Copy link"
  >
  <Share2 className="h-4 w-4" />
  </button>
  <button 
+ onClick={handleAutomations}
  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
  aria-label={t('projects.common.automations') || 'Automations'}
+ title="Settings"
  >
  <Zap className="h-4 w-4" />
  </button>
  <button 
+ onClick={handleFullscreen}
  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
  aria-label={t('projects.common.fullscreen') || 'Fullscreen'}
+ title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
  >
- <Maximize2 className="h-4 w-4" />
+ {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
  </button>
  
  {/* Mobile menu button */}

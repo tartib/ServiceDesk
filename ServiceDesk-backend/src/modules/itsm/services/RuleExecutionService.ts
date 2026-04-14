@@ -608,6 +608,9 @@ let _ruleExecutionService: RuleExecutionService | null = null;
 export function getRuleExecutionService(options?: RuleExecutionServiceOptions): RuleExecutionService {
   if (!_ruleExecutionService) {
     _ruleExecutionService = new RuleExecutionService(options);
+  } else if (options && (options.notificationService || options.webhookService || options.entityService)) {
+    // Recreate if caller provides services that the existing instance may lack
+    _ruleExecutionService = new RuleExecutionService(options);
   }
   return _ruleExecutionService;
 }

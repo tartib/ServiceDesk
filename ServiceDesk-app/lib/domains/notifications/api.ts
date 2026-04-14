@@ -16,6 +16,7 @@ interface RawListResponse {
   data?: unknown[];
   count?: number;
   unreadCount?: number;
+  pagination?: { page: number; limit: number };
 }
 
 interface RawCountResponse {
@@ -30,6 +31,7 @@ export interface NotificationListResponse {
   notifications: Notification[];
   count: number;
   unreadCount: number;
+  pagination?: { page: number; limit: number };
 }
 
 export interface NotificationListParams {
@@ -37,6 +39,7 @@ export interface NotificationListParams {
   source?: string;
   projectId?: string;
   limit?: number;
+  page?: number;
 }
 
 export const notificationApi = {
@@ -47,6 +50,7 @@ export const notificationApi = {
       notifications,
       count: raw?.count ?? notifications.length,
       unreadCount: raw?.unreadCount ?? 0,
+      pagination: raw?.pagination,
     };
   },
 

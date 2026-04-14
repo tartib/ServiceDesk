@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { body, param, query } from 'express-validator';
 import * as projectController from '../controllers/project.controller';
+import * as labelController from '../controllers/label.controller';
 import * as standupController from '../controllers/standup.controller';
 import { authenticate, authorize } from '../../../middleware/auth';
 import { handleValidation, validate, validateMulti } from '../../../shared/middleware/validate';
@@ -30,6 +31,8 @@ router.post(
 );
 
 router.get('/', (req: Request, res: Response) => projectController.getProjects(req, res));
+
+router.get('/starred', (req: Request, res: Response) => projectController.getStarredProjects(req, res));
 
 router.get(
   '/:projectId',
@@ -116,12 +119,52 @@ router.delete(
   (req: Request, res: Response) => projectController.removeProjectMember(req, res)
 );
 
-// Get project labels
+// Labels CRUD
 router.get(
   '/:projectId/labels',
   [param('projectId').isMongoId().withMessage('Invalid project ID')],
   handleValidation,
-  (req: Request, res: Response) => projectController.getProjectLabels(req, res)
+  (req: Request, res: Response) => labelController.getLabels(req, res)
+);
+
+router.post(
+  '/:projectId/labels',
+  [
+    param('projectId').isMongoId().withMessage('Invalid project ID'),
+    body('name').trim().notEmpty().withMessage('Label name is required'),
+    body('color').optional().isString(),
+  ],
+  handleValidation,
+  (req: Request, res: Response) => labelController.createLabel(req, res)
+);
+
+router.patch(
+  '/labels/:labelId',
+  [param('labelId').isMongoId().withMessage('Invalid label ID')],
+  handleValidation,
+  (req: Request, res: Response) => labelController.updateLabel(req, res)
+);
+
+router.delete(
+  '/labels/:labelId',
+  [param('labelId').isMongoId().withMessage('Invalid label ID')],
+  handleValidation,
+  (req: Request, res: Response) => labelController.deleteLabel(req, res)
+);
+
+// Star / unstar project
+router.post(
+  '/:projectId/star',
+  [param('projectId').isMongoId().withMessage('Invalid project ID')],
+  handleValidation,
+  (req: Request, res: Response) => projectController.starProject(req, res)
+);
+
+router.delete(
+  '/:projectId/star',
+  [param('projectId').isMongoId().withMessage('Invalid project ID')],
+  handleValidation,
+  (req: Request, res: Response) => projectController.unstarProject(req, res)
 );
 
 // Archive project (admin/manager/supervisor)

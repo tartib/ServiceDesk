@@ -14,6 +14,11 @@ import {
  Save,
  ChevronRight,
  Workflow,
+ Tag,
+ Plus,
+ X,
+ Edit3,
+ Check,
 } from 'lucide-react';
 import {
  ProjectHeader,
@@ -47,6 +52,12 @@ interface Project {
  _id: string;
  name: string;
  key: string;
+}
+
+interface Label {
+ _id: string;
+ name: string;
+ color: string;
 }
 
 const methodologyOptions = [
@@ -87,6 +98,27 @@ export default function ProjectSettingsPage() {
  });
  const [isSaving, setIsSaving] = useState(false);
 
+ // Labels state
+ const [labels, setLabels] = useState<Label[]>([]);
+ const [newLabelName, setNewLabelName] = useState('');
+ const [newLabelColor, setNewLabelColor] = useState('#6366f1');
+ const [isCreatingLabel, setIsCreatingLabel] = useState(false);
+ const [editingLabel, setEditingLabel] = useState<Label | null>(null);
+ const [editLabelName, setEditLabelName] = useState('');
+ const [editLabelColor, setEditLabelColor] = useState('');
+
+ const fetchLabels = useCallback(async (token: string) => {
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/${projectId}/labels`, {
+ headers: { Authorization: `Bearer ${token}` },
+ });
+ const data = await res.json();
+ if (data.success) setLabels(data.data.labels || []);
+ } catch (error) {
+ console.error('Failed to fetch labels:', error);
+ }
+ }, [projectId]);
+
  const fetchProject = useCallback(async (token: string) => {
  try {
  const res = await fetch(`${API_URL}/pm/projects/${projectId}`, {
@@ -117,7 +149,66 @@ export default function ProjectSettingsPage() {
  return;
  }
  fetchProject(token);
- }, [projectId, router, fetchProject]);
+ fetchLabels(token);
+ }, [projectId, router, fetchProject, fetchLabels]);
+
+ const handleCreateLabel = async () => {
+ if (!newLabelName.trim()) return;
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ setIsCreatingLabel(true);
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/${projectId}/labels`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+ body: JSON.stringify({ name: newLabelName.trim(), color: newLabelColor }),
+ });
+ const data = await res.json();
+ if (data.success) {
+ setLabels(prev => [...prev, data.data.label]);
+ setNewLabelName('');
+ setNewLabelColor('#6366f1');
+ }
+ } catch (error) {
+ console.error('Failed to create label:', error);
+ } finally {
+ setIsCreatingLabel(false);
+ }
+ };
+
+ const handleUpdateLabel = async () => {
+ if (!editingLabel || !editLabelName.trim()) return;
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/labels/${editingLabel._id}`, {
+ method: 'PATCH',
+ headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+ body: JSON.stringify({ name: editLabelName.trim(), color: editLabelColor }),
+ });
+ const data = await res.json();
+ if (data.success) {
+ setLabels(prev => prev.map(l => l._id === editingLabel._id ? data.data.label : l));
+ setEditingLabel(null);
+ }
+ } catch (error) {
+ console.error('Failed to update label:', error);
+ }
+ };
+
+ const handleDeleteLabel = async (labelId: string) => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/labels/${labelId}`, {
+ method: 'DELETE',
+ headers: { Authorization: `Bearer ${token}` },
+ });
+ if (res.ok) setLabels(prev => prev.filter(l => l._id !== labelId));
+ } catch (error) {
+ console.error('Failed to delete label:', error);
+ }
+ };
 
  const handleSave = async () => {
  const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
@@ -151,6 +242,7 @@ export default function ProjectSettingsPage() {
  const tabs = [
  { id: 'general', label: t('projects.settings.general') || 'General', icon: Settings },
  { id: 'methodology', label: t('projects.settings.methodology') || 'Methodology', icon: Database },
+ { id: 'labels', label: 'Labels', icon: Tag },
  { id: 'members', label: t('projects.settings.members') || 'Members', icon: Users },
  { id: 'teams', label: t('projects.settings.teams') || 'Teams', icon: Users },
  { id: 'permissions', label: t('projects.settings.permissions') || 'Permissions', icon: Shield },
@@ -344,6 +436,98 @@ export default function ProjectSettingsPage() {
  </div>
  )}
 
+ {/* Labels */}
+ {activeTab === 'labels' && (
+ <div className="space-y-6">
+ <div>
+ <h3 className="text-lg font-semibold text-foreground mb-1">Labels</h3>
+ <p className="text-sm text-muted-foreground mb-6">Create and manage labels to categorize tasks in this project.</p>
+
+ {/* Create new label */}
+ <div className="p-4 bg-background border border-border rounded-xl mb-6">
+ <h4 className="text-sm font-medium text-foreground mb-3">Create new label</h4>
+ <div className="flex items-center gap-3">
+ <input
+ type="color"
+ value={newLabelColor}
+ onChange={(e) => setNewLabelColor(e.target.value)}
+ className="w-10 h-10 rounded border border-border cursor-pointer p-0.5"
+ title="Pick color"
+ />
+ <input
+ type="text"
+ value={newLabelName}
+ onChange={(e) => setNewLabelName(e.target.value)}
+ onKeyDown={(e) => e.key === 'Enter' && handleCreateLabel()}
+ placeholder="Label name..."
+ className="flex-1 px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+ />
+ <button
+ onClick={handleCreateLabel}
+ disabled={!newLabelName.trim() || isCreatingLabel}
+ className="flex items-center gap-1.5 px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand-strong disabled:opacity-50 text-sm"
+ >
+ <Plus className="h-4 w-4" />
+ {isCreatingLabel ? 'Creating...' : 'Create'}
+ </button>
+ </div>
+ </div>
+
+ {/* Labels list */}
+ <div className="space-y-2">
+ {labels.length === 0 && (
+ <p className="text-sm text-muted-foreground text-center py-8">No labels yet. Create one above.</p>
+ )}
+ {labels.map((label) => (
+ <div key={label._id} className="flex items-center gap-3 p-3 bg-background border border-border rounded-lg">
+ {editingLabel?._id === label._id ? (
+ <>
+ <input
+ type="color"
+ value={editLabelColor}
+ onChange={(e) => setEditLabelColor(e.target.value)}
+ className="w-8 h-8 rounded border border-border cursor-pointer p-0.5"
+ />
+ <input
+ type="text"
+ value={editLabelName}
+ onChange={(e) => setEditLabelName(e.target.value)}
+ onKeyDown={(e) => { if (e.key === 'Enter') handleUpdateLabel(); if (e.key === 'Escape') setEditingLabel(null); }}
+ className="flex-1 px-3 py-1.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+ autoFocus
+ />
+ <button onClick={handleUpdateLabel} className="p-1.5 text-success hover:bg-success-soft rounded">
+ <Check className="h-4 w-4" />
+ </button>
+ <button onClick={() => setEditingLabel(null)} className="p-1.5 text-muted-foreground hover:bg-muted rounded">
+ <X className="h-4 w-4" />
+ </button>
+ </>
+ ) : (
+ <>
+ <span className="w-5 h-5 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
+ <span className="flex-1 text-sm font-medium text-foreground">{label.name}</span>
+ <button
+ onClick={() => { setEditingLabel(label); setEditLabelName(label.name); setEditLabelColor(label.color); }}
+ className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded"
+ >
+ <Edit3 className="h-4 w-4" />
+ </button>
+ <button
+ onClick={() => handleDeleteLabel(label._id)}
+ className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive-soft rounded"
+ >
+ <Trash2 className="h-4 w-4" />
+ </button>
+ </>
+ )}
+ </div>
+ ))}
+ </div>
+ </div>
+ </div>
+ )}
+
  {/* Danger Zone */}
  {activeTab === 'danger' && (
  <div className="space-y-6">
@@ -443,7 +627,7 @@ export default function ProjectSettingsPage() {
  )}
 
  {/* Save Button */}
- {activeTab !== 'danger' && (
+ {activeTab !== 'danger' && activeTab !== 'labels' && activeTab !== 'members' && activeTab !== 'teams' && activeTab !== 'workflows' && (
  <div className="mt-8 pt-6 border-t border-border">
  <button
  onClick={handleSave}

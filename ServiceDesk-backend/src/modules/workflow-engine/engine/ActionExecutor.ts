@@ -12,6 +12,7 @@ import {
   type IWFExecutionContext,
 } from '../../../core/types/workflow-engine.types';
 import { GuardEvaluator } from './GuardEvaluator';
+import type { IWFTaskService } from '../adapters/TaskServiceAdapter';
 
 export interface IWFNotificationService {
   send(params: {
@@ -42,17 +43,20 @@ export class ActionExecutor {
   private notificationService?: IWFNotificationService;
   private webhookService?: IWFWebhookService;
   private entityService?: IWFEntityService;
+  private taskService?: IWFTaskService;
 
   constructor(options?: {
     guardEvaluator?: GuardEvaluator;
     notificationService?: IWFNotificationService;
     webhookService?: IWFWebhookService;
     entityService?: IWFEntityService;
+    taskService?: IWFTaskService;
   }) {
     this.guardEvaluator = options?.guardEvaluator || new GuardEvaluator();
     this.notificationService = options?.notificationService;
     this.webhookService = options?.webhookService;
     this.entityService = options?.entityService;
+    this.taskService = options?.taskService;
   }
 
   /**
@@ -239,8 +243,7 @@ export class ActionExecutor {
     context: IWFExecutionContext
   ): Promise<void> {
     if (!this.notificationService) {
-      console.log('[ActionExecutor] Notification (no service):', config.template || 'default');
-      return;
+      throw new Error('[ActionExecutor] NotificationService not configured — cannot execute NOTIFY/SEND_EMAIL action');
     }
 
     const to = config.to || context.instance.assignment?.userId || context.instance.startedBy;
@@ -274,11 +277,18 @@ export class ActionExecutor {
 
   private async executeCreateTask(
     config: Record<string, any>,
-    _context: IWFExecutionContext
-  ): Promise<string | null> {
-    // placeholder — يتم ربطه بـ TaskService الحقيقي
-    console.log('[ActionExecutor] Create task:', config.title);
-    return null;
+    context: IWFExecutionContext
+  ): Promise<string> {
+    if (!this.taskService) {
+      throw new Error('[ActionExecutor] TaskService not configured — cannot execute CREATE_TASK action');
+    }
+
+    return this.taskService.createTask(config, {
+      organizationId: context.instance.organizationId,
+      actorId: context.actor.id,
+      entityType: context.instance.entityType,
+      entityId: context.instance.entityId,
+    });
   }
 
   private async executeCallWebhook(
@@ -286,8 +296,7 @@ export class ActionExecutor {
     context: IWFExecutionContext
   ): Promise<any> {
     if (!this.webhookService) {
-      console.log('[ActionExecutor] Webhook (no service):', config.url);
-      return null;
+      throw new Error('[ActionExecutor] WebhookService not configured — cannot execute CALL_WEBHOOK action');
     }
 
     return this.webhookService.call({
@@ -312,8 +321,7 @@ export class ActionExecutor {
   ): Promise<any> {
     // تستخدم نفس Webhook service مع endpoint داخلي
     if (!this.webhookService) {
-      console.log('[ActionExecutor] API call (no service):', config.endpoint);
-      return null;
+      throw new Error('[ActionExecutor] WebhookService not configured — cannot execute CALL_API action');
     }
 
     return this.webhookService.call({
@@ -353,8 +361,7 @@ export class ActionExecutor {
     context: IWFExecutionContext
   ): Promise<void> {
     if (!this.entityService) {
-      console.log('[ActionExecutor] Update entity (no service):', config);
-      return;
+      throw new Error('[ActionExecutor] EntityService not configured — cannot execute UPDATE_ENTITY action');
     }
 
     await this.entityService.updateEntity(

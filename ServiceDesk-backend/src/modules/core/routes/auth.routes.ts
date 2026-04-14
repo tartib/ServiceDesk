@@ -51,18 +51,27 @@ router.post('/logout', authenticate, authCtrl.logout);
 // Protected
 router.get('/me', authenticate, authCtrl.me);
 router.patch('/me', authenticate, authCtrl.updateProfile);
+router.patch('/profile', authenticate, authCtrl.updateProfile);
+
+const passwordValidation = [
+  body('currentPassword').notEmpty().withMessage('Current password is required'),
+  body('newPassword')
+    .isLength({ min: 6 })
+    .withMessage('New password must be at least 6 characters'),
+];
 
 router.post(
   '/change-password',
   authenticate,
-  [
-    body('currentPassword').notEmpty().withMessage('Current password is required'),
-    body('newPassword')
-      .isLength({ min: 8 })
-      .withMessage('New password must be at least 8 characters')
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-      .withMessage('Password must contain uppercase, lowercase, and number'),
-  ],
+  passwordValidation,
+  handleValidation,
+  authCtrl.changePassword
+);
+
+router.patch(
+  '/password',
+  authenticate,
+  passwordValidation,
   handleValidation,
   authCtrl.changePassword
 );

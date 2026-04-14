@@ -59,6 +59,7 @@ interface Task {
  };
  };
  storyPoints?: number;
+ labels?: string[];
 }
 
 interface Project {
@@ -131,6 +132,10 @@ export default function ProjectBoardPage() {
  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
+ const [showLabelDropdown, setShowLabelDropdown] = useState(false);
+ const [labelSearchQuery, setLabelSearchQuery] = useState('');
+ const [newLabelColor, setNewLabelColor] = useState('#6366f1');
+ const [isCreatingLabel, setIsCreatingLabel] = useState(false);
  const [createAnother, setCreateAnother] = useState(false);
  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
  const [taskDetail, setTaskDetail] = useState<Task | null>(null);
@@ -156,6 +161,7 @@ export default function ProjectBoardPage() {
  members: Array<{ userId: string; role: string }>;
  }>>([]);
  const [selectedTeamFilter, setSelectedTeamFilter] = useState<string | null>(null);
+ const [availableLabels, setAvailableLabels] = useState<Array<{ _id: string; name: string; color: string }>>([]);
  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
  const [showWorkTypesModal, setShowWorkTypesModal] = useState(false);
  const [workTypesModalMode, setWorkTypesModalMode] = useState<'list' | 'add' | 'edit'>('list');
@@ -174,6 +180,9 @@ export default function ProjectBoardPage() {
  setShowNewTaskModal(false);
  setShowTypeDropdown(false);
  setShowStatusDropdown(false);
+ setShowLabelDropdown(false);
+ setLabelSearchQuery('');
+ setNewLabelColor('#6366f1');
  }
  };
  document.addEventListener('keydown', handleEscape);
@@ -241,6 +250,18 @@ export default function ProjectBoardPage() {
  }
  } catch (error) {
  console.error('Failed to fetch teams:', error);
+ }
+ }, [projectId]);
+
+ const fetchLabels = useCallback(async (token: string) => {
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/${projectId}/labels`, {
+ headers: { Authorization: `Bearer ${token}` },
+ });
+ const data = await res.json();
+ if (data.success) setAvailableLabels(data.data?.labels || []);
+ } catch (error) {
+ console.error('Failed to fetch labels:', error);
  }
  }, [projectId]);
 
@@ -372,8 +393,9 @@ export default function ProjectBoardPage() {
  // fetchWorkflowStatuses(token); // TODO: Enable when backend route exists
  fetchBoardTasks(token);
  fetchTeams(token);
+ fetchLabels(token);
  if (isScrum) fetchSprints(token);
- }, [projectId, router, fetchProject, fetchBoardTasks, fetchTeams, fetchSprints, isScrum]);
+ }, [projectId, router, fetchProject, fetchBoardTasks, fetchTeams, fetchSprints, fetchLabels, isScrum]);
 
  // Fallback: detect active sprint from allSprints if board endpoint didn't return one
  useEffect(() => {
@@ -397,64 +419,67 @@ export default function ProjectBoardPage() {
  }, [selectedIssue, allTasks, fetchTaskDetail]);
 
  const handleCreateTask = async () => {
- if (!newTaskTitle.trim()) return;
+  if (!newTaskTitle.trim()) return;
 
- const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
- if (!token) return;
+  const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+  if (!token) return;
 
- try {
- const response = await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
- method: 'POST',
- headers: {
- 'Content-Type': 'application/json',
- Authorization: `Bearer ${token}`,
- },
- body: JSON.stringify({
- title: newTaskTitle,
- type: newTaskType,
- description: newTaskDescription,
- status: newTaskStatus,
- assignee: newTaskAssignee === 'me' ? 'current-user' : newTaskAssignee === 'automatic' ? null : newTaskAssignee,
- dueDate: newTaskDueDate || null,
- startDate: newTaskStartDate || null,
- storyPoints: newTaskStoryPoints ? parseInt(newTaskStoryPoints) : null,
- flagged: newTaskFlagged,
- color: newTaskColor || null,
- }),
- });
+  try {
+    const response = await fetch(`${API_URL}/pm/projects/${projectId}/tasks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: newTaskTitle,
+        type: newTaskType,
+        description: newTaskDescription,
+        status: newTaskStatus,
+        assignee: newTaskAssignee === 'me' ? 'current-user' : newTaskAssignee === 'automatic' ? null : newTaskAssignee,
+        dueDate: newTaskDueDate || null,
+        startDate: newTaskStartDate || null,
+        storyPoints: newTaskStoryPoints ? parseInt(newTaskStoryPoints) : null,
+        flagged: newTaskFlagged,
+        color: newTaskColor || null,
+        labels: newTaskLabels.length > 0 ? newTaskLabels : undefined,
+      }),
+    });
 
- const data = await response.json();
- 
- if (!response.ok) {
- throw new Error(data.message || 'Failed to create task');
- }
- 
- if (data.success) {
- toast.success(t('projects.board.taskCreated') || 'Task created successfully!');
- 
- // Reset form
- setNewTaskTitle('');
- setNewTaskType('epic');
- setNewTaskDescription('');
- setNewTaskStatus('idea');
- setNewTaskAssignee('automatic');
- setNewTaskDueDate('');
- setNewTaskStartDate('');
- setNewTaskStoryPoints('');
- setNewTaskFlagged(false);
- setNewTaskColor('');
- 
- if (!createAnother) {
- setShowNewTaskModal(false);
- }
- 
- fetchBoardTasks(token);
- }
- } catch (error) {
- const errorMessage = error instanceof Error ? error.message : 'Failed to create task';
- console.error('Failed to create task:', error);
- toast.error(errorMessage || t('projects.board.taskCreateFailed') || 'Failed to create task');
- }
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to create task');
+    }
+
+    if (data.success) {
+      toast.success(t('projects.board.taskCreated') || 'Task created successfully!');
+
+      // Reset form
+      setNewTaskTitle('');
+      setNewTaskType('epic');
+      setNewTaskDescription('');
+      setNewTaskStatus('idea');
+      setNewTaskAssignee('automatic');
+      setNewTaskDueDate('');
+      setNewTaskStartDate('');
+      setNewTaskStoryPoints('');
+      setNewTaskFlagged(false);
+      setNewTaskColor('');
+      setNewTaskLabels([]);
+      setShowLabelDropdown(false);
+
+      if (!createAnother) {
+        setShowNewTaskModal(false);
+      }
+
+      fetchBoardTasks(token);
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create task';
+    console.error('Failed to create task:', error);
+    toast.error(errorMessage || t('projects.board.taskCreateFailed') || 'Failed to create task');
+  }
  };
 
  const handleMoveTask = async (taskId: string, newStatusId: string) => {
@@ -1147,6 +1172,9 @@ export default function ProjectBoardPage() {
  onClick={() => router.push(`/projects/${projectId}/board?selectedIssue=${task.key}`)}
  getTypeIcon={getTypeIcon}
  getPriorityColor={getPriorityColor}
+ resolvedLabels={(task.labels || [])
+ .map((id: string) => availableLabels.find(l => l._id === id))
+ .filter(Boolean) as Array<{ _id: string; name: string; color: string }>}
  />
  ))}
  </DroppableColumn>
@@ -1181,7 +1209,7 @@ export default function ProjectBoardPage() {
  }}
  teamMembers={projectMembers}
  sprints={isScrum ? allSprints : []}
- availableLabels={[]}
+ availableLabels={availableLabels}
  availableTeams={teams}
  />
  )}
@@ -1189,7 +1217,7 @@ export default function ProjectBoardPage() {
 
  {/* New Task Modal */}
  {showNewTaskModal && (
- <div data-testid="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowNewTaskModal(false); setShowTypeDropdown(false); setShowStatusDropdown(false); } }} className="fixed inset-0 bg-black/70 flex items-start justify-center z-50 pt-8 overflow-y-auto">
+ <div data-testid="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowNewTaskModal(false); setShowTypeDropdown(false); setShowStatusDropdown(false); setShowLabelDropdown(false); setLabelSearchQuery(''); setNewLabelColor('#6366f1'); } }} className="fixed inset-0 bg-black/70 flex items-start justify-center z-50 pt-8 overflow-y-auto">
  <div data-testid="create-task-modal" className="bg-background rounded-lg w-full max-w-2xl shadow-2xl mb-8">
  {/* Modal Header */}
  <div className="flex items-center justify-between px-6 py-4 border-b border-border">
@@ -1198,7 +1226,7 @@ export default function ProjectBoardPage() {
  <button className="p-1 text-muted-foreground hover:text-muted-foreground">—</button>
  <button className="p-1 text-muted-foreground hover:text-muted-foreground">⤢</button>
  <button className="p-1 text-muted-foreground hover:text-muted-foreground">•••</button>
- <button data-testid="modal-close-btn" onClick={() => { setShowNewTaskModal(false); setShowTypeDropdown(false); setShowStatusDropdown(false); }} className="p-1 text-muted-foreground hover:text-muted-foreground">✕</button>
+ <button data-testid="modal-close-btn" onClick={() => { setShowNewTaskModal(false); setShowTypeDropdown(false); setShowStatusDropdown(false); setShowLabelDropdown(false); setLabelSearchQuery(''); setNewLabelColor('#6366f1'); }} className="p-1 text-muted-foreground hover:text-muted-foreground">✕</button>
  </div>
  </div>
 
@@ -1400,12 +1428,111 @@ export default function ProjectBoardPage() {
  {/* Two column layout for smaller fields */}
  <div className="grid grid-cols-2 gap-4 mb-4">
  {/* Labels */}
- <div>
+ <div className="relative">
  <label className="block text-sm font-medium text-foreground mb-1">{t('projects.board.labels') || 'Labels'}</label>
- <div className="flex items-center gap-2 px-3 py-2 bg-background border border-border rounded text-muted-foreground">
- <span>{t('projects.board.selectLabel') || 'Select label'}</span>
- <ChevronDown className="h-4 w-4 ml-auto" />
+ <button
+ type="button"
+ onClick={() => setShowLabelDropdown(v => !v)}
+ className="w-full flex items-center gap-2 px-3 py-2 bg-background border border-border rounded text-sm hover:border-ring transition-colors"
+ >
+ {newTaskLabels.length > 0 ? (
+ <div className="flex flex-wrap gap-1 flex-1">
+ {newTaskLabels.slice(0, 2).map(id => {
+ const l = availableLabels.find(x => x._id === id);
+ return l ? (
+ <span key={id} className="px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ backgroundColor: `${l.color}22`, color: l.color, border: `1px solid ${l.color}55` }}>{l.name}</span>
+ ) : null;
+ })}
+ {newTaskLabels.length > 2 && <span className="text-[10px] text-muted-foreground">+{newTaskLabels.length - 2}</span>}
  </div>
+ ) : (
+ <span className="text-muted-foreground flex-1 text-left">{t('projects.board.selectLabel') || 'Select label'}</span>
+ )}
+ <ChevronDown className="h-4 w-4 ml-auto shrink-0" />
+ </button>
+ {showLabelDropdown && (
+ <div className="absolute z-50 top-full mt-1 left-0 w-full bg-background border border-border rounded-lg shadow-lg">
+ {/* Search */}
+ <div className="p-2 border-b border-border">
+ <input
+ type="text"
+ value={labelSearchQuery}
+ onChange={e => setLabelSearchQuery(e.target.value)}
+ placeholder="Search or create label..."
+ className="w-full px-2 py-1.5 text-sm bg-muted rounded border-none focus:outline-none focus:ring-1 focus:ring-ring"
+ autoFocus
+ onClick={e => e.stopPropagation()}
+ />
+ </div>
+ {/* List */}
+ <div className="max-h-40 overflow-y-auto">
+ {availableLabels
+ .filter(l => l.name.toLowerCase().includes(labelSearchQuery.toLowerCase()))
+ .map(label => {
+ const selected = newTaskLabels.includes(label._id);
+ return (
+ <button
+ key={label._id}
+ type="button"
+ onClick={() => setNewTaskLabels(prev => selected ? prev.filter(id => id !== label._id) : [...prev, label._id])}
+ className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted text-sm"
+ >
+ <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
+ <span className="flex-1 text-left text-foreground">{label.name}</span>
+ {selected && <span className="text-brand text-xs font-bold">✓</span>}
+ </button>
+ );
+ })}
+ {availableLabels.filter(l => l.name.toLowerCase().includes(labelSearchQuery.toLowerCase())).length === 0 && !labelSearchQuery && (
+ <p className="text-xs text-muted-foreground text-center py-3">No labels yet</p>
+ )}
+ </div>
+ {/* Create new label row */}
+ <div className="border-t border-border p-2">
+ {labelSearchQuery.trim() ? (
+ <div className="flex items-center gap-2">
+ <input
+ type="color"
+ value={newLabelColor}
+ onChange={e => setNewLabelColor(e.target.value)}
+ className="w-7 h-7 rounded border border-border cursor-pointer p-0.5 shrink-0"
+ onClick={e => e.stopPropagation()}
+ />
+ <button
+ type="button"
+ disabled={isCreatingLabel}
+ onClick={async (e) => {
+ e.stopPropagation();
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token || !labelSearchQuery.trim()) return;
+ setIsCreatingLabel(true);
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/${projectId}/labels`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+ body: JSON.stringify({ name: labelSearchQuery.trim(), color: newLabelColor }),
+ });
+ const data = await res.json();
+ if (data.success && data.data.label) {
+ setAvailableLabels(prev => [...prev, data.data.label]);
+ setNewTaskLabels(prev => [...prev, data.data.label._id]);
+ setLabelSearchQuery('');
+ setNewLabelColor('#6366f1');
+ }
+ } catch { /* ignore */ } finally { setIsCreatingLabel(false); }
+ }}
+ className="flex-1 flex items-center gap-1.5 px-2 py-1.5 text-xs text-brand hover:bg-brand-soft rounded transition-colors disabled:opacity-50"
+ >
+ <span className="text-base leading-none">+</span>
+ <span>Create &quot;{labelSearchQuery.trim()}&quot;</span>
+ </button>
+ </div>
+ ) : (
+ <p className="text-xs text-muted-foreground text-center py-1">Type to create a new label</p>
+ )}
+ </div>
+ </div>
+ )}
  </div>
 
  {/* Parent */}
@@ -1549,7 +1676,7 @@ export default function ProjectBoardPage() {
  <div className="flex items-center gap-3">
  <button
  data-testid="cancel-btn"
- onClick={() => { setShowNewTaskModal(false); setShowTypeDropdown(false); setShowStatusDropdown(false); }}
+ onClick={() => { setShowNewTaskModal(false); setShowTypeDropdown(false); setShowStatusDropdown(false); setShowLabelDropdown(false); setLabelSearchQuery(''); setNewLabelColor('#6366f1'); }}
  className="px-4 py-2 text-foreground hover:bg-muted rounded transition-colors"
  >
  {t('projects.common.cancel') || 'Cancel'}

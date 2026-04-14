@@ -7,31 +7,38 @@
 
 import { Request, Response } from 'express';
 import { notificationService } from '../services/NotificationService';
-import { NotificationSource } from '../domain/interfaces';
+import { NotificationSource, NotificationLevel } from '../domain/interfaces';
+import UnifiedNotification from '../models/Notification';
 import { sendSuccess, sendError } from '../../../utils/ApiResponse';
 import logger from '../../../utils/logger';
 
 export const listNotifications = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const limit = parseInt(req.query.limit as string) || 50;
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+    const page = Math.max(parseInt(req.query.page as string) || 1, 1);
     const isRead = req.query.isRead !== undefined
       ? req.query.isRead === 'true'
       : undefined;
 
-    const notifications = await notificationService.getByUser(
-      {
-        userId,
-        isRead,
-        source: req.query.source as NotificationSource | undefined,
-        projectId: req.query.projectId as string | undefined,
-      },
-      limit
-    );
+    const filters = {
+      userId,
+      isRead,
+      source: req.query.source as NotificationSource | undefined,
+      projectId: req.query.projectId as string | undefined,
+    };
 
-    const unreadCount = await notificationService.getUnreadCount(userId);
+    const [notifications, unreadCount] = await Promise.all([
+      notificationService.getByUser(filters, limit, page),
+      notificationService.getUnreadCount(userId),
+    ]);
 
-    sendSuccess(req, res, { notifications, count: notifications.length, unreadCount });
+    sendSuccess(req, res, {
+      notifications,
+      count: notifications.length,
+      unreadCount,
+      pagination: { page, limit },
+    });
   } catch (error) {
     logger.error('Error fetching notifications', { error });
     sendError(req, res, 500, 'Failed to fetch notifications');
@@ -64,13 +71,18 @@ export const getUnreadCount = async (req: Request, res: Response): Promise<void>
 
 export const markAsRead = async (req: Request, res: Response): Promise<void> => {
   try {
-    const notification = await notificationService.markAsRead(req.params.notifId);
-
-    if (!notification) {
+    const userId = req.user!.id;
+    const existing = await UnifiedNotification.findById(req.params.notifId).lean();
+    if (!existing) {
       sendError(req, res, 404, 'Notification not found');
       return;
     }
+    if (existing.userId.toString() !== userId) {
+      sendError(req, res, 403, 'Forbidden');
+      return;
+    }
 
+    const notification = await notificationService.markAsRead(req.params.notifId);
     sendSuccess(req, res, notification, 'Notification marked as read');
   } catch (error) {
     logger.error('Error marking notification as read', { error });
@@ -92,16 +104,37 @@ export const markAllAsRead = async (req: Request, res: Response): Promise<void> 
 
 export const deleteNotification = async (req: Request, res: Response): Promise<void> => {
   try {
-    const deleted = await notificationService.deleteNotification(req.params.notifId);
-
-    if (!deleted) {
+    const userId = req.user!.id;
+    const existing = await UnifiedNotification.findById(req.params.notifId).lean();
+    if (!existing) {
       sendError(req, res, 404, 'Notification not found');
       return;
     }
+    if (existing.userId.toString() !== userId) {
+      sendError(req, res, 403, 'Forbidden');
+      return;
+    }
 
+    await notificationService.deleteNotification(req.params.notifId);
     sendSuccess(req, res, null, 'Notification deleted');
   } catch (error) {
     logger.error('Error deleting notification', { error });
     sendError(req, res, 500, 'Failed to delete notification');
+  }
+};
+
+export const getCritical = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const notifications = await notificationService.getByUser({
+      userId,
+      level: NotificationLevel.CRITICAL,
+      isRead: false,
+    });
+
+    sendSuccess(req, res, { notifications, count: notifications.length });
+  } catch (error) {
+    logger.error('Error fetching critical notifications', { error });
+    sendError(req, res, 500, 'Failed to fetch critical notifications');
   }
 };

@@ -135,6 +135,7 @@ export default function BacklogPage() {
  profile?: { firstName?: string; lastName?: string; avatar?: string };
  }>>([]);
  const [allSprints, setAllSprints] = useState<Sprint[]>([]);
+ const [availableLabels, setAvailableLabels] = useState<Array<{ _id: string; name: string; color: string }>>([]);
  const [teams, setTeams] = useState<Array<{
  _id: string;
  name: string;
@@ -361,18 +362,20 @@ export default function BacklogPage() {
 
  const fetchData = useCallback(async (token: string) => {
  try {
- const [projectRes, sprintsRes, backlogRes, membersRes, teamsRes] = await Promise.all([
+ const [projectRes, sprintsRes, backlogRes, membersRes, teamsRes, labelsRes] = await Promise.all([
  fetch(`${API_URL}/pm/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
  fetch(`${API_URL}/pm/projects/${projectId}/sprints`, { headers: { Authorization: `Bearer ${token}` } }),
  fetch(`${API_URL}/pm/projects/${projectId}/backlog`, { headers: { Authorization: `Bearer ${token}` } }),
  fetch(`${API_URL}/pm/projects/${projectId}/members`, { headers: { Authorization: `Bearer ${token}` } }),
  fetch(`${API_URL}/pm/projects/${projectId}/teams`, { headers: { Authorization: `Bearer ${token}` } }),
+ fetch(`${API_URL}/pm/projects/${projectId}/labels`, { headers: { Authorization: `Bearer ${token}` } }),
  ]);
  const projectData = await projectRes.json();
  const sprintsData = await sprintsRes.json();
  const backlogData = await backlogRes.json();
  const membersData = await membersRes.json();
  const teamsData = await teamsRes.json();
+ const labelsData = await labelsRes.json();
  
  if (projectData.success) setProject(projectData.data.project);
  if (sprintsData.success) {
@@ -413,6 +416,7 @@ export default function BacklogPage() {
  ).filter((team: TeamData | undefined): team is TeamData => Boolean(team && team._id && team.name));
  setTeams(extractedTeams);
  }
+ if (labelsData.success) setAvailableLabels(labelsData.data?.labels || []);
  } catch (error) { console.error('Failed to fetch data:', error); }
  finally { setIsLoading(false); }
  }, [projectId]);
@@ -799,7 +803,7 @@ export default function BacklogPage() {
  }}
  teamMembers={projectMembers}
  sprints={allSprints}
- availableLabels={[]}
+ availableLabels={availableLabels}
  availableTeams={teams}
  />
  )}

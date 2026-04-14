@@ -54,6 +54,7 @@ export interface IRuleExecutionHook {
   }): Promise<void>;
 }
 import { ActionExecutor, type IWFNotificationService, type IWFWebhookService, type IWFEntityService } from './ActionExecutor';
+import type { IWFTaskService } from '../adapters/TaskServiceAdapter';
 import { ParallelStepManager } from './ParallelStepManager';
 
 // ============================================
@@ -107,6 +108,7 @@ export interface IGenericWorkflowEngineOptions {
   notificationService?: IWFNotificationService;
   webhookService?: IWFWebhookService;
   entityService?: IWFEntityService;
+  taskService?: IWFTaskService;
   ruleExecutionHook?: IRuleExecutionHook;
 }
 
@@ -138,6 +140,7 @@ export class GenericWorkflowEngine {
       notificationService: options.notificationService,
       webhookService: options.webhookService,
       entityService: options.entityService,
+      taskService: options.taskService,
     });
     this.parallelManager = new ParallelStepManager();
     this.ruleExecutionHook = options.ruleExecutionHook;

@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/authStore';
 import { ALL_ROLES } from '@/types';
 import { useUIStore } from '@/store/uiStore';
 import { useLocale } from '@/hooks/useLocale';
+import { useBrandName } from '@/hooks/useBrandSettings';
 import {
  LayoutDashboard,
  CheckSquare,
@@ -151,6 +152,7 @@ export default function Sidebar() {
  const { user } = useAuthStore();
  const { sidebarCollapsed, toggleSidebar } = useUIStore();
  const { t } = useLocale();
+ const brandName = useBrandName();
  const [projects, setProjects] = useState<Project[]>([]);
  const [projectsExpanded, setProjectsExpanded] = useState(true);
 
@@ -222,7 +224,7 @@ export default function Sidebar() {
  <div className="flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4 border-b border-sidebar-border shrink-0">
  <div className="flex items-center gap-2 min-w-0">
  <div className="text-xl sm:text-2xl font-bold text-brand shrink-0">***</div>
- <span className="text-base sm:text-lg font-bold truncate">{t('app.name')}</span>
+ <span className="text-base sm:text-lg font-bold truncate">{brandName || t('app.name')}</span>
  </div>
  <Button
  variant="ghost"

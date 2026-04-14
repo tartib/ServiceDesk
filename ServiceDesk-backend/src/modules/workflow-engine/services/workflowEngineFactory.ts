@@ -12,6 +12,9 @@ import workflowEventService from './workflowEvent.service';
 import ExternalTask, { ExternalTaskStatus } from '../models/ExternalTask';
 import { webhookService } from '../../../integrations/services/webhookService';
 import { isWfPostgres, getWfRepos } from '../infrastructure/repositories';
+import { NotificationServiceAdapter } from '../adapters/NotificationServiceAdapter';
+import { EntityServiceAdapter } from '../adapters/EntityServiceAdapter';
+import { TaskServiceAdapter } from '../adapters/TaskServiceAdapter';
 
 /**
  * مخزن المهام الخارجية — يربط الـ ExternalTask model بواجهة المحرك
@@ -115,8 +118,10 @@ export function getWorkflowEngine(): GenericWorkflowEngine {
       eventStore: usePg ? repos!.event : workflowEventService,
       externalTaskStore: usePg ? repos!.externalTask : externalTaskStore,
       webhookService,
+      notificationService: new NotificationServiceAdapter(),
+      entityService: new EntityServiceAdapter(),
+      taskService: new TaskServiceAdapter(),
       ruleExecutionHook: createRuleExecutionHook(),
-      // notificationService, entityService يتم ربطها لاحقاً
     });
   }
   return engineInstance;

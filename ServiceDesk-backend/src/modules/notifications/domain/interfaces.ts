@@ -108,7 +108,7 @@ export interface NotificationFilters {
 export interface INotificationService {
   create(data: CreateNotificationDTO): Promise<any>;
   createBulk(userIds: string[], data: Omit<CreateNotificationDTO, 'userId'>): Promise<number>;
-  getByUser(filters: NotificationFilters, limit?: number): Promise<any[]>;
+  getByUser(filters: NotificationFilters, limit?: number, page?: number): Promise<any[]>;
   getUnreadCount(userId: string): Promise<number>;
   markAsRead(notificationId: string): Promise<any | null>;
   markAllAsRead(userId: string): Promise<number>;

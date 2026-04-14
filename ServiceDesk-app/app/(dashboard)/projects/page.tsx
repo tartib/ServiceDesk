@@ -62,12 +62,14 @@ interface Project {
  createdBy?: {
  name: string;
  };
+ isStarred?: boolean;
 }
 
 export default function ProjectsPage() {
  const router = useRouter();
  const { t } = useLanguage();
  const [projects, setProjects] = useState<Project[]>([]);
+ const [starredProjectIds, setStarredProjectIds] = useState<Set<string>>(new Set());
  const [isLoading, setIsLoading] = useState(true);
  const [showSearch, setShowSearch] = useState(false);
  const [showWizard, setShowWizard] = useState(false);
@@ -80,6 +82,7 @@ export default function ProjectsPage() {
  return;
  }
  fetchProjects(token);
+ fetchStarredProjects(token);
 
  // Fetch intake pending count
  fetch(`${API_URL}/pm/intake/stats`, { headers: { Authorization: `Bearer ${token}` } })
@@ -92,6 +95,27 @@ export default function ProjectsPage() {
  })
  .catch(() => {});
  }, [router]);
+
+ const fetchStarredProjects = async (token: string) => {
+ try {
+ const response = await fetch(`${API_URL}/pm/projects/starred`, {
+ headers: { Authorization: `Bearer ${token}` },
+ });
+
+ if (!response.ok) {
+ console.error('Failed to fetch starred projects:', response.status);
+ return;
+ }
+
+ const data = await response.json();
+ if (data.success && data.data.projects) {
+ const ids: Set<string> = new Set(data.data.projects.map((p: { _id: string }) => p._id));
+ setStarredProjectIds(ids);
+ }
+ } catch (error) {
+ console.error('Failed to fetch starred projects:', error);
+ }
+ };
 
  const fetchProjects = async (token: string) => {
  try {
@@ -129,6 +153,7 @@ export default function ProjectsPage() {
  status: p.status,
  lead: leadName ? { name: leadName, email: leadUser?.email || '' } : undefined,
  createdBy: createdByName ? { name: createdByName } : undefined,
+ isStarred: starredProjectIds.has(p._id),
  };
  });
  setProjects(mapped);
@@ -146,6 +171,33 @@ export default function ProjectsPage() {
 
  const handleProjectCreated = (projectId: string) => {
  router.push(`/projects/${projectId}/summary`);
+ };
+
+ const handleStar = async (projectId: string) => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+
+ try {
+ const isCurrentlyStarred = starredProjectIds.has(projectId);
+ const method = isCurrentlyStarred ? 'DELETE' : 'POST';
+ const response = await fetch(`${API_URL}/pm/projects/${projectId}/star`, {
+ method,
+ headers: { Authorization: `Bearer ${token}` },
+ });
+
+ if (response.ok) {
+ const newStarred = new Set(starredProjectIds);
+ if (isCurrentlyStarred) {
+ newStarred.delete(projectId);
+ } else {
+ newStarred.add(projectId);
+ }
+ setStarredProjectIds(newStarred);
+ setProjects(projects.map(p => p._id === projectId ? { ...p, isStarred: !isCurrentlyStarred } : p));
+ }
+ } catch (error) {
+ console.error('Failed to toggle star:', error);
+ }
  };
 
  return (
@@ -188,6 +240,7 @@ export default function ProjectsPage() {
  const landing = getDefaultLandingPage((project.methodology?.code || 'scrum') as MethodologyType);
  router.push(`/projects/${project._id}${landing}`);
  }}
+ onStar={handleStar}
  />
  )}
 

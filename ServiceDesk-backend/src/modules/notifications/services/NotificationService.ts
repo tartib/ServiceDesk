@@ -119,7 +119,8 @@ export class NotificationService implements INotificationService {
 
   async getByUser(
     filters: NotificationFilters,
-    limit: number = 50
+    limit: number = 50,
+    page: number = 1
   ): Promise<any[]> {
     const query: Record<string, any> = { userId: filters.userId };
 
@@ -135,8 +136,11 @@ export class NotificationService implements INotificationService {
       if (filters.dateTo) query.createdAt.$lte = filters.dateTo;
     }
 
+    const skip = (Math.max(1, page) - 1) * limit;
+
     return UnifiedNotification.find(query)
       .sort({ createdAt: -1 })
+      .skip(skip)
       .limit(limit)
       .lean();
   }
@@ -190,20 +194,29 @@ export class NotificationService implements INotificationService {
   // ── Cleanup ──────────────────────────────────────────────────
 
   async cleanOld(daysOld: number = 30): Promise<number> {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - daysOld);
+    const readCutoff = new Date();
+    readCutoff.setDate(readCutoff.getDate() - daysOld);
 
-    const result = await UnifiedNotification.deleteMany({
-      createdAt: { $lt: cutoff },
-      isRead: true,
-    });
+    // Unread notifications older than 3× the threshold are also pruned
+    const unreadCutoff = new Date();
+    unreadCutoff.setDate(unreadCutoff.getDate() - daysOld * 3);
+
+    const [readResult, unreadResult] = await Promise.all([
+      UnifiedNotification.deleteMany({ createdAt: { $lt: readCutoff }, isRead: true }),
+      UnifiedNotification.deleteMany({ createdAt: { $lt: unreadCutoff }, isRead: false }),
+    ]);
+
+    const totalDeleted = readResult.deletedCount + unreadResult.deletedCount;
 
     logger.info('Cleaned old notifications', {
-      deletedCount: result.deletedCount,
-      daysOld,
+      readDeleted: readResult.deletedCount,
+      unreadDeleted: unreadResult.deletedCount,
+      totalDeleted,
+      readCutoffDays: daysOld,
+      unreadCutoffDays: daysOld * 3,
     });
 
-    return result.deletedCount;
+    return totalDeleted;
   }
 }
 

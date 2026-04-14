@@ -7,6 +7,7 @@
  */
 
 import eventBus from '../../../shared/events/event-bus';
+import mongoose from 'mongoose';
 import {
   DomainEvent,
   QUEUES,
@@ -228,7 +229,34 @@ async function notifyWorkItemTransitioned(
 
   logger.debug('Work item transitioned', { itemId, from, to, transitionedBy });
 
-  // TODO: Notify watchers about status change via dispatcher
+  try {
+    const Task = mongoose.model('Task');
+    const task = await Task.findById(itemId).select('assignee reporter title projectId organizationId').lean() as any;
+    if (!task) return;
+
+    const recipients = new Set<string>();
+    if (task.assignee) recipients.add(task.assignee.toString());
+    if (task.reporter) recipients.add(task.reporter.toString());
+    if (transitionedBy) recipients.delete(transitionedBy);
+
+    if (recipients.size === 0) return;
+
+    await notificationDispatcher.dispatchBulk([...recipients], {
+      type: NotificationType.STATUS_CHANGE,
+      source: NotificationSource.PM,
+      level: NotificationLevel.INFO,
+      title: 'Task Status Updated',
+      message: `Task "${task.title || itemId}" moved from "${from}" to "${to}".`,
+      relatedEntityId: itemId,
+      relatedEntityType: 'Task',
+      projectId: task.projectId?.toString(),
+      organizationId: task.organizationId?.toString() || event.organizationId,
+      actionUrl: `/projects/${task.projectId}/tasks/${itemId}`,
+      metadata: { from, to, transitionedBy },
+    });
+  } catch (err) {
+    logger.error('notifyWorkItemTransitioned failed', { err });
+  }
 }
 
 async function handleSprintStarted(
@@ -236,14 +264,32 @@ async function handleSprintStarted(
 ): Promise<void> {
   const { sprintId, projectId, itemCount, totalPoints } = event.data;
 
-  logger.info('Sprint started - notifying team', {
-    sprintId,
-    projectId,
-    itemCount,
-    totalPoints,
-  });
+  logger.info('Sprint started - notifying team', { sprintId, projectId, itemCount, totalPoints });
 
-  // TODO: Notify all project members about sprint start via dispatcher
+  try {
+    const Project = mongoose.model('PMProject');
+    const project = await Project.findById(projectId).select('members organizationId name').lean() as any;
+    if (!project) return;
+
+    const memberIds = (project.members || []).map((m: any) => m.userId?.toString() || m.toString()).filter(Boolean);
+    if (memberIds.length === 0) return;
+
+    await notificationDispatcher.dispatchBulk(memberIds, {
+      type: NotificationType.TASK,
+      source: NotificationSource.PM,
+      level: NotificationLevel.INFO,
+      title: 'Sprint Started',
+      message: `A new sprint has started with ${itemCount} tasks (${totalPoints} pts). Time to get to work!`,
+      relatedEntityId: sprintId,
+      relatedEntityType: 'Sprint',
+      projectId: projectId,
+      organizationId: project.organizationId?.toString() || event.organizationId,
+      actionUrl: `/projects/${projectId}/board`,
+      metadata: { sprintId, itemCount, totalPoints },
+    });
+  } catch (err) {
+    logger.error('handleSprintStarted notification failed', { err });
+  }
 }
 
 async function handleSprintCompleted(
@@ -251,14 +297,36 @@ async function handleSprintCompleted(
 ): Promise<void> {
   const { sprintId, velocity, completedItems, incompleteItems } = event.data;
 
-  logger.info('Sprint completed - sending summary', {
-    sprintId,
-    velocity,
-    completedItems,
-    incompleteItems,
-  });
+  logger.info('Sprint completed - sending summary', { sprintId, velocity, completedItems, incompleteItems });
 
-  // TODO: Send sprint completion summary to team via dispatcher
+  try {
+    const Sprint = mongoose.model('Sprint');
+    const sprint = await Sprint.findById(sprintId).select('projectId name').lean() as any;
+    if (!sprint) return;
+
+    const Project = mongoose.model('PMProject');
+    const project = await Project.findById(sprint.projectId).select('members organizationId').lean() as any;
+    if (!project) return;
+
+    const memberIds = (project.members || []).map((m: any) => m.userId?.toString() || m.toString()).filter(Boolean);
+    if (memberIds.length === 0) return;
+
+    await notificationDispatcher.dispatchBulk(memberIds, {
+      type: NotificationType.COMPLETED,
+      source: NotificationSource.PM,
+      level: NotificationLevel.INFO,
+      title: 'Sprint Completed',
+      message: `Sprint finished — ${completedItems} tasks done, ${incompleteItems} carried over. Velocity: ${velocity} pts.`,
+      relatedEntityId: sprintId,
+      relatedEntityType: 'Sprint',
+      projectId: sprint.projectId?.toString(),
+      organizationId: project.organizationId?.toString() || event.organizationId,
+      actionUrl: `/projects/${sprint.projectId}/backlog`,
+      metadata: { sprintId, velocity, completedItems, incompleteItems },
+    });
+  } catch (err) {
+    logger.error('handleSprintCompleted notification failed', { err });
+  }
 }
 
 // ============================================================
@@ -306,17 +374,44 @@ async function handleItsmServiceRequestEvent(event: DomainEvent<unknown>): Promi
       break;
     }
     case 'itsm.service_request.status_changed': {
-      const { requestId, oldStatus, newStatus } =
-        (event as DomainEvent<ServiceRequestStatusChangedEvent>).data;
-      logger.info('Service request status changed', { requestId, oldStatus, newStatus });
-      // TODO: Notify requester of status change
+      const { requestId, oldStatus, newStatus, requesterId } =
+        (event as DomainEvent<ServiceRequestStatusChangedEvent>).data as ServiceRequestStatusChangedEvent & { requesterId?: string };
+      if (requesterId) {
+        await notificationDispatcher.dispatch({
+          userId: requesterId,
+          type: NotificationType.STATUS_CHANGE,
+          source: NotificationSource.ITSM,
+          level: NotificationLevel.INFO,
+          title: 'Service Request Updated',
+          message: `Your service request status changed from "${oldStatus}" to "${newStatus}".`,
+          relatedEntityId: requestId,
+          relatedEntityType: 'ServiceRequest',
+          organizationId: event.organizationId,
+          actionUrl: `/self-service/requests/${requestId}`,
+          metadata: { oldStatus, newStatus },
+        });
+      }
       break;
     }
     case 'itsm.service_request.approved': {
-      const { requestId, approvedBy } =
-        (event as DomainEvent<ServiceRequestApprovedEvent>).data;
-      logger.info('Service request approved', { requestId, approvedBy });
-      // TODO: Notify requester of approval
+      const { requestId, approvedBy, requesterId } =
+        (event as DomainEvent<ServiceRequestApprovedEvent>).data as ServiceRequestApprovedEvent & { requesterId?: string };
+      if (requesterId) {
+        await notificationDispatcher.dispatch({
+          userId: requesterId,
+          type: NotificationType.APPROVAL,
+          source: NotificationSource.ITSM,
+          level: NotificationLevel.INFO,
+          title: 'Service Request Approved',
+          message: `Your service request has been approved.`,
+          relatedEntityId: requestId,
+          relatedEntityType: 'ServiceRequest',
+          organizationId: event.organizationId,
+          actionRequired: false,
+          actionUrl: `/self-service/requests/${requestId}`,
+          metadata: { approvedBy },
+        });
+      }
       break;
     }
     default:
@@ -329,15 +424,41 @@ async function handleItsmCIEvent(event: DomainEvent<unknown>): Promise<void> {
 
   switch (event.type) {
     case 'itsm.ci.created': {
-      const { ciId, name, ciType } = (event as DomainEvent<CICreatedEvent>).data;
-      logger.info('CI created - notifying CMDB managers', { ciId, name, ciType });
-      // TODO: Notify CMDB managers via dispatcher
+      const { ciId, name, ciType, createdBy } = (event as DomainEvent<CICreatedEvent>).data as CICreatedEvent & { createdBy?: string };
+      logger.info('CI created', { ciId, name, ciType });
+      if (createdBy) {
+        await notificationDispatcher.dispatch({
+          userId: createdBy,
+          type: NotificationType.SYSTEM,
+          source: NotificationSource.ITSM,
+          level: NotificationLevel.INFO,
+          title: 'CI Added to CMDB',
+          message: `Configuration item "${name}" (${ciType}) has been registered in the CMDB.`,
+          relatedEntityId: ciId,
+          relatedEntityType: 'CI',
+          organizationId: event.organizationId,
+          actionUrl: `/cmdb/${ciId}`,
+        });
+      }
       break;
     }
     case 'itsm.ci.retired': {
-      const { ciId, name } = (event as DomainEvent<CIRetiredEvent>).data;
-      logger.warn('CI retired - notifying dependent service owners', { ciId, name });
-      // TODO: Notify owners of dependent services via dispatcher
+      const { ciId, name, retiredBy } = (event as DomainEvent<CIRetiredEvent>).data as CIRetiredEvent & { retiredBy?: string };
+      logger.warn('CI retired', { ciId, name });
+      if (retiredBy) {
+        await notificationDispatcher.dispatch({
+          userId: retiredBy,
+          type: NotificationType.SYSTEM,
+          source: NotificationSource.ITSM,
+          level: NotificationLevel.WARNING,
+          title: 'CI Retired',
+          message: `Configuration item "${name}" has been retired from the CMDB.`,
+          relatedEntityId: ciId,
+          relatedEntityType: 'CI',
+          organizationId: event.organizationId,
+          actionUrl: `/cmdb`,
+        });
+      }
       break;
     }
     default:
@@ -356,33 +477,63 @@ async function handleWorkflowEvent(event: DomainEvent<unknown>): Promise<void> {
     case 'wf.instance.started': {
       const { instanceId, definitionName, startedBy } =
         (event as DomainEvent<WorkflowInstanceStartedEvent>).data;
-      logger.info('Workflow started - notifying participants', {
-        instanceId,
-        definitionName,
-        startedBy,
-      });
-      // TODO: Notify workflow participants via dispatcher
+      logger.info('Workflow started', { instanceId, definitionName, startedBy });
+      if (startedBy) {
+        await notificationDispatcher.dispatch({
+          userId: startedBy,
+          type: NotificationType.WORKFLOW_STARTED,
+          source: NotificationSource.WORKFLOW,
+          level: NotificationLevel.INFO,
+          title: 'Workflow Started',
+          message: `Workflow "${definitionName}" has been started.`,
+          relatedEntityId: instanceId,
+          relatedEntityType: 'WorkflowInstance',
+          organizationId: event.organizationId,
+          actionUrl: `/workflows/instances/${instanceId}`,
+        });
+      }
       break;
     }
     case 'wf.instance.transitioned': {
-      const { instanceId, fromState, toState } =
-        (event as DomainEvent<WorkflowInstanceTransitionedEvent>).data;
-      logger.info('Workflow transitioned - notifying next assignee', {
-        instanceId,
-        fromState,
-        toState,
-      });
-      // TODO: Notify assignee of new state via dispatcher
+      const { instanceId, fromState, toState, assigneeId } =
+        (event as DomainEvent<WorkflowInstanceTransitionedEvent>).data as WorkflowInstanceTransitionedEvent & { assigneeId?: string };
+      logger.info('Workflow transitioned', { instanceId, fromState, toState });
+      if (assigneeId) {
+        await notificationDispatcher.dispatch({
+          userId: assigneeId,
+          type: NotificationType.WORKFLOW_TRANSITIONED,
+          source: NotificationSource.WORKFLOW,
+          level: NotificationLevel.INFO,
+          title: 'Workflow Step Ready',
+          message: `A workflow has moved to "${toState}" and requires your attention.`,
+          relatedEntityId: instanceId,
+          relatedEntityType: 'WorkflowInstance',
+          organizationId: event.organizationId,
+          actionRequired: true,
+          actionUrl: `/workflows/instances/${instanceId}`,
+          metadata: { fromState, toState },
+        });
+      }
       break;
     }
     case 'wf.instance.completed': {
-      const { instanceId, definitionId } =
-        (event as DomainEvent<WorkflowInstanceCompletedEvent>).data;
-      logger.info('Workflow completed - notifying initiator', {
-        instanceId,
-        definitionId,
-      });
-      // TODO: Notify workflow initiator via dispatcher
+      const { instanceId, definitionId, initiatorId } =
+        (event as DomainEvent<WorkflowInstanceCompletedEvent>).data as WorkflowInstanceCompletedEvent & { initiatorId?: string };
+      logger.info('Workflow completed', { instanceId, definitionId });
+      if (initiatorId) {
+        await notificationDispatcher.dispatch({
+          userId: initiatorId,
+          type: NotificationType.WORKFLOW_COMPLETED,
+          source: NotificationSource.WORKFLOW,
+          level: NotificationLevel.INFO,
+          title: 'Workflow Completed',
+          message: `Your workflow instance has completed successfully.`,
+          relatedEntityId: instanceId,
+          relatedEntityType: 'WorkflowInstance',
+          organizationId: event.organizationId,
+          actionUrl: `/workflows/instances/${instanceId}`,
+        });
+      }
       break;
     }
     default:

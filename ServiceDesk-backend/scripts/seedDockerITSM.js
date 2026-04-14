@@ -44,7 +44,7 @@ async function main() {
     if (!already) {
       await db.collection('users').updateOne(
         { _id: user._id },
-        { $push: { organizations: { organizationId: orgObjectId, role: user.role === 'manager' ? 'admin' : 'agent', joinedAt: new Date() } } }
+        { $push: { organizations: { organizationId: orgObjectId, role: user.role === 'manager' ? 'admin' : 'member', joinedAt: new Date() } } }
       );
       console.log('Added', user.email, 'to org');
     }

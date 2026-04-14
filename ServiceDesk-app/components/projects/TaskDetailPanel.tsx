@@ -34,6 +34,11 @@ import {
  Link2,
  List,
  Heading,
+ Eye,
+ Share2,
+ Copy,
+ MoveVertical,
+ Mail,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
@@ -509,6 +514,15 @@ export function TaskDetailPanel({
  const quickAddMenuRef = useRef<HTMLDivElement>(null);
  const quickAddSearchRef = useRef<HTMLInputElement>(null);
  const fileInputRef = useRef<HTMLInputElement>(null);
+
+ // Move Task Modal State
+ const [showMoveModal, setShowMoveModal] = useState(false);
+ const [moveProjects, setMoveProjects] = useState<{ _id: string; name: string; key: string }[]>([]);
+ const [moveTargetProject, setMoveTargetProject] = useState<string>('');
+ const [moveTargetStatuses, setMoveTargetStatuses] = useState<{ id: string; name: string; category: string }[]>([]);
+ const [moveTargetStatus, setMoveTargetStatus] = useState<string>('');
+ const [isMoving, setIsMoving] = useState(false);
+ const [moveProjectSearch, setMoveProjectSearch] = useState('');
 
  // Header Actions State
  const [showEpicDropdown, setShowEpicDropdown] = useState(false);
@@ -1419,6 +1433,71 @@ export function TaskDetailPanel({
  }
  }, [activeTask._id, t, onTaskUpdate]);
 
+ // Move task handler
+ const handleOpenMoveModal = useCallback(async () => {
+   setShowKebabMenu(false);
+   setShowMoveModal(true);
+   const token = getToken();
+   if (!token) return;
+   try {
+     const res = await fetch(`${API_URL}/pm/projects`, { headers: { Authorization: `Bearer ${token}` } });
+     const data = await res.json();
+     if (data.success) {
+       setMoveProjects((data.data?.projects || data.data || []).map((p: { _id: string; name: string; key: string }) => ({ _id: p._id, name: p.name, key: p.key })));
+     }
+   } catch { /* ignore */ }
+ }, []);
+
+ const handleMoveTargetProjectChange = useCallback(async (targetProjectId: string) => {
+   setMoveTargetProject(targetProjectId);
+   setMoveTargetStatus('');
+   setMoveTargetStatuses([]);
+   if (!targetProjectId) return;
+   const token = getToken();
+   if (!token) return;
+   try {
+     const res = await fetch(`${API_URL}/pm/projects/${targetProjectId}/workflow`, { headers: { Authorization: `Bearer ${token}` } });
+     const data = await res.json();
+     if (data.success && data.data?.statuses) {
+       setMoveTargetStatuses(data.data.statuses.map((s: { id: string; name: string; category: string }) => ({ id: s.id, name: s.name, category: s.category })));
+     }
+   } catch { /* ignore */ }
+ }, []);
+
+ const handleMoveTask = useCallback(async () => {
+   const token = getToken();
+   if (!token || !moveTargetProject) return;
+   setIsMoving(true);
+   try {
+     if (moveTargetProject === projectId) {
+       // Same project: use move endpoint for status change
+       const res = await fetch(`${API_URL}/pm/tasks/${activeTask._id}/move`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+         body: JSON.stringify({ statusId: moveTargetStatus || undefined }),
+       });
+       const data = await res.json();
+       if (!res.ok) throw new Error(data.message || 'Move failed');
+     } else {
+       // Cross-project: PATCH projectId + statusId
+       const res = await fetch(`${API_URL}/pm/tasks/${activeTask._id}`, {
+         method: 'PATCH',
+         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+         body: JSON.stringify({ projectId: moveTargetProject, ...(moveTargetStatus ? { statusId: moveTargetStatus } : {}) }),
+       });
+       const data = await res.json();
+       if (!res.ok) throw new Error(data.message || 'Move failed');
+     }
+     toast.success(t('projects.board.taskMoved') || 'Task moved successfully!');
+     setShowMoveModal(false);
+     onTaskUpdate();
+   } catch (error) {
+     toast.error(error instanceof Error ? error.message : 'Failed to move task');
+   } finally {
+     setIsMoving(false);
+   }
+ }, [activeTask._id, moveTargetProject, moveTargetStatus, projectId, t, onTaskUpdate]);
+
  const handleDeleteIssue = useCallback(async () => {
  if (!confirm(t('projects.board.confirmDelete') || 'Are you sure you want to delete this issue?')) {
  return;
@@ -1837,10 +1916,7 @@ export function TaskDetailPanel({
  title={`${watchers.length} ${t('projects.board.watching') || 'watching'}`}
  aria-label={`${watchers.length} ${t('projects.board.watching') || 'watching'}`}
  >
- <svg className="h-4 w-4" fill={isWatching ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
- <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
- </svg>
+ <Eye className="h-4 w-4" fill={isWatching ? 'currentColor' : 'none'} />
  {watchers.length > 0 && <span className="text-xs">{watchers.length}</span>}
  </button>
 
@@ -1899,9 +1975,7 @@ export function TaskDetailPanel({
  title={t('projects.board.share') || 'Share'}
  aria-label={t('projects.board.share') || 'Share'}
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
- </svg>
+ <Share2 className="h-4 w-4" />
  </button>
  
  {/* Open in Full Page */}
@@ -1947,25 +2021,17 @@ export function TaskDetailPanel({
  onClick={handleCloneIssue}
  className="w-full px-4 py-2 text-start text-sm text-foreground hover:bg-muted flex items-center gap-2"
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
- </svg>
+ <Copy className="h-4 w-4" />
  {t('projects.board.clone') || 'Clone'}
  </button>
  </li>
  <li role="none">
  <button
  role="menuitem"
- onClick={() => {
- setShowKebabMenu(false);
- // Move action - could open a modal to select destination
- toast(t('projects.board.moveNotImplemented') || 'Move feature coming soon');
- }}
+ onClick={handleOpenMoveModal}
  className="w-full px-4 py-2 text-start text-sm text-foreground hover:bg-muted flex items-center gap-2"
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
- </svg>
+ <MoveVertical className="h-4 w-4" />
  {t('projects.board.move') || 'Move'}
  </button>
  </li>
@@ -3214,9 +3280,7 @@ export function TaskDetailPanel({
  }}
  className="flex-1 px-4 py-2 text-sm text-foreground border border-border rounded-lg hover:bg-muted/50 flex items-center justify-center gap-2"
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
- </svg>
+ <Mail className="h-4 w-4" />
  {t('projects.board.email') || 'Email'}
  </button>
  <button
@@ -3936,10 +4000,34 @@ export function TaskDetailPanel({
  </button>
  );
  })}
- {filteredLabels.length === 0 && (
+ {filteredLabels.length === 0 && labelSearch.trim() === '' && (
  <p className="text-muted-foreground text-sm text-center py-2">
  {t('projects.board.noLabelsFound') || 'No labels found'}
  </p>
+ )}
+ {labelSearch.trim() !== '' && filteredLabels.length === 0 && (
+ <button
+ onClick={async () => {
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token || !projectId) return;
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/${projectId}/labels`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+ body: JSON.stringify({ name: labelSearch.trim(), color: '#6366f1' }),
+ });
+ const data = await res.json();
+ if (data.success && data.data.label) {
+ await handleAddLabel(data.data.label._id);
+ setLabelSearch('');
+ }
+ } catch { /* ignore */ }
+ }
+ }
+ className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-brand hover:bg-muted rounded text-left"
+ >
+ <span>Create label &quot;{labelSearch.trim()}&quot;</span>
+ </button>
  )}
  </div>
  </div>
@@ -4793,6 +4881,84 @@ export function TaskDetailPanel({
  </div>
  </div>
  </div>
+
+ {/* Move Task Modal */}
+ {showMoveModal && (
+ <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/40" onClick={() => setShowMoveModal(false)}>
+ <div className="bg-background rounded-xl border border-border shadow-xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+ <div className="flex items-center justify-between">
+ <h3 className="text-lg font-semibold">{t('projects.board.move') || 'Move'} {activeTask.key}</h3>
+ <button onClick={() => setShowMoveModal(false)} className="p-1 hover:bg-muted rounded"><X className="h-4 w-4" /></button>
+ </div>
+
+ {/* Project selector */}
+ <div className="space-y-1.5">
+ <label className="text-sm font-medium">Destination Project</label>
+ <input
+ type="text"
+ placeholder="Search projects..."
+ value={moveProjectSearch}
+ onChange={e => setMoveProjectSearch(e.target.value)}
+ className="w-full text-sm border border-border rounded-lg px-3 py-2 bg-background mb-1"
+ />
+ <div className="max-h-40 overflow-y-auto border border-border rounded-lg">
+ {moveProjects
+ .filter(p => !moveProjectSearch || p.name.toLowerCase().includes(moveProjectSearch.toLowerCase()) || p.key.toLowerCase().includes(moveProjectSearch.toLowerCase()))
+ .map(p => (
+ <button
+ key={p._id}
+ onClick={() => handleMoveTargetProjectChange(p._id)}
+ className={`w-full px-3 py-2 text-start text-sm hover:bg-muted flex items-center justify-between ${
+ moveTargetProject === p._id ? 'bg-brand-soft text-brand' : ''
+ }`}
+ >
+ <span>{p.name}</span>
+ <span className="text-xs text-muted-foreground">{p.key}</span>
+ </button>
+ ))}
+ {moveProjects.length === 0 && <p className="text-sm text-muted-foreground px-3 py-2">Loading projects...</p>}
+ </div>
+ </div>
+
+ {/* Status selector */}
+ {moveTargetStatuses.length > 0 && (
+ <div className="space-y-1.5">
+ <label className="text-sm font-medium">Target Status</label>
+ <div className="max-h-32 overflow-y-auto border border-border rounded-lg">
+ {moveTargetStatuses.map(s => (
+ <button
+ key={s.id}
+ onClick={() => setMoveTargetStatus(s.id)}
+ className={`w-full px-3 py-2 text-start text-sm hover:bg-muted flex items-center gap-2 ${
+ moveTargetStatus === s.id ? 'bg-brand-soft text-brand' : ''
+ }`}
+ >
+ <span className={`w-2 h-2 rounded-full ${
+ s.category === 'done' ? 'bg-success' : s.category === 'in_progress' ? 'bg-brand' : 'bg-muted-foreground'
+ }`} />
+ {s.name}
+ </button>
+ ))}
+ </div>
+ </div>
+ )}
+
+ {/* Actions */}
+ <div className="flex justify-end gap-2 pt-2">
+ <button onClick={() => setShowMoveModal(false)} className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted">
+ Cancel
+ </button>
+ <button
+ onClick={handleMoveTask}
+ disabled={!moveTargetProject || isMoving}
+ className="px-4 py-2 text-sm bg-brand text-white rounded-lg hover:bg-brand-strong disabled:opacity-50"
+ >
+ {isMoving ? 'Moving...' : 'Move'}
+ </button>
+ </div>
+ </div>
+ </div>
+ )}
  </div>
  );
 }

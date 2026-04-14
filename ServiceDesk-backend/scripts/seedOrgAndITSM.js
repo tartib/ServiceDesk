@@ -39,7 +39,7 @@ async function main() {
           $push: {
             organizations: {
               organizationId: orgId,
-              role: user.role === 'admin' ? 'admin' : 'agent',
+              role: user.role === 'admin' ? 'admin' : 'member',
               joinedAt: new Date(),
             },
           },

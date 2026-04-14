@@ -13,6 +13,12 @@ interface TaskAssignee {
  };
 }
 
+interface TaskLabel {
+ _id: string;
+ name: string;
+ color: string;
+}
+
 interface TaskCardProps {
  taskKey: string;
  title: string;
@@ -31,6 +37,7 @@ interface TaskCardProps {
  parentKey?: string;
  subtaskCount?: number;
  subtaskDoneCount?: number;
+ labels?: TaskLabel[];
 }
 
 const typeIcons: Record<string, string> = {
@@ -78,6 +85,7 @@ function TaskCard({
  parentKey,
  subtaskCount,
  subtaskDoneCount,
+ labels = [],
 }: TaskCardProps) {
  const typeIcon = typeIcons[type] || '✓';
  const priorityColor = priorityColors[priority] || 'text-muted-foreground';
@@ -117,6 +125,19 @@ function TaskCard({
  </div>
  )}
  <p className="text-sm text-foreground mb-3 line-clamp-2">{title}</p>
+ {labels.length > 0 && (
+ <div className="flex flex-wrap gap-1 mb-2">
+ {labels.map((label) => (
+ <span
+ key={label._id}
+ className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+ style={{ backgroundColor: `${label.color}22`, color: label.color, border: `1px solid ${label.color}55` }}
+ >
+ {label.name}
+ </span>
+ ))}
+ </div>
+ )}
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
  <span className="text-xs text-brand bg-brand-soft px-1.5 py-0.5 rounded font-medium">
@@ -159,6 +180,20 @@ function TaskCard({
  <span className="text-[10px] text-info bg-info-soft px-1 py-0.5 rounded font-medium shrink-0">↑ {parentKey}</span>
  )}
  <span className="flex-1 text-sm text-foreground truncate">{title}</span>
+ {labels.length > 0 && (
+ <div className="flex items-center gap-1 shrink-0">
+ {labels.slice(0, 2).map((label) => (
+ <span
+ key={label._id}
+ className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+ style={{ backgroundColor: `${label.color}22`, color: label.color, border: `1px solid ${label.color}55` }}
+ >
+ {label.name}
+ </span>
+ ))}
+ {labels.length > 2 && <span className="text-[10px] text-muted-foreground">+{labels.length - 2}</span>}
+ </div>
+ )}
  {showStatus && status && (
  <span className={`px-2 py-0.5 text-xs rounded shrink-0 ${statusColor}`}>
  {status.name.toUpperCase()}
