@@ -103,7 +103,7 @@ export const useServiceCatalog = (filters?: {
         success: boolean;
         data: IServiceCatalogItem[];
         pagination: { page: number; limit: number; total: number; totalPages: number };
-      }>(`/service-catalog?${params.toString()}`);
+      }>(`/itsm/services?${params.toString()}`);
       return response;
     },
   });
@@ -113,7 +113,7 @@ export const useServiceCatalogItem = (serviceId: string) => {
   return useQuery({
     queryKey: [SERVICE_CATALOG_KEY, serviceId],
     queryFn: async () => {
-      const response = await api.get<{ success: boolean; data: { service: IServiceCatalogItem } }>(`/service-catalog/${serviceId}`);
+      const response = await api.get<{ success: boolean; data: { service: IServiceCatalogItem } }>(`/itsm/services/${serviceId}`);
       return response.data.service;
     },
     enabled: !!serviceId,
@@ -124,7 +124,7 @@ export const useServiceCatalogStats = () => {
   return useQuery({
     queryKey: [SERVICE_CATALOG_KEY, 'stats'],
     queryFn: async () => {
-      const response = await api.get<{ success: boolean; data: IServiceCatalogStats }>('/service-catalog/stats');
+      const response = await api.get<{ success: boolean; data: IServiceCatalogStats }>('/itsm/services/stats');
       return response.data;
     },
   });
@@ -134,7 +134,7 @@ export const useCreateServiceCatalogItem = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: Partial<IServiceCatalogItem>) => {
-      return api.post<{ success: boolean; data: { service: IServiceCatalogItem } }>('/service-catalog', data);
+      return api.post<{ success: boolean; data: { service: IServiceCatalogItem } }>('/itsm/services', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [SERVICE_CATALOG_KEY] });
@@ -146,7 +146,7 @@ export const useUpdateServiceCatalogItem = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<IServiceCatalogItem> }) => {
-      return api.patch<{ success: boolean; data: { service: IServiceCatalogItem } }>(`/service-catalog/${id}`, data);
+      return api.patch<{ success: boolean; data: { service: IServiceCatalogItem } }>(`/itsm/services/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [SERVICE_CATALOG_KEY] });
@@ -158,7 +158,7 @@ export const useDeleteServiceCatalogItem = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      return api.delete<{ success: boolean }>(`/service-catalog/${id}`);
+      return api.delete<{ success: boolean }>(`/itsm/services/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [SERVICE_CATALOG_KEY] });

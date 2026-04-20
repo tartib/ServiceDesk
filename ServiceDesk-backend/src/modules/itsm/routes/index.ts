@@ -179,6 +179,9 @@ router.post(
 // GET /api/v2/itsm/requests - List service requests (scoped by role)
 router.get('/requests', itsmAuthorize(RESOURCES.SERVICE_REQUEST, 'read'), itsmController.getRequests);
 
+// GET /api/v2/itsm/requests/stats - Get service request stats
+router.get('/requests/stats', itsmAuthorize(RESOURCES.SERVICE_REQUEST, 'read'), itsmController.getRequestStats);
+
 // GET /api/v2/itsm/requests/:id - Get single request
 router.get('/requests/:id', itsmAuthorize(RESOURCES.SERVICE_REQUEST, 'read'), itsmController.getRequest);
 

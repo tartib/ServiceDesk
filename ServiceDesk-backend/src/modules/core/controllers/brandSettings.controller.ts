@@ -3,11 +3,25 @@ import BrandSettings from '../../../models/BrandSettings';
 import ApiResponse from '../../../utils/ApiResponse';
 import asyncHandler from '../../../utils/asyncHandler';
 
+const DEFAULT_BRAND_KIT = {
+  brandName: '',
+  logoUrl: '',
+  faviconUrl: '',
+  primaryColor: '#6161FF',
+  accentColor: '#00CA72',
+};
+
 export const getBrandSettings = asyncHandler(async (req: Request, res: Response) => {
-  const organizationId = req.user?.organizationId;
+  const organizationId = req.user?.organizationId
+    || (req.headers['x-organization-id'] as string | undefined);
 
   if (!organizationId) {
-    res.status(400).json(new ApiResponse(400, 'Organization context required'));
+    res.status(200).json(
+      new ApiResponse(200, 'Brand settings retrieved', {
+        brandKit: DEFAULT_BRAND_KIT,
+        themeOverrides: {},
+      }),
+    );
     return;
   }
 
@@ -15,13 +29,7 @@ export const getBrandSettings = asyncHandler(async (req: Request, res: Response)
 
   res.status(200).json(
     new ApiResponse(200, 'Brand settings retrieved', {
-      brandKit: settings?.brandKit ?? {
-        brandName: '',
-        logoUrl: '',
-        faviconUrl: '',
-        primaryColor: '#6161FF',
-        accentColor: '#00CA72',
-      },
+      brandKit: settings?.brandKit ?? DEFAULT_BRAND_KIT,
       themeOverrides: settings?.themeOverrides ?? {},
     }),
   );

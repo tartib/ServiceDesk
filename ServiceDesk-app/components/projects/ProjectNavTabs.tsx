@@ -163,6 +163,15 @@ export default function ProjectNavTabs({ projectId, methodology = 'scrum', showE
  return pathname === tab.href || pathname?.startsWith(tab.href + '/');
  };
 
+ const methodologyLabel: Record<MethodologyType, string> = {
+   scrum: 'Scrum',
+   kanban: 'Kanban',
+   waterfall: 'Waterfall',
+   itil: 'ITIL',
+   lean: 'Lean',
+   okr: 'OKR',
+ };
+
  return (
  <div className="bg-background border-b border-border">
  {/* Desktop Navigation */}
@@ -194,6 +203,10 @@ export default function ProjectNavTabs({ projectId, methodology = 'scrum', showE
  >
  <Plus className="h-4 w-4" />
  </button>
+ {/* Methodology context pill */}
+ <span className="ml-auto shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground border">
+   {methodologyLabel[methodology]}
+ </span>
  </div>
 
  {/* Mobile Navigation - Horizontal scroll */}

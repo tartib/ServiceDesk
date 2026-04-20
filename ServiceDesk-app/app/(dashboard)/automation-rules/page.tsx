@@ -137,7 +137,7 @@ export default function AutomationRulesPage() {
  if (selectedStatus !== 'all') params.status = selectedStatus;
  if (selectedTrigger !== 'all') params.triggerType = selectedTrigger;
 
- const res = await api.get('/api/v2/itsm/automation/rules', { params }) as ApiRes<{ rules: AutomationRule[]; pagination: { pages: number } }>;
+ const res = await api.get('/itsm/automation/rules', { params }) as ApiRes<{ rules: AutomationRule[]; pagination: { pages: number } }>;
  const raw = res.data as Record<string, unknown>;
  const data = (raw?.data || raw) as { rules?: AutomationRule[]; pagination?: { pages: number } };
  setRules(data?.rules || []);
@@ -151,7 +151,7 @@ export default function AutomationRulesPage() {
 
  const fetchStats = useCallback(async () => {
  try {
- const res = await api.get('/api/v2/itsm/automation/stats') as ApiRes<AutomationStats>;
+ const res = await api.get('/itsm/automation/stats') as ApiRes<AutomationStats>;
  const raw = res.data as Record<string, unknown>;
  setStats((raw?.data || raw) as AutomationStats || null);
  } catch (err) {

@@ -10,7 +10,7 @@ import {
   IApiListResponse,
 } from '@/types/itsm';
 
-const ITSM_BASE = '/api/v2/itsm';
+const ITSM_BASE = '/itsm';
 const CAL_KEY = 'change-calendar';
 
 export const useCalendarEvents = (filters?: {

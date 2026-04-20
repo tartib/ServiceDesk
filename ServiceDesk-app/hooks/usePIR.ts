@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { IPIR, PIRStatus, RCAMethod, IPIRFollowUpAction, IApiResponse, IApiListResponse } from '@/types/itsm';
 
-const ITSM_BASE = '/api/v2/itsm';
+const ITSM_BASE = '/itsm';
 const PIR_KEY = 'pirs';
 
 export const usePIRs = (filters?: { status?: PIRStatus; page?: number; limit?: number }) => {

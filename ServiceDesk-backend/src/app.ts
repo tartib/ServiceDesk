@@ -25,8 +25,9 @@ app.use(cors({
     const allowedOrigins = [env.CORS_ORIGIN, 'http://localhost:3000'];
     // Allow requests with no origin (mobile apps, curl, etc.) or matching origins
     // In development, also allow any local network origin on port 3000
-    if (!origin || allowedOrigins.includes(origin) || 
-        (env.NODE_ENV === 'development' && origin.endsWith(':3000'))) {
+    const isDevLocal = env.NODE_ENV === 'development' && !!origin &&
+      (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'));
+    if (!origin || allowedOrigins.includes(origin) || isDevLocal) {
       callback(null, origin || true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -76,8 +77,8 @@ if (env.NODE_ENV !== 'development') {
 // Skip CSRF for public auth endpoints (no Bearer token, cross-origin cookie not reliable)
 app.use((req, _res, next) => {
   if (
-    req.path.match(/\/auth\/(login|register|refresh)$/) &&
-    req.method === 'POST'
+    (req.path.match(/\/auth\/(login|register|refresh)$/) && req.method === 'POST') ||
+    req.path.startsWith('/api/v2/public/')
   ) {
     (req as any).skipCsrf = true;
   }
@@ -201,6 +202,52 @@ app.use('/api/v2/admin/feature-flags', featureFlagRoutes);
 // Integration routes (webhooks from external systems — no auth, adapters verify signatures)
 import integrationRoutes from './integrations/integration.routes';
 app.use('/api/v2/integrations', integrationRoutes);
+
+// Platform pillar: Documents module
+import documentRoutes from './modules/documents/document.routes';
+app.use('/api/v2/documents', documentRoutes);
+
+// Platform pillar: Portal module
+import portalRoutes from './modules/portal/portal.routes';
+app.use('/api/v2/portal', portalRoutes);
+
+// Public form fill endpoint — no auth required, only returns published forms
+app.get('/api/v2/public/forms/:formId', async (req, res) => {
+  try {
+    const container = (await import('./infrastructure/di/container')).default;
+    const formTemplateService = container.resolve('formTemplateService');
+    const template = await formTemplateService.getTemplateById(req.params.formId);
+    if (!template || !template.is_published) {
+      return res.status(404).json({ success: false, error: 'Form not found or not published' });
+    }
+    return res.json({ success: true, data: template });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Public form submission endpoint — no auth required
+app.post('/api/v2/public/forms/:formId/submissions', async (req, res) => {
+  try {
+    const formSubmissionService = (await import('./modules/forms/services/formSubmissionService')).default;
+    const container = (await import('./infrastructure/di/container')).default;
+    const formTemplateService = container.resolve('formTemplateService');
+    const template = await formTemplateService.getTemplateById(req.params.formId);
+    if (!template || !template.is_published) {
+      return res.status(404).json({ success: false, error: 'Form not found or not published' });
+    }
+    const { data } = req.body;
+    const submission = await formSubmissionService.createSubmission({
+      form_template_id: template._id.toString(),
+      data: data || {},
+      submitted_by: { user_id: 'anonymous', name: 'Anonymous', email: '' },
+      is_draft: false,
+    });
+    return res.status(201).json({ success: true, data: submission });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, error: error.message });
+  }
+});
 
 // Event Bus health endpoint (admin only)
 app.get('/api/v2/events/health', authenticate, authorize('admin'), async (_req, res) => {

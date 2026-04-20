@@ -505,6 +505,17 @@ const FormTemplateSchema = new Schema<IFormTemplateDocument>(
       type: String,
       index: true,
     },
+    // ── Platform workflow binding (Phase 3) ──────────────────────────────
+    workflow_definition_id: {
+      type: String,
+      index: true,
+      sparse: true,
+    },
+    workflow_mode: {
+      type: String,
+      enum: ['simple', 'advanced', 'none'],
+      default: 'simple',
+    },
   },
   {
     timestamps: {

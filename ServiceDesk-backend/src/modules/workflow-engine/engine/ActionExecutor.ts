@@ -38,12 +38,18 @@ export interface IWFEntityService {
   getEntity(entityType: string, entityId: string): Promise<Record<string, any> | null>;
 }
 
+export interface IWFRecordService {
+  updateRecordStatus(recordId: string, status: string, actorId: string, note?: string): Promise<unknown>;
+  updateRecordData(recordId: string, dto: { data: Record<string, unknown>; updated_by: string }): Promise<unknown>;
+}
+
 export class ActionExecutor {
   private guardEvaluator: GuardEvaluator;
   private notificationService?: IWFNotificationService;
   private webhookService?: IWFWebhookService;
   private entityService?: IWFEntityService;
   private taskService?: IWFTaskService;
+  private recordService?: IWFRecordService;
 
   constructor(options?: {
     guardEvaluator?: GuardEvaluator;
@@ -51,12 +57,14 @@ export class ActionExecutor {
     webhookService?: IWFWebhookService;
     entityService?: IWFEntityService;
     taskService?: IWFTaskService;
+    recordService?: IWFRecordService;
   }) {
     this.guardEvaluator = options?.guardEvaluator || new GuardEvaluator();
     this.notificationService = options?.notificationService;
     this.webhookService = options?.webhookService;
     this.entityService = options?.entityService;
     this.taskService = options?.taskService;
+    this.recordService = options?.recordService;
   }
 
   /**
@@ -172,6 +180,9 @@ export class ActionExecutor {
       case WFActionType.UPDATE_ENTITY:
         return this.executeUpdateEntity(config, context);
 
+      case WFActionType.UPDATE_RECORD:
+        return this.executeUpdateRecord(config, context);
+
       case WFActionType.LOG_ACTIVITY:
         return this.executeLogActivity(config, context);
 
@@ -180,6 +191,9 @@ export class ActionExecutor {
 
       case WFActionType.RUN_SCRIPT:
         return this.executeRunScript(config, context);
+
+      case WFActionType.GENERATE_DOCUMENT:
+        return this.executeGenerateDocument(config, context);
 
       case WFActionType.CUSTOM:
         return this.executeCustom(config, context);
@@ -371,6 +385,36 @@ export class ActionExecutor {
     );
   }
 
+  /**
+   * UPDATE_RECORD — Update a form submission record via RecordService.
+   * config.recordId defaults to context.instance.entityId when entityType is 'form_record'|'form_submission'.
+   * config.status   — optional new status
+   * config.data     — optional field data patch (merged into existing data)
+   * config.actorId  — actor performing the update (defaults to workflow-engine)
+   */
+  private async executeUpdateRecord(
+    config: Record<string, any>,
+    context: IWFExecutionContext
+  ): Promise<void> {
+    if (!this.recordService) {
+      throw new Error('[ActionExecutor] RecordService not configured — cannot execute UPDATE_RECORD action');
+    }
+
+    const recordId = config.recordId ?? context.instance.entityId;
+    const actorId = config.actorId ?? 'workflow-engine';
+
+    if (config.status) {
+      await this.recordService.updateRecordStatus(recordId, config.status, actorId, config.note);
+    }
+
+    if (config.data && typeof config.data === 'object') {
+      await this.recordService.updateRecordData(recordId, {
+        data: config.data as Record<string, unknown>,
+        updated_by: actorId,
+      });
+    }
+  }
+
   private async executeLogActivity(
     config: Record<string, any>,
     context: IWFExecutionContext
@@ -518,6 +562,60 @@ export class ActionExecutor {
       current = current[parts[i]];
     }
     current[parts[parts.length - 1]] = value;
+  }
+
+  /**
+   * GENERATE_DOCUMENT — calls the documents module to render a template.
+   * Config: { templateId, dataMapping, sourceEntityType?, sourceEntityId? }
+   */
+  private async executeGenerateDocument(
+    config: Record<string, any>,
+    context: IWFExecutionContext,
+  ): Promise<IWFActionResult | null> {
+    const { templateId, dataMapping, sourceEntityType, sourceEntityId } = config;
+    if (!templateId) {
+      return {
+        actionId: 'generate_document',
+        type: WFActionType.GENERATE_DOCUMENT,
+        success: false,
+        error: 'templateId is required for GENERATE_DOCUMENT action',
+      };
+    }
+    try {
+      const { documentService } = await import('../../documents/DocumentService');
+      const data: Record<string, unknown> = {};
+      if (dataMapping && typeof dataMapping === 'object') {
+        for (const [docKey, ctxPath] of Object.entries(dataMapping as Record<string, string>)) {
+          const val = this.getValueByPath(context.instance.variables, ctxPath) ??
+            this.getValueByPath((context.entity ?? {}) as Record<string, unknown>, ctxPath);
+          data[docKey] = val;
+        }
+      }
+      const doc = await documentService.generateDocument(
+        {
+          templateId,
+          data,
+          sourceEntityType: sourceEntityType ?? context.instance.entityType,
+          sourceEntityId: sourceEntityId ?? context.instance.entityId,
+        },
+        context.actor.id,
+        (context as any).organizationId ?? '',
+      );
+      return {
+        actionId: 'generate_document',
+        type: WFActionType.GENERATE_DOCUMENT,
+        success: doc.status === 'ready',
+        result: { documentId: doc.documentId, downloadUrl: doc.downloadUrl, status: doc.status },
+        error: doc.error,
+      };
+    } catch (err: unknown) {
+      return {
+        actionId: 'generate_document',
+        type: WFActionType.GENERATE_DOCUMENT,
+        success: false,
+        error: err instanceof Error ? err.message : 'Document generation failed',
+      };
+    }
   }
 
   private delay(ms: number): Promise<void> {

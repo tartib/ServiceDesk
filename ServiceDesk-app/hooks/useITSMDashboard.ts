@@ -10,7 +10,7 @@ import {
   IApiResponse,
 } from '@/types/itsm';
 
-const ITSM_BASE = '/api/v2/itsm';
+const ITSM_BASE = '/itsm';
 const DASH_KEY = 'itsm-dashboard';
 
 export const useITSMDashboard = (siteId?: string) => {

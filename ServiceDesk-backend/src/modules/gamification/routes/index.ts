@@ -3,6 +3,7 @@
  */
 
 import { Router } from 'express';
+import { authenticate } from '../../../middleware/auth';
 import * as profileCtrl from '../controllers/profile.controller';
 import * as leaderboardCtrl from '../controllers/leaderboard.controller';
 import * as achievementCtrl from '../controllers/achievement.controller';
@@ -10,6 +11,8 @@ import * as adminCtrl from '../controllers/admin.controller';
 import * as analyticsCtrl from '../controllers/analytics.controller';
 
 const router = Router();
+
+router.use(authenticate);
 
 // ── Profile ──────────────────────────────────────────────────
 router.get('/profile/me', profileCtrl.getMyProfile);

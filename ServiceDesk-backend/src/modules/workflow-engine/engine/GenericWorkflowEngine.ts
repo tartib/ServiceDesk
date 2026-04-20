@@ -53,7 +53,7 @@ export interface IRuleExecutionHook {
     variables: Record<string, any>;
   }): Promise<void>;
 }
-import { ActionExecutor, type IWFNotificationService, type IWFWebhookService, type IWFEntityService } from './ActionExecutor';
+import { ActionExecutor, type IWFNotificationService, type IWFWebhookService, type IWFEntityService, type IWFRecordService } from './ActionExecutor';
 import type { IWFTaskService } from '../adapters/TaskServiceAdapter';
 import { ParallelStepManager } from './ParallelStepManager';
 
@@ -109,6 +109,7 @@ export interface IGenericWorkflowEngineOptions {
   webhookService?: IWFWebhookService;
   entityService?: IWFEntityService;
   taskService?: IWFTaskService;
+  recordService?: IWFRecordService;
   ruleExecutionHook?: IRuleExecutionHook;
 }
 
@@ -141,6 +142,7 @@ export class GenericWorkflowEngine {
       webhookService: options.webhookService,
       entityService: options.entityService,
       taskService: options.taskService,
+      recordService: options.recordService,
     });
     this.parallelManager = new ParallelStepManager();
     this.ruleExecutionHook = options.ruleExecutionHook;
@@ -1323,11 +1325,37 @@ export class GenericWorkflowEngine {
   }
 
   /**
+   * Build recordContext from entity type + instance metadata when the workflow
+   * was triggered by a form record submission.
+   */
+  private buildRecordContext(
+    entityType: string,
+    entityId: string,
+    metadata?: Record<string, any>,
+  ): import('../../../core/types/workflow-engine.types').IWFEventRecordContext | undefined {
+    const RECORD_ENTITY_TYPES = ['form_record', 'form_submission', 'record'];
+    if (!RECORD_ENTITY_TYPES.includes(entityType)) return undefined;
+    return {
+      recordId: (metadata?.sourceRecordId as string) ?? entityId,
+      recordType: (metadata?.sourceRecordType as string) ?? entityType,
+      formName: metadata?.formName as string | undefined,
+    };
+  }
+
+  /**
    * تسجيل حدث
    */
   private async recordEvent(event: Omit<IWFEvent, '_id'>): Promise<void> {
     try {
-      await this.eventStore.record(event);
+      const enriched: Omit<IWFEvent, '_id'> = {
+        ...event,
+        recordContext: event.recordContext ?? this.buildRecordContext(
+          event.entityType as string,
+          event.entityId,
+          undefined,
+        ),
+      };
+      await this.eventStore.record(enriched);
     } catch (error) {
       console.error('[WorkflowEngine] Failed to record event:', error);
     }

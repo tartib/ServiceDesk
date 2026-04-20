@@ -4,7 +4,7 @@ import type { IRelease, IReleaseStats } from '@/types/itsm';
 
 export type { IRelease, IReleaseStats };
 
-const ITSM_BASE = '/api/v2/itsm';
+const ITSM_BASE = '/itsm';
 const RELEASES_KEY = 'releases';
 
 export const useReleases = (filters?: {

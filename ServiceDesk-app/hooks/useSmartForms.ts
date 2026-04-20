@@ -78,9 +78,16 @@ export const formSubmissionKeys = {
 
 // ============================================
 // FORM TEMPLATE HOOKS
+// @deprecated — Use @/hooks/useFormDefinitions instead.
+// These hooks (useFormTemplates, useFormTemplate, usePublishedTemplates,
+// useCreateFormTemplate, useUpdateFormTemplate, useDeleteFormTemplate,
+// usePublishFormTemplate, useUnpublishFormTemplate) are superseded by the
+// canonical hooks in useFormDefinitions.ts backed by lib/domains/forms/api.ts.
+// Submission hooks below remain valid.
 // ============================================
 
 /**
+ * @deprecated Use useFormDefinitions from @/hooks/useFormDefinitions
  * الحصول على قائمة قوالب النماذج
  */
 export function useFormTemplates(params: FormTemplateListParams = {}) {

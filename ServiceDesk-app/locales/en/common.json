@@ -44,7 +44,11 @@
     "gamificationDashboard": "Dashboard",
     "leaderboard": "Leaderboard",
     "achievements": "Achievements",
-    "loggedInAs": "Logged in as"
+    "loggedInAs": "Logged in as",
+    "formsPlatform": "Forms Platform",
+    "records": "Records",
+    "formBuilder": "Form Builder",
+    "workflowBuilder": "Workflow Builder"
   },
   "common": {
     "search": "Search",

@@ -11,14 +11,28 @@ import logger from '../../../utils/logger';
 export interface IWFTaskService {
   createTask(
     config: Record<string, any>,
-    context: { organizationId: string; actorId: string; entityType?: string; entityId?: string },
+    context: {
+      organizationId: string;
+      actorId: string;
+      entityType?: string;
+      entityId?: string;
+      sourceRecordId?: string;
+      sourceRecordType?: string;
+    },
   ): Promise<string>;
 }
 
 export class TaskServiceAdapter implements IWFTaskService {
   async createTask(
     config: Record<string, any>,
-    context: { organizationId: string; actorId: string; entityType?: string; entityId?: string },
+    context: {
+      organizationId: string;
+      actorId: string;
+      entityType?: string;
+      entityId?: string;
+      sourceRecordId?: string;
+      sourceRecordType?: string;
+    },
   ): Promise<string> {
     // Lazy model imports to avoid circular deps
     let Task: mongoose.Model<any>;
@@ -59,6 +73,10 @@ export class TaskServiceAdapter implements IWFTaskService {
       labels: config.labels || [],
       storyPoints: config.storyPoints,
       dueDate: config.dueDate,
+      metadata: {
+        sourceRecordId: context.sourceRecordId,
+        sourceRecordType: context.sourceRecordType ?? context.entityType,
+      },
     });
 
     const taskId = task._id.toString();

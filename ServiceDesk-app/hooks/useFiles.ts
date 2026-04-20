@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { normalizeEntity, getErrorMessage } from '@/lib/api/normalize';
 import { API_BASE_URL } from '@/lib/api/config';
 
-const STORAGE_BASE = '/api/v2/storage';
+const STORAGE_BASE = '/storage';
 
 export interface FileMetadata {
   _id: string;
@@ -123,7 +123,7 @@ export const useFiles = () => {
       if (options?.isPublic !== undefined) formData.append('isPublic', String(options.isPublic));
 
       const response = await api.post(`${STORAGE_BASE}/files/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': undefined },
       });
 
       toast.success('File uploaded successfully');
@@ -147,8 +147,8 @@ export const useFiles = () => {
       files.forEach((file) => formData.append('files', file));
       if (folderId) formData.append('folderId', folderId);
 
-      const response = await api.post(`${STORAGE_BASE}/files/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const response = await api.post(`${STORAGE_BASE}/files/upload/multiple`, formData, {
+        headers: { 'Content-Type': undefined },
       });
 
       toast.success(`${files.length} files uploaded successfully`);

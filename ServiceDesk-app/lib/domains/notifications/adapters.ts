@@ -81,7 +81,7 @@ export function normalizeNotification(raw: unknown): Notification {
     escalatedFrom: n.escalatedFrom,
     actionRequired: n.actionRequired ?? false,
     actionUrl: n.actionUrl,
-    metadata: n.metadata as Record<string, any> | undefined,
+    metadata: n.metadata as Record<string, unknown> | undefined,
     createdAt: n.createdAt || n.timestamp || '',
     updatedAt: n.updatedAt,
   };

@@ -247,11 +247,75 @@ function walkTs(dir: string, callback: (filePath: string, content: string) => vo
     if (entry.isDirectory()) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
       walkTs(full, callback);
-    } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts')) {
+    } else if (
+      (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) &&
+      !entry.name.endsWith('.d.ts')
+    ) {
       const content = fs.readFileSync(full, 'utf-8');
       callback(full, content);
     }
   }
+}
+
+// ── Rule 6: No service-catalog importing smart-forms/builder internals ──────
+
+function checkPlatformBoundaries(): void {
+  // This rule applies to the frontend source, not the backend.
+  // We check a sibling path relative to the backend scripts/ dir.
+  const frontendSrc = path.resolve(__dirname, '..', '..', 'ServiceDesk-app');
+  if (!fs.existsSync(frontendSrc)) return;
+
+  const serviceCatalogDir = path.join(frontendSrc, 'components', 'service-catalog');
+  if (!fs.existsSync(serviceCatalogDir)) return;
+
+  const FORBIDDEN_PATTERN = 'smart-forms/builder/';
+  const ALLOWED_SHELL = 'forms-platform/';
+
+  walkTs(serviceCatalogDir, (filePath, content) => {
+    const importRegex = /from\s+['"]([^'"]+)['"]/g;
+    let match: RegExpExecArray | null;
+    while ((match = importRegex.exec(content)) !== null) {
+      const importPath = match[1];
+      if (importPath.includes(FORBIDDEN_PATTERN) && !importPath.includes(ALLOWED_SHELL)) {
+        const rel = path.relative(frontendSrc, filePath);
+        violations.push({
+          file: rel,
+          rule: 'platform-builder-boundary',
+          detail: `service-catalog must not import smart-forms/builder internals directly. Use components/forms-platform/ shell instead. Found: ${importPath}`,
+        });
+      }
+    }
+  });
+}
+
+// ── Rule 7: No app/(dashboard) page importing smart-forms/builder internals ──
+
+function checkAppPageBuilderBoundary(): void {
+  const frontendSrc = path.resolve(__dirname, '..', '..', 'ServiceDesk-app');
+  if (!fs.existsSync(frontendSrc)) return;
+
+  const dashboardDir = path.join(frontendSrc, 'app', '(dashboard)');
+  if (!fs.existsSync(dashboardDir)) return;
+
+  const FORBIDDEN_PATTERN = 'smart-forms/builder';
+  const SHELL_EXEMPTION = path.join(frontendSrc, 'components', 'forms-platform');
+
+  walkTs(dashboardDir, (filePath, content) => {
+    if (filePath.startsWith(SHELL_EXEMPTION)) return;
+    const importRegex = /from\s+['"]([^'"]+)['"]/g;
+    let match: RegExpExecArray | null;
+    while ((match = importRegex.exec(content)) !== null) {
+      const importPath = match[1];
+      if (importPath.includes(FORBIDDEN_PATTERN)) {
+        const rel = path.relative(frontendSrc, filePath);
+        violations.push({
+          file: rel,
+          rule: 'app-page-builder-boundary',
+          detail: `app/(dashboard) pages must not import smart-forms/builder internals directly. Use components/forms-platform/FormDefinitionBuilder instead. Found: ${importPath}`,
+        });
+      }
+    }
+  });
 }
 
 // ── Main ────────────────────────────────────────────────────────
@@ -261,6 +325,8 @@ checkCrossModuleImports();
 checkSharedIndependence();
 checkNoV1InModules();
 checkNoManualValidation();
+checkPlatformBoundaries();
+checkAppPageBuilderBoundary();
 
 const errors = violations.filter((v) => v.severity !== 'warn');
 const warnings = violations.filter((v) => v.severity === 'warn');

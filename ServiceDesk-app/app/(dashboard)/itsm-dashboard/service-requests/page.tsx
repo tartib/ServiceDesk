@@ -103,6 +103,7 @@ export default function ServiceRequestsManagementPage() {
  const statusLabels: Record<ServiceRequestStatus, { en: string; ar: string }> = {
  [ServiceRequestStatus.SUBMITTED]: { en: 'Submitted', ar: 'مقدم' },
  [ServiceRequestStatus.PENDING_APPROVAL]: { en: 'Pending Approval', ar: 'بانتظار الموافقة' },
+ [ServiceRequestStatus.UNDER_REVIEW]: { en: 'Under Review', ar: 'قيد المراجعة' },
  [ServiceRequestStatus.APPROVED]: { en: 'Approved', ar: 'موافق عليه' },
  [ServiceRequestStatus.REJECTED]: { en: 'Rejected', ar: 'مرفوض' },
  [ServiceRequestStatus.IN_PROGRESS]: { en: 'In Progress', ar: 'قيد التنفيذ' },
@@ -114,7 +115,7 @@ export default function ServiceRequestsManagementPage() {
  const handleApprove = async (request: ServiceRequest) => {
  if (!user) return;
  await approveRequest.mutateAsync({
- id: request.request_id,
+ id: request.requestId || request.request_id || request._id,
  decision: 'approve',
  approver_id: user.id || '',
  approver_name: user.name || 'Unknown',
@@ -125,7 +126,7 @@ export default function ServiceRequestsManagementPage() {
  const handleReject = async () => {
  if (!user || !rejectTarget) return;
  await approveRequest.mutateAsync({
- id: rejectTarget.request_id,
+ id: rejectTarget.requestId || rejectTarget.request_id || rejectTarget._id,
  decision: 'reject',
  approver_id: user.id || '',
  approver_name: user.name || 'Unknown',
@@ -139,7 +140,7 @@ export default function ServiceRequestsManagementPage() {
  const handleAssign = async (request: ServiceRequest) => {
  if (!user) return;
  await assignRequest.mutateAsync({
- id: request.request_id,
+ id: request.requestId || request.request_id || request._id,
  technician_id: user.id || '',
  name: user.name || 'Unknown',
  email: user.email || '',
@@ -150,7 +151,7 @@ export default function ServiceRequestsManagementPage() {
  const handleFulfill = async () => {
  if (!user || !fulfillTarget) return;
  await fulfillRequest.mutateAsync({
- id: fulfillTarget.request_id,
+ id: fulfillTarget.requestId || fulfillTarget.request_id || fulfillTarget._id,
  fulfilled_by: user.id || '',
  fulfilled_by_name: user.name || 'Unknown',
  notes: fulfillNotes || undefined,
@@ -280,7 +281,7 @@ export default function ServiceRequestsManagementPage() {
  <SelectItem value="all">{locale === 'ar' ? 'الكل' : 'All'}</SelectItem>
  {Object.values(ServiceRequestStatus).map((status) => (
  <SelectItem key={status} value={status}>
- {locale === 'ar' ? statusLabels[status].ar : statusLabels[status].en}
+ {locale === 'ar' ? (statusLabels[status]?.ar ?? status) : (statusLabels[status]?.en ?? status)}
  </SelectItem>
  ))}
  </SelectContent>
@@ -332,8 +333,8 @@ export default function ServiceRequestsManagementPage() {
  <TableBody>
  {requests.map((request: ServiceRequest) => (
  <TableRow key={request._id}>
- <TableCell className="font-medium">{request.request_id}</TableCell>
- <TableCell>{request.service_name}</TableCell>
+ <TableCell className="font-medium">{request.requestId || request.request_id}</TableCell>
+ <TableCell>{request.serviceName || request.service_name}</TableCell>
  <TableCell>
  <div>
  <p className="font-medium">{request.requester.name}</p>
@@ -342,7 +343,7 @@ export default function ServiceRequestsManagementPage() {
  </TableCell>
  <TableCell>
  <Badge className={getStatusColor(request.status)}>
- {locale === 'ar' ? statusLabels[request.status].ar : statusLabels[request.status].en}
+ {locale === 'ar' ? (statusLabels[request.status]?.ar ?? request.status) : (statusLabels[request.status]?.en ?? request.status)}
  </Badge>
  </TableCell>
  <TableCell>
@@ -351,7 +352,7 @@ export default function ServiceRequestsManagementPage() {
  </Badge>
  </TableCell>
  <TableCell>
- {new Date(request.created_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ {new Date(request.createdAt || request.created_at || '').toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}
  </TableCell>
  <TableCell>
  <div className="flex gap-1">
@@ -359,7 +360,7 @@ export default function ServiceRequestsManagementPage() {
  variant="ghost"
  size="icon"
  title={locale === 'ar' ? 'عرض' : 'View'}
- onClick={() => router.push(`/itsm-dashboard/service-requests/${request.request_id}`)}
+ onClick={() => router.push(`/itsm-dashboard/service-requests/${request.requestId || request.request_id || request._id}`)}
  >
  <Eye className="h-4 w-4" />
  </Button>
@@ -451,8 +452,8 @@ export default function ServiceRequestsManagementPage() {
  <DialogTitle>{locale === 'ar' ? 'رفض الطلب' : 'Reject Request'}</DialogTitle>
  <DialogDescription>
  {locale === 'ar'
- ? `رفض الطلب ${rejectTarget?.request_id || ''}`
- : `Reject request ${rejectTarget?.request_id || ''}`}
+ ? `رفض الطلب ${rejectTarget?.requestId || rejectTarget?.request_id || ''}`
+ : `Reject request ${rejectTarget?.requestId || rejectTarget?.request_id || ''}`}
  </DialogDescription>
  </DialogHeader>
  <div className="space-y-3 py-2">
@@ -488,8 +489,8 @@ export default function ServiceRequestsManagementPage() {
  <DialogTitle>{locale === 'ar' ? 'تنفيذ الطلب' : 'Fulfill Request'}</DialogTitle>
  <DialogDescription>
  {locale === 'ar'
- ? `تأكيد تنفيذ الطلب ${fulfillTarget?.request_id || ''}`
- : `Confirm fulfillment of request ${fulfillTarget?.request_id || ''}`}
+ ? `تأكيد تنفيذ الطلب ${fulfillTarget?.requestId || fulfillTarget?.request_id || ''}`
+ : `Confirm fulfillment of request ${fulfillTarget?.requestId || fulfillTarget?.request_id || ''}`}
  </DialogDescription>
  </DialogHeader>
  <div className="space-y-3 py-2">

@@ -6,22 +6,21 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Settings, BarChart3, Globe, GlobeLock, Eye, Grid3x3, List, Calendar } from 'lucide-react';
-import { FormBuilder } from '@/components/smart-forms/builder';
-import FormRenderer from '@/components/smart-forms/FormRenderer';
-import SubmissionsDashboard from '@/components/smart-forms/SubmissionsDashboard';
-import { 
- useFormTemplates, 
- useCreateFormTemplate, 
- useUpdateFormTemplate,
- useFormSubmissions,
- useCreateSubmission,
- usePublishFormTemplate,
- useUnpublishFormTemplate,
- useApproveSubmission,
- useRejectSubmission 
-} from '@/hooks/useSmartForms';
-import { FormTemplate, FormSubmission, UpdateFormTemplateDTO, CreateFormTemplateDTO } from '@/types/smart-forms';
+import { Plus, FileText, Settings, BarChart3, Globe, GlobeLock, Eye, Grid3x3, List, Calendar, Save, X, Link2 } from 'lucide-react';
+import FormDefinitionBuilder from '@/components/forms-platform/FormDefinitionBuilder';
+import FormRenderer from '@/components/forms-platform/FormRenderer';
+import RecordsDashboard from '@/components/forms-platform/RecordsDashboard';
+import {
+ useFormDefinitions,
+ useCreateFormDefinition,
+ useUpdateFormDefinition,
+ usePublishFormDefinition,
+ useUnpublishFormDefinition,
+} from '@/hooks/useFormDefinitions';
+import { useRecords, useApproveRecord, useRejectRecord, useCreateRecord } from '@/hooks/useRecords';
+import type { SmartField } from '@/types/smart-forms';
+import { FormTemplate } from '@/types/smart-forms';
+import type { CreateFormDefinitionDTO, UpdateFormDefinitionDTO } from '@/lib/domains/forms/types';
 
 export default function SmartFormsPage() {
  const { locale } = useLanguage();
@@ -30,37 +29,49 @@ export default function SmartFormsPage() {
  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
  const [previewTemplate, setPreviewTemplate] = useState<Partial<FormTemplate> | null>(null);
- const [viewingSubmission, setViewingSubmission] = useState<FormSubmission | null>(null);
  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+ const [builderFields, setBuilderFields] = useState<SmartField[]>([]);
+ const [builderName, setBuilderName] = useState('');
+ const [isSaving, setIsSaving] = useState(false);
+ const [copiedId, setCopiedId] = useState<string | null>(null);
 
- const { data: templatesData, isLoading } = useFormTemplates();
- const { data: submissionsData, isLoading: submissionsLoading, refetch: refetchSubmissions } = useFormSubmissions();
- const createTemplate = useCreateFormTemplate();
- const updateTemplate = useUpdateFormTemplate();
- const createSubmission = useCreateSubmission();
- const publishTemplate = usePublishFormTemplate();
- const unpublishTemplate = useUnpublishFormTemplate();
- const approveSubmission = useApproveSubmission();
- const rejectSubmission = useRejectSubmission();
+ const handleCopyLink = (template: FormTemplate) => {
+ const id = template.form_id || template._id;
+ const url = `${window.location.origin}/forms/fill/${id}`;
+ navigator.clipboard.writeText(url).then(() => {
+ setCopiedId(id);
+ setTimeout(() => setCopiedId(null), 2000);
+ });
+ };
 
- const handleApprove = async (submission: FormSubmission) => {
- const id = submission._id || submission.submission_id;
+ const { data: templatesData, isLoading } = useFormDefinitions();
+ const { data: recordsData, isLoading: recordsLoading, refetch: refetchRecords } = useRecords();
+ const createTemplate = useCreateFormDefinition();
+ const updateTemplate = useUpdateFormDefinition();
+ const publishTemplate = usePublishFormDefinition();
+ const unpublishTemplate = useUnpublishFormDefinition();
+ const approveRecord = useApproveRecord();
+ const rejectRecord = useRejectRecord();
+ const createRecord = useCreateRecord();
+
+ const handleApprove = async (record: { _id?: string; submission_id?: string }) => {
+ const id = (record._id || record.submission_id) as string;
  try {
- await approveSubmission.mutateAsync({ submissionId: id });
- refetchSubmissions();
+ await approveRecord.mutateAsync({ id, approverId: id });
+ refetchRecords();
  } catch (error) {
  const msg = error instanceof Error ? error.message : (locale === 'ar' ? 'حدث خطأ' : 'An error occurred');
  alert(msg);
  }
  };
 
- const handleReject = async (submission: FormSubmission) => {
+ const handleReject = async (record: { _id?: string; submission_id?: string }) => {
  const reason = prompt(locale === 'ar' ? 'سبب الرفض:' : 'Rejection reason:');
  if (reason === null) return;
- const id = submission._id || submission.submission_id;
+ const id = (record._id || record.submission_id) as string;
  try {
- await rejectSubmission.mutateAsync({ submissionId: id, comments: reason });
- refetchSubmissions();
+ await rejectRecord.mutateAsync({ id, approverId: id, reason: reason || '' });
+ refetchRecords();
  } catch (error) {
  const msg = error instanceof Error ? error.message : (locale === 'ar' ? 'حدث خطأ' : 'An error occurred');
  alert(msg);
@@ -82,12 +93,8 @@ export default function SmartFormsPage() {
  }
  };
 
- const templates = templatesData?.data || [];
- const submissions = submissionsData?.data || [];
-
- const handleViewSubmission = (submission: FormSubmission) => {
- setViewingSubmission(submission);
- };
+ const templates = (templatesData?.definitions || []) as FormTemplate[];
+ const records = recordsData?.records || [];
 
  const handleCreateNew = () => {
  setSelectedTemplate(null);
@@ -96,6 +103,8 @@ export default function SmartFormsPage() {
 
  const handleEditTemplate = (template: FormTemplate) => {
  setSelectedTemplate(template);
+ setBuilderFields(template.fields || []);
+ setBuilderName(locale === 'ar' ? template.name_ar || template.name : template.name);
  setIsBuilderOpen(true);
  };
 
@@ -104,174 +113,30 @@ export default function SmartFormsPage() {
  setIsPreviewOpen(true);
  };
 
- const handleSaveTemplate = async (data: Partial<FormTemplate>) => {
+ const handleSaveBuilder = async () => {
+ setIsSaving(true);
+ try {
  if (selectedTemplate) {
- await updateTemplate.mutateAsync({ 
- formId: selectedTemplate._id || selectedTemplate.form_id, 
- data: data as UpdateFormTemplateDTO 
+ await updateTemplate.mutateAsync({
+ id: (selectedTemplate._id || selectedTemplate.form_id) as string,
+ dto: { fields: builderFields } as UpdateFormDefinitionDTO,
  });
  } else {
- // Ensure required fields for new templates
- const createData: CreateFormTemplateDTO = {
- name: data.name || 'Untitled Form',
- name_ar: data.name_ar || data.name || 'نموذج بدون عنوان',
- description: data.description,
- description_ar: data.description_ar,
- category: data.category || 'general',
- fields: data.fields || [],
+ const createData: CreateFormDefinitionDTO = {
+ name: builderName || 'Untitled Form',
+ name_ar: builderName || 'نموذج بدون عنوان',
+ category: 'general',
  };
  await createTemplate.mutateAsync(createData);
  }
  setIsBuilderOpen(false);
- };
-
- if (viewingSubmission) {
- const submissionTemplate = templates.find(
- t => t._id === viewingSubmission.form_template_id || t.form_id === viewingSubmission.form_template_id
- );
- const templateName = submissionTemplate
- ? (locale === 'ar' ? submissionTemplate.name_ar || submissionTemplate.name : submissionTemplate.name)
- : viewingSubmission.form_template_id;
-
- return (
- <DashboardLayout>
- <div className="container mx-auto py-6 max-w-3xl">
- <div className="mb-6 flex justify-between items-center">
- <div>
- <h1 className="text-2xl font-bold">
- {locale === 'ar' ? 'تفاصيل التقديم' : 'Submission Details'}
- </h1>
- <p className="text-muted-foreground text-sm mt-1">{viewingSubmission.submission_id}</p>
- </div>
- <div className="flex items-center gap-2">
- {(viewingSubmission.workflow_state?.status === 'pending_approval' || viewingSubmission.workflow_state?.status === 'submitted') && (
- <>
- <Button
- variant="default"
- className="bg-success hover:bg-success/80"
- onClick={async () => {
- await handleApprove(viewingSubmission);
- setViewingSubmission(null);
- }}
- disabled={approveSubmission.isPending}
- >
- {locale === 'ar' ? 'موافقة' : 'Approve'}
- </Button>
- <Button
- variant="destructive"
- onClick={async () => {
- await handleReject(viewingSubmission);
- setViewingSubmission(null);
- }}
- disabled={rejectSubmission.isPending}
- >
- {locale === 'ar' ? 'رفض' : 'Reject'}
- </Button>
- </>
- )}
- <Button variant="outline" onClick={() => setViewingSubmission(null)}>
- {locale === 'ar' ? 'رجوع' : 'Back'}
- </Button>
- </div>
- </div>
-
- <div className="space-y-4">
- {/* Info Card */}
- <Card>
- <CardHeader>
- <CardTitle className="text-lg">{locale === 'ar' ? 'معلومات التقديم' : 'Submission Info'}</CardTitle>
- </CardHeader>
- <CardContent className="grid grid-cols-2 gap-4 text-sm">
- <div>
- <p className="text-muted-foreground">{locale === 'ar' ? 'النموذج' : 'Form'}</p>
- <p className="font-medium">{templateName}</p>
- </div>
- <div>
- <p className="text-muted-foreground">{locale === 'ar' ? 'الحالة' : 'Status'}</p>
- <p className="font-medium capitalize">{viewingSubmission.workflow_state?.status || viewingSubmission.status || 'submitted'}</p>
- </div>
- <div>
- <p className="text-muted-foreground">{locale === 'ar' ? 'مقدم الطلب' : 'Submitted By'}</p>
- <p className="font-medium">{viewingSubmission.submitted_by?.name}</p>
- <p className="text-xs text-muted-foreground">{viewingSubmission.submitted_by?.email}</p>
- </div>
- <div>
- <p className="text-muted-foreground">{locale === 'ar' ? 'التاريخ' : 'Date'}</p>
- <p className="font-medium">
- {new Date(viewingSubmission.created_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', {
- year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
- })}
- </p>
- </div>
- </CardContent>
- </Card>
-
- {/* Form Data */}
- <Card>
- <CardHeader>
- <CardTitle className="text-lg">{locale === 'ar' ? 'البيانات المقدمة' : 'Submitted Data'}</CardTitle>
- </CardHeader>
- <CardContent>
- {viewingSubmission.data && Object.keys(viewingSubmission.data).length > 0 ? (
- <div className="space-y-3">
- {Object.entries(viewingSubmission.data).map(([key, value]) => {
- const field = submissionTemplate?.fields?.find(f => f.field_id === key);
- const label = field
- ? (locale === 'ar' ? field.label_ar || field.label : field.label)
- : key;
- return (
- <div key={key} className="flex justify-between items-start py-2 border-b last:border-0">
- <span className="text-sm text-muted-foreground">{label}</span>
- <span className="text-sm font-medium text-right max-w-[60%] break-words">
- {value === null || value === undefined || value === ''
- ? (locale === 'ar' ? '—' : '—')
- : typeof value === 'object'
- ? JSON.stringify(value)
- : String(value)}
- </span>
- </div>
- );
- })}
- </div>
- ) : (
- <p className="text-muted-foreground text-sm">
- {locale === 'ar' ? 'لا توجد بيانات' : 'No data submitted'}
- </p>
- )}
- </CardContent>
- </Card>
-
- {/* Timeline */}
- {viewingSubmission.timeline && viewingSubmission.timeline.length > 0 && (
- <Card>
- <CardHeader>
- <CardTitle className="text-lg">{locale === 'ar' ? 'السجل الزمني' : 'Timeline'}</CardTitle>
- </CardHeader>
- <CardContent>
- <div className="space-y-3">
- {viewingSubmission.timeline.map((event, idx) => (
- <div key={idx} className="flex items-start gap-3 text-sm">
- <div className="w-2 h-2 rounded-full bg-brand mt-1.5 shrink-0" />
- <div>
- <p className="font-medium">{locale === 'ar' ? event.description_ar || event.description : event.description}</p>
- {event.user_name && <p className="text-muted-foreground">{event.user_name}</p>}
- <p className="text-xs text-muted-foreground">
- {new Date(event.created_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', {
- year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
- })}
- </p>
- </div>
- </div>
- ))}
- </div>
- </CardContent>
- </Card>
- )}
- </div>
- </div>
- </DashboardLayout>
- );
+ } catch (error) {
+ const msg = error instanceof Error ? error.message : (locale === 'ar' ? 'حدث خطأ' : 'An error occurred');
+ alert(msg);
+ } finally {
+ setIsSaving(false);
  }
+ };
 
  if (isPreviewOpen && previewTemplate) {
  return (
@@ -291,8 +156,8 @@ export default function SmartFormsPage() {
  const templateId = (previewTemplate as FormTemplate)?._id || (previewTemplate as FormTemplate)?.form_id;
  if (templateId) {
  try {
- await createSubmission.mutateAsync({
- form_template_id: templateId,
+ await createRecord.mutateAsync({
+ formTemplateId: templateId,
  data,
  });
  setIsPreviewOpen(false);
@@ -317,17 +182,43 @@ export default function SmartFormsPage() {
  if (isBuilderOpen) {
  return (
  <DashboardLayout>
- <div className="h-full">
- <FormBuilder
- template={selectedTemplate || undefined}
- onSave={handleSaveTemplate}
- onPreview={(data) => {
- setPreviewTemplate(data);
+ <div className="flex flex-col h-full">
+ <div className="flex items-center justify-between px-4 py-3 border-b bg-background shrink-0 gap-3">
+ <h2 className="text-base font-semibold truncate">
+ {selectedTemplate
+ ? (locale === 'ar' ? selectedTemplate.name_ar || selectedTemplate.name : selectedTemplate.name)
+ : (locale === 'ar' ? 'نموذج جديد' : 'New Form')}
+ </h2>
+ <div className="flex items-center gap-2">
+ <Button
+ variant="outline"
+ size="sm"
+ onClick={() => {
+ setPreviewTemplate({ fields: builderFields, name: builderName } as Partial<FormTemplate>);
  setIsPreviewOpen(true);
  }}
- onClose={() => setIsBuilderOpen(false)}
+ >
+ <Eye className="h-4 w-4 me-1" />
+ {locale === 'ar' ? 'معاينة' : 'Preview'}
+ </Button>
+ <Button size="sm" onClick={handleSaveBuilder} disabled={isSaving}>
+ <Save className="h-4 w-4 me-1" />
+ {isSaving ? (locale === 'ar' ? 'جاري الحفظ…' : 'Saving…') : (locale === 'ar' ? 'حفظ' : 'Save')}
+ </Button>
+ <Button variant="ghost" size="icon" onClick={() => setIsBuilderOpen(false)}>
+ <X className="h-4 w-4" />
+ </Button>
+ </div>
+ </div>
+ <div className="flex-1 overflow-hidden">
+ <FormDefinitionBuilder
+ fields={builderFields}
+ onChange={setBuilderFields}
  locale={locale as 'en' | 'ar'}
+ height="100%"
+ formId={selectedTemplate?.form_id}
  />
+ </div>
  </div>
  </DashboardLayout>
  );
@@ -361,7 +252,7 @@ export default function SmartFormsPage() {
  </TabsTrigger>
  <TabsTrigger value="submissions" className="flex items-center gap-2">
  <BarChart3 className="h-4 w-4" />
- {locale === 'ar' ? 'الردود' : 'Submissions'}
+ {locale === 'ar' ? 'السجلات' : 'Records'}
  </TabsTrigger>
  </TabsList>
 
@@ -438,6 +329,21 @@ export default function SmartFormsPage() {
  >
  <Eye className="h-4 w-4" />
  </Button>
+ {template.is_published && (
+ <Button
+ variant="outline"
+ size="sm"
+ onClick={() => handleCopyLink(template)}
+ title={locale === 'ar' ? 'نسخ رابط المشاركة' : 'Copy share link'}
+ >
+ <Link2 className="h-4 w-4" />
+ {copiedId === (template.form_id || template._id) && (
+ <span className="ms-1 text-xs text-success">
+ {locale === 'ar' ? 'تم النسخ' : 'Copied!'}
+ </span>
+ )}
+ </Button>
+ )}
  <Button 
  variant={template.is_published ? 'outline' : 'default'}
  size="sm" 
@@ -532,6 +438,22 @@ export default function SmartFormsPage() {
  >
  <Eye className="h-4 w-4" />
  </Button>
+ {template.is_published && (
+ <Button
+ variant="ghost"
+ size="icon"
+ className="h-8 w-8 relative"
+ onClick={() => handleCopyLink(template)}
+ title={locale === 'ar' ? 'نسخ رابط المشاركة' : 'Copy share link'}
+ >
+ <Link2 className="h-4 w-4" />
+ {copiedId === (template.form_id || template._id) && (
+ <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-medium text-success whitespace-nowrap">
+ {locale === 'ar' ? 'تم!' : 'Copied!'}
+ </span>
+ )}
+ </Button>
+ )}
  <Button
  variant="ghost"
  size="icon"
@@ -573,15 +495,15 @@ export default function SmartFormsPage() {
  </TabsContent>
 
  <TabsContent value="submissions">
- <SubmissionsDashboard 
- submissions={submissions}
+ <RecordsDashboard
+ records={records}
  templates={templates}
- isLoading={submissionsLoading}
- onView={handleViewSubmission}
+ isLoading={recordsLoading}
+ onView={() => {}}
  onApprove={handleApprove}
  onReject={handleReject}
- onRefresh={() => refetchSubmissions()}
- locale={locale as 'en' | 'ar'} 
+ onRefresh={() => refetchRecords()}
+ locale={locale as 'en' | 'ar'}
  />
  </TabsContent>
  </Tabs>

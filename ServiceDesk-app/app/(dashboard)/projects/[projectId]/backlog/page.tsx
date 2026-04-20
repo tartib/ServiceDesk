@@ -505,7 +505,14 @@ export default function BacklogPage() {
  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
  if (project?.organization) headers['X-Organization-ID'] = project.organization;
  try {
- await fetch(`${API_URL}/pm/sprints/${sprintId}/start`, { method: 'POST', headers });
+ const res = await fetch(`${API_URL}/pm/sprints/${sprintId}/start`, { method: 'POST', headers });
+ if (!res.ok) {
+ const data = await res.json();
+ const errors: string[] = data?.data?.validationErrors || [];
+ const message = errors.length > 0 ? errors.join('\n') : (data?.error || 'Failed to start sprint');
+ alert(message);
+ return;
+ }
  fetchData(token);
  } catch (error) { console.error('Failed to start sprint:', error); }
  };

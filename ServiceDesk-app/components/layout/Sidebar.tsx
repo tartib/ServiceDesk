@@ -12,7 +12,6 @@ import { useLocale } from '@/hooks/useLocale';
 import { useBrandName } from '@/hooks/useBrandSettings';
 import {
  LayoutDashboard,
- CheckSquare,
  ClipboardList,
  BarChart3,
  Users,
@@ -52,6 +51,7 @@ import {
  Trophy,
  Award,
  Gamepad2,
+ ClipboardCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -110,19 +110,16 @@ const getMethodologySubLinks = (code: string) => {
 const ADMIN_ROLES = ['manager', 'product_owner', 'project_manager'];
 const LEAD_ROLES = ['supervisor', 'manager', 'product_owner', 'project_manager'];
 
+// ── Platform navigation ─────────────────────────────────────────────────────
 const menuItems = [
  { icon: LayoutDashboard, labelKey: 'nav.homePage', href: '/homePage', roles: ALL_ROLES },
  { icon: FolderKanban, labelKey: 'nav.projects', href: '/projects', roles: ALL_ROLES },
  { icon: ClipboardList, labelKey: 'nav.projectIntake', href: '/projects/intake', roles: LEAD_ROLES },
  { icon: BarChart3, labelKey: 'nav.portfolioAnalytics', href: '/portfolio-analytics', roles: LEAD_ROLES },
  { icon: Trophy, labelKey: 'nav.teamPerformance', href: '/team-performance', roles: LEAD_ROLES },
- // { icon: CheckSquare, labelKey: 'nav.myTasks', href: '/tasks/my-tasks', roles: ALL_ROLES },
- // { icon: ClipboardList, labelKey: 'nav.allTasks', href: '/tasks', roles: LEAD_ROLES },
  { icon: HardDrive, labelKey: 'nav.drive', href: '/drive', roles: ALL_ROLES },
  { icon: BookOpen, labelKey: 'nav.knowledge', href: '/knowledge', roles: ALL_ROLES },
- { icon: Workflow, labelKey: 'nav.workflows', href: '/workflows', roles: ALL_ROLES },
  { icon: CalendarDays, labelKey: 'nav.vacations', href: '/vacations', roles: ALL_ROLES },
- { icon: FileText, labelKey: 'nav.smartForms', href: '/smart-forms', roles: LEAD_ROLES },
  { icon: UsersRound, labelKey: 'nav.teams', href: '/teams', roles: LEAD_ROLES },
  { icon: Tag, labelKey: 'nav.categories', href: '/categories', roles: ADMIN_ROLES },
  { icon: Monitor, labelKey: 'nav.assets', href: '/assets', roles: LEAD_ROLES },
@@ -131,7 +128,21 @@ const menuItems = [
  { icon: Users, labelKey: 'nav.users', href: '/users', roles: ADMIN_ROLES },
 ];
 
-const itsmMenuItems = [
+// ── Forms Platform section (Form Builder + Records + Documents) ───────────
+const formsMenuItems = [
+ { icon: FileText, labelKey: 'nav.formBuilder', href: '/smart-forms', fallback: 'Form Builder', roles: LEAD_ROLES },
+ { icon: ClipboardCheck, labelKey: 'nav.records', href: '/records', fallback: 'Records', roles: ALL_ROLES },
+ { icon: BookOpen, labelKey: 'nav.documents', href: '/documents', fallback: 'Documents', roles: ALL_ROLES },
+];
+
+// ── Workflows section ─────────────────────────────────────────────────────
+const workflowsMenuItems = [
+ { icon: Workflow, labelKey: 'nav.workflowBuilder', href: '/workflow-builder', fallback: 'Workflow Builder', roles: LEAD_ROLES },
+ { icon: Activity, labelKey: 'nav.workflows', href: '/workflows', fallback: 'Workflows', roles: ALL_ROLES },
+];
+
+// ── Solutions navigation (ITSM + Service Catalog) ──────────────────────────
+const solutionsMenuItems = [
  { icon: Headset, labelKey: 'nav.agentConsole', href: '/agent-console', roles: LEAD_ROLES },
  { icon: Headphones, labelKey: 'nav.selfService', href: '/self-service', roles: ALL_ROLES },
  { icon: Activity, labelKey: 'nav.itsmDashboard', href: '/itsm-dashboard', roles: ALL_ROLES },
@@ -146,6 +157,7 @@ const itsmMenuItems = [
  { icon: Rocket, labelKey: 'nav.releases', href: '/releases', roles: LEAD_ROLES },
  { icon: ShieldCheck, labelKey: 'nav.cab', href: '/cab', roles: LEAD_ROLES },
 ];
+
 
 export default function Sidebar() {
  const pathname = usePathname();
@@ -167,9 +179,6 @@ export default function Sidebar() {
  });
  
  if (response.status === 401) {
- localStorage.removeItem('token');
- localStorage.removeItem('accessToken');
- window.location.href = '/login';
  return;
  }
  if (!response.ok) {
@@ -194,10 +203,10 @@ export default function Sidebar() {
  return item.roles.includes(user.role);
  });
 
- const filteredItsmItems = itsmMenuItems.filter((item) => {
- if (!user) return false;
- return item.roles.includes(user.role);
- });
+ const filteredFormsItems = formsMenuItems.filter((item) => user && item.roles.includes(user.role));
+ const filteredWorkflowsItems = workflowsMenuItems.filter((item) => user && item.roles.includes(user.role));
+ const filteredSolutionsItems = solutionsMenuItems.filter((item) => user && item.roles.includes(user.role));
+
 
  return (
  <>
@@ -357,39 +366,84 @@ export default function Sidebar() {
             >
               <Icon className="h-5 w-5 shrink-0" />
               <span className="truncate">{t(item.labelKey) || item.fallback}</span>
- </div>
- </Link>
- );
- })}
-
-      {/* ITSM Section */}
- {filteredItsmItems.length > 0 && (
- <>
- <div className="pt-4 pb-2">
- <span className="px-2 sm:px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">ITSM</span>
- </div>
- {filteredItsmItems.map((item) => {
- const Icon = item.icon;
- const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-
- return (
- <Link key={item.href} href={item.href}>
- <div
- className={cn(
- 'flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg transition-colors text-sm sm:text-base',
-              isActive
-                ? 'bg-brand-surface text-brand font-medium ltr:border-l-2 rtl:border-r-2 border-brand'
-                : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
-              )}
-            >
-              <Icon className="h-5 w-5 shrink-0" />
-              <span className="truncate">{t(item.labelKey)}</span>
             </div>
           </Link>
         );
       })}
-      </>
-    )}
+
+      {/* Forms Platform Section */}
+      {filteredFormsItems.length > 0 && (
+        <>
+          <div className="pt-4 pb-2">
+            <span className="px-2 sm:px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('nav.formsPlatform') || 'Forms Platform'}</span>
+          </div>
+          {filteredFormsItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            return (
+              <Link key={item.href} href={item.href}>
+                <div className={cn(
+                  'flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg transition-colors text-sm sm:text-base',
+                  isActive ? 'bg-brand-surface text-brand font-medium ltr:border-l-2 rtl:border-r-2 border-brand' : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                )}>
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span className="truncate">{t(item.labelKey) || item.fallback}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </>
+      )}
+
+      {/* Records Section — merged into Forms Platform above */}
+
+      {/* Workflows Section */}
+      {filteredWorkflowsItems.length > 0 && (
+        <>
+          <div className="pt-4 pb-2">
+            <span className="px-2 sm:px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('nav.workflowsSection') || 'Workflows'}</span>
+          </div>
+          {filteredWorkflowsItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            return (
+              <Link key={item.href} href={item.href}>
+                <div className={cn(
+                  'flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg transition-colors text-sm sm:text-base',
+                  isActive ? 'bg-brand-surface text-brand font-medium ltr:border-l-2 rtl:border-r-2 border-brand' : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                )}>
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span className="truncate">{t(item.labelKey) || item.fallback}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </>
+      )}
+
+ {/* Solutions Section (ITSM + Service Catalog) */}
+ {filteredSolutionsItems.length > 0 && (
+ <>
+ <div className="pt-4 pb-2">
+ <span className="px-2 sm:px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('nav.solutions') || 'Solutions'}</span>
+ </div>
+ {filteredSolutionsItems.map((item) => {
+ const Icon = item.icon;
+ const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+ return (
+ <Link key={item.href} href={item.href}>
+ <div className={cn(
+ 'flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg transition-colors text-sm sm:text-base',
+ isActive ? 'bg-brand-surface text-brand font-medium ltr:border-l-2 rtl:border-r-2 border-brand' : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+ )}>
+ <Icon className="h-5 w-5 shrink-0" />
+ <span className="truncate">{t(item.labelKey)}</span>
+ </div>
+ </Link>
+ );
+ })}
+ </>
+ )}
  </nav>
 
  <div className="border-t border-sidebar-border px-3 sm:px-4 py-3 md:py-4 shrink-0">

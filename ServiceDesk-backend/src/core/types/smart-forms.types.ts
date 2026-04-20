@@ -880,6 +880,10 @@ export interface IFormTemplate {
   created_at: Date;
   updated_at: Date;
   site_id?: string;
+
+  // Platform workflow binding (Phase 3)
+  workflow_definition_id?: string;
+  workflow_mode?: 'simple' | 'advanced' | 'none';
 }
 
 /**

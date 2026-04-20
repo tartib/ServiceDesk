@@ -5,6 +5,7 @@ import { TaskStatus } from '../types';
 import { NotificationType, NotificationSource, NotificationLevel } from '../modules/notifications/domain/interfaces';
 import logger from '../utils/logger';
 import { NotificationService } from '../modules/notifications/services/NotificationService';
+import { startMonthlyRatingJob } from './monthlyRatingJob';
 const notificationService = new NotificationService();
 
 // Job 1: Auto-generate prep tasks every 15 minutes
@@ -89,6 +90,7 @@ export const startAllJobs = () => {
   autoGenerateTasksJob.start();
   checkLateTasksJob.start();
   inventoryAlertsJob.start();
+  startMonthlyRatingJob();
   logger.info('✅ All cron jobs started');
 };
 

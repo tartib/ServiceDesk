@@ -78,7 +78,7 @@ export default function ServiceDetailPage() {
  const fetchService = async () => {
  try {
  setLoading(true);
- const response = await api.get<{ data: Service }>(`/api/v2/itsm/services/${serviceId}`);
+ const response = await api.get<{ data: Service }>(`/itsm/services/${serviceId}`);
  setService(response.data);
  } catch (error) {
  console.error('Failed to fetch service:', error);
@@ -102,8 +102,8 @@ export default function ServiceDetailPage() {
 
  try {
  setSubmitting(true);
- await api.post('/api/v2/itsm/requests', {
- serviceId: service?.serviceId,
+ await api.post('/itsm/requests', {
+ serviceId: service?._id,
  formData,
  source: 'web',
  });

@@ -8,10 +8,8 @@ import * as brandSettingsCtrl from '../controllers/brandSettings.controller';
 
 const router = Router();
 
-router.use(authenticate);
-
 router.get('/', brandSettingsCtrl.getBrandSettings);
-router.put('/', authorize('admin'), brandSettingsCtrl.saveBrandSettings);
-router.delete('/', authorize('admin'), brandSettingsCtrl.resetBrandSettings);
+router.put('/', authenticate, authorize('admin'), brandSettingsCtrl.saveBrandSettings);
+router.delete('/', authenticate, authorize('admin'), brandSettingsCtrl.resetBrandSettings);
 
 export default router;

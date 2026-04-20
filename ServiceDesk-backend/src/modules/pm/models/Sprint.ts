@@ -133,9 +133,9 @@ const SprintSchema = new Schema<IPMSprint>(
       participants: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     },
     settings: {
-      requireGoal: { type: Boolean, default: true },
-      requireEstimates: { type: Boolean, default: true },
-      enforceCapacity: { type: Boolean, default: true },
+      requireGoal: { type: Boolean, default: false },
+      requireEstimates: { type: Boolean, default: false },
+      enforceCapacity: { type: Boolean, default: false },
     },
     retrospective: {
       whatWentWell: [{ type: String }],

@@ -108,7 +108,16 @@
     "cab": "CAB",
     "portfolioAnalytics": "Portfolio Analytics",
     "teamPerformance": "Team Performance",
-    "agentConsole": "Agent Console"
+    "agentConsole": "Agent Console",
+    "formsPlatform": "Forms Platform",
+    "formBuilder": "Form Builder",
+    "records": "Records",
+    "documents": "Documents",
+    "workflowBuilder": "Workflow Builder",
+    "workflowsSection": "Workflows",
+    "solutions": "Solutions",
+    "changeCalendar": "Change Calendar",
+    "pirs": "Post-Incident Reviews"
   },
   "tasks": {
     "title": "Tasks",

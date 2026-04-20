@@ -12,7 +12,7 @@ import {
 } from '@/types/itsm';
 import { incidentKeys } from '@/hooks/useIncidents';
 
-const ITSM_BASE = '/api/v2/itsm';
+const ITSM_BASE = '/itsm';
 const PROBLEMS_KEY = 'problems';
 
 export const problemKeys = {

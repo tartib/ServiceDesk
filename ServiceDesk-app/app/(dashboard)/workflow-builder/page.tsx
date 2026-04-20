@@ -51,6 +51,59 @@ interface RFEdge {
  data?: Record<string, unknown>;
 }
 
+// ============================================
+// Client-side validation (mirrors server logic)
+// ============================================
+
+function validatePayload(
+ payload: ReturnType<typeof serializeDefinition>,
+ isAr: boolean
+): string[] {
+ const errors: string[] = [];
+
+ if (payload.states.length < 2) {
+ errors.push(isAr ? 'يجب أن يحتوي سير العمل على حالتين على الأقل' : 'Workflow must have at least 2 states');
+ }
+ if (!payload.initialState) {
+ errors.push(isAr ? 'الحالة الابتدائية مطلوبة — أضف عقدة بداية' : 'Initial state is required — add a Start node');
+ }
+ if (payload.finalStates.length === 0) {
+ errors.push(isAr ? 'يجب أن يحتوي على حالة نهائية — أضف عقدة نهاية' : 'At least one final state is required — add an End node');
+ }
+
+ const codes = new Set(payload.states.map((s) => s.code));
+ if (payload.initialState && !codes.has(payload.initialState)) {
+ errors.push(isAr ? 'الحالة الابتدائية غير موجودة في قائمة الحالات' : `Initial state "${payload.initialState}" not found in states`);
+ }
+
+ // BFS reachability from initialState
+ if (payload.initialState && codes.has(payload.initialState)) {
+ const reachable = new Set<string>();
+ const queue = [payload.initialState];
+ while (queue.length > 0) {
+ const cur = queue.shift()!;
+ if (reachable.has(cur)) continue;
+ reachable.add(cur);
+ for (const t of payload.transitions) {
+ if ((t.fromState === cur || t.fromState === '*') && !reachable.has(t.toState)) {
+ queue.push(t.toState);
+ }
+ }
+ }
+ for (const state of payload.states) {
+ if (state.code !== payload.initialState && !reachable.has(state.code)) {
+ errors.push(
+ isAr
+ ? `الحالة "${state.code}" غير مرتبطة — أضف انتقالاً يصل إليها`
+ : `State "${state.code}" is unreachable — draw a transition leading to it`
+ );
+ }
+ }
+ }
+
+ return errors;
+}
+
 function serializeDefinition(nodes: RFNode[], edges: RFEdge[], name: string) {
  // Build a map from node id → code (used for transitions and initial/final states)
  const codeOf = (node: RFNode) => {
@@ -107,6 +160,11 @@ function serializeDefinition(nodes: RFNode[], edges: RFEdge[], name: string) {
  const startNode = nodes.find((n) => n.type === 'wfStart');
  const endNodes = nodes.filter((n) => n.type === 'wfEnd');
 
+ // Fallback: if no wfEnd nodes exist, use the last non-start state as the final state
+ const derivedFinalStates = endNodes.length > 0
+ ? endNodes.map((n) => codeOf(n))
+ : states.length > 0 ? [states[states.length - 1].code] : [];
+
  return {
  name,
  organizationId: getOrganizationId() || undefined,
@@ -114,7 +172,7 @@ function serializeDefinition(nodes: RFNode[], edges: RFEdge[], name: string) {
  states,
  transitions,
  initialState: startNode ? codeOf(startNode) : states[0]?.code || '',
- finalStates: endNodes.map((n) => codeOf(n)),
+ finalStates: derivedFinalStates,
  settings: {
  allowParallelSteps: false,
  requireCommentsOnReject: false,
@@ -197,6 +255,13 @@ export default function WorkflowBuilderPage() {
  data.name
  );
 
+ const saveErrors = validatePayload(payload, isAr);
+ if (saveErrors.length > 0) {
+ saveErrors.forEach((e) => toast.error(e));
+ busyRef.current = false;
+ return;
+ }
+
  try {
  let res: Response;
 
@@ -258,6 +323,13 @@ export default function WorkflowBuilderPage() {
  data.edges as RFEdge[],
  data.name
  );
+
+ const publishErrors = validatePayload(payload, isAr);
+ if (publishErrors.length > 0) {
+ publishErrors.forEach((e) => toast.error(e));
+ busyRef.current = false;
+ return;
+ }
 
  try {
  // Step 1: Save (create or update)

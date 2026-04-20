@@ -120,7 +120,7 @@ export interface ISlaComplianceReport {
 
 // ── Base path ────────────────────────────────────────────────
 
-const BASE = '/api/v2/sla';
+const BASE = '/sla';
 const POLICY_KEY = 'sla-policies';
 const CALENDAR_KEY = 'sla-calendars';
 const SLA_TICKET_KEY = 'sla-ticket';

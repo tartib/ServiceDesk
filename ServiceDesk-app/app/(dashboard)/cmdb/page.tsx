@@ -130,7 +130,7 @@ export default function CMDBPage() {
  if (selectedStatus !== 'all') params.status = selectedStatus;
  if (selectedCriticality !== 'all') params.criticality = selectedCriticality;
 
- const res = await api.get('/api/v2/itsm/cmdb/items', { params }) as ApiRes<{ items: ConfigItem[]; pagination: { pages: number } }>;
+ const res = await api.get('/itsm/cmdb/items', { params }) as ApiRes<{ items: ConfigItem[]; pagination: { pages: number } }>;
  const raw = res.data as Record<string, unknown>;
  const data = (raw?.data || raw) as { items?: ConfigItem[]; pagination?: { pages: number } };
  setItems(data?.items || []);
@@ -144,7 +144,7 @@ export default function CMDBPage() {
 
  const fetchStats = useCallback(async () => {
  try {
- const res = await api.get('/api/v2/itsm/cmdb/stats') as ApiRes<CMDBStats>;
+ const res = await api.get('/itsm/cmdb/stats') as ApiRes<CMDBStats>;
  const raw = res.data as Record<string, unknown>;
  setStats((raw?.data || raw) as CMDBStats || null);
  } catch (err) {

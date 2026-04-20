@@ -13,7 +13,7 @@ import logger from '../../../utils/logger';
  */
 export async function getMyAchievements(req: Request, res: Response): Promise<void> {
   try {
-    const userId = (req as any).user?.userId;
+    const userId = (req as any).user?.id;
     const organizationId = (req as any).user?.organizationId;
 
     if (!userId || !organizationId) {

@@ -23,7 +23,13 @@ const axiosInstance = axios.create({
 // Request interceptor - add auth token, organization context, and CSRF token
 axiosInstance.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    let token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token) {
+      try {
+        const raw = localStorage.getItem('auth-storage');
+        if (raw) token = JSON.parse(raw)?.state?.token ?? null;
+      } catch { /* ignore */ }
+    }
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -54,8 +60,14 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+        const hadToken = !!error.config?.headers?.Authorization;
+        const authPaths = ['/login', '/register', '/forgot-password'];
+        const isAuthPage = authPaths.some(p => window.location.pathname.startsWith(p));
+        if (hadToken && !isAuthPage) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('accessToken');
+          window.location.href = '/login';
+        }
       }
     }
     if (error.response?.status === 403 && error.response?.data?.message?.includes('CSRF')) {

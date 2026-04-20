@@ -4,6 +4,7 @@ import api from '@/lib/axios';
 export enum ServiceRequestStatus {
   SUBMITTED = 'submitted',
   PENDING_APPROVAL = 'pending_approval',
+  UNDER_REVIEW = 'under_review',
   APPROVED = 'approved',
   REJECTED = 'rejected',
   IN_PROGRESS = 'in_progress',
@@ -21,57 +22,47 @@ export enum Priority {
 
 export interface ServiceRequest {
   _id: string;
-  request_id: string;
-  service_id: string;
-  service_name: string;
+  requestId: string;
+  /** @deprecated use requestId */
+  request_id?: string;
+  serviceId: string;
+  serviceName: string;
+  serviceNameAr?: string;
+  serviceCategory?: string;
+  /** @deprecated use serviceName */
+  service_name?: string;
   status: ServiceRequestStatus;
+  currentState?: string;
   priority: Priority;
   requester: {
-    id: string;
+    userId: string;
+    /** @deprecated use userId */
+    id?: string;
     name: string;
     email: string;
-    department: string;
+    department?: string;
   };
-  form_data: Record<string, unknown>;
-  approval_status: {
-    current_step: number;
-    total_steps: number;
-    approvals: Array<{
-      step: number;
-      approver_id: string;
-      approver_name: string;
-      status: string;
-      decision_at?: string;
-      comments?: string;
-    }>;
+  formData?: Record<string, unknown>;
+  assignedTo?: {
+    technicianId?: string;
+    name?: string;
+    email?: string;
   };
-  assigned_to?: {
-    technician_id: string;
-    name: string;
-    email: string;
+  sla?: {
+    priority?: string;
+    targetResponseDate?: string;
+    targetResolutionDate?: string;
+    responseBreached?: boolean;
+    resolutionBreached?: boolean;
   };
-  sla: {
-    sla_id: string;
-    response_due: string;
-    resolution_due: string;
-    breach_flag: boolean;
-  };
-  fulfillment?: {
-    fulfilled_by?: string;
-    fulfilled_by_name?: string;
-    fulfilled_at?: string;
-    notes?: string;
-  };
-  timeline: Array<{
-    event: string;
-    by: string;
-    by_name?: string;
-    time: string;
-    details?: Record<string, unknown>;
-  }>;
-  created_at: string;
-  updated_at: string;
-  closed_at?: string;
+  submittedAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+  closedAt?: string;
+  /** @deprecated use createdAt */
+  created_at?: string;
+  source?: string;
+  comments?: unknown[];
 }
 
 export interface ServiceRequestStats {
@@ -110,7 +101,7 @@ export interface ServiceRequestFilters {
   sort_order?: 'asc' | 'desc';
 }
 
-const ITSM_BASE = '/api/v2/itsm';
+const ITSM_BASE = '/itsm';
 
 export const requestKeys = {
   all: ['service-requests'] as const,
@@ -132,7 +123,7 @@ export function useServiceRequests(filters: ServiceRequestFilters = {}) {
           params.append(key, String(value));
         }
       });
-      const response = await api.get(`${ITSM_BASE}/service-requests?${params.toString()}`) as {
+      const response = await api.get(`${ITSM_BASE}/requests?${params.toString()}`) as {
         data?: ServiceRequest[];
         pagination?: { total: number; pages: number; page: number };
       };
@@ -145,7 +136,7 @@ export function useServiceRequest(id: string) {
   return useQuery({
     queryKey: requestKeys.detail(id),
     queryFn: async () => {
-      const response = await api.get(`${ITSM_BASE}/service-requests/${id}`) as { data?: ServiceRequest };
+      const response = await api.get(`${ITSM_BASE}/requests/${id}`) as { data?: ServiceRequest };
       return (response.data || response) as ServiceRequest;
     },
     enabled: !!id,
@@ -156,9 +147,10 @@ export function useServiceRequestStats() {
   return useQuery({
     queryKey: requestKeys.stats(),
     queryFn: async () => {
-      const response = await api.get(`${ITSM_BASE}/service-requests/stats`) as { data?: ServiceRequestStats };
+      const response = await api.get(`${ITSM_BASE}/requests/stats`) as { data?: ServiceRequestStats };
       return (response.data || response) as ServiceRequestStats;
     },
+    retry: false,
   });
 }
 
@@ -172,7 +164,7 @@ export function useMyServiceRequests(userId: string, filters: { page?: number; l
           params.append(key, String(value));
         }
       });
-      const response = await api.get(`${ITSM_BASE}/service-requests/my/${userId}?${params.toString()}`) as {
+      const response = await api.get(`${ITSM_BASE}/requests/my/${userId}?${params.toString()}`) as {
         data?: ServiceRequest[];
         pagination?: { total: number; pages: number; page: number };
       };
@@ -187,7 +179,7 @@ export function useCreateServiceRequest() {
 
   return useMutation({
     mutationFn: async (data: CreateServiceRequestDTO) => {
-      const response = await api.post(`${ITSM_BASE}/service-requests`, data) as { data?: ServiceRequest };
+      const response = await api.post(`${ITSM_BASE}/requests`, data) as { data?: ServiceRequest };
       return (response.data || response) as ServiceRequest;
     },
     onSuccess: () => {
@@ -208,7 +200,7 @@ export function useUpdateServiceRequestStatus() {
       user_id?: string;
       user_name?: string;
     }) => {
-      const response = await api.post(`${ITSM_BASE}/service-requests/${id}/status`, {
+      const response = await api.post(`${ITSM_BASE}/requests/${id}/status`, {
         status,
         notes,
         user_id,
@@ -235,7 +227,7 @@ export function useApproveServiceRequest() {
       approver_name: string;
       comments?: string;
     }) => {
-      const response = await api.post(`${ITSM_BASE}/service-requests/${id}/approve`, {
+      const response = await api.post(`${ITSM_BASE}/requests/${id}/approve`, {
         decision,
         approver_id,
         approver_name,
@@ -264,7 +256,7 @@ export function useAssignServiceRequest() {
       assigned_by?: string;
       assigned_by_name?: string;
     }) => {
-      const response = await api.post(`${ITSM_BASE}/service-requests/${id}/assign`, {
+      const response = await api.post(`${ITSM_BASE}/requests/${id}/assign`, {
         technician_id,
         name,
         email,
@@ -292,7 +284,7 @@ export function useFulfillServiceRequest() {
       fulfilled_by_name: string;
       notes?: string;
     }) => {
-      const response = await api.post(`${ITSM_BASE}/service-requests/${id}/fulfill`, {
+      const response = await api.post(`${ITSM_BASE}/requests/${id}/fulfill`, {
         fulfilled_by,
         fulfilled_by_name,
         notes,
@@ -312,6 +304,7 @@ export function getStatusColor(status: ServiceRequestStatus): string {
   const colors: Record<ServiceRequestStatus, string> = {
     [ServiceRequestStatus.SUBMITTED]: 'bg-brand-soft text-brand',
     [ServiceRequestStatus.PENDING_APPROVAL]: 'bg-warning-soft text-warning',
+    [ServiceRequestStatus.UNDER_REVIEW]: 'bg-info-soft text-info',
     [ServiceRequestStatus.APPROVED]: 'bg-success-soft text-success',
     [ServiceRequestStatus.REJECTED]: 'bg-destructive-soft text-destructive',
     [ServiceRequestStatus.IN_PROGRESS]: 'bg-info-soft text-info',

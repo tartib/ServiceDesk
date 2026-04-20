@@ -178,7 +178,7 @@ export interface IAutomationStats {
 // Constants
 // ============================================
 
-const BASE = '/api/v2/itsm/automation';
+const BASE = '/itsm/automation';
 const RULES_KEY = 'automation-rules';
 const TEMPLATES_KEY = 'automation-templates';
 const STATS_KEY = 'automation-stats';

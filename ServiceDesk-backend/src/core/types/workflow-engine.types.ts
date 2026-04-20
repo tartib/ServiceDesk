@@ -86,10 +86,12 @@ export enum WFActionType {
   CALL_API = 'call_api',
   ESCALATE = 'escalate',
   UPDATE_ENTITY = 'update_entity',
+  UPDATE_RECORD = 'update_record',
   LOG_ACTIVITY = 'log_activity',
   ADD_COMMENT = 'add_comment',
   RUN_SCRIPT = 'run_script',
   EXTERNAL_TASK = 'external_task',
+  GENERATE_DOCUMENT = 'generate_document',
   CUSTOM = 'custom',
 }
 
@@ -513,6 +515,15 @@ export interface IWFInstance {
 /**
  * حدث سير العمل (Audit Trail)
  */
+export interface IWFEventRecordContext {
+  /** ID of the originating FormRecord (if entity is a form record) */
+  recordId: string;
+  /** Type of the originating record, e.g. 'form_record' | 'form_submission' */
+  recordType: string;
+  /** Human-readable form definition name, for debugging/analytics */
+  formName?: string;
+}
+
 export interface IWFEvent {
   _id: any;
   instanceId: any;
@@ -530,6 +541,8 @@ export interface IWFEvent {
   data?: Record<string, any>;
   error?: string;
   timestamp: Date;
+  /** Populated when the workflow instance was triggered by a form record submission. */
+  recordContext?: IWFEventRecordContext;
 }
 
 // ============================================

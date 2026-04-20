@@ -44,7 +44,7 @@ export async function getLeaderboard(req: Request, res: Response): Promise<void>
  */
 export async function getMyRank(req: Request, res: Response): Promise<void> {
   try {
-    const userId = (req as any).user?.userId;
+    const userId = (req as any).user?.id;
     const organizationId = (req as any).user?.organizationId;
 
     if (!userId || !organizationId) {

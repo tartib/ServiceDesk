@@ -3,7 +3,7 @@ import api from '@/lib/axios';
 
 // ── Base path ────────────────────────────────────────────────
 
-const BASE = '/api/v2/campaigns';
+const BASE = '/campaigns';
 
 // ── Query Keys ───────────────────────────────────────────────
 

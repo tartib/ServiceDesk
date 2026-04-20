@@ -4,6 +4,12 @@ import { IFormWorkflowService } from './interfaces/IFormWorkflowService';
 import ApiError from '../../../utils/ApiError';
 import logger from '../../../utils/logger';
 
+/**
+ * @deprecated FROZEN — Do not add new workflow features here.
+ * This service handles simple (inline) workflow only.
+ * All new workflow features must route through {@link FormWorkflowBindingService}
+ * and the `modules/workflow-engine` module (ADR 001, Phase 3).
+ */
 export class FormWorkflowService implements IFormWorkflowService {
   async setWorkflow(
     formId: string,

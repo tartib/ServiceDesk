@@ -8,7 +8,9 @@ import StepProjectInfo from './StepProjectInfo';
 import StepMethodology from './StepMethodology';
 import StepMethodologyConfig from './StepMethodologyConfig';
 import StepReview from './StepReview';
+import StepTemplate from './StepTemplate';
 import { getDefaultLandingPage } from '@/hooks/useMethodology';
+import type { ProjectTemplate } from '../templates/projectTemplates';
 
 export type MethodologyType = 'scrum' | 'kanban' | 'waterfall' | 'itil' | 'lean' | 'okr';
 
@@ -38,21 +40,34 @@ const initialFormData: ProjectFormData = {
 };
 
 const steps = [
- { id: 1, name: 'Project Info', description: 'Basic project details' },
- { id: 2, name: 'Methodology', description: 'Select project methodology' },
- { id: 3, name: 'Configuration', description: 'Configure methodology settings' },
- { id: 4, name: 'Review', description: 'Review and create' },
+ { id: 1, name: 'Template', description: 'Choose a starting template' },
+ { id: 2, name: 'Project Info', description: 'Basic project details' },
+ { id: 3, name: 'Methodology', description: 'Select project methodology' },
+ { id: 4, name: 'Configuration', description: 'Configure methodology settings' },
+ { id: 5, name: 'Review', description: 'Review and create' },
 ];
 
 interface ProjectWizardProps {
  onClose: () => void;
  onSuccess?: (projectId: string) => void;
+ /** Pre-select a template when the wizard opens (from the /projects/new gallery) */
+ initialTemplate?: ProjectTemplate | null;
 }
 
-export default function ProjectWizard({ onClose, onSuccess }: ProjectWizardProps) {
+export default function ProjectWizard({ onClose, onSuccess, initialTemplate }: ProjectWizardProps) {
  const router = useRouter();
- const [currentStep, setCurrentStep] = useState(1);
- const [formData, setFormData] = useState<ProjectFormData>(initialFormData);
+ const [currentStep, setCurrentStep] = useState(initialTemplate !== undefined ? 2 : 1);
+ const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(initialTemplate ?? null);
+ const [formData, setFormData] = useState<ProjectFormData>(
+ initialTemplate
+  ? {
+    ...initialFormData,
+    name: initialTemplate.defaultName,
+    description: initialTemplate.defaultDescription,
+    methodology: initialTemplate.methodology,
+   }
+  : initialFormData,
+ );
  const [isSubmitting, setIsSubmitting] = useState(false);
  const [error, setError] = useState<string | null>(null);
 
@@ -60,18 +75,32 @@ export default function ProjectWizard({ onClose, onSuccess }: ProjectWizardProps
  setFormData((prev) => ({ ...prev, ...updates }));
  };
 
+ const handleTemplateSelect = (template: ProjectTemplate | null) => {
+  setSelectedTemplate(template);
+  if (template) {
+   setFormData((prev) => ({
+    ...prev,
+    name: prev.name || template.defaultName,
+    description: prev.description || template.defaultDescription,
+    methodology: template.methodology,
+   }));
+  }
+ };
+
  const canProceed = (): boolean => {
  switch (currentStep) {
  case 1:
- return formData.name.trim() !== '' && formData.key.trim() !== '';
+  return true; // Template step — always skippable
  case 2:
- return formData.methodology !== null;
+  return formData.name.trim() !== '' && formData.key.trim() !== '';
  case 3:
- return true; // Config is optional
+  return formData.methodology !== null;
  case 4:
- return true;
+  return true; // Config is optional
+ case 5:
+  return true;
  default:
- return false;
+  return false;
  }
  };
 
@@ -123,7 +152,11 @@ export default function ProjectWizard({ onClose, onSuccess }: ProjectWizardProps
  throw new Error(errMsg);
  }
 
- const projectId = data.data.project?.id || data.data.id;
+ const projectId =
+ data.data?.project?._id ||
+ data.data?.project?.id ||
+ data.data?._id ||
+ data.data?.id;
 
  if (!projectId) {
  console.error('Project creation response:', data);
@@ -161,15 +194,17 @@ export default function ProjectWizard({ onClose, onSuccess }: ProjectWizardProps
  const renderStep = () => {
  switch (currentStep) {
  case 1:
- return <StepProjectInfo formData={formData} updateFormData={updateFormData} />;
+  return <StepTemplate selectedTemplateId={selectedTemplate?.id ?? null} onSelect={handleTemplateSelect} />;
  case 2:
- return <StepMethodology formData={formData} updateFormData={updateFormData} />;
+  return <StepProjectInfo formData={formData} updateFormData={updateFormData} />;
  case 3:
- return <StepMethodologyConfig formData={formData} updateFormData={updateFormData} />;
+  return <StepMethodology formData={formData} updateFormData={updateFormData} />;
  case 4:
- return <StepReview formData={formData} />;
+  return <StepMethodologyConfig formData={formData} updateFormData={updateFormData} />;
+ case 5:
+  return <StepReview formData={formData} />;
  default:
- return null;
+  return null;
  }
  };
 
@@ -189,10 +224,10 @@ export default function ProjectWizard({ onClose, onSuccess }: ProjectWizardProps
 
  {/* Progress Steps */}
  <div className="px-6 py-4 border-b border-border">
- <div className="flex items-center justify-between">
+ <div className="flex items-start justify-between">
  {steps.map((step, index) => (
- <div key={step.id} className="flex items-center">
- <div className="flex flex-col items-center">
+ <div key={step.id} className={`flex items-start ${index < steps.length - 1 ? 'flex-1' : ''}`}>
+ <div className="flex flex-col items-center shrink-0">
  <div
  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
  currentStep > step.id
@@ -205,14 +240,14 @@ export default function ProjectWizard({ onClose, onSuccess }: ProjectWizardProps
  {currentStep > step.id ? <Check className="h-5 w-5" /> : step.id}
  </div>
  <div className="mt-2 text-center hidden sm:block">
- <p className={`text-sm font-medium ${currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground'}`}>
+ <p className={`text-xs font-medium whitespace-nowrap ${currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground'}`}>
  {step.name}
  </p>
  </div>
  </div>
  {index < steps.length - 1 && (
  <div
- className={`w-12 sm:w-24 h-1 mx-2 rounded ${
+ className={`flex-1 h-1 mx-2 mt-[18px] rounded transition-colors ${
  currentStep > step.id ? 'bg-success' : 'bg-muted'
  }`}
  />

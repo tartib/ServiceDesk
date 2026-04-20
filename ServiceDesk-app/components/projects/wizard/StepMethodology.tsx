@@ -98,7 +98,7 @@ export default function StepMethodology({ formData, updateFormData }: StepMethod
  <div>
  <h3 className="text-lg font-medium text-foreground mb-1">Select Methodology</h3>
  <p className="text-sm text-muted-foreground">
- Choose the project management methodology that best fits your team's workflow.
+ Choose the project management methodology that best fits your team&apos;s workflow.
  </p>
  </div>
 

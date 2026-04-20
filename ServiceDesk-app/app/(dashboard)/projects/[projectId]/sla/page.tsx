@@ -16,7 +16,7 @@ import {
  LoadingState,
 } from '@/components/projects';
 import { useMethodology } from '@/hooks/useMethodology';
-import { useSLAs, useSLAStats, ISLA } from '@/hooks/useSLA';
+import { useSlaPolicies, useSlaStats, ISlaPolicy } from '@/hooks/useSlaV2';
 
 interface Project {
  _id: string;
@@ -42,9 +42,9 @@ export default function SlaPage() {
  const [projectLoading, setProjectLoading] = useState(true);
  const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter'>('month');
 
- const { data: slaData, isLoading: slaLoading } = useSLAs({ is_active: true });
- const { data: stats } = useSLAStats();
- const slaDefinitions: ISLA[] = useMemo(() => slaData?.data || [], [slaData]);
+ const { data: slaData, isLoading: slaLoading } = useSlaPolicies({ isActive: true });
+ const { data: stats } = useSlaStats();
+ const slaDefinitions: ISlaPolicy[] = useMemo(() => slaData || [], [slaData]);
 
  const fetchProject = useCallback(async (token: string) => {
  try {
@@ -75,9 +75,9 @@ export default function SlaPage() {
  return `${(minutes / 1440).toFixed(1)}d`;
  };
 
- const overallActive = stats?.active || 0;
- const overallDefaults = stats?.defaults || 0;
- const overallTotal = stats?.total || 0;
+ const overallActive = stats?.policies?.active || 0;
+ const overallDefaults = 0;
+ const overallTotal = stats?.policies?.total || 0;
 
  const isLoading = projectLoading || slaLoading;
 
@@ -103,6 +103,7 @@ export default function SlaPage() {
  <div className="flex items-center gap-2">
  <Target className="h-5 w-5 text-brand" />
  <h2 className="text-lg font-semibold text-foreground">SLA Dashboard</h2>
+ <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-muted text-muted-foreground">Project View</span>
  </div>
  <div className="flex items-center gap-2">
  <select
@@ -170,7 +171,7 @@ export default function SlaPage() {
  </div>
  </div>
  <p className="text-4xl font-bold text-warning">
- {stats?.byPriority ? Object.keys(stats.byPriority).filter(k => stats.byPriority[k] > 0).length : 0}
+ {slaDefinitions.length > 0 ? new Set(slaDefinitions.map(s => s.priority)).size : 0}
  </p>
  <p className="text-sm text-muted-foreground mt-1">Priority levels</p>
  </div>
@@ -190,35 +191,41 @@ export default function SlaPage() {
  ) : (
  <div className="space-y-6">
  {slaDefinitions.map((sla) => {
- const config = priorityConfig[sla.priority] || priorityConfig.medium;
- const responseMinutes = (sla.response_time?.hours || 0) * 60;
- const resolutionMinutes = (sla.resolution_time?.hours || 0) * 60;
+ const priorityLabel = typeof sla.priority === 'number'
+ ? ['', 'Critical', 'High', 'Medium', 'Low'][sla.priority] || String(sla.priority)
+ : String(sla.priority);
+ const priorityKey = priorityLabel.toLowerCase();
+ const config = priorityConfig[priorityKey] || priorityConfig.medium;
+ const firstGoal = sla.goals?.[0];
 
  return (
- <div key={sla._id} className="flex items-center gap-6">
+ <div key={sla.id} className="flex items-center gap-6">
  {/* Priority Badge */}
  <div className="w-32">
  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.bgColor} ${config.textColor}`}>
- {config.label}
+ {priorityLabel}
  </span>
  </div>
 
  {/* Name */}
  <div className="w-40">
  <p className="text-sm font-medium text-foreground">{sla.name}</p>
- <p className="text-xs text-muted-foreground">{sla.sla_id}</p>
+ <p className="text-xs text-muted-foreground">{sla.code}</p>
  </div>
 
  {/* Targets */}
  <div className="w-48 text-sm">
- <p className="text-muted-foreground">Response: <span className="font-medium text-foreground">{formatTime(responseMinutes)}</span></p>
- <p className="text-muted-foreground">Resolution: <span className="font-medium text-foreground">{formatTime(resolutionMinutes)}</span></p>
+ {firstGoal ? (
+ <p className="text-muted-foreground">Target: <span className="font-medium text-foreground">{formatTime(firstGoal.targetMinutes)}</span></p>
+ ) : (
+ <p className="text-muted-foreground text-xs">No goals defined</p>
+ )}
  </div>
 
  {/* Status */}
  <div className="flex-1">
  <div className="flex items-center gap-3">
- {sla.is_active ? (
+ {sla.isActive ? (
  <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-success-soft text-success">
  <CheckCircle className="h-3 w-3" /> Active
  </span>
@@ -227,18 +234,13 @@ export default function SlaPage() {
  <XCircle className="h-3 w-3" /> Inactive
  </span>
  )}
- {sla.is_default && (
- <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-brand-soft text-brand">
- Default
- </span>
- )}
  </div>
  </div>
 
- {/* Escalation Levels */}
+ {/* Goals */}
  <div className="w-32 text-center">
- <p className="text-lg font-bold text-foreground">{sla.escalation_matrix?.length || 0}</p>
- <p className="text-xs text-muted-foreground">Escalation Levels</p>
+ <p className="text-lg font-bold text-foreground">{sla.goals?.length || 0}</p>
+ <p className="text-xs text-muted-foreground">Goals</p>
  </div>
  </div>
  );
@@ -248,24 +250,24 @@ export default function SlaPage() {
  </div>
  </div>
 
- {/* Priority Coverage */}
- {stats?.byPriority && (
+ {/* Instance Status Breakdown */}
+ {stats?.instances && Object.keys(stats.instances).length > 0 && (
  <div className="bg-background rounded-xl border border-border">
  <div className="px-6 py-4 border-b border-border">
- <h3 className="font-semibold text-foreground">SLA Coverage by Priority</h3>
+ <h3 className="font-semibold text-foreground">SLA Instance Status</h3>
  </div>
  <div className="p-6">
  <div className="grid grid-cols-4 gap-4">
- {Object.entries(stats.byPriority).map(([priority, count]) => {
- const config = priorityConfig[priority] || priorityConfig.medium;
+ {Object.entries(stats.instances).map(([status, count]) => {
+ const config = priorityConfig[status] || { color: 'bg-brand', textColor: 'text-brand', bgColor: 'bg-brand-soft', label: status };
  return (
- <div key={priority} className="p-4 bg-muted/50 rounded-lg">
+ <div key={status} className="p-4 bg-muted/50 rounded-lg">
  <div className="flex items-center gap-2 mb-3">
  <span className={`w-3 h-3 rounded-full ${config.color}`} />
- <p className="text-sm font-medium text-foreground">{config.label}</p>
+ <p className="text-sm font-medium text-foreground capitalize">{status.replace(/_/g, ' ')}</p>
  </div>
- <p className="text-3xl font-bold text-foreground">{count}</p>
- <p className="text-xs text-muted-foreground mt-1">SLA policies</p>
+ <p className="text-3xl font-bold text-foreground">{count as number}</p>
+ <p className="text-xs text-muted-foreground mt-1">Instances</p>
  </div>
  );
  })}

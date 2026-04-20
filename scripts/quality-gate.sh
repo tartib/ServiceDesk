@@ -57,7 +57,15 @@ else
   fail "Lint errors found"
 fi
 
-# ── 4. Contract tests ──────────────────────────────────────
+# ── 4. Architecture boundary check ─────────────────────────
+step "Backend — Architecture boundary check"
+if (cd "$ROOT_DIR/ServiceDesk-backend" && npx ts-node scripts/check-boundaries.ts 2>&1); then
+  pass "No boundary violations"
+else
+  fail "Architecture boundary violations found"
+fi
+
+# ── 5. Contract tests ──────────────────────────────────────
 step "Frontend — Contract tests (vitest)"
 if (cd "$ROOT_DIR/ServiceDesk-app" && npx vitest run tests/contracts/ --reporter=dot 2>&1); then
   pass "All contract tests pass"

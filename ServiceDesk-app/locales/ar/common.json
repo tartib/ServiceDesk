@@ -44,7 +44,11 @@
     "gamificationDashboard": "لوحة التحكم",
     "leaderboard": "المتصدرين",
     "achievements": "الإنجازات",
-    "loggedInAs": "مسجل الدخول كـ"
+    "loggedInAs": "مسجل الدخول كـ",
+    "formsPlatform": "منصة النماذج",
+    "records": "السجلات",
+    "formBuilder": "منشئ النماذج",
+    "workflowBuilder": "منشئ سير العمل"
   },
   "common": {
     "search": "بحث",

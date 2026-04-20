@@ -15,6 +15,7 @@ import { isWfPostgres, getWfRepos } from '../infrastructure/repositories';
 import { NotificationServiceAdapter } from '../adapters/NotificationServiceAdapter';
 import { EntityServiceAdapter } from '../adapters/EntityServiceAdapter';
 import { TaskServiceAdapter } from '../adapters/TaskServiceAdapter';
+import { recordService } from '../../forms/services/RecordService';
 
 /**
  * مخزن المهام الخارجية — يربط الـ ExternalTask model بواجهة المحرك
@@ -121,6 +122,7 @@ export function getWorkflowEngine(): GenericWorkflowEngine {
       notificationService: new NotificationServiceAdapter(),
       entityService: new EntityServiceAdapter(),
       taskService: new TaskServiceAdapter(),
+      recordService,
       ruleExecutionHook: createRuleExecutionHook(),
     });
   }

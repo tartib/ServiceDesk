@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
  Dialog,
  DialogContent,
+ DialogDescription,
  DialogHeader,
  DialogTitle,
  DialogFooter,
@@ -265,6 +266,9 @@ export default function FormBuilder({
  <DialogTitle>
  {locale === 'ar' ? 'إعدادات النموذج' : 'Form Settings'}
  </DialogTitle>
+ <DialogDescription className="sr-only">
+ {locale === 'ar' ? 'تعديل اسم النموذج والوصف' : 'Edit form name and description'}
+ </DialogDescription>
  </DialogHeader>
  <div className="space-y-4 py-4">
  <div className="space-y-2">

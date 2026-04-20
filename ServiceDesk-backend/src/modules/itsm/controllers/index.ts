@@ -11,6 +11,7 @@ export {
 export {
   createRequest,
   getRequests,
+  getRequestStats,
   getRequest,
   approveRequest,
   rejectRequest,

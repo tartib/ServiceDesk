@@ -236,7 +236,7 @@ export const createShareLink = async (req: Request, res: Response): Promise<void
     const fileId = new Types.ObjectId(req.params.id);
     const userId = new Types.ObjectId(req.user!.id);
     const shareLink = await fileStorageService.shareFile({ fileId, userId, expiresIn: req.body.expiresIn, maxDownloads: req.body.maxDownloads, password: req.body.password, allowedEmails: req.body.allowedEmails, canDownload: req.body.canDownload, canView: req.body.canView });
-    res.status(201).json({ success: true, message: 'Share link created successfully', data: { token: shareLink.token, url: `/api/v1/files/share/${shareLink.token}`, expiresAt: shareLink.expiresAt, maxDownloads: shareLink.maxDownloads } });
+    res.status(201).json({ success: true, message: 'Share link created successfully', data: { token: shareLink.token, url: `/api/v2/files/share/${shareLink.token}`, expiresAt: shareLink.expiresAt, maxDownloads: shareLink.maxDownloads } });
   } catch (error: unknown) {
     logger.error('Error in createShareLink controller:', error);
     const errorMessage = getErrorMessage(error);

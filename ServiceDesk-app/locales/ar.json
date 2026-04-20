@@ -108,7 +108,16 @@
     "cab": "لجنة التغيير",
     "portfolioAnalytics": "تحليلات المحفظة",
     "teamPerformance": "أداء الفريق",
-    "agentConsole": "وحدة تحكم الوكيل"
+    "agentConsole": "وحدة تحكم الوكيل",
+    "formsPlatform": "منصة النماذج",
+    "formBuilder": "منشئ النماذج",
+    "records": "السجلات",
+    "documents": "المستندات",
+    "workflowBuilder": "منشئ سير العمل",
+    "workflowsSection": "سير العمل",
+    "solutions": "الحلول",
+    "changeCalendar": "تقويم التغييرات",
+    "pirs": "مراجعات ما بعد الحوادث"
   },
   "tasks": {
     "title": "المهام",

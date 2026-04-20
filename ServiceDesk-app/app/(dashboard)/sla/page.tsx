@@ -21,7 +21,7 @@ export default function SLAStandalonePage() {
  const { data: stats } = useSlaStats();
  const { data: compliance } = useSlaComplianceReport();
 
- const policies: ISlaPolicy[] = useMemo(() => policyData?.data || [], [policyData]);
+ const policies: ISlaPolicy[] = useMemo(() => policyData || [], [policyData]);
 
  const formatTime = (minutes: number) => {
  if (minutes < 60) return `${minutes}m`;

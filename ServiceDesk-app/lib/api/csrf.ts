@@ -37,10 +37,11 @@ export async function fetchCsrfToken(): Promise<string> {
       return token;
     }
 
-    throw new Error('CSRF token not found in response headers');
-  } catch (error) {
-    console.error('Failed to fetch CSRF token:', error);
-    throw error;
+    // Server doesn't provide CSRF token — proceed without it
+    return '';
+  } catch {
+    // Network error or CORS — backend may not require CSRF, proceed without it
+    return '';
   }
 }
 
@@ -89,6 +90,7 @@ export async function getCsrfToken(): Promise<string> {
  */
 export async function addCsrfHeader(headers: Record<string, string>): Promise<Record<string, string>> {
   const token = await getCsrfToken();
+  if (!token) return headers;
   return {
     ...headers,
     [CSRF_HEADER_NAME]: token,

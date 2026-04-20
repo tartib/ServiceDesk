@@ -668,3 +668,34 @@ export const addComment = asyncHandler(async (req: Request, res: Response) => {
 
     sendSuccess(req, res, comment, 'Comment added', 201);
 });
+
+// GET /api/v2/itsm/requests/stats - Aggregate service request stats
+export const getRequestStats = asyncHandler(async (req: Request, res: Response) => {
+  if (isItsmPostgres()) {
+    const repo = getItsmRepos().serviceRequest as PgServiceRequestRepository;
+    const all = await repo.searchRequests({}, req.user?.itsmRole || 'end_user', req.user?.id || '', 1, 1000);
+    const by_status: Record<string, number> = {};
+    const by_priority: Record<string, number> = {};
+    for (const r of all.data as any[]) {
+      by_status[r.status] = (by_status[r.status] || 0) + 1;
+      if (r.priority) by_priority[r.priority] = (by_priority[r.priority] || 0) + 1;
+    }
+    return void sendSuccess(req, res, { total: all.total, by_status, by_priority, pending_approval: by_status['pending_approval'] || 0 });
+  }
+
+  const [total, by_status_agg, by_priority_agg] = await Promise.all([
+    ServiceRequest.countDocuments(),
+    ServiceRequest.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+    ServiceRequest.aggregate([{ $group: { _id: '$priority', count: { $sum: 1 } } }]),
+  ]);
+
+  const by_status = Object.fromEntries(by_status_agg.map((s: any) => [s._id, s.count]));
+  const by_priority = Object.fromEntries(by_priority_agg.map((p: any) => [p._id, p.count]));
+
+  sendSuccess(req, res, {
+    total,
+    by_status,
+    by_priority,
+    pending_approval: by_status['pending_approval'] || 0,
+  });
+});
