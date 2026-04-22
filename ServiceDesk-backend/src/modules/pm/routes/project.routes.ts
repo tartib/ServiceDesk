@@ -3,6 +3,7 @@ import { body, param, query } from 'express-validator';
 import * as projectController from '../controllers/project.controller';
 import * as labelController from '../controllers/label.controller';
 import * as standupController from '../controllers/standup.controller';
+import * as taskFieldsController from '../controllers/project-task-fields.controller';
 import { authenticate, authorize } from '../../../middleware/auth';
 import { handleValidation, validate, validateMulti } from '../../../shared/middleware/validate';
 import Joi from 'joi';
@@ -314,6 +315,62 @@ router.get(
   ],
   handleValidation,
   (req: Request, res: Response) => standupController.getStandupSummary(req, res)
+);
+
+// ==================== Task Field Definitions ====================
+
+// List field definitions
+router.get(
+  '/:projectId/task-fields',
+  [param('projectId').isMongoId().withMessage('Invalid project ID')],
+  handleValidation,
+  (req: Request, res: Response) => taskFieldsController.listTaskFields(req, res)
+);
+
+// Create field definition
+router.post(
+  '/:projectId/task-fields',
+  [
+    param('projectId').isMongoId().withMessage('Invalid project ID'),
+    body('id').trim().notEmpty().withMessage('Field id is required'),
+    body('name').trim().notEmpty().withMessage('Field name is required'),
+    body('type').trim().notEmpty().withMessage('Field type is required'),
+  ],
+  handleValidation,
+  (req: Request, res: Response) => taskFieldsController.createTaskField(req, res)
+);
+
+// Reorder field definitions (must come before :fieldId routes)
+router.patch(
+  '/:projectId/task-fields/reorder',
+  [
+    param('projectId').isMongoId().withMessage('Invalid project ID'),
+    body('fieldIds').isArray({ min: 1 }).withMessage('fieldIds array is required'),
+  ],
+  handleValidation,
+  (req: Request, res: Response) => taskFieldsController.reorderTaskFields(req, res)
+);
+
+// Update field definition
+router.patch(
+  '/:projectId/task-fields/:fieldId',
+  [
+    param('projectId').isMongoId().withMessage('Invalid project ID'),
+    param('fieldId').notEmpty().withMessage('Field ID is required'),
+  ],
+  handleValidation,
+  (req: Request, res: Response) => taskFieldsController.updateTaskField(req, res)
+);
+
+// Archive (soft delete) field definition
+router.delete(
+  '/:projectId/task-fields/:fieldId',
+  [
+    param('projectId').isMongoId().withMessage('Invalid project ID'),
+    param('fieldId').notEmpty().withMessage('Field ID is required'),
+  ],
+  handleValidation,
+  (req: Request, res: Response) => taskFieldsController.archiveTaskField(req, res)
 );
 
 export default router;

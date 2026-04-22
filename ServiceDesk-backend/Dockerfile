@@ -21,12 +21,11 @@ RUN npm ci --production && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-
-# Change ownership
-RUN chown -R nodejs:nodejs /app
+# Create uploads directories and non-root user
+RUN mkdir -p /app/uploads/inventory /app/uploads/products /app/logs && \
+    addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /app
 
 # Switch to non-root user
 USER nodejs

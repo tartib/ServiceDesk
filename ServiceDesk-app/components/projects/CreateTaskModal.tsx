@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { X, ChevronDown, Loader2, User, Search, GitBranch } from 'lucide-react';
 import { useProjectIssueTypes } from '@/hooks/useProjectIssueTypes';
+import { useProjectTaskFields } from '@/hooks/useProjectTaskFields';
+import TaskCustomFieldsSection from './TaskCustomFieldsSection';
 
 interface Project {
  _id: string;
@@ -26,6 +28,7 @@ interface TaskFormData {
  status: string;
  assignee?: string;
  parentId?: string;
+ customFields?: Record<string, unknown>;
 }
 
 interface ParentTaskOption {
@@ -63,11 +66,13 @@ export default function CreateTaskModal({
  project,
 }: CreateTaskModalProps) {
  const { issueTypes: workTypes } = useProjectIssueTypes(project?._id);
+ const { activeFields: taskFieldDefs } = useProjectTaskFields(project?._id);
  const [formData, setFormData] = useState<TaskFormData>({
  title: '',
  type: 'task',
  description: '',
  status: 'idea',
+ customFields: {},
  });
  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -172,7 +177,7 @@ export default function CreateTaskModal({
  };
 
  const handleClose = () => {
- setFormData({ title: '', type: 'task', description: '', status: 'idea', assignee: undefined, parentId: undefined });
+ setFormData({ title: '', type: 'task', description: '', status: 'idea', assignee: undefined, parentId: undefined, customFields: {} });
  setShowTypeDropdown(false);
  setShowStatusDropdown(false);
  setShowAssigneeDropdown(false);
@@ -477,6 +482,18 @@ export default function CreateTaskModal({
  <p className="text-xs text-destructive mt-1">Summary is required</p>
  )}
  </div>
+
+ {/* Custom Fields */}
+ {taskFieldDefs.length > 0 && (
+ <div className="mb-4">
+ <TaskCustomFieldsSection
+ definitions={taskFieldDefs}
+ values={formData.customFields || {}}
+ onChange={(vals) => setFormData(prev => ({ ...prev, customFields: vals }))}
+ issueType={formData.type}
+ />
+ </div>
+ )}
 
  {/* Description */}
  <div className="mb-4">

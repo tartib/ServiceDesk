@@ -9,7 +9,7 @@ export interface IPMTeam {
   lead?: mongoose.Types.ObjectId;
   members: Array<{
     userId: mongoose.Types.ObjectId;
-    role: 'lead' | 'member';
+    role: 'lead' | 'leader' | 'member';
     joinedAt: Date;
   }>;
   settings: {
@@ -48,7 +48,7 @@ const TeamSchema = new Schema<IPMTeam>(
     members: [
       {
         userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-        role: { type: String, enum: ['lead', 'member'], default: 'member' },
+        role: { type: String, enum: ['lead', 'leader', 'member'], default: 'member' },
         joinedAt: { type: Date, default: Date.now },
       },
     ],

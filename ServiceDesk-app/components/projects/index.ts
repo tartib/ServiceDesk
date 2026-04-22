@@ -37,3 +37,5 @@ export { AddStatusModal } from './AddStatusModal';
 export { default as CSVImportModal } from './CSVImportModal';
 export { default as DraggableBacklogItem } from './DraggableBacklogItem';
 export { default as WorkflowSettingsPanel } from './WorkflowSettingsPanel';
+export { default as ManageTaskFieldsModal } from './ManageTaskFieldsModal';
+export { default as TaskCustomFieldsSection } from './TaskCustomFieldsSection';

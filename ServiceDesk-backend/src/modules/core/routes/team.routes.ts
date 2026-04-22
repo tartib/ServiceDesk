@@ -56,7 +56,7 @@ router.post(
   [
     param('teamId').isMongoId().withMessage('Invalid team ID'),
     body('userId').isMongoId().withMessage('Invalid user ID'),
-    body('role').optional().isIn(['lead', 'member']),
+    body('role').optional().isIn(['lead', 'leader', 'member']),
   ],
   asHandler(teamCtrl.addTeamMember)
 );

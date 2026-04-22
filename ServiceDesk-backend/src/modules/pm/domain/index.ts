@@ -14,3 +14,10 @@ export {
   PMTaskPriority,
   PMStatusCategory,
 } from './interfaces';
+
+export type {
+  TaskCustomFieldType,
+  TaskFieldDefinition,
+} from './task-field-definition';
+
+export { ALLOWED_FIELD_TYPES } from './task-field-definition';

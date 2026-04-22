@@ -12,6 +12,7 @@ import { notifyUser, notifyUsers } from './notificationHelper';
 import { getPmRepos, isPmPostgres } from '../infrastructure/repositories';
 import { PgTaskRepository } from '../infrastructure/repositories/PgTaskRepository';
 import { PgProjectRepository } from '../infrastructure/repositories/PgProjectRepository';
+import { validateTaskCustomFields } from '../validators/validate-task-custom-fields';
 
 export const createTask = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
@@ -64,7 +65,27 @@ export const createTask = async (req: PMAuthRequest, res: Response): Promise<voi
       parentId,
       epicId,
       sprintId,
+      customFields: rawCustomFields,
     } = req.body;
+
+    // Validate custom fields against project definitions
+    let validatedCustomFields: Record<string, unknown> = {};
+    if (rawCustomFields && typeof rawCustomFields === 'object') {
+      const cfResult = validateTaskCustomFields({
+        definitions: project.taskFieldDefinitions || [],
+        values: rawCustomFields,
+        issueType: type || TaskType.TASK,
+      });
+      if (!cfResult.valid) {
+        res.status(400).json({
+          success: false,
+          error: 'Custom field validation failed',
+          errors: cfResult.errors,
+        } as ApiResponse);
+        return;
+      }
+      validatedCustomFields = cfResult.sanitized;
+    }
 
     const task = new Task({
       projectId,
@@ -89,6 +110,7 @@ export const createTask = async (req: PMAuthRequest, res: Response): Promise<voi
       parentId: parentId || undefined,
       epicId: epicId || undefined,
       sprintId: sprintId || undefined,
+      customFields: validatedCustomFields,
       workflowHistory: [
         {
           fromStatus: '',
@@ -369,6 +391,31 @@ export const updateTask = async (req: PMAuthRequest, res: Response): Promise<voi
           error: 'You can only assign tasks to yourself',
         } as ApiResponse);
         return;
+      }
+    }
+
+    // Handle customFields update separately (validated against project definitions)
+    if (req.body.customFields !== undefined) {
+      const rawCF = req.body.customFields;
+      if (rawCF && typeof rawCF === 'object') {
+        const cfResult = validateTaskCustomFields({
+          definitions: project.taskFieldDefinitions || [],
+          values: rawCF,
+          issueType: task.type,
+          isPartialUpdate: true,
+        });
+        if (!cfResult.valid) {
+          res.status(400).json({
+            success: false,
+            error: 'Custom field validation failed',
+            errors: cfResult.errors,
+          } as ApiResponse);
+          return;
+        }
+        // Merge strategy: patch — merge submitted keys into existing customFields
+        const existing = (task.customFields as Record<string, unknown>) || {};
+        task.customFields = { ...existing, ...cfResult.sanitized };
+        task.markModified('customFields');
       }
     }
 

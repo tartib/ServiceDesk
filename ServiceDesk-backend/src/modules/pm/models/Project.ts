@@ -1,4 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
+import type { TaskFieldDefinition } from '../domain/task-field-definition';
+import { ALLOWED_FIELD_TYPES } from '../domain/task-field-definition';
 
 // Enums
 export enum MethodologyCode {
@@ -77,6 +79,7 @@ export interface IProject {
   startDate?: Date;
   targetEndDate?: Date;
   actualEndDate?: Date;
+  taskFieldDefinitions: TaskFieldDefinition[];
   starredBy: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -187,6 +190,22 @@ const ProjectSchema = new Schema<IProject>(
     startDate: { type: Date },
     targetEndDate: { type: Date },
     actualEndDate: { type: Date },
+    taskFieldDefinitions: {
+      type: [
+        {
+          id: { type: String, required: true },
+          name: { type: String, required: true },
+          type: { type: String, required: true, enum: ALLOWED_FIELD_TYPES },
+          required: { type: Boolean, default: false },
+          options: [{ type: String }],
+          defaultValue: { type: Schema.Types.Mixed },
+          position: { type: Number, default: 0 },
+          appliesTo: [{ type: String }],
+          archived: { type: Boolean, default: false },
+        },
+      ],
+      default: [],
+    },
     starredBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     createdBy: {
       type: Schema.Types.ObjectId,

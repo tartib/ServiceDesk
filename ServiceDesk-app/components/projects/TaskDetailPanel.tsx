@@ -43,6 +43,8 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 import { useTaskComments, useAddComment, useUpdateComment, useDeleteComment } from '@/hooks/useComments';
+import { useProjectTaskFields } from '@/hooks/useProjectTaskFields';
+import TaskCustomFieldsSection from './TaskCustomFieldsSection';
 
 interface TaskAssignee {
  _id: string;
@@ -102,6 +104,7 @@ interface Task {
  };
  reporter?: TaskAssignee;
  description?: string;
+ customFields?: Record<string, unknown>;
 }
 
 interface TeamMember {
@@ -373,10 +376,21 @@ export function TaskDetailPanel({
  }
  return fallbackIssueTypes;
  }, [projectIssueTypes]);
+ const { activeFields: customFieldDefs } = useProjectTaskFields(projectId);
  const commentInputRef = useRef<HTMLTextAreaElement>(null);
  // Prefer taskDetail (fully populated from detail API) over task (from list)
  const activeTask: Task = taskDetail || task;
  const taskId = activeTask._id;
+
+ // Custom fields local state — initialised from task data
+ const [customFieldValues, setCustomFieldValues] = useState<Record<string, unknown>>(
+   activeTask.customFields || {}
+ );
+
+ // Sync when active task changes
+ useEffect(() => {
+   setCustomFieldValues(activeTask.customFields || {});
+ }, [activeTask._id, activeTask.customFields]);
 
  // Real API hooks for comments
  const { data: apiComments = [], isLoading: commentsLoading } = useTaskComments(taskId);
@@ -1762,6 +1776,11 @@ export function TaskDetailPanel({
  if (descriptionValue !== (taskDetail?.description || '')) {
  await updateTask({ description: descriptionValue });
  }
+ };
+
+ const handleCustomFieldsChange = async (newValues: Record<string, unknown>) => {
+ setCustomFieldValues(newValues);
+ await updateTask({ customFields: newValues });
  };
 
  // Markdown formatting helpers
@@ -4368,6 +4387,20 @@ export function TaskDetailPanel({
  </div>
  )}
  </div>
+
+ {/* Custom Fields */}
+ {customFieldDefs.length > 0 && (
+ <>
+ <div className="border-t border-border my-2" />
+ <TaskCustomFieldsSection
+ definitions={customFieldDefs}
+ values={customFieldValues}
+ onChange={handleCustomFieldsChange}
+ issueType={activeTask.type}
+ variant="detail-row"
+ />
+ </>
+ )}
  </div>
  </div>
 

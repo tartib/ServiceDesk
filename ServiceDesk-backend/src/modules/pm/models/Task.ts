@@ -108,6 +108,7 @@ export interface IPMTask {
     changedAt: Date;
     comment?: string;
   }[];
+  customFields: Record<string, unknown>;
   createdBy: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -247,6 +248,10 @@ const TaskSchema = new Schema<IPMTask>(
         comment: { type: String },
       },
     ],
+    customFields: {
+      type: Schema.Types.Mixed,
+      default: {},
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',

@@ -19,6 +19,10 @@ import {
  X,
  Edit3,
  Check,
+ ListPlus,
+ GripVertical,
+ Archive,
+ Pencil,
 } from 'lucide-react';
 import {
  ProjectHeader,
@@ -30,6 +34,39 @@ import {
 import ProjectTeamsPanel from '@/components/projects/ProjectTeamsPanel';
 import { useMethodology } from '@/hooks/useMethodology';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useProjectTaskFields } from '@/hooks/useProjectTaskFields';
+import type { TaskFieldDefinition, TaskCustomFieldType } from '@/types/task-fields';
+import { ALLOWED_FIELD_TYPES } from '@/types/task-fields';
+import { toast } from 'sonner';
+
+const FIELD_TYPE_LABELS: Record<TaskCustomFieldType, string> = {
+ text: 'Text',
+ number: 'Number',
+ select: 'Select',
+ boolean: 'Boolean',
+ phone: 'Phone',
+ date: 'Date',
+};
+
+interface FieldFormState {
+ id: string;
+ name: string;
+ type: TaskCustomFieldType;
+ required: boolean;
+ options: string[];
+ defaultValue: string;
+ appliesTo: string[];
+}
+
+const EMPTY_FIELD_FORM: FieldFormState = {
+ id: '',
+ name: '',
+ type: 'text',
+ required: false,
+ options: [],
+ defaultValue: '',
+ appliesTo: [],
+};
 
 interface ProjectSettings {
  name: string;
@@ -97,6 +134,85 @@ export default function ProjectSettingsPage() {
  },
  });
  const [isSaving, setIsSaving] = useState(false);
+
+ // Custom Fields
+ const { activeFields: customFields, isLoading: isLoadingFields, createField, updateField, archiveField } = useProjectTaskFields(projectId);
+ const [showFieldForm, setShowFieldForm] = useState(false);
+ const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+ const [fieldForm, setFieldForm] = useState<FieldFormState>(EMPTY_FIELD_FORM);
+ const [newFieldOption, setNewFieldOption] = useState('');
+ const [isSavingField, setIsSavingField] = useState(false);
+
+ const resetFieldForm = () => {
+ setFieldForm(EMPTY_FIELD_FORM);
+ setEditingFieldId(null);
+ setShowFieldForm(false);
+ setNewFieldOption('');
+ };
+
+ const startEditField = (field: TaskFieldDefinition) => {
+ setFieldForm({
+ id: field.id,
+ name: field.name,
+ type: field.type,
+ required: field.required || false,
+ options: field.options || [],
+ defaultValue: field.defaultValue != null ? String(field.defaultValue) : '',
+ appliesTo: field.appliesTo || [],
+ });
+ setEditingFieldId(field.id);
+ setShowFieldForm(true);
+ };
+
+ const handleSaveField = async () => {
+ if (!fieldForm.id.trim() || !fieldForm.name.trim()) {
+ toast.error('ID and Name are required');
+ return;
+ }
+ if (fieldForm.type === 'select' && fieldForm.options.length === 0) {
+ toast.error('Select fields must have at least one option');
+ return;
+ }
+ setIsSavingField(true);
+ try {
+ const payload: Partial<TaskFieldDefinition> & { id: string; name: string; type: TaskCustomFieldType } = {
+ id: fieldForm.id.trim(),
+ name: fieldForm.name.trim(),
+ type: fieldForm.type,
+ required: fieldForm.required,
+ options: fieldForm.type === 'select' ? fieldForm.options : undefined,
+ defaultValue: fieldForm.defaultValue || undefined,
+ appliesTo: fieldForm.appliesTo.length > 0 ? fieldForm.appliesTo : undefined,
+ };
+ const ok = editingFieldId ? await updateField(editingFieldId, payload) : await createField(payload);
+ if (ok) {
+ toast.success(editingFieldId ? 'Field updated' : 'Field created');
+ resetFieldForm();
+ } else {
+ toast.error('Failed to save field');
+ }
+ } finally {
+ setIsSavingField(false);
+ }
+ };
+
+ const handleArchiveField = async (fieldId: string) => {
+ const ok = await archiveField(fieldId);
+ if (ok) toast.success('Field archived');
+ else toast.error('Failed to archive field');
+ };
+
+ const addFieldOption = () => {
+ const val = newFieldOption.trim();
+ if (!val) return;
+ if (fieldForm.options.includes(val)) { toast.error('Option already exists'); return; }
+ setFieldForm(prev => ({ ...prev, options: [...prev.options, val] }));
+ setNewFieldOption('');
+ };
+
+ const removeFieldOption = (opt: string) => {
+ setFieldForm(prev => ({ ...prev, options: prev.options.filter(o => o !== opt) }));
+ };
 
  // Labels state
  const [labels, setLabels] = useState<Label[]>([]);
@@ -243,6 +359,7 @@ export default function ProjectSettingsPage() {
  { id: 'general', label: t('projects.settings.general') || 'General', icon: Settings },
  { id: 'methodology', label: t('projects.settings.methodology') || 'Methodology', icon: Database },
  { id: 'labels', label: 'Labels', icon: Tag },
+ { id: 'customFields', label: 'Custom Fields', icon: ListPlus },
  { id: 'members', label: t('projects.settings.members') || 'Members', icon: Users },
  { id: 'teams', label: t('projects.settings.teams') || 'Teams', icon: Users },
  { id: 'permissions', label: t('projects.settings.permissions') || 'Permissions', icon: Shield },
@@ -528,6 +645,173 @@ export default function ProjectSettingsPage() {
  </div>
  )}
 
+ {/* Custom Fields */}
+ {activeTab === 'customFields' && (
+ <div className="space-y-6">
+ <div>
+ <h3 className="text-lg font-semibold text-foreground mb-1">Custom Fields</h3>
+ <p className="text-sm text-muted-foreground mb-6">Define custom fields that appear on tasks in this project.</p>
+
+ {isLoadingFields ? (
+ <div className="text-center py-8 text-muted-foreground">Loading...</div>
+ ) : (
+ <>
+ {/* Create new field button */}
+ {!showFieldForm && (
+ <div className="mb-6">
+ <button
+ onClick={() => { resetFieldForm(); setShowFieldForm(true); }}
+ className="flex items-center gap-1.5 px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand-strong text-sm"
+ >
+ <Plus className="h-4 w-4" />
+ Add Field
+ </button>
+ </div>
+ )}
+
+ {/* Create/Edit form */}
+ {showFieldForm && (
+ <div className="p-4 bg-background border border-brand-border rounded-xl mb-6 space-y-3">
+ <h4 className="text-sm font-medium text-foreground">{editingFieldId ? 'Edit Field' : 'Create new field'}</h4>
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="text-xs font-medium text-muted-foreground mb-1 block">Machine ID</label>
+ <input
+ type="text"
+ value={fieldForm.id}
+ onChange={(e) => setFieldForm(prev => ({ ...prev, id: e.target.value.replace(/[^a-z0-9_]/g, '') }))}
+ disabled={!!editingFieldId}
+ placeholder="e.g. mobile_number"
+ className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+ />
+ </div>
+ <div>
+ <label className="text-xs font-medium text-muted-foreground mb-1 block">Display Label</label>
+ <input
+ type="text"
+ value={fieldForm.name}
+ onChange={(e) => setFieldForm(prev => ({ ...prev, name: e.target.value }))}
+ placeholder="e.g. Mobile Number"
+ className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+ />
+ </div>
+ <div>
+ <label className="text-xs font-medium text-muted-foreground mb-1 block">Type</label>
+ <select
+ value={fieldForm.type}
+ onChange={(e) => setFieldForm(prev => ({ ...prev, type: e.target.value as TaskCustomFieldType, options: [] }))}
+ disabled={!!editingFieldId}
+ className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+ >
+ {ALLOWED_FIELD_TYPES.map(ft => (
+ <option key={ft} value={ft}>{FIELD_TYPE_LABELS[ft]}</option>
+ ))}
+ </select>
+ </div>
+ <div className="flex items-end gap-2 pb-1">
+ <label className="flex items-center gap-2 text-sm cursor-pointer">
+ <input
+ type="checkbox"
+ checked={fieldForm.required}
+ onChange={(e) => setFieldForm(prev => ({ ...prev, required: e.target.checked }))}
+ className="rounded border-border"
+ />
+ <span className="text-foreground">Required</span>
+ </label>
+ </div>
+ </div>
+
+ {fieldForm.type === 'select' && (
+ <div>
+ <label className="text-xs font-medium text-muted-foreground mb-1 block">Options</label>
+ <div className="flex flex-wrap gap-1.5 mb-2">
+ {fieldForm.options.map(opt => (
+ <span key={opt} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-muted text-foreground">
+ {opt}
+ <button onClick={() => removeFieldOption(opt)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
+ </span>
+ ))}
+ </div>
+ <div className="flex gap-2">
+ <input
+ type="text"
+ value={newFieldOption}
+ onChange={(e) => setNewFieldOption(e.target.value)}
+ onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addFieldOption())}
+ placeholder="Add option..."
+ className="flex-1 px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+ />
+ <button onClick={addFieldOption} className="px-3 py-2 text-sm rounded-lg bg-muted hover:bg-muted/80 text-foreground transition-colors">Add</button>
+ </div>
+ </div>
+ )}
+
+ <div>
+ <label className="text-xs font-medium text-muted-foreground mb-1 block">Default Value (optional)</label>
+ <input
+ type="text"
+ value={fieldForm.defaultValue}
+ onChange={(e) => setFieldForm(prev => ({ ...prev, defaultValue: e.target.value }))}
+ placeholder="Leave empty for no default"
+ className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+ />
+ </div>
+
+ <div className="flex justify-end gap-2 pt-2">
+ <button onClick={resetFieldForm} className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted text-foreground transition-colors">Cancel</button>
+ <button
+ onClick={handleSaveField}
+ disabled={isSavingField}
+ className="px-4 py-2 text-sm rounded-lg bg-brand text-brand-foreground hover:bg-brand-strong transition-colors disabled:opacity-50"
+ >
+ {isSavingField ? 'Saving...' : editingFieldId ? 'Update' : 'Create'}
+ </button>
+ </div>
+ </div>
+ )}
+
+ {/* Fields list */}
+ <div className="space-y-2">
+ {customFields.length === 0 && !showFieldForm && (
+ <p className="text-sm text-muted-foreground text-center py-8">No custom fields yet. Click &quot;Add Field&quot; to create one.</p>
+ )}
+ {customFields.map((field) => (
+ <div key={field.id} className="flex items-center gap-3 p-3 bg-background border border-border rounded-lg group">
+ <GripVertical className="h-4 w-4 text-muted-foreground shrink-0 cursor-grab" />
+ <div className="flex-1 min-w-0">
+ <div className="flex items-center gap-2">
+ <span className="font-medium text-foreground text-sm">{field.name}</span>
+ <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{FIELD_TYPE_LABELS[field.type]}</span>
+ {field.required && <span className="text-xs px-1.5 py-0.5 rounded bg-destructive-soft text-destructive">Required</span>}
+ </div>
+ <div className="text-xs text-muted-foreground mt-0.5">
+ ID: {field.id}
+ {field.options && field.options.length > 0 && <span className="ml-2">Options: {field.options.join(', ')}</span>}
+ </div>
+ </div>
+ <button
+ onClick={() => startEditField(field)}
+ className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
+ title="Edit"
+ >
+ <Pencil className="h-4 w-4" />
+ </button>
+ <button
+ onClick={() => handleArchiveField(field.id)}
+ className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive-soft rounded opacity-0 group-hover:opacity-100 transition-opacity"
+ title="Archive"
+ >
+ <Archive className="h-4 w-4" />
+ </button>
+ </div>
+ ))}
+ </div>
+ </>
+ )}
+ </div>
+ </div>
+ )}
+
  {/* Danger Zone */}
  {activeTab === 'danger' && (
  <div className="space-y-6">
@@ -627,7 +911,7 @@ export default function ProjectSettingsPage() {
  )}
 
  {/* Save Button */}
- {activeTab !== 'danger' && activeTab !== 'labels' && activeTab !== 'members' && activeTab !== 'teams' && activeTab !== 'workflows' && (
+ {activeTab !== 'danger' && activeTab !== 'labels' && activeTab !== 'customFields' && activeTab !== 'members' && activeTab !== 'teams' && activeTab !== 'workflows' && (
  <div className="mt-8 pt-6 border-t border-border">
  <button
  onClick={handleSave}

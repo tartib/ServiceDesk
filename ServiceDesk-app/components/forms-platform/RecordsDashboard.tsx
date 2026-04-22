@@ -134,13 +134,14 @@ export default function RecordsDashboard({
   const [statusFilter, setStatusFilter] = useState<SubmissionStatus | 'all'>('all');
 
   const filteredItems = items.filter(item => {
+    if (!item) return false;
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const matchesId = item.submission_id.toLowerCase().includes(query);
-      const matchesName = item.submitted_by.name.toLowerCase().includes(query);
+      const matchesId = (item.submission_id || '').toLowerCase().includes(query);
+      const matchesName = (item.submitted_by?.name || '').toLowerCase().includes(query);
       if (!matchesId && !matchesName) return false;
     }
-    if (statusFilter !== 'all' && item.workflow_state.status !== statusFilter) {
+    if (statusFilter !== 'all' && item.workflow_state?.status !== statusFilter) {
       return false;
     }
     return true;
@@ -149,11 +150,11 @@ export default function RecordsDashboard({
   const stats = {
     total: items.length,
     pending: items.filter(s =>
-      s.workflow_state.status === SubmissionStatus.PENDING_APPROVAL ||
-      s.workflow_state.status === SubmissionStatus.SUBMITTED
+      s?.workflow_state?.status === SubmissionStatus.PENDING_APPROVAL ||
+      s?.workflow_state?.status === SubmissionStatus.SUBMITTED
     ).length,
-    approved: items.filter(s => s.workflow_state.status === SubmissionStatus.APPROVED).length,
-    rejected: items.filter(s => s.workflow_state.status === SubmissionStatus.REJECTED).length,
+    approved: items.filter(s => s?.workflow_state?.status === SubmissionStatus.APPROVED).length,
+    rejected: items.filter(s => s?.workflow_state?.status === SubmissionStatus.REJECTED).length,
   };
 
   const formatDate = (date: string | Date) => {
@@ -304,8 +305,8 @@ export default function RecordsDashboard({
                   </tr>
                 ) : (
                   filteredItems.map((item) => (
-                    <tr key={item.submission_id} className="hover:bg-muted/50">
-                      <td className="px-4 py-3 font-mono text-sm">{item.submission_id}</td>
+                    <tr key={item.submission_id || item._id} className="hover:bg-muted/50">
+                      <td className="px-4 py-3 font-mono text-sm">{item.submission_id || '—'}</td>
                       <td className="px-4 py-3">
                         <span className="text-sm font-medium">{getTemplateName(item.form_template_id)}</span>
                       </td>
@@ -313,12 +314,12 @@ export default function RecordsDashboard({
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
                           <div>
-                            <p className="font-medium">{item.submitted_by.name}</p>
-                            <p className="text-xs text-muted-foreground">{item.submitted_by.email}</p>
+                            <p className="font-medium">{item.submitted_by?.name || '—'}</p>
+                            <p className="text-xs text-muted-foreground">{item.submitted_by?.email || ''}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">{getStatusBadge(item.workflow_state.status)}</td>
+                      <td className="px-4 py-3">{getStatusBadge(item.workflow_state?.status)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Calendar className="h-3 w-3" />
@@ -330,7 +331,7 @@ export default function RecordsDashboard({
                           <Button variant="ghost" size="sm" onClick={() => onView(item)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {item.workflow_state.status === SubmissionStatus.PENDING_APPROVAL && (
+                          {item.workflow_state?.status === SubmissionStatus.PENDING_APPROVAL && (
                             <>
                               {onApprove && (
                                 <Button variant="ghost" size="sm" className="text-success" onClick={() => onApprove(item)}>
