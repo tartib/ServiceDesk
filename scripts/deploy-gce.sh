@@ -91,12 +91,12 @@ docker pull ${REGISTRY}/servicedesk-api:${TAG}
 docker pull ${REGISTRY}/servicedesk-frontend:${TAG}
 docker pull ${REGISTRY}/servicedesk-nginx:${TAG}
 
-# Create app directory
-sudo mkdir -p /opt/servicedesk
-cd /opt/servicedesk
+# Create app directory (COS root is read-only, /home is writable)
+mkdir -p /home/servicedesk
+cd /home/servicedesk
 
 # Write docker-compose.yml
-sudo tee docker-compose.yml > /dev/null << 'COMPOSE_EOF'
+tee docker-compose.yml > /dev/null << 'COMPOSE_EOF'
 services:
   # ── MongoDB ────────────────────────────────────────────
   mongodb:
@@ -210,12 +210,12 @@ volumes:
 COMPOSE_EOF
 
 # Replace image placeholders
-sudo sed -i 's|REGISTRY_PLACEHOLDER|${REGISTRY}|g' docker-compose.yml
-sudo sed -i 's|TAG_PLACEHOLDER|${TAG}|g' docker-compose.yml
+sed -i 's|REGISTRY_PLACEHOLDER|${REGISTRY}|g' docker-compose.yml
+sed -i 's|TAG_PLACEHOLDER|${TAG}|g' docker-compose.yml
 
 # Write .env file (if not exists)
 if [ ! -f .env ]; then
-  sudo tee .env > /dev/null << 'ENV_EOF'
+  tee .env > /dev/null << 'ENV_EOF'
 MONGO_ROOT_USERNAME=admin
 MONGO_ROOT_PASSWORD=admin123
 JWT_SECRET=change-this-to-a-strong-secret-in-production
@@ -250,6 +250,6 @@ echo " API URL:     http://${EXTERNAL_IP}/api/v2"
 echo ""
 echo " Update .env on the VM for production secrets:"
 echo "   gcloud compute ssh ${INSTANCE_NAME} --zone=${ZONE}"
-echo "   sudo vi /opt/servicedesk/.env"
-echo "   cd /opt/servicedesk && docker compose up -d"
+echo "   vi /home/servicedesk/.env"
+echo "   cd /home/servicedesk && docker compose up -d"
 echo "══════════════════════════════════════════════════════"
