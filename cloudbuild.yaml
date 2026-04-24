@@ -1,0 +1,89 @@
+# ══════════════════════════════════════════════════════════
+# Google Cloud Build — ServiceDesk
+#
+# Builds and pushes three container images:
+#   1. servicedesk-api       (Express backend)
+#   2. servicedesk-frontend  (Next.js)
+#   3. servicedesk-nginx     (Reverse proxy)
+#
+# Required substitutions (set in trigger or CLI):
+#   _REGION          — Artifact Registry region  (default: me-central1)
+#   _REPO            — Artifact Registry repo    (default: servicedesk)
+#   _API_URL         — Public API URL for frontend build arg
+#   _BASE_URL        — Public base URL
+#   _SOCKET_URL      — Public Socket.IO URL
+#
+# Usage:
+#   gcloud builds submit . \
+#     --config=cloudbuild.yaml \
+#     --substitutions=_REGION=me-central1,_REPO=servicedesk
+# ══════════════════════════════════════════════════════════
+
+substitutions:
+  _REGION: me-central1
+  _REPO: servicedesk
+  _API_URL: https://servicedesk.example.com/api/v2
+  _BASE_URL: https://servicedesk.example.com
+  _SOCKET_URL: https://servicedesk.example.com
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+  dynamic_substitutions: true
+
+steps:
+  # ── 1. Build API image ───────────────────────────────────
+  - id: build-api
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-api:$SHORT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-api:latest
+      - -f
+      - ServiceDesk-backend/Dockerfile
+      - ServiceDesk-backend
+
+  # ── 2. Build Frontend image ──────────────────────────────
+  - id: build-frontend
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-frontend:$SHORT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-frontend:latest
+      - --build-arg
+      - NEXT_PUBLIC_API_URL=${_API_URL}
+      - --build-arg
+      - NEXT_PUBLIC_API_BASE_URL=${_BASE_URL}
+      - --build-arg
+      - NEXT_PUBLIC_SOCKET_URL=${_SOCKET_URL}
+      - -f
+      - ServiceDesk-app/Dockerfile
+      - ServiceDesk-app
+
+  # ── 3. Build Nginx image ─────────────────────────────────
+  - id: build-nginx
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-nginx:$SHORT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-nginx:latest
+      - -f
+      - nginx/Dockerfile
+      - nginx
+
+# ── Push all images ──────────────────────────────────────
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-api:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-api:latest
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-frontend:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-frontend:latest
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-nginx:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-nginx:latest
+
+timeout: 1800s
