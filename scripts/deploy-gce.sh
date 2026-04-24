@@ -46,11 +46,25 @@ else
     --machine-type="${MACHINE_TYPE}" \
     --boot-disk-size="${DISK_SIZE}" \
     --boot-disk-type=pd-balanced \
-    --image-family=cos-stable \
-    --image-project=cos-cloud \
+    --image-family=ubuntu-2204-lts \
+    --image-project=ubuntu-os-cloud \
     --scopes=cloud-platform \
     --tags=http-server,https-server \
-    --metadata=google-logging-enabled=true
+    --metadata=startup-script='#!/bin/bash
+      set -e
+      if ! command -v docker &>/dev/null; then
+        apt-get update -y
+        apt-get install -y ca-certificates curl gnupg
+        install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        chmod a+r /etc/apt/keyrings/docker.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list
+        apt-get update -y
+        apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+        systemctl enable docker
+        systemctl start docker
+      fi
+    '
   echo "✓ VM created"
 fi
 
@@ -70,9 +84,20 @@ else
   echo "✓ Firewall rule created"
 fi
 
-# ── Step 3: Wait for VM to be ready ──────────────────────
-echo "→ Waiting for VM to be ready..."
-sleep 30
+# ── Step 3: Wait for VM + Docker to be ready ─────────
+echo "→ Waiting for VM and Docker installation..."
+sleep 60
+
+# Wait until Docker is available
+echo "→ Checking Docker availability..."
+for i in $(seq 1 30); do
+  if gcloud compute ssh "${INSTANCE_NAME}" --zone="${ZONE}" --project="${PROJECT_ID}" --command="docker --version" &>/dev/null; then
+    echo "✓ Docker is ready"
+    break
+  fi
+  echo "  waiting... (${i}/30)"
+  sleep 10
+done
 
 # ── Step 4: Deploy via SSH ────────────────────────────────
 echo "→ Deploying to VM..."
@@ -82,8 +107,9 @@ gcloud compute ssh "${INSTANCE_NAME}" \
   --command="
 set -e
 
-# Configure docker to authenticate with Artifact Registry
-docker-credential-gcr configure-docker --registries=${REGION}-docker.pkg.dev 2>/dev/null || true
+# Authenticate Docker with Artifact Registry
+echo '→ Configuring Docker auth...'
+gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
 
 # Pull images
 echo '→ Pulling images...'
@@ -91,12 +117,12 @@ docker pull ${REGISTRY}/servicedesk-api:${TAG}
 docker pull ${REGISTRY}/servicedesk-frontend:${TAG}
 docker pull ${REGISTRY}/servicedesk-nginx:${TAG}
 
-# Create app directory (COS root is read-only, /home is writable)
-mkdir -p /home/servicedesk
-cd /home/servicedesk
+# Create app directory
+sudo mkdir -p /opt/servicedesk
+cd /opt/servicedesk
 
 # Write docker-compose.yml
-tee docker-compose.yml > /dev/null << 'COMPOSE_EOF'
+sudo tee docker-compose.yml > /dev/null << 'COMPOSE_EOF'
 services:
   # ── MongoDB ────────────────────────────────────────────
   mongodb:
@@ -210,12 +236,12 @@ volumes:
 COMPOSE_EOF
 
 # Replace image placeholders
-sed -i 's|REGISTRY_PLACEHOLDER|${REGISTRY}|g' docker-compose.yml
-sed -i 's|TAG_PLACEHOLDER|${TAG}|g' docker-compose.yml
+sudo sed -i 's|REGISTRY_PLACEHOLDER|${REGISTRY}|g' docker-compose.yml
+sudo sed -i 's|TAG_PLACEHOLDER|${TAG}|g' docker-compose.yml
 
 # Write .env file (if not exists)
 if [ ! -f .env ]; then
-  tee .env > /dev/null << 'ENV_EOF'
+  sudo tee .env > /dev/null << 'ENV_EOF'
 MONGO_ROOT_USERNAME=admin
 MONGO_ROOT_PASSWORD=admin123
 JWT_SECRET=change-this-to-a-strong-secret-in-production
@@ -227,11 +253,11 @@ fi
 
 # Start services
 echo '→ Starting services...'
-docker compose pull
-docker compose up -d
+sudo docker compose pull
+sudo docker compose up -d
 
 echo '✓ Deployment complete!'
-docker compose ps
+sudo docker compose ps
 "
 
 # ── Step 5: Show external IP ─────────────────────────────
@@ -250,6 +276,6 @@ echo " API URL:     http://${EXTERNAL_IP}/api/v2"
 echo ""
 echo " Update .env on the VM for production secrets:"
 echo "   gcloud compute ssh ${INSTANCE_NAME} --zone=${ZONE}"
-echo "   vi /home/servicedesk/.env"
-echo "   cd /home/servicedesk && docker compose up -d"
+echo "   sudo vi /opt/servicedesk/.env"
+echo "   cd /opt/servicedesk && sudo docker compose up -d"
 echo "══════════════════════════════════════════════════════"
