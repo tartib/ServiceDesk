@@ -9,22 +9,18 @@
 # Required substitutions (set in trigger or CLI):
 #   _REGION          — Artifact Registry region  (default: me-central1)
 #   _REPO            — Artifact Registry repo    (default: servicedesk)
-#   _API_URL         — Public API URL for frontend build arg
-#   _BASE_URL        — Public base URL
-#   _SOCKET_URL      — Public Socket.IO URL
+#   _DOMAIN          — Public-facing origin      (default: https://servicedesk.example.com)
 #
 # Usage:
 #   gcloud builds submit . \
 #     --config=cloudbuild.yaml \
-#     --substitutions=_REGION=me-central1,_REPO=servicedesk
+#     --substitutions=_DOMAIN=https://your-domain.com
 # ══════════════════════════════════════════════════════════
 
 substitutions:
   _REGION: me-central1
   _REPO: servicedesk
-  _API_URL: https://servicedesk.example.com/api/v2
-  _BASE_URL: https://servicedesk.example.com
-  _SOCKET_URL: https://servicedesk.example.com
+  _DOMAIN: https://servicedesk.example.com
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -55,11 +51,11 @@ steps:
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-frontend:latest
       - --build-arg
-      - NEXT_PUBLIC_API_URL=${_API_URL}
+      - NEXT_PUBLIC_API_URL=${_DOMAIN}/api/v2
       - --build-arg
-      - NEXT_PUBLIC_API_BASE_URL=${_BASE_URL}
+      - NEXT_PUBLIC_API_BASE_URL=${_DOMAIN}
       - --build-arg
-      - NEXT_PUBLIC_SOCKET_URL=${_SOCKET_URL}
+      - NEXT_PUBLIC_SOCKET_URL=${_DOMAIN}
       - -f
       - ServiceDesk-app/Dockerfile
       - ServiceDesk-app
