@@ -10,6 +10,7 @@
 #   _REGION          — Artifact Registry region  (default: me-central1)
 #   _REPO            — Artifact Registry repo    (default: servicedesk)
 #   _DOMAIN          — Public-facing origin      (default: https://servicedesk.example.com)
+#   _TAG             — Image tag                  (default: latest)
 #
 # Usage:
 #   gcloud builds submit . \
@@ -21,6 +22,7 @@ substitutions:
   _REGION: me-central1
   _REPO: servicedesk
   _DOMAIN: https://servicedesk.example.com
+  _TAG: latest
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -34,9 +36,7 @@ steps:
     args:
       - build
       - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-api:$SHORT_SHA
-      - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-api:latest
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-api:${_TAG}
       - -f
       - ServiceDesk-backend/Dockerfile
       - ServiceDesk-backend
@@ -47,9 +47,7 @@ steps:
     args:
       - build
       - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-frontend:$SHORT_SHA
-      - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-frontend:latest
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-frontend:${_TAG}
       - --build-arg
       - NEXT_PUBLIC_API_URL=${_DOMAIN}/api/v2
       - --build-arg
@@ -66,20 +64,15 @@ steps:
     args:
       - build
       - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-nginx:$SHORT_SHA
-      - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-nginx:latest
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-nginx:${_TAG}
       - -f
       - nginx/Dockerfile
       - nginx
 
 # ── Push all images ──────────────────────────────────────
 images:
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-api:$SHORT_SHA
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-api:latest
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-frontend:$SHORT_SHA
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-frontend:latest
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-nginx:$SHORT_SHA
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-nginx:latest
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-api:${_TAG}
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-frontend:${_TAG}
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/servicedesk-nginx:${_TAG}
 
 timeout: 1800s
