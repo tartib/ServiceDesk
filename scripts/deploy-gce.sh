@@ -63,6 +63,8 @@ else
         apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
         systemctl enable docker
         systemctl start docker
+        # Add all existing users to docker group
+        for u in $(ls /home); do usermod -aG docker "$u" 2>/dev/null || true; done
       fi
     '
   echo "✓ VM created"
@@ -107,15 +109,16 @@ gcloud compute ssh "${INSTANCE_NAME}" \
   --command="
 set -e
 
-# Authenticate Docker with Artifact Registry
+# Authenticate Docker with Artifact Registry (for current user and root)
 echo '→ Configuring Docker auth...'
 gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+sudo gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
 
 # Pull images
 echo '→ Pulling images...'
-docker pull ${REGISTRY}/servicedesk-api:${TAG}
-docker pull ${REGISTRY}/servicedesk-frontend:${TAG}
-docker pull ${REGISTRY}/servicedesk-nginx:${TAG}
+sudo docker pull ${REGISTRY}/servicedesk-api:${TAG}
+sudo docker pull ${REGISTRY}/servicedesk-frontend:${TAG}
+sudo docker pull ${REGISTRY}/servicedesk-nginx:${TAG}
 
 # Create app directory
 sudo mkdir -p /opt/servicedesk
