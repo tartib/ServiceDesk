@@ -88,6 +88,8 @@ interface ProjectToolbarProps {
  selectedAssignees?: string[];
  onAssigneeFilterChange?: (selectedIds: string[]) => void;
  showAssigneeFilter?: boolean;
+ onFilterClick?: () => void;
+ activeFilterCount?: number;
 }
 
 export default function ProjectToolbar({
@@ -110,6 +112,8 @@ export default function ProjectToolbar({
  selectedAssignees = [],
  onAssigneeFilterChange,
  showAssigneeFilter = false,
+ onFilterClick,
+ activeFilterCount = 0,
 }: ProjectToolbarProps) {
  const { t } = useLanguage();
  return (
@@ -225,9 +229,19 @@ export default function ProjectToolbar({
 
  {/* Default Filter Button */}
  {filters.length === 0 && (
- <button className="flex items-center gap-2 px-3 py-1.5 text-muted-foreground hover:text-foreground border border-border hover:border-border rounded-lg text-sm transition-colors">
+ <button
+ onClick={onFilterClick}
+ className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm transition-colors ${
+ activeFilterCount > 0
+ ? 'bg-brand-soft text-brand border-brand-border'
+ : 'text-muted-foreground hover:text-foreground border-border hover:border-border'
+ }`}
+ >
  <Filter className="h-4 w-4" />
  <span className="hidden sm:inline">{t('projects.common.filter')}</span>
+ {activeFilterCount > 0 && (
+ <span className="ml-0.5 w-5 h-5 rounded-full bg-brand text-brand-foreground text-[10px] font-bold flex items-center justify-center">{activeFilterCount}</span>
+ )}
  </button>
  )}
  </div>

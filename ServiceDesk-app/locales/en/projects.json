@@ -61,7 +61,11 @@
       "noAssigneesFound": "No assignees found",
       "filterByAssignee": "Filter by assignee",
       "allAssignees": "All assignees",
-      "selectedAssignees": "Selected assignees"
+      "selectedAssignees": "Selected assignees",
+      "priority": "Priority",
+      "type": "Type",
+      "labels": "Labels",
+      "clearAll": "Clear all"
     },
 
     "members": {

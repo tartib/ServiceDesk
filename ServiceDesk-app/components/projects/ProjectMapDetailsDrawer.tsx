@@ -25,6 +25,7 @@ interface ProjectMapDetailsDrawerProps {
  connectedEdges: MapEdgeDTO[];
  projectId: string;
  onClose: () => void;
+ labelMap?: Record<string, string>;
 }
 
 const priorityConfig: Record<string, { icon: React.ReactNode; label: string; class: string }> = {
@@ -55,6 +56,7 @@ export default function ProjectMapDetailsDrawer({
  connectedEdges,
  projectId,
  onClose,
+ labelMap,
 }: ProjectMapDetailsDrawerProps) {
  const router = useRouter();
  const { t } = useLanguage();
@@ -80,6 +82,7 @@ export default function ProjectMapDetailsDrawer({
  <button
  onClick={() => router.push(`/projects/${projectId}/tasks/${nodeId}`)}
  title={t('common.openFull') || 'Open Full Detail'}
+ aria-label={t('common.openFull') || 'Open Full Detail'}
  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
  >
  <ExternalLink className="h-4 w-4" />
@@ -111,7 +114,7 @@ export default function ProjectMapDetailsDrawer({
 
  {/* Type */}
  <div className="flex items-center gap-2">
- <span className="text-xs text-muted-foreground w-16">{t('common.type') || 'Type'}</span>
+ <span className="text-xs text-muted-foreground w-16">{t('projects.board.type') || 'Type'}</span>
  <div className="flex items-center gap-1">
  {typ.icon}
  <span className="text-xs text-foreground">{typ.label}</span>
@@ -121,7 +124,7 @@ export default function ProjectMapDetailsDrawer({
  {/* Assignee */}
  {nodeData.assigneeName && (
  <div className="flex items-center gap-2">
- <span className="text-xs text-muted-foreground w-16">{t('common.assignee') || 'Assignee'}</span>
+ <span className="text-xs text-muted-foreground w-16">{t('projects.board.assignee') || 'Assignee'}</span>
  <div className="flex items-center gap-1.5">
  {nodeData.assigneeAvatar ? (
  // eslint-disable-next-line @next/next/no-img-element
@@ -137,7 +140,7 @@ export default function ProjectMapDetailsDrawer({
  {/* Story Points */}
  {nodeData.storyPoints !== undefined && nodeData.storyPoints !== null && (
  <div className="flex items-center gap-2">
- <span className="text-xs text-muted-foreground w-16">{t('common.points') || 'Points'}</span>
+ <span className="text-xs text-muted-foreground w-16">{t('projects.board.storyPoints') || 'Points'}</span>
  <span className="text-xs font-medium text-foreground">{nodeData.storyPoints}</span>
  </div>
  )}
@@ -145,11 +148,11 @@ export default function ProjectMapDetailsDrawer({
  {/* Labels */}
  {nodeData.labels.length > 0 && (
  <div>
- <span className="text-xs text-muted-foreground">{t('common.labels') || 'Labels'}</span>
+ <span className="text-xs text-muted-foreground">{t('projects.board.labels') || 'Labels'}</span>
  <div className="flex gap-1 flex-wrap mt-1">
  {nodeData.labels.map((l) => (
  <span key={l} className="text-[10px] bg-info-soft text-info px-1.5 py-0.5 rounded">
- {l}
+ {labelMap?.[l] || l.slice(0, 8)}
  </span>
  ))}
  </div>

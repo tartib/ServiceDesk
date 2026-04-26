@@ -5,11 +5,13 @@ import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Loader2, GitBranch, AlertCircle } from 'lucide-react';
 import { API_URL } from '@/lib/api/config';
+import { projectApi } from '@/lib/domains/pm/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePmMapView } from '@/lib/domains/pm/hooks';
 import { useMethodology } from '@/hooks/useMethodology';
-import { ProjectHeader, ProjectNavTabs } from '@/components/projects';
+import { ProjectHeader, ProjectNavTabs, TaskDetailPanel } from '@/components/projects';
 import ProjectMapFilters, { type MapFilters } from '@/components/projects/ProjectMapFilters';
+import type { MapNodeDataDTO } from '@/lib/domains/pm/dto';
 
 const ProjectMapCanvas = dynamic(
  () => import('@/components/projects/ProjectMapCanvas'),
@@ -30,6 +32,14 @@ export default function ProjectMapPage() {
  const { methodology } = useMethodology(projectId);
  const [filters, setFilters] = useState<MapFilters>({});
  const [project, setProject] = useState<{ key?: string; name?: string } | null>(null);
+ const [labelMap, setLabelMap] = useState<Record<string, string>>({});
+
+ // Task detail panel state
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ const [selectedTask, setSelectedTask] = useState<any>(null);
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ const [taskDetail, setTaskDetail] = useState<any>(null);
+ const [showTaskDetail, setShowTaskDetail] = useState(false);
 
  const fetchProject = useCallback(async () => {
  const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
@@ -44,6 +54,68 @@ export default function ProjectMapPage() {
  }, [projectId]);
 
  useEffect(() => { fetchProject(); }, [fetchProject]);
+
+ // Handle node selection → fetch full task detail for TaskDetailPanel
+ const handleNodeSelect = useCallback(async (nodeId: string | null, nodeData: MapNodeDataDTO | null) => {
+ if (!nodeId || !nodeData) {
+ setShowTaskDetail(false);
+ setSelectedTask(null);
+ setTaskDetail(null);
+ return;
+ }
+ // Build a minimal task object from node data so the panel can render immediately
+ setSelectedTask({
+ _id: nodeId,
+ key: nodeData.key,
+ title: nodeData.title,
+ type: nodeData.type,
+ priority: nodeData.priority,
+ status: { id: '', name: nodeData.status, category: nodeData.statusCategory },
+ assignee: nodeData.assigneeName ? { _id: nodeData.assigneeId || '', profile: { firstName: nodeData.assigneeName } } : undefined,
+ storyPoints: nodeData.storyPoints,
+ labels: nodeData.labels,
+ });
+ setShowTaskDetail(true);
+
+ // Fetch full detail
+ const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+ if (!token) return;
+ try {
+ const res = await fetch(`${API_URL}/pm/projects/${projectId}/tasks/${nodeId}`, {
+ headers: { Authorization: `Bearer ${token}` },
+ });
+ const json = await res.json();
+ if (json.success) {
+ const detail = json.data?.task || json.data;
+ setSelectedTask(detail);
+ setTaskDetail(detail);
+ }
+ } catch { /* ignore */ }
+ }, [projectId]);
+
+ const closeTaskDetail = useCallback(() => {
+ setShowTaskDetail(false);
+ setSelectedTask(null);
+ setTaskDetail(null);
+ }, []);
+
+ const refreshTasks = useCallback(() => {
+ // Refetch map data by re-triggering the query (usePmMapView will invalidate)
+ }, []);
+
+ // Fetch project labels to resolve IDs → names
+ useEffect(() => {
+ projectApi.getLabels(projectId).then((res) => {
+ const r = res as Record<string, unknown>;
+ const nested = r?.data as Record<string, unknown> | undefined;
+ const labels = (nested?.labels || r?.labels || r || []) as Array<{ _id: string; name: string }>;
+ const map: Record<string, string> = {};
+ if (Array.isArray(labels)) {
+ labels.forEach((l: { _id: string; name: string }) => { map[l._id] = l.name; });
+ }
+ setLabelMap(map);
+ }).catch(() => { /* ignore */ });
+ }, [projectId]);
 
  // Build query filters (strip empty values)
  const queryFilters = useMemo(() => {
@@ -102,6 +174,8 @@ export default function ProjectMapPage() {
  />
  </div>
 
+ {/* Canvas + Detail Panel — side by side */}
+ <div className="flex flex-1 overflow-hidden">
  {/* Canvas area */}
  <div className="flex-1 relative bg-muted/50">
  {isLoading && (
@@ -142,6 +216,20 @@ export default function ProjectMapPage() {
  mapNodes={data.nodes}
  mapEdges={data.edges}
  projectId={projectId}
+ labelMap={labelMap}
+ onNodeSelect={handleNodeSelect}
+ />
+ )}
+ </div>
+
+ {/* Task Detail Panel — slides in from end */}
+ {showTaskDetail && selectedTask && (
+ <TaskDetailPanel
+ task={selectedTask as React.ComponentProps<typeof TaskDetailPanel>['task']}
+ taskDetail={taskDetail as React.ComponentProps<typeof TaskDetailPanel>['taskDetail']}
+ projectId={projectId}
+ onClose={closeTaskDetail}
+ onTaskUpdate={refreshTasks}
  />
  )}
  </div>

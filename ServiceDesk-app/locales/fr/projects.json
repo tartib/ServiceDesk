@@ -61,7 +61,11 @@
       "noAssigneesFound": "Aucun responsable trouvé",
       "filterByAssignee": "Filtrer par responsable",
       "allAssignees": "Tous les responsables",
-      "selectedAssignees": "Responsables sélectionnés"
+      "selectedAssignees": "Responsables sélectionnés",
+      "priority": "Priorité",
+      "type": "Type",
+      "labels": "Étiquettes",
+      "clearAll": "Tout effacer"
     },
 
     "members": {

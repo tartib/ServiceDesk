@@ -4,6 +4,32 @@ import { MethodologyCode, StatusCategory } from '../../../types/pm';
 import mongoose from 'mongoose';
 
 class WorkflowService {
+  /**
+   * Get light pastel color for a status category
+   */
+  getStatusColor(statusName: string, category?: string): string {
+    const nameColorMap: Record<string, string> = {
+      'backlog': '#f3f4f6',        // light gray
+      'ready': '#dbeafe',          // light blue
+      'in progress': '#fef08a',    // light yellow
+      'in-progress': '#fef08a',
+      'in review': '#f3e8ff',      // light purple
+      'in-review': '#f3e8ff',
+      'done': '#dcfce7',           // light green
+      'completed': '#dcfce7',
+      'closed': '#dcfce7',
+    };
+    const lower = (statusName || '').toLowerCase();
+    if (nameColorMap[lower]) return nameColorMap[lower];
+    // Fallback by category
+    const categoryMap: Record<string, string> = {
+      'done': '#dcfce7',
+      'in_progress': '#fef08a',
+      'todo': '#f3f4f6',
+    };
+    return categoryMap[category || ''] || '#f3f4f6';
+  }
+
   async getOrCreateDefaultWorkflow(
     organizationId: string,
     methodology: MethodologyCode,
@@ -17,8 +43,13 @@ class WorkflowService {
 
     if (!workflow) {
       const defaultConfig = defaultWorkflows[methodology];
+      const statuses = defaultConfig.statuses.map((status: IWorkflowStatus) => ({
+        ...status,
+        color: status.color || this.getStatusColor(status.name, status.category),
+      }));
       workflow = new Workflow({
         ...defaultConfig,
+        statuses,
         organizationId,
         createdBy: userId,
       });

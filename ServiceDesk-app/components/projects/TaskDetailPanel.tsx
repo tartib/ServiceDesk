@@ -366,15 +366,24 @@ export function TaskDetailPanel({
  const { t } = useLanguage();
  const { issueTypes: projectIssueTypes } = useProjectIssueTypes(projectId);
  const issueTypes = useMemo(() => {
- if (projectIssueTypes.length > 0) {
- return projectIssueTypes.map(it => ({
- id: it.id,
- name: it.name,
- icon: it.icon,
- color: it.color.replace('text-', 'bg-').replace('-400', '-100') + ' ' + it.color.replace('-400', '-700'),
- }));
- }
- return fallbackIssueTypes;
+   if (projectIssueTypes.length > 0) {
+     // Map any raw Tailwind color to semantic bg+text classes
+     const semanticColorMap: Record<string, string> = {
+       'text-info': 'bg-info-soft text-info',
+       'text-success': 'bg-success-soft text-success',
+       'text-brand': 'bg-brand-soft text-brand',
+       'text-destructive': 'bg-destructive-soft text-destructive',
+       'text-warning': 'bg-warning-soft text-warning',
+       'text-muted-foreground': 'bg-muted text-foreground',
+     };
+     return projectIssueTypes.map(it => ({
+       id: it.id,
+       name: it.name,
+       icon: it.icon,
+       color: semanticColorMap[it.color] || 'bg-muted text-foreground',
+     }));
+   }
+   return fallbackIssueTypes;
  }, [projectIssueTypes]);
  const { activeFields: customFieldDefs } = useProjectTaskFields(projectId);
  const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -2228,7 +2237,7 @@ export function TaskDetailPanel({
  aria-haspopup="listbox"
  aria-expanded={showStatusDropdown}
  aria-controls="status-listbox"
- aria-label={`${t('projects.board.status') || 'Status'}: ${activeTask.status.name || t('projects.board.selectStatus') || 'Select...'}`}
+ aria-label={`${t('projects.common.status') || 'Status'}: ${activeTask.status.name || t('projects.board.selectStatus') || 'Select...'}`}
  >
  {activeTask.status.name || t('projects.board.selectStatus') || 'Select...'} 
  <ChevronDown className={`h-4 w-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
@@ -2236,7 +2245,7 @@ export function TaskDetailPanel({
  ) : (
  <span 
  className={`px-3 py-1.5 ${getCurrentStatusStyle().bgColor} ${getCurrentStatusStyle().color} border border-border rounded text-sm cursor-not-allowed`}
- aria-label={`${t('projects.board.status') || 'Status'}: ${activeTask.status.name}`}
+ aria-label={`${t('projects.common.status') || 'Status'}: ${activeTask.status.name}`}
  >
  {activeTask.status.name}
  </span>

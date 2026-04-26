@@ -61,7 +61,11 @@
       "noAssigneesFound": "لم يتم العثور على مُكلَّفين",
       "filterByAssignee": "تصفية حسب المُكلَّف",
       "allAssignees": "جميع المُكلَّفين",
-      "selectedAssignees": "المُكلَّفون المحددون"
+      "selectedAssignees": "المُكلَّفون المحددون",
+      "priority": "الأولوية",
+      "type": "النوع",
+      "labels": "التصنيفات",
+      "clearAll": "مسح الكل"
     },
 
     "members": {

@@ -390,16 +390,31 @@ export const getFullBoard = async (req: Request, res: Response): Promise<void> =
       if (lower.includes('progress') || lower.includes('review') || lower.includes('testing') || lower.includes('active')) return 'in_progress';
       return 'todo';
     };
-    const inferColor = (category: string): string => {
-      if (category === 'done') return '#10B981';
-      if (category === 'in_progress') return '#F59E0B';
-      return '#6B7280';
+    const statusColorMap: Record<string, string> = {
+      'backlog': '#f3f4f6',
+      'ready': '#dbeafe',
+      'in progress': '#fef08a',
+      'in-progress': '#fef08a',
+      'in review': '#f3e8ff',
+      'in-review': '#f3e8ff',
+      'done': '#dcfce7',
+      'completed': '#dcfce7',
+      'closed': '#dcfce7',
+    };
+    const fallbackPalette = ['#e0e7ff', '#fce7f3', '#ccfbf1', '#ffedd5', '#fee2e2', '#dbeafe', '#f3e8ff', '#fef08a', '#dcfce7', '#f3f4f6'];
+    let paletteIdx = 0;
+    const inferColorByName = (name: string): string => {
+      const lower = (name || '').toLowerCase();
+      if (statusColorMap[lower]) return statusColorMap[lower];
+      return fallbackPalette[(paletteIdx++) % fallbackPalette.length];
     };
 
+    const oldDarkColors = new Set(['#6B7280', '#10B981', '#F59E0B', '#8B5CF6', '#3B82F6', '#ffffff']);
     const enrichedColumns = effectiveColumns.map(col => {
       const wfStatus = workflowStatusMap.get(col.statusId);
       const category = wfStatus?.category || inferCategory(col.name, col.statusId);
-      const color = wfStatus?.color || inferColor(category);
+      const storedColor = wfStatus?.color;
+      const color = (storedColor && !oldDarkColors.has(storedColor)) ? storedColor : inferColorByName(col.name);
       return {
         id: col.id,
         name: col.name,

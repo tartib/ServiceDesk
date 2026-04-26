@@ -79,12 +79,12 @@ function getLayoutedElements(
 }
 
 // ── Transform DTOs → ReactFlow elements ────────────────────────
-function toFlowNodes(mapNodes: MapNodeDTO[]): Node[] {
+function toFlowNodes(mapNodes: MapNodeDTO[], labelMap?: Record<string, string>): Node[] {
  return mapNodes.map((n) => ({
  id: n.id,
  type: 'taskNode',
  position: { x: 0, y: 0 },
- data: n.data as unknown as Record<string, unknown>,
+ data: { ...n.data, labelMap } as unknown as Record<string, unknown>,
  }));
 }
 
@@ -116,20 +116,22 @@ interface InnerCanvasProps {
  mapNodes: MapNodeDTO[];
  mapEdges: MapEdgeDTO[];
  projectId: string;
+ labelMap?: Record<string, string>;
+ onNodeSelect?: (nodeId: string | null, nodeData: MapNodeDataDTO | null) => void;
 }
 
-function InnerCanvas({ mapNodes, mapEdges, projectId }: InnerCanvasProps) {
+function InnerCanvas({ mapNodes, mapEdges, projectId, labelMap, onNodeSelect }: InnerCanvasProps) {
  const { fitView, zoomIn, zoomOut } = useReactFlow();
  const [orientation, setOrientation] = useState<'TB' | 'LR'>('TB');
  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
  // Compute layout
  const { layoutedNodes, layoutedEdges } = useMemo(() => {
- const flowNodes = toFlowNodes(mapNodes);
+ const flowNodes = toFlowNodes(mapNodes, labelMap);
  const flowEdges = toFlowEdges(mapEdges);
  const result = getLayoutedElements(flowNodes, flowEdges, orientation);
  return { layoutedNodes: result.nodes, layoutedEdges: result.edges };
- }, [mapNodes, mapEdges, orientation]);
+ }, [mapNodes, mapEdges, orientation, labelMap]);
 
  const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
  const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
@@ -145,7 +147,9 @@ function InnerCanvas({ mapNodes, mapEdges, projectId }: InnerCanvasProps) {
  // Node click → select + highlight
  const onNodeClick: NodeMouseHandler = useCallback((_event, node) => {
  setSelectedNodeId(node.id);
- }, []);
+ const found = mapNodes.find((n) => n.id === node.id);
+ onNodeSelect?.(node.id, found?.data || null);
+ }, [mapNodes, onNodeSelect]);
 
  // Highlight connected nodes/edges
  const connectedNodeIds = useMemo(() => {
@@ -198,7 +202,8 @@ function InnerCanvas({ mapNodes, mapEdges, projectId }: InnerCanvasProps) {
 
  const handlePaneClick = useCallback(() => {
  setSelectedNodeId(null);
- }, []);
+ onNodeSelect?.(null, null);
+ }, [onNodeSelect]);
 
  return (
  <div className="relative w-full h-full">
@@ -256,6 +261,7 @@ function InnerCanvas({ mapNodes, mapEdges, projectId }: InnerCanvasProps) {
  connectedEdges={selectedEdges}
  projectId={projectId}
  onClose={() => setSelectedNodeId(null)}
+ labelMap={labelMap}
  />
  </div>
  );
@@ -266,12 +272,14 @@ interface ProjectMapCanvasProps {
  mapNodes: MapNodeDTO[];
  mapEdges: MapEdgeDTO[];
  projectId: string;
+ labelMap?: Record<string, string>;
+ onNodeSelect?: (nodeId: string | null, nodeData: MapNodeDataDTO | null) => void;
 }
 
-export default function ProjectMapCanvas({ mapNodes, mapEdges, projectId }: ProjectMapCanvasProps) {
+export default function ProjectMapCanvas({ mapNodes, mapEdges, projectId, labelMap, onNodeSelect }: ProjectMapCanvasProps) {
  return (
  <ReactFlowProvider>
- <InnerCanvas mapNodes={mapNodes} mapEdges={mapEdges} projectId={projectId} />
+ <InnerCanvas mapNodes={mapNodes} mapEdges={mapEdges} projectId={projectId} labelMap={labelMap} onNodeSelect={onNodeSelect} />
  </ReactFlowProvider>
  );
 }

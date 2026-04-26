@@ -78,7 +78,7 @@ const WorkflowSchema = new Schema<IPMWorkflow>(
           enum: Object.values(PMStatusCategory),
           required: true,
         },
-        color: { type: String, default: '#6B7280' },
+        color: { type: String },
         order: { type: Number, required: true },
         isInitial: { type: Boolean, default: false },
         isFinal: { type: Boolean, default: false },

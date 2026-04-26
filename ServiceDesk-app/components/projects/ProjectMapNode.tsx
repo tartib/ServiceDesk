@@ -40,7 +40,7 @@ const typeIcons: Record<string, React.ReactNode> = {
 };
 
 function ProjectMapNodeInner({ data, selected }: NodeProps) {
- const nodeData = data as unknown as MapNodeDataDTO;
+ const nodeData = data as unknown as MapNodeDataDTO & { labelMap?: Record<string, string> };
  const categoryClass = statusCategoryColors[nodeData.statusCategory] || statusCategoryColors.todo;
 
  return (
@@ -106,8 +106,9 @@ function ProjectMapNodeInner({ data, selected }: NodeProps) {
  <span
  key={label}
  className="text-[9px] bg-info-soft text-info px-1 py-0.5 rounded"
+ title={label}
  >
- {label}
+ {nodeData.labelMap?.[label] || label.slice(0, 8)}
  </span>
  ))}
  {nodeData.labels.length > 3 && (

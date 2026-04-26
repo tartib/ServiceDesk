@@ -13,6 +13,7 @@ interface DroppableColumnProps {
  taskIds: string[];
  onCreateTask?: () => void;
  showCreateButton?: boolean;
+ color?: string;
 }
 
 export function DroppableColumn({
@@ -23,29 +24,31 @@ export function DroppableColumn({
  taskIds,
  onCreateTask,
  showCreateButton = false,
+ color = '#f5f3ff',
 }: DroppableColumnProps) {
- const { setNodeRef, isOver } = useDroppable({
- id,
- });
- const scrollRef = useRef<HTMLDivElement | null>(null);
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+  });
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
- return (
- <div
- data-testid={`column-${id}`}
- className={`w-72 shrink-0 bg-muted/70 rounded-lg flex flex-col transition-colors ${
- isOver ? 'ring-2 ring-ring bg-brand-surface' : ''
- }`}
- >
- <div className="p-3">
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-2">
- <span className="font-medium text-foreground text-sm uppercase tracking-wide">
- {title}
- </span>
- <span data-testid={`column-${id}-count`} className="text-sm text-muted-foreground">{count}</span>
- </div>
- </div>
- </div>
+  return (
+    <div
+      data-testid={`column-${id}`}
+      style={{ backgroundColor: color }}
+      className={`w-72 shrink-0 rounded-lg flex flex-col transition-colors ${
+        isOver ? 'ring-2 ring-ring bg-brand-surface' : ''
+      }`}
+    >
+      <div className="p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-foreground text-sm uppercase tracking-wide">
+              {title}
+            </span>
+            <span data-testid={`column-${id}-count`} className="text-sm text-muted-foreground">{count}</span>
+          </div>
+        </div>
+      </div>
 
  <div 
  ref={(node) => {

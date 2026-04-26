@@ -11,23 +11,23 @@ interface AddStatusModalProps {
 }
 
 const predefinedColors = [
- { name: 'Blue', value: '#ffffff' },
- { name: 'Green', value: '#10B981' },
- { name: 'Yellow', value: '#F59E0B' },
- { name: 'Red', value: '#EF4444' },
- { name: 'Purple', value: '#8B5CF6' },
- { name: 'Pink', value: '#EC4899' },
- { name: 'Indigo', value: '#6366F1' },
- { name: 'Gray', value: '#6B7280' },
- { name: 'Orange', value: '#F97316' },
- { name: 'Teal', value: '#14B8A6' },
+ { name: 'Light Blue', value: '#dbeafe' },
+ { name: 'Light Green', value: '#dcfce7' },
+ { name: 'Light Yellow', value: '#fef08a' },
+ { name: 'Light Red', value: '#fee2e2' },
+ { name: 'Light Purple', value: '#f3e8ff' },
+ { name: 'Light Pink', value: '#fce7f3' },
+ { name: 'Light Indigo', value: '#e0e7ff' },
+ { name: 'Light Gray', value: '#f3f4f6' },
+ { name: 'Light Orange', value: '#ffedd5' },
+ { name: 'Light Teal', value: '#ccfbf1' },
 ];
 
 export function AddStatusModal({ isOpen, onClose, onAdd }: AddStatusModalProps) {
  const { t } = useLanguage();
  const [statusName, setStatusName] = useState('');
  const [statusCategory, setStatusCategory] = useState<'todo' | 'in_progress' | 'done'>('todo');
- const [statusColor, setStatusColor] = useState('#ffffff');
+ const [statusColor, setStatusColor] = useState('#dbeafe');
 
  const handleSubmit = () => {
  if (!statusName.trim()) return;
@@ -37,14 +37,14 @@ export function AddStatusModal({ isOpen, onClose, onAdd }: AddStatusModalProps) 
  // Reset form
  setStatusName('');
  setStatusCategory('todo');
- setStatusColor('#ffffff');
+ setStatusColor('#dbeafe');
  onClose();
  };
 
  const handleClose = () => {
  setStatusName('');
  setStatusCategory('todo');
- setStatusColor('#ffffff');
+ setStatusColor('#dbeafe');
  onClose();
  };
 

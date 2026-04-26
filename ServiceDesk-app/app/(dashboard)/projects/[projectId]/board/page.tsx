@@ -89,11 +89,11 @@ interface Sprint {
 }
 
 const defaultStatuses: WorkflowStatus[] = [
- { id: 'backlog', name: 'Backlog', category: 'todo', color: '#6B7280' },
- { id: 'ready', name: 'Ready', category: 'todo', color: '#ffffff' },
- { id: 'in-progress', name: 'In Progress', category: 'in_progress', color: '#F59E0B' },
- { id: 'in-review', name: 'In Review', category: 'in_progress', color: '#8B5CF6' },
- { id: 'done', name: 'Done', category: 'done', color: '#10B981' },
+ { id: 'backlog', name: 'Backlog', category: 'todo', color: '#f3f4f6' },
+ { id: 'ready', name: 'Ready', category: 'todo', color: '#dbeafe' },
+ { id: 'in-progress', name: 'In Progress', category: 'in_progress', color: '#fef08a' },
+ { id: 'in-review', name: 'In Review', category: 'in_progress', color: '#f3e8ff' },
+ { id: 'done', name: 'Done', category: 'done', color: '#dcfce7' },
 ];
 
 export default function ProjectBoardPage() {
@@ -161,6 +161,10 @@ export default function ProjectBoardPage() {
  members: Array<{ userId: string; role: string }>;
  }>>([]);
  const [selectedTeamFilter, setSelectedTeamFilter] = useState<string | null>(null);
+ const [showFilterPanel, setShowFilterPanel] = useState(false);
+ const [selectedPriorityFilters, setSelectedPriorityFilters] = useState<string[]>([]);
+ const [selectedTypeFilters, setSelectedTypeFilters] = useState<string[]>([]);
+ const [selectedLabelFilters, setSelectedLabelFilters] = useState<string[]>([]);
  const [availableLabels, setAvailableLabels] = useState<Array<{ _id: string; name: string; color: string }>>([]);
  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
  const [showWorkTypesModal, setShowWorkTypesModal] = useState(false);
@@ -329,11 +333,6 @@ export default function ProjectBoardPage() {
  if (lower.includes('progress') || lower.includes('review') || lower.includes('testing') || lower.includes('active')) return 'in_progress';
  return 'todo';
  };
- const inferColor = (category: string): string => {
- if (category === 'done') return '#10B981';
- if (category === 'in_progress') return '#F59E0B';
- return '#6B7280';
- };
  const boardStatuses = data.data.board.columns
  .sort((a: { order?: number }, b: { order?: number }) => (a.order ?? 0) - (b.order ?? 0))
  .map((col: { statusId: string; name: string; category?: string; color?: string }) => {
@@ -342,7 +341,7 @@ export default function ProjectBoardPage() {
  id: col.statusId,
  name: col.name,
  category,
- color: col.color || inferColor(category),
+ color: col.color,
  };
  });
  setStatuses(boardStatuses);
@@ -746,10 +745,29 @@ export default function ProjectBoardPage() {
  return selectedAssigneeFilters.includes('unassigned') ? false : false;
  });
  }
+
+ // Apply priority filter
+ if (selectedPriorityFilters.length > 0) {
+ filtered = filtered.filter(task => selectedPriorityFilters.includes(task.priority));
+ }
+
+ // Apply type filter
+ if (selectedTypeFilters.length > 0) {
+ filtered = filtered.filter(task => selectedTypeFilters.includes(task.type));
+ }
+
+ // Apply label filter
+ if (selectedLabelFilters.length > 0) {
+ filtered = filtered.filter(task =>
+ task.labels?.some(labelId => selectedLabelFilters.includes(labelId))
+ );
+ }
  
  acc[statusId] = filtered;
  return acc;
  }, {} as Record<string, Task[]>);
+
+ const activeFilterCount = selectedPriorityFilters.length + selectedTypeFilters.length + selectedLabelFilters.length;
 
  const handleCompleteSprint = async (moveToBacklog: boolean) => {
  const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
@@ -976,6 +994,8 @@ export default function ProjectBoardPage() {
  assignees={projectMembers}
  selectedAssignees={selectedAssigneeFilters}
  onAssigneeFilterChange={setSelectedAssigneeFilters}
+ onFilterClick={() => setShowFilterPanel(!showFilterPanel)}
+ activeFilterCount={activeFilterCount}
  rightActions={
  <div className="flex items-center gap-2">
  <button
@@ -1125,6 +1145,88 @@ export default function ProjectBoardPage() {
  </div>
  )}
 
+ {/* Filter Panel */}
+ {showFilterPanel && (
+ <div className="bg-background border-b border-border px-3 md:px-4 py-3">
+ <div className="flex flex-wrap items-start gap-6">
+ {/* Priority */}
+ <div>
+ <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide block mb-1.5">{t('projects.filter.priority') || 'Priority'}</span>
+ <div className="flex flex-wrap gap-1.5">
+ {['highest', 'high', 'medium', 'low', 'lowest'].map((p) => (
+ <button
+ key={p}
+ onClick={() => setSelectedPriorityFilters(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])}
+ className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+ selectedPriorityFilters.includes(p)
+ ? 'bg-brand-soft text-brand border border-brand-border'
+ : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-transparent'
+ }`}
+ >
+ {p.charAt(0).toUpperCase() + p.slice(1)}
+ </button>
+ ))}
+ </div>
+ </div>
+
+ {/* Type */}
+ <div>
+ <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide block mb-1.5">{t('projects.filter.type') || 'Type'}</span>
+ <div className="flex flex-wrap gap-1.5">
+ {['task', 'bug', 'story', 'subtask', 'epic'].map((tp) => (
+ <button
+ key={tp}
+ onClick={() => setSelectedTypeFilters(prev => prev.includes(tp) ? prev.filter(x => x !== tp) : [...prev, tp])}
+ className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+ selectedTypeFilters.includes(tp)
+ ? 'bg-brand-soft text-brand border border-brand-border'
+ : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-transparent'
+ }`}
+ >
+ {tp.charAt(0).toUpperCase() + tp.slice(1)}
+ </button>
+ ))}
+ </div>
+ </div>
+
+ {/* Labels */}
+ {availableLabels.length > 0 && (
+ <div>
+ <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide block mb-1.5">{t('projects.filter.labels') || 'Labels'}</span>
+ <div className="flex flex-wrap gap-1.5">
+ {availableLabels.map((label) => (
+ <button
+ key={label._id}
+ onClick={() => setSelectedLabelFilters(prev => prev.includes(label._id) ? prev.filter(x => x !== label._id) : [...prev, label._id])}
+ className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+ selectedLabelFilters.includes(label._id)
+ ? 'ring-2 ring-ring ring-offset-1'
+ : 'hover:ring-1 hover:ring-ring'
+ }`}
+ style={{ backgroundColor: `${label.color}22`, color: label.color, border: `1px solid ${label.color}55` }}
+ >
+ {label.name}
+ </button>
+ ))}
+ </div>
+ </div>
+ )}
+
+ {/* Clear Filters */}
+ {activeFilterCount > 0 && (
+ <div className="flex items-end">
+ <button
+ onClick={() => { setSelectedPriorityFilters([]); setSelectedTypeFilters([]); setSelectedLabelFilters([]); }}
+ className="text-[11px] text-muted-foreground hover:text-destructive hover:bg-destructive-soft px-2.5 py-1 rounded-full transition-colors whitespace-nowrap"
+ >
+ ✕ {t('projects.filter.clearAll') || 'Clear all'}
+ </button>
+ </div>
+ )}
+ </div>
+ </div>
+ )}
+
  {/* Fixed Tooltip */}
  {tooltip && (
  <div
@@ -1164,6 +1266,7 @@ export default function ProjectBoardPage() {
  taskIds={(filteredTasksByStatus[status.id] || []).map(t => t._id)}
  showCreateButton={status.id === 'backlog'}
  onCreateTask={() => setShowNewTaskModal(true)}
+ color={status.color}
  >
  {(filteredTasksByStatus[status.id] || []).map((task) => (
  <DraggableTaskCard

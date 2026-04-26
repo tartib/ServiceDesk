@@ -7,6 +7,7 @@ export interface IBoardColumn {
   statusId: string;
   wipLimit?: number;
   order: number;
+  color?: string;
 }
 
 export interface IBoardSwimlane {
@@ -76,6 +77,7 @@ const BoardSchema = new Schema<IPMBoard>(
         statusId: { type: String, required: true },
         wipLimit: { type: Number },
         order: { type: Number, required: true },
+        color: { type: String },
       },
     ],
     swimlanes: [
