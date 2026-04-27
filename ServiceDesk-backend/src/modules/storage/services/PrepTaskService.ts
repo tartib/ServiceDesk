@@ -1,7 +1,7 @@
 import logger from '../../../utils/logger';
 import ApiError from '../../../utils/ApiError';
 import PrepTask, { IPrepTask } from '../../../models/PrepTask';
-import Inventory from '../../../models/Inventory';
+import InventoryItem from '../../inventory/models/InventoryItem';
 import { TaskStatus, TaskType, TaskPriority, AssignmentType } from '../../../types';
 import { logTaskEvent } from '../../ops/services/taskExecutionLogService';
 import { IPrepTaskService, CreateTaskOptions } from './interfaces/IPrepTaskService';
@@ -27,7 +27,7 @@ export class PrepTaskService implements IPrepTaskService {
     try {
       logger.debug('Creating prep task', { productId, taskType });
 
-      const inventoryItem = await Inventory.findById(productId);
+      const inventoryItem = await InventoryItem.findById(productId);
       if (!inventoryItem) {
         throw new ApiError(404, 'Inventory item not found');
       }
@@ -38,7 +38,7 @@ export class PrepTaskService implements IPrepTaskService {
 
       const task = await PrepTask.create({
         productId: inventoryItem._id,
-        productName: inventoryItem.name,
+        productName: inventoryItem.partDescription,
         scheduledAt,
         dueAt,
         taskType,
@@ -61,11 +61,11 @@ export class PrepTaskService implements IPrepTaskService {
         assignedToName,
         undefined,
         TaskStatus.SCHEDULED,
-        `تم إنشاء مهمة جديدة: ${inventoryItem.name}`,
+        `تم إنشاء مهمة جديدة: ${inventoryItem.partDescription}`,
         { taskType, priority }
       );
 
-      logger.info(`Task created: ${inventoryItem.name} scheduled for ${scheduledAt}`);
+      logger.info(`Task created: ${inventoryItem.partDescription} scheduled for ${scheduledAt}`);
       return task;
     } catch (error) {
       logger.error('Error creating task:', error);
@@ -604,7 +604,7 @@ export class PrepTaskService implements IPrepTaskService {
 
   private async createNextPrepTask(inventoryItemId: string): Promise<void> {
     try {
-      const inventoryItem = await Inventory.findById(inventoryItemId);
+      const inventoryItem = await InventoryItem.findById(inventoryItemId);
       if (!inventoryItem) {
         throw new ApiError(404, 'Inventory item not found');
       }
@@ -614,13 +614,13 @@ export class PrepTaskService implements IPrepTaskService {
 
       await PrepTask.create({
         productId: inventoryItem._id,
-        productName: inventoryItem.name,
+        productName: inventoryItem.partDescription,
         status: TaskStatus.SCHEDULED,
         scheduledAt,
         prepTimeMinutes: 30,
       });
 
-      logger.info(`Next prep task created for item: ${inventoryItem.name}`);
+      logger.info(`Next prep task created for item: ${inventoryItem.partDescription}`);
     } catch (error) {
       logger.error('Error creating next prep task:', error);
     }

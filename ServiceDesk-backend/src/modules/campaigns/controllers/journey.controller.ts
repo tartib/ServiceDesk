@@ -3,6 +3,7 @@
  */
 
 import { Request, Response } from 'express';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import mongoose from 'mongoose';
 import Journey from '../models/Journey';
 import JourneyInstance from '../models/JourneyInstance';
@@ -22,7 +23,7 @@ export async function listJourneys(req: Request, res: Response): Promise<void> {
     const { page = '1', limit = '20', status, search } = req.query;
     const filter: any = { organizationId: new mongoose.Types.ObjectId(organizationId) };
     if (status) filter.status = status;
-    if (search) filter.name = { $regex: search, $options: 'i' };
+    if (search) filter.name = { $regex: escapeRegex(search as string), $options: 'i' };
 
     const skip = (Number(page) - 1) * Number(limit);
     const [items, total] = await Promise.all([

@@ -4,6 +4,7 @@ import logger from '../../../utils/logger';
 import { getItsmRepos, isItsmPostgres } from '../infrastructure/repositories';
 import { PgServiceCatalogRepository } from '../infrastructure/repositories/PgServiceCatalogRepository';
 import asyncHandler from '../../../utils/asyncHandler';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import { sendSuccess, sendPaginated, sendError } from '../../../utils/ApiResponse';
 
 /**
@@ -74,11 +75,12 @@ export const getServices = asyncHandler(async (req: Request, res: Response) => {
     
     // Text search
     if (q) {
+      const escaped = escapeRegex(q as string);
       query.$or = [
-        { name: { $regex: q, $options: 'i' } },
-        { nameAr: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } },
-        { tags: { $in: [new RegExp(q as string, 'i')] } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { nameAr: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } },
+        { tags: { $in: [new RegExp(escaped, 'i')] } },
       ];
     }
 
@@ -117,7 +119,7 @@ export const getServices = asyncHandler(async (req: Request, res: Response) => {
 
 // GET /api/v2/itsm/services/:id - Get single service
 export const getService = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   let service: any;
   if (isItsmPostgres()) {
@@ -184,7 +186,7 @@ export const createService = asyncHandler(async (req: Request, res: Response) =>
 
 // PUT /api/v2/itsm/services/:id - Update service (admin only)
 export const updateService = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const userId = req.user?.id;
 
     const allowedUpdates = [
@@ -250,7 +252,7 @@ export const updateService = asyncHandler(async (req: Request, res: Response) =>
 
 // DELETE /api/v2/itsm/services/:id - Delete service (admin only)
 export const deleteService = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   if (isItsmPostgres()) {
     const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;

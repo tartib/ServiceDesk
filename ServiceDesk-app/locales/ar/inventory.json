@@ -1,93 +1,69 @@
 {
   "inventory": {
-    "title": "إدارة المخزون",
-    "subtitle": "تتبع وإدارة مستويات المخزون",
-    "addItem": "إضافة عنصر",
-    "adjustStock": "تعديل المخزون",
-    "search": "البحث في المخزون...",
-    "stats": {
-      "totalItems": "إجمالي العناصر",
-      "inStock": "متوفر",
-      "lowStock": "منخفض",
-      "outOfStock": "نفذ"
+    "title": "المخزون",
+    "subtitle": "أرصدة المخزون عبر المستودعات",
+    "addItem": "إضافة صنف",
+    "search": "بحث برقم القطعة، الوصف، المجموعة...",
+    "items": {
+      "title": "أصناف المخزون",
+      "subtitle": "إدارة كتالوج القطع"
     },
     "table": {
-      "item": "العنصر",
-      "category": "الفئة",
-      "currentStock": "المخزون الحالي",
-      "minMax": "الحد الأدنى/الأقصى",
-      "status": "الحالة",
-      "actions": "الإجراءات"
+      "partNo": "رقم القطعة",
+      "description": "الوصف",
+      "group": "المجموعة",
+      "inStock": "في المخزون",
+      "booked": "محجوز",
+      "available": "متاح",
+      "uom": "وحدة القياس",
+      "cost": "التكلفة",
+      "warehouse": "المستودع",
+      "status": "الحالة"
+    },
+    "filter": {
+      "search": "بحث",
+      "clear": "مسح",
+      "allStatus": "جميع الحالات",
+      "showing": "عرض",
+      "of": "من",
+      "items": "عناصر",
+      "page": "صفحة",
+      "prev": "السابق",
+      "next": "التالي"
     },
     "status": {
-      "inStock": "متوفر",
-      "lowStock": "منخفض",
-      "outOfStock": "نفذ"
-    },
-    "addModal": {
-      "title": "إضافة عنصر جديد للمخزون",
-      "nameEn": "الاسم (بالإنجليزية)",
-      "nameAr": "الاسم (بالعربية)",
-      "category": "الفئة",
-      "selectCategory": "اختر فئة",
-      "loadingCategories": "جاري تحميل الفئات...",
-      "noCategories": "لا توجد فئات متاحة. يرجى إنشاء الفئات أولاً.",
-      "unit": "الوحدة",
-      "initialQuantity": "الكمية الأولية",
-      "minThreshold": "الحد الأدنى",
-      "maxThreshold": "الحد الأقصى",
-      "supplier": "المورد",
-      "costPerUnit": "التكلفة لكل وحدة",
-      "itemImage": "صورة العنصر (اختياري)",
-      "uploadImage": "رفع صورة",
-      "cancel": "إلغاء",
-      "addButton": "إضافة عنصر",
-      "adding": "جاري الإضافة..."
-    },
-    "adjustModal": {
-      "title": "تعديل المخزون",
-      "addStock": "إضافة مخزون",
-      "removeStock": "إزالة مخزون",
-      "quantity": "الكمية",
-      "reason": "السبب",
-      "selectReason": "اختر السبب",
-      "reasons": {
-        "restock": "إعادة التخزين من المورد",
-        "adjustment": "تعديل المخزون",
-        "usage": "استخدام في العمليات",
-        "damaged": "عناصر تالفة",
-        "expired": "عناصر منتهية الصلاحية",
-        "returned": "مرتجع من العميل"
-      },
-      "notes": "ملاحظات (اختياري)",
-      "currentLevel": "المستوى الحالي",
-      "newLevel": "المستوى الجديد",
-      "warning": "تحذير: سيؤدي هذا إلى مخزون سالب!",
-      "cancel": "إلغاء",
-      "addButton": "إضافة مخزون",
-      "removeButton": "إزالة مخزون",
-      "adjusting": "جاري التعديل..."
+      "inStock": "طبيعي",
+      "lowStock": "مخزون منخفض",
+      "outOfStock": "نفذ من المخزون"
     },
     "messages": {
-      "itemAdded": "تمت إضافة العنصر بنجاح",
-      "itemAddFailed": "فشل في إضافة العنصر",
-      "stockAdjusted": "تم تعديل المخزون بنجاح",
-      "stockAdjustFailed": "فشل في تعديل المخزون",
-      "loading": "جاري تحميل المخزون...",
-      "noItems": "لا توجد عناصر في المخزون بعد",
-      "noItemsDesc": "ابدأ بإضافة أول عنصر للمخزون",
-      "noResults": "لم يتم العثور على عناصر",
-      "noResultsDesc": "حاول تعديل كلمات البحث"
+      "loading": "جاري التحميل...",
+      "noItems": "لا توجد أرصدة مخزون"
     },
-    "units": {
-      "kg": "كيلوجرام",
-      "g": "جرام",
-      "l": "لتر",
-      "ml": "ملليلتر",
-      "pcs": "قطعة",
-      "cup": "كوب",
-      "tbsp": "ملعقة كبيرة",
-      "tsp": "ملعقة صغيرة"
+    "warehouse": {
+      "title": "المستودعات",
+      "subtitle": "إدارة المستودعات",
+      "all": "جميع المستودعات",
+      "default": "افتراضي",
+      "add": "إضافة مستودع",
+      "deleteConfirm": "إلغاء تفعيل هذا المستودع؟",
+      "noWarehouses": "لا توجد مستودعات بعد"
+    },
+    "transfer": {
+      "title": "التحويلات",
+      "subtitle": "تحويلات المخزون بين المستودعات",
+      "noTransfers": "لا توجد تحويلات"
+    },
+    "transactions": {
+      "title": "العمليات",
+      "receive": "استلام مخزون",
+      "issue": "صرف مخزون",
+      "transfer": "تحويل مخزون",
+      "adjust": "تعديل مخزون",
+      "return": "إرجاع مخزون"
+    },
+    "movements": {
+      "title": "سجل الحركات"
     }
   }
 }

@@ -48,7 +48,12 @@
     "formsPlatform": "Forms Platform",
     "records": "Records",
     "formBuilder": "Form Builder",
-    "workflowBuilder": "Workflow Builder"
+    "workflowBuilder": "Workflow Builder",
+    "inventoryItems": "Items",
+    "inventoryWarehouses": "Warehouses",
+    "inventoryTransactions": "Transactions",
+    "inventoryTransfers": "Transfers",
+    "inventoryMovements": "Movements"
   },
   "common": {
     "search": "Search",

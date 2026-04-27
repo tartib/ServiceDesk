@@ -3,6 +3,7 @@ import logger from '../../../utils/logger';
 import Task from '../models/Task';
 import Project from '../models/Project';
 import { PMAuthRequest, ApiResponse } from '../../../types/pm';
+import { escapeRegex } from '../../../utils/escapeRegex';
 
 export const globalSearch = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
@@ -14,7 +15,7 @@ export const globalSearch = async (req: PMAuthRequest, res: Response): Promise<v
       return;
     }
 
-    const searchRegex = new RegExp(q.trim(), 'i');
+    const searchRegex = new RegExp(escapeRegex(q.trim()), 'i');
     const limitNum = Math.min(parseInt(limit as string, 10), 50);
 
     const results: { tasks?: unknown[]; projects?: unknown[] } = {};
@@ -82,7 +83,7 @@ export const searchTasks = async (req: PMAuthRequest, res: Response): Promise<vo
     if (projectId) query.projectId = projectId;
 
     if (q && typeof q === 'string' && q.trim().length >= 2) {
-      const searchRegex = new RegExp(q.trim(), 'i');
+      const searchRegex = new RegExp(escapeRegex(q.trim()), 'i');
       query.$or = [
         { title: searchRegex },
         { key: searchRegex },

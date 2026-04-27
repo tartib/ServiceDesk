@@ -94,11 +94,12 @@ export const httpCachingMiddleware = (req: Request, res: Response, next: NextFun
   }
 
   const cacheKey = `http:${req.originalUrl}`;
-  const cachedResponse = cacheManager.get<string>(cacheKey);
+  const cached = cacheManager.get<{ body: string; contentType: string }>(cacheKey);
 
-  if (cachedResponse) {
+  if (cached) {
     res.setHeader('X-Cache', 'HIT');
-    res.send(cachedResponse);
+    res.setHeader('Content-Type', cached.contentType);
+    res.send(cached.body);
     return;
   }
 
@@ -111,7 +112,8 @@ export const httpCachingMiddleware = (req: Request, res: Response, next: NextFun
 
     // Only cache successful responses
     if (res.statusCode === 200) {
-      cacheManager.set(cacheKey, stringData, 5 * 60 * 1000); // 5 minutes
+      const contentType = res.getHeader('Content-Type') as string || 'application/json';
+      cacheManager.set(cacheKey, { body: stringData, contentType }, 5 * 60 * 1000); // 5 minutes
       res.setHeader('X-Cache', 'MISS');
     }
 

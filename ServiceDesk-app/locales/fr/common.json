@@ -44,7 +44,12 @@
     "gamificationDashboard": "Tableau de bord",
     "leaderboard": "Classement",
     "achievements": "Réalisations",
-    "loggedInAs": "Connecté en tant que"
+    "loggedInAs": "Connecté en tant que",
+    "inventoryItems": "Articles",
+    "inventoryWarehouses": "Entrepôts",
+    "inventoryTransactions": "Opérations",
+    "inventoryTransfers": "Transferts",
+    "inventoryMovements": "Mouvements"
   },
   "common": {
     "search": "Rechercher",

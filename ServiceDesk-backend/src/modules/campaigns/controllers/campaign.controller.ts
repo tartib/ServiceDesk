@@ -3,6 +3,7 @@
  */
 
 import { Request, Response } from 'express';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import mongoose from 'mongoose';
 import Campaign from '../models/Campaign';
 import Message from '../models/Message';
@@ -31,7 +32,7 @@ export async function listCampaigns(req: Request, res: Response): Promise<void> 
     if (status) filter.status = status;
     if (channel) filter.channel = channel;
     if (mode) filter.mode = mode;
-    if (search) filter.name = { $regex: search, $options: 'i' };
+    if (search) filter.name = { $regex: escapeRegex(search as string), $options: 'i' };
 
     const skip = (Number(page) - 1) * Number(limit);
     const [items, total] = await Promise.all([

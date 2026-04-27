@@ -6,6 +6,7 @@
  */
 
 import { Request, Response } from 'express';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import mongoose from 'mongoose';
 import SlaPolicy from '../models/SlaPolicy';
 import asyncHandler from '../../../utils/asyncHandler';
@@ -34,7 +35,7 @@ export const listPolicies = asyncHandler(async (req: Request, res: Response) => 
   const filter: any = { tenantId };
   if (entityType) filter.entityType = entityType;
   if (isActive !== undefined) filter.isActive = isActive === 'true';
-  if (search) filter.$or = [{ name: { $regex: search, $options: 'i' } }, { code: { $regex: search, $options: 'i' } }];
+  if (search) { const escaped = escapeRegex(search as string); filter.$or = [{ name: { $regex: escaped, $options: 'i' } }, { code: { $regex: escaped, $options: 'i' } }]; }
 
   const [docs, total] = await Promise.all([
     SlaPolicy.find(filter).sort({ priority: 1 }).skip((pageNum - 1) * limitNum).limit(limitNum),

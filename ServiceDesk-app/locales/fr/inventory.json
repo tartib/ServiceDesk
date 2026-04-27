@@ -1,93 +1,69 @@
 {
   "inventory": {
-    "title": "Gestion de l'inventaire",
-    "subtitle": "Suivez et gérez les niveaux de stock",
+    "title": "Inventaire",
+    "subtitle": "Soldes de stock par entrepôt",
     "addItem": "Ajouter un article",
-    "adjustStock": "Ajuster le stock",
-    "search": "Rechercher dans l'inventaire...",
-    "stats": {
-      "totalItems": "Total des articles",
-      "inStock": "En stock",
-      "lowStock": "Stock faible",
-      "outOfStock": "Rupture de stock"
+    "search": "Rechercher par n° de pièce, description, groupe...",
+    "items": {
+      "title": "Articles d'inventaire",
+      "subtitle": "Gérer le catalogue de pièces"
     },
     "table": {
-      "item": "Article",
-      "category": "Catégorie",
-      "currentStock": "Stock actuel",
-      "minMax": "Min/Max",
-      "status": "Statut",
-      "actions": "Actions"
+      "partNo": "N° de pièce",
+      "description": "Description",
+      "group": "Groupe",
+      "inStock": "En stock",
+      "booked": "Réservé",
+      "available": "Disponible",
+      "uom": "UdM",
+      "cost": "Coût",
+      "warehouse": "Entrepôt",
+      "status": "Statut"
+    },
+    "filter": {
+      "search": "Rechercher",
+      "clear": "Effacer",
+      "allStatus": "Tous les statuts",
+      "showing": "Affichage",
+      "of": "sur",
+      "items": "articles",
+      "page": "page",
+      "prev": "Précédent",
+      "next": "Suivant"
     },
     "status": {
-      "inStock": "En stock",
+      "inStock": "Normal",
       "lowStock": "Stock faible",
       "outOfStock": "Rupture de stock"
     },
-    "addModal": {
-      "title": "Ajouter un nouvel article",
-      "nameEn": "Nom (anglais)",
-      "nameAr": "Nom (arabe)",
-      "category": "Catégorie",
-      "selectCategory": "Sélectionner une catégorie",
-      "loadingCategories": "Chargement des catégories...",
-      "noCategories": "Aucune catégorie disponible. Veuillez d'abord créer des catégories.",
-      "unit": "Unité",
-      "initialQuantity": "Quantité initiale",
-      "minThreshold": "Seuil minimum",
-      "maxThreshold": "Seuil maximum",
-      "supplier": "Fournisseur",
-      "costPerUnit": "Coût unitaire",
-      "itemImage": "Image de l'article (facultatif)",
-      "uploadImage": "Téléverser une image",
-      "cancel": "Annuler",
-      "addButton": "Ajouter l'article",
-      "adding": "Ajout en cours..."
-    },
-    "adjustModal": {
-      "title": "Ajuster le stock",
-      "addStock": "Ajouter du stock",
-      "removeStock": "Retirer du stock",
-      "quantity": "Quantité",
-      "reason": "Raison",
-      "selectReason": "Sélectionner une raison",
-      "reasons": {
-        "restock": "Réapprovisionnement fournisseur",
-        "adjustment": "Ajustement d'inventaire",
-        "usage": "Utilisé en opérations",
-        "damaged": "Articles endommagés",
-        "expired": "Articles expirés",
-        "returned": "Retour client"
-      },
-      "notes": "Notes (facultatif)",
-      "currentLevel": "Niveau actuel",
-      "newLevel": "Nouveau niveau",
-      "warning": "Attention : cela entraînera un stock négatif !",
-      "cancel": "Annuler",
-      "addButton": "Ajouter du stock",
-      "removeButton": "Retirer du stock",
-      "adjusting": "Ajustement en cours..."
-    },
     "messages": {
-      "itemAdded": "Article ajouté avec succès",
-      "itemAddFailed": "Échec de l'ajout de l'article",
-      "stockAdjusted": "Stock ajusté avec succès",
-      "stockAdjustFailed": "Échec de l'ajustement du stock",
-      "loading": "Chargement de l'inventaire...",
-      "noItems": "Aucun article d'inventaire",
-      "noItemsDesc": "Commencez par ajouter votre premier article d'inventaire",
-      "noResults": "Aucun article trouvé",
-      "noResultsDesc": "Essayez d'ajuster votre recherche"
+      "loading": "Chargement...",
+      "noItems": "Aucun solde de stock trouvé"
     },
-    "units": {
-      "kg": "Kilogrammes (kg)",
-      "g": "Grammes (g)",
-      "l": "Litres (l)",
-      "ml": "Millilitres (ml)",
-      "pcs": "Pièces (pcs)",
-      "cup": "Tasses",
-      "tbsp": "Cuillères à soupe (c.à.s.)",
-      "tsp": "Cuillères à café (c.à.c.)"
+    "warehouse": {
+      "title": "Entrepôts",
+      "subtitle": "Gérer les entrepôts",
+      "all": "Tous les entrepôts",
+      "default": "Par défaut",
+      "add": "Ajouter un entrepôt",
+      "deleteConfirm": "Désactiver cet entrepôt ?",
+      "noWarehouses": "Aucun entrepôt pour le moment"
+    },
+    "transfer": {
+      "title": "Transferts",
+      "subtitle": "Transferts de stock entre entrepôts",
+      "noTransfers": "Aucun transfert trouvé"
+    },
+    "transactions": {
+      "title": "Opérations",
+      "receive": "Réception de stock",
+      "issue": "Sortie de stock",
+      "transfer": "Transfert de stock",
+      "adjust": "Ajustement de stock",
+      "return": "Retour de stock"
+    },
+    "movements": {
+      "title": "Historique des mouvements"
     }
   }
 }

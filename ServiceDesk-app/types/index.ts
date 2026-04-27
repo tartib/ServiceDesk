@@ -148,28 +148,213 @@ export interface Product {
   updatedAt: string;
 }
 
-// Inventory Types
-export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
-export type InventoryCategory = 'meat' | 'vegetable' | 'dairy' | 'grain' | 'spice' | 'sauce' | 'other';
+// ── Inventory Types ──────────────────────────────────────────────
+export type ItemStatus = 'active' | 'inactive';
+export type WarehouseStatus = 'active' | 'inactive';
+export type ReceiptStatus = 'draft' | 'confirmed' | 'cancelled';
+export type BookingStatus = 'active' | 'released' | 'cancelled';
+export type TransferStatus = 'pending' | 'completed' | 'cancelled';
+export type AdjustmentType = 'increase' | 'decrease' | 'set_balance';
+export type ReturnCondition = 'good' | 'damaged';
+export type MovementType = 'receive' | 'book' | 'release_booking' | 'issue' | 'transfer_in' | 'transfer_out' | 'adjustment' | 'return' | 'reversal';
+export type StockAlertStatus = 'normal' | 'low_stock' | 'out_of_stock';
 
 export interface InventoryItem {
   id: string;
   _id?: string;
-  name: string;
-  nameAr?: string;
-  category: InventoryCategory | string;
-  unit: 'kg' | 'g' | 'l' | 'ml' | 'pcs' | 'cup' | 'tbsp' | 'tsp';
-  currentQuantity: number;
-  minThreshold: number;
-  maxThreshold: number;
-  status: StockStatus;
+  partNo: string;
+  partDescription: string;
+  partDescriptionAr?: string;
+  groupName: string;
+  uom: string;
+  cost: number;
+  minStock: number;
+  maxStock: number;
+  reorderLevel: number;
   image?: string;
-  lastRestocked?: string;
-  supplier?: string;
-  cost?: number;
-  lastUpdated?: string;
+  status: ItemStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface InvWarehouse {
+  id: string;
+  _id?: string;
+  warehouseName: string;
+  warehouseNameAr?: string;
+  code: string;
+  address?: string;
+  isDefault: boolean;
+  status: WarehouseStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WarehouseLocation {
+  id: string;
+  _id?: string;
+  warehouse: string;
+  locationName: string;
+  binCode: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockBalance {
+  _id: string;
+  part: string | InventoryItem;
+  warehouse: string | InvWarehouse;
+  location?: string;
+  inStock: number;
+  booked: number;
+  available: number;
+  averageCost: number;
+  lastMovementAt?: string;
+  // Populated via aggregation
+  partDoc?: InventoryItem;
+  warehouseDoc?: InvWarehouse;
+}
+
+export interface UserRef {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface StockReceipt {
+  id: string;
+  _id?: string;
+  part: InventoryItem | string;
+  warehouse: InvWarehouse | string;
+  location?: string;
+  quantity: number;
+  supplierId?: string;
+  referenceNo?: string;
+  notes?: string;
+  status: ReceiptStatus;
+  confirmedBy?: UserRef | string;
+  confirmedAt?: string;
+  cancelledBy?: UserRef | string;
+  cancelledAt?: string;
+  createdBy: UserRef | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockBooking {
+  id: string;
+  _id?: string;
+  part: InventoryItem | string;
+  warehouse: InvWarehouse | string;
+  quantity: number;
+  referenceType?: string;
+  referenceId?: string;
+  notes?: string;
+  status: BookingStatus;
+  releasedBy?: UserRef | string;
+  releasedAt?: string;
+  cancelledBy?: UserRef | string;
+  cancelledAt?: string;
+  createdBy: UserRef | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockIssue {
+  id: string;
+  _id?: string;
+  part: InventoryItem | string;
+  warehouse: InvWarehouse | string;
+  quantity: number;
+  referenceType?: string;
+  referenceId?: string;
+  issuedTo?: string;
+  bookingId?: string;
+  notes?: string;
+  createdBy: UserRef | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockTransfer {
+  id: string;
+  _id?: string;
+  part: InventoryItem | string;
+  sourceWarehouse: InvWarehouse | string;
+  destinationWarehouse: InvWarehouse | string;
+  quantity: number;
+  referenceNo?: string;
+  notes?: string;
+  status: TransferStatus;
+  completedBy?: UserRef | string;
+  completedAt?: string;
+  cancelledBy?: UserRef | string;
+  cancelledAt?: string;
+  createdBy: UserRef | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockAdjustment {
+  id: string;
+  _id?: string;
+  part: InventoryItem | string;
+  warehouse: InvWarehouse | string;
+  adjustmentType: AdjustmentType;
+  quantity: number;
+  reason: string;
+  notes?: string;
+  beforeInStock: number;
+  afterInStock: number;
+  beforeBooked: number;
+  afterBooked: number;
+  beforeAvailable: number;
+  afterAvailable: number;
+  createdBy: UserRef | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockReturn {
+  id: string;
+  _id?: string;
+  part: InventoryItem | string;
+  warehouse: InvWarehouse | string;
+  quantity: number;
+  originalIssueId?: string;
+  returnedBy?: string;
+  condition: ReturnCondition;
+  notes?: string;
+  createdBy: UserRef | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InventoryMovement {
+  id: string;
+  _id?: string;
+  part: InventoryItem | string;
+  warehouse: InvWarehouse | string;
+  location?: string;
+  movementType: MovementType;
+  quantity: number;
+  beforeInStock: number;
+  afterInStock: number;
+  beforeBooked: number;
+  afterBooked: number;
+  beforeAvailable: number;
+  afterAvailable: number;
+  referenceType?: string;
+  referenceId?: string;
+  referenceNo?: string;
+  notes?: string;
+  createdBy: UserRef | string;
+  createdAt: string;
+  // Populated via aggregation
+  partDoc?: InventoryItem;
+  warehouseDoc?: InvWarehouse;
+  createdByDoc?: UserRef;
 }
 
 // Notification Types
@@ -467,20 +652,20 @@ export interface ProductFormData {
   image?: string;
 }
 
-export interface InventoryFormData {
-  name: string;
-  nameAr?: string;
-  category: string;
-  unit: string;
-  currentQuantity: number;
-  minThreshold: number;
-  maxThreshold: number;
+export interface InventoryItemFormData {
+  partNo: string;
+  partDescription: string;
+  partDescriptionAr?: string;
+  groupName: string;
+  uom: string;
+  cost: number;
+  minStock: number;
+  maxStock: number;
+  reorderLevel: number;
   image?: string;
-  supplier?: string;
-  cost?: number;
 }
 
-export interface InventoryFormDataWithImage extends InventoryFormData {
+export interface InventoryItemFormDataWithImage extends InventoryItemFormData {
   imageFile?: File;
 }
 

@@ -7,6 +7,7 @@ import FileShareLink, { IFileShareLink } from '../../../models/FileShareLink';
 import FileActivity, { FileAction } from '../../../models/FileActivity';
 import minioClient from '../../../config/minio';
 import logger from '../../../utils/logger';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import bcrypt from 'bcryptjs';
 
 const DEFAULT_USER_QUOTA = parseInt(process.env.FILE_STORAGE_USER_QUOTA_BYTES || String(5 * 1024 * 1024 * 1024), 10);
@@ -473,12 +474,13 @@ class FileStorageService {
     query: string,
     organizationId?: Types.ObjectId
   ): Promise<IFileStorage[]> {
+    const escaped = escapeRegex(query);
     const searchQuery: Record<string, unknown> = {
       isDeleted: false,
       $or: [
-        { fileName: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } },
-        { tags: { $in: [new RegExp(query, 'i')] } },
+        { fileName: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } },
+        { tags: { $in: [new RegExp(escaped, 'i')] } },
       ],
     };
 

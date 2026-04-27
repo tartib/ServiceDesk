@@ -7,6 +7,7 @@ import {
   RuleTriggerType,
 } from '../models';
 import logger from '../../../utils/logger';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import { getItsmRepos, isItsmPostgres } from '../infrastructure/repositories';
 import { PgAutomationRuleRepository } from '../infrastructure/repositories/PgAutomationRuleRepository';
 import { PgRuleExecutionLogRepository } from '../infrastructure/repositories/PgRuleExecutionLogRepository';
@@ -53,10 +54,11 @@ export const getRules = asyncHandler(async (req: Request, res: Response) => {
     if (triggerType) query['trigger.type'] = triggerType;
 
     if (q) {
+      const escaped = escapeRegex(q as string);
       query.$or = [
-        { name: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } },
-        { ruleId: { $regex: q, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } },
+        { ruleId: { $regex: escaped, $options: 'i' } },
       ];
     }
 
@@ -78,7 +80,7 @@ export const getRules = asyncHandler(async (req: Request, res: Response) => {
 
 // GET /api/v2/itsm/automation/rules/:id - Get single rule
 export const getRule = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   let rule: any;
   if (isItsmPostgres()) {
@@ -128,7 +130,7 @@ export const createRule = asyncHandler(async (req: Request, res: Response) => {
 
 // PUT /api/v2/itsm/automation/rules/:id - Update automation rule
 export const updateRule = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const trackFields = ['name', 'status', 'trigger', 'conditions', 'actions'];
 
   // ── PostgreSQL path ──
@@ -215,7 +217,7 @@ export const updateRule = asyncHandler(async (req: Request, res: Response) => {
 
 // DELETE /api/v2/itsm/automation/rules/:id - Delete automation rule
 export const deleteRule = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   // ── PostgreSQL path ──
   if (isItsmPostgres()) {
@@ -242,7 +244,7 @@ export const deleteRule = asyncHandler(async (req: Request, res: Response) => {
 
 // POST /api/v2/itsm/automation/rules/:id/activate - Activate rule
 export const activateRule = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   // ── PostgreSQL path ──
   if (isItsmPostgres()) {
@@ -268,7 +270,7 @@ export const activateRule = asyncHandler(async (req: Request, res: Response) => 
 
 // POST /api/v2/itsm/automation/rules/:id/deactivate - Deactivate rule
 export const deactivateRule = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   // ── PostgreSQL path ──
   if (isItsmPostgres()) {
@@ -292,7 +294,7 @@ export const deactivateRule = asyncHandler(async (req: Request, res: Response) =
 
 // GET /api/v2/itsm/automation/rules/:id/logs - Get execution logs for a rule
 export const getRuleLogs = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { page = '1', limit = '25', status } = req.query;
 
   const pageNum = Math.max(1, parseInt(page as string) || 1);
@@ -330,9 +332,10 @@ export const getTemplates = asyncHandler(async (req: Request, res: Response) => 
   const query: Record<string, unknown> = {};
   if (category) query.category = category;
   if (q) {
+    const escaped = escapeRegex(q as string);
     query.$or = [
-      { name: { $regex: q, $options: 'i' } },
-      { description: { $regex: q, $options: 'i' } },
+      { name: { $regex: escaped, $options: 'i' } },
+      { description: { $regex: escaped, $options: 'i' } },
     ];
   }
 

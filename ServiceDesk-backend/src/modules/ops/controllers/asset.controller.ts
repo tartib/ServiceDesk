@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Asset, AssetStatus } from '../../../models/Asset';
+import { escapeRegex } from '../../../utils/escapeRegex';
 
 export const assetController = {
   async create(req: Request, res: Response) {
@@ -22,11 +23,12 @@ export const assetController = {
       if (category_id) query.category_id = category_id;
       if (department) query['assigned_to.department'] = department;
       if (search) {
+        const escaped = escapeRegex(search as string);
         query.$or = [
-          { name: { $regex: search, $options: 'i' } },
-          { asset_id: { $regex: search, $options: 'i' } },
-          { serial_number: { $regex: search, $options: 'i' } },
-          { barcode: { $regex: search, $options: 'i' } },
+          { name: { $regex: escaped, $options: 'i' } },
+          { asset_id: { $regex: escaped, $options: 'i' } },
+          { serial_number: { $regex: escaped, $options: 'i' } },
+          { barcode: { $regex: escaped, $options: 'i' } },
         ];
       }
       const skip = (Number(page) - 1) * Number(limit);

@@ -8,6 +8,7 @@ import {
   CIRelationshipType,
 } from '../models';
 import logger from '../../../utils/logger';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import { ItsmEventPublisher } from '../../../shared/events/publishers/itsm.publisher';
 import { getItsmRepos, isItsmPostgres } from '../infrastructure/repositories';
 import { PgConfigurationItemRepository } from '../infrastructure/repositories/PgConfigurationItemRepository';
@@ -65,13 +66,14 @@ export const getConfigItems = asyncHandler(async (req: Request, res: Response) =
     if (location) query.location = location;
 
     if (q) {
+      const escaped = escapeRegex(q as string);
       query.$or = [
-        { name: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } },
-        { ciId: { $regex: q, $options: 'i' } },
-        { serialNumber: { $regex: q, $options: 'i' } },
-        { hostname: { $regex: q, $options: 'i' } },
-        { ipAddress: { $regex: q, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } },
+        { ciId: { $regex: escaped, $options: 'i' } },
+        { serialNumber: { $regex: escaped, $options: 'i' } },
+        { hostname: { $regex: escaped, $options: 'i' } },
+        { ipAddress: { $regex: escaped, $options: 'i' } },
       ];
     }
 

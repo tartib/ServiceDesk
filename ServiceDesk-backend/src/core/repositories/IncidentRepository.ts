@@ -2,6 +2,7 @@ import { FilterQuery } from 'mongoose';
 import { BaseRepository } from './BaseRepository';
 import Incident, { IIncident } from '../entities/Incident';
 import { IncidentStatus, Priority } from '../types/itsm.types';
+import { escapeRegex } from '../../utils/escapeRegex';
 
 export interface IIncidentRepository {
   findByIncidentId(incidentId: string): Promise<IIncident | null>;
@@ -96,13 +97,14 @@ export class IncidentRepository extends BaseRepository<IIncident> implements IIn
   }
 
   async searchIncidents(query: string): Promise<IIncident[]> {
+    const escaped = escapeRegex(query);
     return this.model
       .find({
         $or: [
-          { incident_id: { $regex: query, $options: 'i' } },
-          { title: { $regex: query, $options: 'i' } },
-          { description: { $regex: query, $options: 'i' } },
-          { 'requester.name': { $regex: query, $options: 'i' } },
+          { incident_id: { $regex: escaped, $options: 'i' } },
+          { title: { $regex: escaped, $options: 'i' } },
+          { description: { $regex: escaped, $options: 'i' } },
+          { 'requester.name': { $regex: escaped, $options: 'i' } },
         ],
       })
       .sort({ created_at: -1 })

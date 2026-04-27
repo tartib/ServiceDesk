@@ -89,6 +89,11 @@ const modules: ModuleDescriptor[] = [
     router: () => require('./ops/routes').default,
   },
   {
+    name: 'inventory',
+    prefix: '/api/v2/inventory',
+    router: () => require('./inventory/routes').default,
+  },
+  {
     name: 'gamification',
     prefix: '/api/v2/gamification',
     featureFlag: 'gamification_module_enabled',

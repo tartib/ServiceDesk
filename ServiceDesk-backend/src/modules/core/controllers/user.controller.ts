@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import User from '../../../models/User';
 import ApiResponse from '../../../utils/ApiResponse';
 import asyncHandler from '../../../utils/asyncHandler';
+import { escapeRegex } from '../../../utils/escapeRegex';
 
 export const getAllUsers = asyncHandler(async (_req: Request, res: Response) => {
   const users = await User.find({ isActive: true })
@@ -76,7 +77,7 @@ export const searchUsers = asyncHandler(async (req: Request, res: Response) => {
     return;
   }
 
-  const searchRegex = new RegExp(q.trim(), 'i');
+  const searchRegex = new RegExp(escapeRegex(q.trim()), 'i');
   const limitNum = Math.min(parseInt(limit as string, 10) || 20, 50);
 
   const users = await User.find({

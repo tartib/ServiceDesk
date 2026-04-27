@@ -7,6 +7,7 @@ import { getItsmRepos, isItsmPostgres } from '../infrastructure/repositories';
 import { PgServiceRequestRepository } from '../infrastructure/repositories/PgServiceRequestRepository';
 import { PgServiceCatalogRepository } from '../infrastructure/repositories/PgServiceCatalogRepository';
 import asyncHandler from '../../../utils/asyncHandler';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import { sendSuccess, sendPaginated, sendError } from '../../../utils/ApiResponse';
 
 /**
@@ -248,13 +249,14 @@ export const getRequests = asyncHandler(async (req: Request, res: Response) => {
 
     // Text search
     if (q) {
+      const escaped = escapeRegex(q as string);
       query.$and = [
         {
           $or: [
-            { requestId: { $regex: q, $options: 'i' } },
-            { serviceName: { $regex: q, $options: 'i' } },
-            { 'requester.name': { $regex: q, $options: 'i' } },
-            { 'requester.email': { $regex: q, $options: 'i' } },
+            { requestId: { $regex: escaped, $options: 'i' } },
+            { serviceName: { $regex: escaped, $options: 'i' } },
+            { 'requester.name': { $regex: escaped, $options: 'i' } },
+            { 'requester.email': { $regex: escaped, $options: 'i' } },
           ],
         },
       ];

@@ -1,93 +1,69 @@
 {
   "inventory": {
-    "title": "Inventory Management",
-    "subtitle": "Track and manage inventory stock levels",
+    "title": "Inventory",
+    "subtitle": "Stock balances across warehouses",
     "addItem": "Add Item",
-    "adjustStock": "Adjust Stock",
-    "search": "Search inventory...",
-    "stats": {
-      "totalItems": "Total Items",
-      "inStock": "In Stock",
-      "lowStock": "Low Stock",
-      "outOfStock": "Out of Stock"
+    "search": "Search part no, description, group...",
+    "items": {
+      "title": "Inventory Items",
+      "subtitle": "Manage parts catalog"
     },
     "table": {
-      "item": "Item",
-      "category": "Category",
-      "currentStock": "Current Stock",
-      "minMax": "Min/Max",
-      "status": "Status",
-      "actions": "Actions"
+      "partNo": "Part No",
+      "description": "Description",
+      "group": "Group",
+      "inStock": "In Stock",
+      "booked": "Booked",
+      "available": "Available",
+      "uom": "UoM",
+      "cost": "Cost",
+      "warehouse": "Warehouse",
+      "status": "Status"
+    },
+    "filter": {
+      "search": "Search",
+      "clear": "Clear",
+      "allStatus": "All Status",
+      "showing": "Showing",
+      "of": "of",
+      "items": "items",
+      "page": "page",
+      "prev": "Previous",
+      "next": "Next"
     },
     "status": {
-      "inStock": "In Stock",
+      "inStock": "Normal",
       "lowStock": "Low Stock",
       "outOfStock": "Out of Stock"
     },
-    "addModal": {
-      "title": "Add New Inventory Item",
-      "nameEn": "Name (English)",
-      "nameAr": "Name (Arabic)",
-      "category": "Category",
-      "selectCategory": "Select a category",
-      "loadingCategories": "Loading categories...",
-      "noCategories": "No categories available. Please create categories first.",
-      "unit": "Unit",
-      "initialQuantity": "Initial Quantity",
-      "minThreshold": "Min Threshold",
-      "maxThreshold": "Max Threshold",
-      "supplier": "Supplier",
-      "costPerUnit": "Cost per Unit",
-      "itemImage": "Item Image (Optional)",
-      "uploadImage": "Upload Image",
-      "cancel": "Cancel",
-      "addButton": "Add Item",
-      "adding": "Adding..."
-    },
-    "adjustModal": {
-      "title": "Adjust Stock",
-      "addStock": "Add Stock",
-      "removeStock": "Remove Stock",
-      "quantity": "Quantity",
-      "reason": "Reason",
-      "selectReason": "Select a reason",
-      "reasons": {
-        "restock": "Restock from supplier",
-        "adjustment": "Inventory adjustment",
-        "usage": "Used in operations",
-        "damaged": "Damaged items",
-        "expired": "Expired items",
-        "returned": "Customer return"
-      },
-      "notes": "Notes (Optional)",
-      "currentLevel": "Current Level",
-      "newLevel": "New Level",
-      "warning": "Warning: This will result in negative stock!",
-      "cancel": "Cancel",
-      "addButton": "Add Stock",
-      "removeButton": "Remove Stock",
-      "adjusting": "Adjusting..."
-    },
     "messages": {
-      "itemAdded": "Inventory item added successfully",
-      "itemAddFailed": "Failed to add item",
-      "stockAdjusted": "Stock adjusted successfully",
-      "stockAdjustFailed": "Failed to adjust stock",
-      "loading": "Loading inventory...",
-      "noItems": "No inventory items yet",
-      "noItemsDesc": "Get started by adding your first inventory item",
-      "noResults": "No items found",
-      "noResultsDesc": "Try adjusting your search query"
+      "loading": "Loading...",
+      "noItems": "No stock balances found"
     },
-    "units": {
-      "kg": "Kilograms (kg)",
-      "g": "Grams (g)",
-      "l": "Liters (l)",
-      "ml": "Milliliters (ml)",
-      "pcs": "Pieces (pcs)",
-      "cup": "Cups",
-      "tbsp": "Tablespoons (tbsp)",
-      "tsp": "Teaspoons (tsp)"
+    "warehouse": {
+      "title": "Warehouses",
+      "subtitle": "Manage warehouses",
+      "all": "All Warehouses",
+      "default": "Default",
+      "add": "Add Warehouse",
+      "deleteConfirm": "Deactivate this warehouse?",
+      "noWarehouses": "No warehouses yet"
+    },
+    "transfer": {
+      "title": "Transfers",
+      "subtitle": "Stock transfers between warehouses",
+      "noTransfers": "No transfers found"
+    },
+    "transactions": {
+      "title": "Transactions",
+      "receive": "Receive Stock",
+      "issue": "Issue Stock",
+      "transfer": "Transfer Stock",
+      "adjust": "Adjust Stock",
+      "return": "Return Stock"
+    },
+    "movements": {
+      "title": "Movement History"
     }
   }
 }

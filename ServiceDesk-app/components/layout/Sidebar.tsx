@@ -52,6 +52,8 @@ import {
  Award,
  Gamepad2,
  ClipboardCheck,
+ ArrowLeftRight,
+ History,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -123,7 +125,13 @@ const menuItems = [
  { icon: UsersRound, labelKey: 'nav.teams', href: '/teams', roles: LEAD_ROLES },
  { icon: Tag, labelKey: 'nav.categories', href: '/categories', roles: ADMIN_ROLES },
  { icon: Monitor, labelKey: 'nav.assets', href: '/assets', roles: LEAD_ROLES },
- { icon: Warehouse, labelKey: 'nav.inventory', href: '/inventory', roles: ALL_ROLES },
+ { icon: Warehouse, labelKey: 'nav.inventory', href: '/inventory', roles: ALL_ROLES, subItems: [
+   { icon: Package, labelKey: 'nav.inventoryItems', href: '/inventory/items', fallback: 'Items' },
+   { icon: Warehouse, labelKey: 'nav.inventoryWarehouses', href: '/inventory/warehouses', fallback: 'Warehouses' },
+   { icon: ClipboardList, labelKey: 'nav.inventoryTransactions', href: '/inventory/transactions', fallback: 'Transactions' },
+   { icon: ArrowLeftRight, labelKey: 'nav.inventoryTransfers', href: '/inventory/transfers', fallback: 'Transfers' },
+   { icon: History, labelKey: 'nav.inventoryMovements', href: '/inventory/movements', fallback: 'Movements' },
+ ]},
  { icon: BarChart3, labelKey: 'nav.reports', href: '/reports', roles: LEAD_ROLES },
  { icon: Users, labelKey: 'nav.users', href: '/users', roles: ADMIN_ROLES },
 ];
@@ -167,6 +175,7 @@ export default function Sidebar() {
  const brandName = useBrandName();
  const [projects, setProjects] = useState<Project[]>([]);
  const [projectsExpanded, setProjectsExpanded] = useState(true);
+ const [inventoryExpanded, setInventoryExpanded] = useState(false);
 
  useEffect(() => {
  const fetchProjects = async () => {
@@ -197,6 +206,13 @@ export default function Sidebar() {
 
  fetchProjects();
  }, []);
+
+ // Auto-expand inventory section when on an inventory sub-page
+ useEffect(() => {
+   if (pathname.startsWith('/inventory/')) {
+     setInventoryExpanded(true);
+   }
+ }, [pathname]);
 
  const filteredMenuItems = menuItems.filter((item) => {
  if (!user) return false;
@@ -324,6 +340,56 @@ export default function Sidebar() {
  )}
  </div>
  );
+ }
+
+ // Expandable inventory section
+ const isInventoryItem = item.href === '/inventory' && 'subItems' in item;
+ if (isInventoryItem) {
+   const subs = (item as typeof item & { subItems: { icon: typeof Icon; labelKey: string; href: string; fallback: string }[] }).subItems;
+   return (
+     <div key={item.href}>
+       <div
+         className={cn(
+           'flex items-center justify-between px-2 sm:px-3 py-2 md:py-2.5 rounded-lg transition-all duration-200 cursor-pointer text-sm sm:text-base',
+           isActive
+             ? 'bg-brand-surface text-brand font-medium ltr:border-l-2 rtl:border-r-2 border-brand'
+             : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+         )}
+         onClick={() => setInventoryExpanded(!inventoryExpanded)}
+       >
+         <Link href={item.href} className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+           <Icon className="h-5 w-5 shrink-0" />
+           <span className="truncate">{t(item.labelKey)}</span>
+         </Link>
+         {inventoryExpanded ? (
+           <ChevronDown className="h-4 w-4 transition-transform duration-200" />
+         ) : (
+           <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+         )}
+       </div>
+       {inventoryExpanded && (
+         <div className="ltr:ml-4 rtl:mr-4 mt-1 space-y-0.5 transition-all duration-200">
+           {subs.map((sub) => {
+             const SubIcon = sub.icon;
+             const subActive = pathname === sub.href || pathname.startsWith(sub.href + '/');
+             return (
+               <Link key={sub.href} href={sub.href}>
+                 <div className={cn(
+                   'flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition-colors',
+                   subActive
+                     ? 'bg-brand-surface text-brand font-medium ltr:border-l-2 rtl:border-r-2 border-brand'
+                     : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'
+                 )}>
+                   <SubIcon className="h-4 w-4 shrink-0" />
+                   <span className="truncate">{t(sub.labelKey) || sub.fallback}</span>
+                 </div>
+               </Link>
+             );
+           })}
+         </div>
+       )}
+     </div>
+   );
  }
 
  return (

@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import PrepTask from '../models/PrepTask';
-import Inventory from '../models/Inventory';
+import InventoryItem from '../modules/inventory/models/InventoryItem';
 import { TaskStatus } from '../types';
 import { NotificationType, NotificationSource, NotificationLevel } from '../modules/notifications/domain/interfaces';
 import logger from '../utils/logger';
@@ -67,16 +67,13 @@ export const inventoryAlertsJob = cron.schedule('0 * * * *', async () => {
   try {
     logger.info('Running inventory alerts check...');
     
-    const lowStockItems = await Inventory.find({
-      $or: [
-        { $expr: { $lte: ['$currentQuantity', '$minThreshold'] } },
-        { status: 'low_stock' },
-        { status: 'out_of_stock' },
-      ],
+    // Low-stock alerts now use StockBalance; this is a simplified check on items
+    const lowStockItems = await InventoryItem.find({
+      status: 'active',
     });
 
     for (const item of lowStockItems) {
-      logger.warn(`Low stock alert: ${item.name} - ${item.currentQuantity}${item.unit}`);
+      logger.warn(`Low stock alert check: ${item.partNo} - ${item.partDescription}`);
       
       // TODO: Send notifications to managers
     }

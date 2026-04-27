@@ -4,6 +4,7 @@
  */
 
 import { FormTemplate, IFormTemplateDocument } from '../../../core/entities/FormTemplate';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import {
   IFormTemplate,
   ISmartField,
@@ -276,11 +277,12 @@ class FormTemplateService {
     }
 
     if (search) {
+      const escaped = escapeRegex(search);
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { name_ar: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { description_ar: { $regex: search, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { name_ar: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } },
+        { description_ar: { $regex: escaped, $options: 'i' } },
       ];
     }
 

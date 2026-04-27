@@ -48,7 +48,12 @@
     "formsPlatform": "منصة النماذج",
     "records": "السجلات",
     "formBuilder": "منشئ النماذج",
-    "workflowBuilder": "منشئ سير العمل"
+    "workflowBuilder": "منشئ سير العمل",
+    "inventoryItems": "الأصناف",
+    "inventoryWarehouses": "المستودعات",
+    "inventoryTransactions": "العمليات",
+    "inventoryTransfers": "التحويلات",
+    "inventoryMovements": "الحركات"
   },
   "common": {
     "search": "بحث",

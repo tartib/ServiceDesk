@@ -3,6 +3,7 @@
  */
 
 import { Request, Response } from 'express';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import mongoose from 'mongoose';
 import Segment from '../models/Segment';
 import { resolveSegment, previewSegmentCount, previewRulesCount } from '../services/SegmentResolver';
@@ -21,7 +22,7 @@ export async function listSegments(req: Request, res: Response): Promise<void> {
     const { page = '1', limit = '20', search, isActive } = req.query;
     const filter: any = { organizationId: new mongoose.Types.ObjectId(organizationId) };
     if (isActive !== undefined) filter.isActive = isActive === 'true';
-    if (search) filter.name = { $regex: search, $options: 'i' };
+    if (search) filter.name = { $regex: escapeRegex(search as string), $options: 'i' };
 
     const skip = (Number(page) - 1) * Number(limit);
     const [items, total] = await Promise.all([

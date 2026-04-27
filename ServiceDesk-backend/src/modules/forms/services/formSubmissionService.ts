@@ -4,6 +4,7 @@
  */
 
 import { FormSubmission, IFormSubmissionDocument } from '../../../core/entities/FormSubmission';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import { FormTemplate, IFormTemplateDocument } from '../../../core/entities/FormTemplate';
 import { WorkflowEngine } from '../../../core/engines/WorkflowEngine';
 import { ApprovalEngine } from '../../../core/engines/ApprovalEngine';
@@ -570,10 +571,11 @@ class FormSubmissionService {
     }
 
     if (search) {
+      const escaped = escapeRegex(search);
       query.$or = [
-        { submission_id: { $regex: search, $options: 'i' } },
-        { 'submitted_by.name': { $regex: search, $options: 'i' } },
-        { 'submitted_by.email': { $regex: search, $options: 'i' } },
+        { submission_id: { $regex: escaped, $options: 'i' } },
+        { 'submitted_by.name': { $regex: escaped, $options: 'i' } },
+        { 'submitted_by.email': { $regex: escaped, $options: 'i' } },
       ];
     }
 

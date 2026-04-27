@@ -8,6 +8,7 @@ import workflowService from '../services/workflow.service';
 import { PMAuthRequest, ApiResponse, TaskType, TaskPriority } from '../../../types/pm';
 import * as permissions from '../../../utils/pm/permissions';
 import logger from '../../../utils/logger';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import { notifyUser, notifyUsers } from './notificationHelper';
 import { getPmRepos, isPmPostgres } from '../infrastructure/repositories';
 import { PgTaskRepository } from '../infrastructure/repositories/PgTaskRepository';
@@ -222,9 +223,10 @@ export const getTasks = async (req: PMAuthRequest, res: Response): Promise<void>
     if (parentId) query.parentId = parentId;
     if (priority) query.priority = priority;
     if (search) {
+      const escaped = escapeRegex(search as string);
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { key: { $regex: search, $options: 'i' } },
+        { title: { $regex: escaped, $options: 'i' } },
+        { key: { $regex: escaped, $options: 'i' } },
       ];
     }
 

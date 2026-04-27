@@ -4,6 +4,7 @@ import { PMTask, PMGoal, PMPointTransaction, PMProject } from '../models';
 import User from '../../../models/User';
 import Team from '../../../models/Team';
 import logger from '../../../utils/logger';
+import { escapeRegex } from '../../../utils/escapeRegex';
 
 interface ApiResponse {
   success: boolean;
@@ -71,9 +72,10 @@ export const getTeamPerformance = async (req: Request, res: Response): Promise<v
     // Build user query
     const userQuery: Record<string, unknown> = { isActive: true };
     if (q) {
+      const escaped = escapeRegex(q as string);
       userQuery.$or = [
-        { name: { $regex: q, $options: 'i' } },
-        { email: { $regex: q, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { email: { $regex: escaped, $options: 'i' } },
       ];
     }
     if (scopedUserIds) {

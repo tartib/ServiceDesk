@@ -3,6 +3,7 @@
  */
 
 import { Request, Response } from 'express';
+import { escapeRegex } from '../../../utils/escapeRegex';
 import mongoose from 'mongoose';
 import NotificationTemplate from '../models/NotificationTemplate';
 import { previewTemplate } from '../services/TemplateRenderer';
@@ -22,7 +23,7 @@ export async function listTemplates(req: Request, res: Response): Promise<void> 
     const filter: any = { organizationId: new mongoose.Types.ObjectId(organizationId) };
     if (channel) filter.channel = channel;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
-    if (search) filter.name = { $regex: search, $options: 'i' };
+    if (search) filter.name = { $regex: escapeRegex(search as string), $options: 'i' };
 
     const skip = (Number(page) - 1) * Number(limit);
     const [items, total] = await Promise.all([
