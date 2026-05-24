@@ -12,7 +12,7 @@ const getErrorMessage = (error: unknown): string => {
 export const uploadFile = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.file) { res.status(400).json({ success: false, message: 'No file provided' }); return; }
-    const fileUploadService = container.resolve('fileUploadService');
+    const fileUploadService = container.resolve<any>('fileUploadService');
     const userId = new Types.ObjectId(req.user!.id);
     const organizationId = req.headers['x-organization-id'] ? new Types.ObjectId(req.headers['x-organization-id'] as string) : undefined;
     const folderId = req.body.folderId ? new Types.ObjectId(req.body.folderId) : undefined;
@@ -27,7 +27,7 @@ export const uploadFile = async (req: Request, res: Response): Promise<void> => 
 export const uploadMultipleFiles = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.files || !Array.isArray(req.files) || req.files.length === 0) { res.status(400).json({ success: false, message: 'No files provided' }); return; }
-    const fileUploadService = container.resolve('fileUploadService');
+    const fileUploadService = container.resolve<any>('fileUploadService');
     const userId = new Types.ObjectId(req.user!.id);
     const organizationId = req.headers['x-organization-id'] ? new Types.ObjectId(req.headers['x-organization-id'] as string) : undefined;
     const folderId = req.body.folderId ? new Types.ObjectId(req.body.folderId) : undefined;
@@ -41,7 +41,7 @@ export const uploadMultipleFiles = async (req: Request, res: Response): Promise<
 
 export const getFile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileUploadService = container.resolve('fileUploadService');
+    const fileUploadService = container.resolve<any>('fileUploadService');
     const fileId = new Types.ObjectId(req.params.id);
     const userId = new Types.ObjectId(req.user!.id);
     const { file } = await fileUploadService.downloadFile(fileId, userId);
@@ -56,7 +56,7 @@ export const getFile = async (req: Request, res: Response): Promise<void> => {
 
 export const downloadFile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const fileId = new Types.ObjectId(req.params.id);
     const userId = new Types.ObjectId(req.user!.id);
     const { stream, file } = await fileStorageService.downloadFile(fileId, userId);
@@ -74,7 +74,7 @@ export const downloadFile = async (req: Request, res: Response): Promise<void> =
 
 export const previewFile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const fileId = new Types.ObjectId(req.params.id);
     const userId = new Types.ObjectId(req.user!.id);
     const { stream, file } = await fileStorageService.downloadFile(fileId, userId);
@@ -93,7 +93,7 @@ export const previewFile = async (req: Request, res: Response): Promise<void> =>
 
 export const deleteFile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const fileId = new Types.ObjectId(req.params.id);
     const userId = new Types.ObjectId(req.user!.id);
     await fileStorageService.deleteFile(fileId, userId);
@@ -106,7 +106,7 @@ export const deleteFile = async (req: Request, res: Response): Promise<void> => 
 
 export const permanentlyDeleteFile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const fileId = new Types.ObjectId(req.params.id);
     const userId = new Types.ObjectId(req.user!.id);
     await fileStorageService.permanentlyDeleteFile(fileId, userId);
@@ -119,7 +119,7 @@ export const permanentlyDeleteFile = async (req: Request, res: Response): Promis
 
 export const restoreFile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const fileId = new Types.ObjectId(req.params.id);
     const userId = new Types.ObjectId(req.user!.id);
     const file = await fileStorageService.restoreFile(fileId, userId);
@@ -132,7 +132,7 @@ export const restoreFile = async (req: Request, res: Response): Promise<void> =>
 
 export const updateFileMetadata = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const fileId = new Types.ObjectId(req.params.id);
     const userId = new Types.ObjectId(req.user!.id);
     const file = await fileStorageService.updateFileMetadata(fileId, userId, { fileName: req.body.fileName, description: req.body.description, tags: req.body.tags });
@@ -146,7 +146,7 @@ export const updateFileMetadata = async (req: Request, res: Response): Promise<v
 
 export const moveFile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const fileId = new Types.ObjectId(req.params.id);
     const userId = new Types.ObjectId(req.user!.id);
     const targetFolderId = req.body.folderId ? new Types.ObjectId(req.body.folderId) : null;
@@ -161,7 +161,7 @@ export const moveFile = async (req: Request, res: Response): Promise<void> => {
 
 export const searchFiles = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const userId = new Types.ObjectId(req.user!.id);
     const query = req.query.q as string;
     const organizationId = req.headers['x-organization-id'] ? new Types.ObjectId(req.headers['x-organization-id'] as string) : undefined;
@@ -176,7 +176,7 @@ export const searchFiles = async (req: Request, res: Response): Promise<void> =>
 
 export const getPresignedUrl = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const fileId = new Types.ObjectId(req.params.id);
     const userId = new Types.ObjectId(req.user!.id);
     const expiry = req.query.expiry ? parseInt(req.query.expiry as string, 10) : 300;
@@ -191,7 +191,7 @@ export const getPresignedUrl = async (req: Request, res: Response): Promise<void
 
 export const getStorageStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const userId = new Types.ObjectId(req.user!.id);
     const organizationId = req.headers['x-organization-id'] ? new Types.ObjectId(req.headers['x-organization-id'] as string) : undefined;
     const stats = await fileStorageService.getStorageStats(userId, organizationId);
@@ -204,7 +204,7 @@ export const getStorageStats = async (req: Request, res: Response): Promise<void
 
 export const createFolder = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const userId = new Types.ObjectId(req.user!.id);
     const organizationId = req.headers['x-organization-id'] ? new Types.ObjectId(req.headers['x-organization-id'] as string) : undefined;
     const parentId = req.body.parentId ? new Types.ObjectId(req.body.parentId) : undefined;
@@ -218,7 +218,7 @@ export const createFolder = async (req: Request, res: Response): Promise<void> =
 
 export const getFolderContents = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const userId = new Types.ObjectId(req.user!.id);
     const folderId = req.params.id ? new Types.ObjectId(req.params.id) : null;
     const organizationId = req.headers['x-organization-id'] ? new Types.ObjectId(req.headers['x-organization-id'] as string) : undefined;
@@ -232,7 +232,7 @@ export const getFolderContents = async (req: Request, res: Response): Promise<vo
 
 export const createShareLink = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const fileId = new Types.ObjectId(req.params.id);
     const userId = new Types.ObjectId(req.user!.id);
     const shareLink = await fileStorageService.shareFile({ fileId, userId, expiresIn: req.body.expiresIn, maxDownloads: req.body.maxDownloads, password: req.body.password, allowedEmails: req.body.allowedEmails, canDownload: req.body.canDownload, canView: req.body.canView });
@@ -246,7 +246,7 @@ export const createShareLink = async (req: Request, res: Response): Promise<void
 
 export const accessSharedFile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const token = req.params.token;
     const password = req.body.password;
     const email = req.body.email;
@@ -269,7 +269,7 @@ export const accessSharedFile = async (req: Request, res: Response): Promise<voi
 
 export const downloadSharedFile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const fileStorageService = container.resolve('fileStorageService');
+    const fileStorageService = container.resolve<any>('fileStorageService');
     const token = req.params.token;
     const password = req.body.password;
     const { file, shareLink } = await fileStorageService.getFileByShareToken(token);

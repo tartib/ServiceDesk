@@ -24,6 +24,14 @@ const WARNING_THRESHOLD_SECONDS = 15 * 60; // 15 minutes before breach
  */
 async function tick(): Promise<void> {
   try {
+    // Guard: skip tick if PostgreSQL pool is not available
+    try {
+      const { getPool } = await import('../../../shared/database/PostgresConnectionManager');
+      getPool(); // throws if not initialized
+    } catch {
+      return; // Silently skip — PG not configured
+    }
+
     const repos = getSlaRepos();
 
     // ── Step 1: Breach detection ─────────────────────────────
@@ -172,7 +180,7 @@ async function tick(): Promise<void> {
       }
     }
   } catch (err) {
-    logger.error('[SLA:Scheduler] Tick failed', { error: err });
+    logger.error('[SLA:Scheduler] Tick failed', { error: err instanceof Error ? err.message : err });
   }
 }
 

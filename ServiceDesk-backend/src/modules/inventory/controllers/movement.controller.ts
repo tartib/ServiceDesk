@@ -30,7 +30,7 @@ export const listMovements = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const getItemMovements = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const q = req.query;
   const page = q.page ? Number(q.page) : undefined;
 

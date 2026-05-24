@@ -1,0 +1,71 @@
+{
+  "onboarding": {
+    "title": "Set Up Your Workspace",
+    "subtitle": "Choose a template that matches your team's workflow. You can customize everything later.",
+    "step1": "Choose Template",
+    "step2": "Organization Details",
+    "step3": "Confirm & Launch",
+    "orgName": "Organization Name",
+    "orgNamePlaceholder": "Enter your organization name",
+    "orgDescription": "Description",
+    "orgDescriptionPlaceholder": "Brief description of your organization",
+    "confirmTitle": "Ready to Launch",
+    "confirmDescription": "We'll set up your workspace with the following:",
+    "requestTypesLabel": "Request Types",
+    "workspaceTypeLabel": "Workspace Type",
+    "launching": "Setting up workspace...",
+    "launch": "Launch Workspace",
+    "back": "Back",
+    "next": "Next",
+    "comingSoon": "Coming Soon"
+  },
+  "quickCreate": {
+    "title": "Create New Request",
+    "searchPlaceholder": "Search request types...",
+    "noResults": "No request types found",
+    "recentLabel": "Recent",
+    "allTypesLabel": "All Request Types",
+    "shortcut": "Quick Create"
+  },
+  "nav": {
+    "formsPlatform": "Forms Platform",
+    "workflowsSection": "Workflows",
+    "solutions": "Solutions",
+    "records": "Records",
+    "documents": "Documents"
+  },
+  "portal": {
+    "title": "Client Portal",
+    "submitRequest": "Submit Request",
+    "trackRequests": "Track Requests",
+    "myRequests": "My Requests",
+    "noRequests": "You don't have any requests yet.",
+    "submitNew": "Submit a New Request",
+    "status": "Status",
+    "created": "Created",
+    "updated": "Last Updated",
+    "priority": "Priority",
+    "approve": "Approve",
+    "reject": "Reject",
+    "requestChanges": "Request Changes",
+    "approvalTitle": "Review Request",
+    "approvalDescription": "Review the details below and take action.",
+    "changesPlaceholder": "Describe the changes you'd like...",
+    "submittedSuccessfully": "Request submitted successfully",
+    "poweredBy": "Powered by ServiceDesk"
+  },
+  "executive": {
+    "title": "Executive Dashboard",
+    "openRecords": "Open Records",
+    "slaCompliance": "SLA Compliance",
+    "avgResolution": "Avg. Resolution Time",
+    "byStatus": "Records by Status",
+    "byType": "Records by Type",
+    "byWorkspace": "Records by Workspace",
+    "hours": "hours",
+    "noData": "No data available",
+    "generateReport": "Generate Client Report",
+    "generate": "Generate",
+    "download": "Download"
+  }
+}

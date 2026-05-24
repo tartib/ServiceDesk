@@ -120,6 +120,6 @@ CategorySchema.virtual('has_subcategories').get(function () {
 CategorySchema.set('toJSON', { virtuals: true });
 CategorySchema.set('toObject', { virtuals: true });
 
-const ITSMCategory = mongoose.model<ICategory>('ITSMCategory', CategorySchema);
+const ITSMCategory = mongoose.models.ITSMCategory || mongoose.model<ICategory>('ITSMCategory', CategorySchema);
 
 export default ITSMCategory;

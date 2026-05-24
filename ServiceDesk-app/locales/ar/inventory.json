@@ -6,7 +6,8 @@
     "search": "بحث برقم القطعة، الوصف، المجموعة...",
     "items": {
       "title": "أصناف المخزون",
-      "subtitle": "إدارة كتالوج القطع"
+      "subtitle": "إدارة كتالوج القطع",
+      "noItems": "لا توجد أصناف"
     },
     "table": {
       "partNo": "رقم القطعة",
@@ -18,7 +19,9 @@
       "uom": "وحدة القياس",
       "cost": "التكلفة",
       "warehouse": "المستودع",
-      "status": "الحالة"
+      "status": "الحالة",
+      "reorder": "حد الطلب",
+      "actions": "الإجراءات"
     },
     "filter": {
       "search": "بحث",
@@ -32,13 +35,40 @@
       "next": "التالي"
     },
     "status": {
-      "inStock": "طبيعي",
+      "inStock": "متوفر",
       "lowStock": "مخزون منخفض",
-      "outOfStock": "نفذ من المخزون"
+      "outOfStock": "نفذ من المخزون",
+      "active": "نشط",
+      "inactive": "غير نشط"
     },
     "messages": {
       "loading": "جاري التحميل...",
       "noItems": "لا توجد أرصدة مخزون"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "deactivate": "إلغاء التفعيل",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "back": "رجوع",
+      "next": "التالي",
+      "submit": "إرسال",
+      "search": "بحث..."
+    },
+    "toast": {
+      "itemCreated": "تم إنشاء الصنف",
+      "itemUpdated": "تم تحديث الصنف",
+      "itemDeactivated": "تم إلغاء تفعيل الصنف",
+      "warehouseCreated": "تم إنشاء المستودع",
+      "warehouseUpdated": "تم تحديث المستودع",
+      "warehouseDeactivated": "تم إلغاء تفعيل المستودع",
+      "stockReceived": "تم استلام وتأكيد المخزون",
+      "stockIssued": "تم صرف المخزون",
+      "stockTransferred": "تم تحويل المخزون",
+      "stockAdjusted": "تم تعديل المخزون",
+      "stockReturned": "تم إرجاع المخزون",
+      "operationFailed": "فشلت العملية",
+      "saveFailed": "فشل حفظ الصنف"
     },
     "warehouse": {
       "title": "المستودعات",
@@ -60,10 +90,231 @@
       "issue": "صرف مخزون",
       "transfer": "تحويل مخزون",
       "adjust": "تعديل مخزون",
-      "return": "إرجاع مخزون"
+      "return": "إرجاع مخزون",
+      "receiveDesc": "إضافة مخزون وارد للمستودع",
+      "issueDesc": "صرف مخزون من المستودع",
+      "transferDesc": "نقل مخزون بين المستودعات",
+      "adjustDesc": "زيادة أو تقليل أو ضبط الرصيد",
+      "returnDesc": "إرجاع مخزون مصروف"
     },
     "movements": {
       "title": "سجل الحركات"
+    },
+    "autosave": {
+      "saving": "جاري الحفظ...",
+      "saved": "تم الحفظ",
+      "error": "فشل الحفظ"
+    },
+    "forms": {
+      "addItem": {
+        "title": "إضافة صنف جديد",
+        "description": "إضافة صنف جديد إلى كتالوج المخزون.",
+        "submit": "إنشاء الصنف"
+      },
+      "editItem": {
+        "title": "تعديل الصنف",
+        "description": "تحديث بيانات صنف موجود.",
+        "submit": "حفظ التغييرات"
+      },
+      "warehouse": {
+        "title": "المستودع",
+        "description": "إنشاء أو تعديل مستودع.",
+        "submit": "حفظ"
+      },
+      "receive": {
+        "title": "استلام مخزون",
+        "description": "إضافة مخزون وارد إلى المستودع.",
+        "submit": "تأكيد الاستلام"
+      },
+      "issue": {
+        "title": "صرف مخزون",
+        "description": "صرف مخزون من المستودع.",
+        "submit": "تأكيد الصرف"
+      },
+      "transfer": {
+        "title": "تحويل صنف",
+        "description": "نقل صنف من مستودع إلى آخر.",
+        "submit": "تأكيد التحويل"
+      },
+      "adjust": {
+        "title": "تعديل المخزون",
+        "description": "تعديل مستويات المخزون مع سجل المراجعة.",
+        "submit": "تأكيد التعديل"
+      },
+      "return": {
+        "title": "إرجاع صنف",
+        "description": "إرجاع صنف مخصص إلى المخزون.",
+        "submit": "تأكيد الإرجاع"
+      },
+      "steps": {
+        "basicInfo": "المعلومات الأساسية",
+        "basicInfoDesc": "اسم الصنف، التصنيف، والنوع.",
+        "stockLocation": "المخزون والموقع",
+        "stockLocationDesc": "المستودع، الكمية، والتكلفة.",
+        "assetDetails": "تفاصيل الأصل",
+        "assetDetailsDesc": "تفاصيل التتبع للأصول.",
+        "review": "مراجعة",
+        "selectItem": "اختيار الصنف",
+        "selectItemDesc": "اختر الصنف المراد تحويله.",
+        "selectItemSearchDesc": "اختر الصنف والمستودع.",
+        "receiptDetails": "تفاصيل الاستلام",
+        "receiptDetailsDesc": "اختر الصنف وأدخل الكمية.",
+        "issueDetails": "تفاصيل الصرف",
+        "issueDetailsDesc": "اختر الصنف وأدخل الكمية.",
+        "transferDetails": "تفاصيل التحويل",
+        "transferDetailsDesc": "المصدر، الوجهة، والكمية.",
+        "returnDetails": "تفاصيل الإرجاع",
+        "returnDetailsDesc": "الحالة وموقع الإرجاع.",
+        "adjustment": "التعديل",
+        "adjustmentDesc": "أدخل الكمية الجديدة والسبب."
+      },
+      "fields": {
+        "partNo": "رقم القطعة",
+        "partNoPlaceholder": "مثال: ITM-001",
+        "groupName": "التصنيف / المجموعة",
+        "description": "الوصف",
+        "descriptionPlaceholder": "صف الصنف...",
+        "descriptionAr": "الوصف (عربي)",
+        "descriptionArPlaceholder": "الوصف...",
+        "inventoryType": "نوع المخزون",
+        "inventoryTypeAsset": "أصل",
+        "inventoryTypeAssetDesc": "يُتتبع بشكل فردي (رقم تسلسلي، علامة أصل)",
+        "inventoryTypeConsumable": "مستهلك",
+        "inventoryTypeConsumableDesc": "يُتتبع بالكمية (أقلام، ورق، إلخ.)",
+        "warehouse": "المستودع",
+        "uom": "وحدة القياس",
+        "uomPlaceholder": "قطعة، كجم، متر...",
+        "initialQuantity": "الكمية الأولية",
+        "unitCost": "تكلفة الوحدة",
+        "minStock": "حد أدنى",
+        "maxStock": "حد أقصى",
+        "reorderLevel": "مستوى إعادة الطلب",
+        "assetTag": "علامة الأصل",
+        "assetTagPlaceholder": "مثال: ASSET-001",
+        "serialNumber": "الرقم التسلسلي",
+        "owner": "المالك",
+        "ownerHelper": "تعيين لشخص معين (اختياري).",
+        "warrantyExpiry": "انتهاء الضمان",
+        "supplier": "المورد",
+        "purchaseDate": "تاريخ الشراء",
+        "purchasePrice": "سعر الشراء",
+        "notes": "ملاحظات",
+        "item": "الصنف",
+        "quantity": "الكمية",
+        "referenceNo": "رقم المرجع",
+        "referenceNoPlaceholder": "رقم أمر الشراء، إشعار التسليم، إلخ.",
+        "issuedTo": "مصروف إلى",
+        "issuedToPlaceholder": "من يستلم هذا المخزون؟",
+        "fromWarehouse": "من مستودع",
+        "fromWarehouseHelper": "الموقع الحالي (تلقائي).",
+        "toWarehouse": "إلى مستودع",
+        "toWarehouseHelper": "اختر وجهة نقل الصنف.",
+        "transferDate": "تاريخ التحويل",
+        "reason": "السبب",
+        "adjustmentType": "نوع التعديل",
+        "adjustmentIncrease": "زيادة",
+        "adjustmentIncreaseDesc": "إضافة مخزون (وارد، موجود، تصحيح)",
+        "adjustmentDecrease": "نقص",
+        "adjustmentDecreaseDesc": "إزالة مخزون (مفقود، منتهي، تصحيح)",
+        "adjustmentSetBalance": "تعيين الرصيد",
+        "adjustmentSetBalanceDesc": "تعيين الكمية الدقيقة بعد الجرد",
+        "currentQuantity": "الكمية الحالية",
+        "currentQuantityHelper": "يُملأ تلقائياً من المخزون الحالي.",
+        "newQuantity": "الكمية الجديدة",
+        "newQuantityHelper": "أدخل الكمية المعدلة.",
+        "reasonPlaceholder": "لماذا هذا التعديل مطلوب؟",
+        "supportingDoc": "مستند داعم",
+        "supportingDocHelper": "مطلوب للتعديلات الكبيرة.",
+        "returnLocation": "موقع الإرجاع",
+        "returnLocationHelper": "أين تُرجع الصنف؟",
+        "condition": "الحالة",
+        "conditionGood": "جيدة",
+        "conditionDamaged": "تالفة",
+        "damageDescription": "وصف التلف",
+        "damageDescriptionPlaceholder": "صف التلف...",
+        "photo": "صورة",
+        "photoHelper": "ارفع صورة للصنف التالف.",
+        "warehouseName": "الاسم",
+        "warehouseNamePlaceholder": "المستودع الرئيسي",
+        "warehouseNameAr": "الاسم (عربي)",
+        "warehouseNameArPlaceholder": "المستودع الرئيسي",
+        "code": "الرمز",
+        "codePlaceholder": "WH-01",
+        "address": "العنوان",
+        "addressPlaceholder": "العنوان الكامل...",
+        "selectCategory": "اختر التصنيف...",
+        "selectWarehouse": "اختر المستودع...",
+        "selectUser": "اختر المستخدم...",
+        "searchItem": "بحث باسم الصنف، رقم القطعة، أو الوصف.",
+        "itemHelper": "بحث باسم الصنف، رقم القطعة، أو الوصف."
+      }
+    },
+    "counts": {
+      "title": "جرد المخزون",
+      "schedules": "جداول الجرد",
+      "tasks": "مهام الجرد",
+      "createSchedule": "إنشاء جدول",
+      "editSchedule": "تعديل الجدول",
+      "generateTasks": "توليد مهام اليوم",
+      "scheduleName": "اسم الجدول",
+      "scheduleNamePlaceholder": "مثال: جرد المستودع اليومي",
+      "frequency": "التكرار",
+      "daily": "يومي",
+      "weekly": "أسبوعي",
+      "weeklyDay": "يوم الأسبوع",
+      "dueTime": "وقت الاستحقاق",
+      "startDate": "تاريخ البدء",
+      "varianceThreshold": "حد الفرق (%)",
+      "varianceThresholdHelper": "يُطلب تبرير الفرق عند تجاوز هذه النسبة",
+      "assignedTo": "المسؤول",
+      "selectItems": "اختر الأصناف للجرد",
+      "noSchedules": "لا توجد جداول جرد بعد",
+      "noTasks": "لا توجد مهام جرد",
+      "countDate": "تاريخ الجرد",
+      "systemQty": "كمية النظام",
+      "actualQty": "الكمية الفعلية",
+      "variance": "الفرق",
+      "varianceReason": "سبب الفرق",
+      "varianceReasonPlaceholder": "اشرح سبب الفرق...",
+      "itemNotes": "ملاحظات الصنف",
+      "status": {
+        "pending": "قيد الانتظار",
+        "in_progress": "جاري التنفيذ",
+        "submitted": "تم الإرسال",
+        "under_review": "قيد المراجعة",
+        "approved": "مُعتمد",
+        "completed": "مكتمل",
+        "rejected": "مرفوض"
+      },
+      "scheduleStatus": {
+        "active": "نشط",
+        "paused": "مُعلّق",
+        "archived": "مؤرشف"
+      },
+      "actions": {
+        "start": "بدء الجرد",
+        "submit": "إرسال للمراجعة",
+        "approve": "اعتماد",
+        "reject": "رفض",
+        "pause": "إيقاف الجدول",
+        "resume": "استئناف الجدول",
+        "archive": "أرشفة الجدول"
+      },
+      "rejectionReason": "سبب الرفض",
+      "rejectionReasonPlaceholder": "لماذا يتم رفض هذا الجرد؟",
+      "toast": {
+        "scheduleCreated": "تم إنشاء جدول الجرد",
+        "scheduleUpdated": "تم تحديث جدول الجرد",
+        "schedulePaused": "تم إيقاف الجدول",
+        "scheduleResumed": "تم استئناف الجدول",
+        "scheduleArchived": "تم أرشفة الجدول",
+        "tasksGenerated": "تم توليد مهام الجرد",
+        "taskStarted": "تم بدء مهمة الجرد",
+        "itemUpdated": "تم تحديث جرد الصنف",
+        "taskSubmitted": "تم إرسال الجرد للمراجعة",
+        "taskApproved": "تم اعتماد الجرد وتعديل المخزون",
+        "taskRejected": "تم رفض الجرد"
+      }
     }
   }
 }

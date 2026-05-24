@@ -34,6 +34,7 @@ export enum FeatureFlagCategory {
   PLATFORM = 'platform',
   GAMIFICATION = 'gamification',
   CAMPAIGNS = 'campaigns',
+  RECORDS = 'records',
   EXPERIMENTAL = 'experimental',
 }
 

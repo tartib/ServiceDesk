@@ -75,8 +75,10 @@ export interface ServiceRequestStats {
 }
 
 export interface CreateServiceRequestDTO {
-  service_id: string;
-  service_name: string;
+  serviceId: string;
+  service_id?: string;
+  serviceName: string;
+  service_name?: string;
   priority?: Priority;
   requester: {
     id: string;
@@ -84,8 +86,10 @@ export interface CreateServiceRequestDTO {
     email: string;
     department: string;
   };
+  formData?: Record<string, unknown>;
   form_data?: Record<string, unknown>;
-  site_id: string;
+  siteId?: string;
+  site_id?: string;
 }
 
 export interface ServiceRequestFilters {

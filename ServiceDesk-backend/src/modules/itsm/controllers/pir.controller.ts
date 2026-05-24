@@ -6,7 +6,7 @@ import { PIRStatus, MajorIncidentSeverity } from '../../../core/types/itsm.types
 
 export class PIRController {
   declareMajorIncident = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { severity, reason, bridge } = req.body;
     const user = (req as any).user!;
     if (!severity || !reason) { res.status(400).json({ success: false, error: 'severity and reason are required' }); return; }
@@ -18,7 +18,7 @@ export class PIRController {
   });
 
   addCommsUpdate = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { message, audience } = req.body;
     const user = (req as any).user!;
     if (!message || !audience) { res.status(400).json({ success: false, error: 'message and audience are required' }); return; }
@@ -30,14 +30,14 @@ export class PIRController {
   });
 
   updateBridge = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const user = (req as any).user!;
     const incident = await incidentService.updateMajorBridge(id, req.body, user.id, user.name);
     res.status(200).json({ success: true, data: { incident }, message: 'Bridge roles updated' });
   });
 
   createPIR = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { incident_summary, impact_summary, timeline_summary, participants } = req.body;
     const user = (req as any).user!;
     if (!incident_summary || !impact_summary) {
@@ -73,7 +73,7 @@ export class PIRController {
   });
 
   addFollowUpAction = asyncHandler(async (req: Request, res: Response) => {
-    const { pirId } = req.params;
+    const { pirId } = req.params as Record<string, string>;
     const { description, owner, owner_name, due_date } = req.body;
     const user = (req as any).user!;
     if (!description || !owner || !owner_name) {
@@ -84,7 +84,7 @@ export class PIRController {
   });
 
   completeFollowUpAction = asyncHandler(async (req: Request, res: Response) => {
-    const { pirId, actionId } = req.params;
+    const { pirId, actionId } = req.params as Record<string, string>;
     const user = (req as any).user!;
     const pir = await pirService.completeFollowUpAction(pirId, actionId, user.id);
     res.json({ success: true, data: { pir }, message: 'Follow-up action completed' });

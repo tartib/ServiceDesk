@@ -53,6 +53,7 @@
     "inventoryWarehouses": "المستودعات",
     "inventoryTransactions": "العمليات",
     "inventoryTransfers": "التحويلات",
+    "inventoryCounts": "الجرد",
     "inventoryMovements": "الحركات"
   },
   "common": {

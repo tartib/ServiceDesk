@@ -15,6 +15,14 @@ import { sendSuccess, sendPaginated, sendError } from '../../../utils/ApiRespons
  * Handles service request operations
  */
 
+// Build $or conditions for finding a service request by _id or requestId, guarding against CastError
+function buildRequestOrConditions(id: string): Record<string, unknown>[] {
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+  const conditions: Record<string, unknown>[] = [{ requestId: id }];
+  if (isObjectId) conditions.unshift({ _id: id });
+  return conditions;
+}
+
 // POST /api/v2/itsm/requests - Submit new service request
 export const createRequest = asyncHandler(async (req: Request, res: Response) => {
   const { serviceId, formData, onBehalfOf, source = 'web' } = req.body;
@@ -31,10 +39,10 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
       service = await catRepo.findByServiceId(serviceId) || await catRepo.findById(serviceId);
       if (service && service.status !== 'active') service = null;
     } else {
-      service = await ServiceCatalog.findOne({
-        $or: [{ _id: serviceId }, { serviceId: serviceId }],
-        status: 'active',
-      });
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(serviceId);
+      const orConditions: Record<string, unknown>[] = [{ serviceId }];
+      if (isObjectId) orConditions.unshift({ _id: serviceId });
+      service = await ServiceCatalog.findOne({ $or: orConditions, status: 'active' });
     }
 
     if (!service) return void sendError(req, res, 404, 'Service not found or inactive');
@@ -281,7 +289,7 @@ export const getRequests = asyncHandler(async (req: Request, res: Response) => {
 
 // GET /api/v2/itsm/requests/:id - Get single request
 export const getRequest = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const userId = req.user?.id;
   const itsmRole = req.user?.itsmRole || 'end_user';
 
@@ -291,7 +299,7 @@ export const getRequest = asyncHandler(async (req: Request, res: Response) => {
       request = await repo.findByIdOrRequestId(id);
     } else {
       request = await ServiceRequest.findOne({
-        $or: [{ _id: id }, { requestId: id }],
+        $or: buildRequestOrConditions(id),
       }).lean();
     }
 
@@ -313,7 +321,7 @@ export const getRequest = asyncHandler(async (req: Request, res: Response) => {
 
 // POST /api/v2/itsm/requests/:id/approve - Approve request
 export const approveRequest = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const { comment } = req.body;
   const userId = req.user?.id;
   const userName = req.user?.name || '';
@@ -348,7 +356,7 @@ export const approveRequest = asyncHandler(async (req: Request, res: Response) =
 
     // ── MongoDB path ──
     const request = await ServiceRequest.findOne({
-      $or: [{ _id: id }, { requestId: id }],
+      $or: buildRequestOrConditions(id),
     });
 
     if (!request) return void sendError(req, res, 404, 'Service request not found');
@@ -393,7 +401,7 @@ export const approveRequest = asyncHandler(async (req: Request, res: Response) =
 
 // POST /api/v2/itsm/requests/:id/reject - Reject request
 export const rejectRequest = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const { reason } = req.body;
   const userId = req.user?.id;
   const userName = req.user?.name || '';
@@ -423,7 +431,7 @@ export const rejectRequest = asyncHandler(async (req: Request, res: Response) =>
 
     // ── MongoDB path ──
     const request = await ServiceRequest.findOne({
-      $or: [{ _id: id }, { requestId: id }],
+      $or: buildRequestOrConditions(id),
     });
 
     if (!request) return void sendError(req, res, 404, 'Service request not found');
@@ -457,7 +465,7 @@ export const rejectRequest = asyncHandler(async (req: Request, res: Response) =>
 
 // POST /api/v2/itsm/requests/:id/cancel - Cancel request
 export const cancelRequest = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const { reason } = req.body;
   const userId = req.user?.id;
   const userName = req.user?.name || '';
@@ -496,7 +504,7 @@ export const cancelRequest = asyncHandler(async (req: Request, res: Response) =>
 
     // ── MongoDB path ──
     const request = await ServiceRequest.findOne({
-      $or: [{ _id: id }, { requestId: id }],
+      $or: buildRequestOrConditions(id),
     });
 
     if (!request) return void sendError(req, res, 404, 'Service request not found');
@@ -543,7 +551,7 @@ export const cancelRequest = asyncHandler(async (req: Request, res: Response) =>
 
 // POST /api/v2/itsm/requests/:id/assign - Assign request to agent
 export const assignRequest = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const { assigneeId, assigneeName, team, teamId } = req.body;
   const userId = req.user?.id;
   const userName = req.user?.name || '';
@@ -576,7 +584,7 @@ export const assignRequest = asyncHandler(async (req: Request, res: Response) =>
 
     // ── MongoDB path ──
     const request = await ServiceRequest.findOne({
-      $or: [{ _id: id }, { requestId: id }],
+      $or: buildRequestOrConditions(id),
     });
 
     if (!request) return void sendError(req, res, 404, 'Service request not found');
@@ -619,7 +627,7 @@ export const assignRequest = asyncHandler(async (req: Request, res: Response) =>
 
 // POST /api/v2/itsm/requests/:id/comment - Add comment to request
 export const addComment = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const { message, isInternal = false } = req.body;
   const userId = req.user?.id;
   const userName = req.user?.name || '';
@@ -650,7 +658,7 @@ export const addComment = asyncHandler(async (req: Request, res: Response) => {
 
     // ── MongoDB path ──
     const request = await ServiceRequest.findOne({
-      $or: [{ _id: id }, { requestId: id }],
+      $or: buildRequestOrConditions(id),
     });
 
     if (!request) return void sendError(req, res, 404, 'Service request not found');

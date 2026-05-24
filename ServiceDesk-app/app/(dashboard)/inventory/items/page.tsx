@@ -7,11 +7,17 @@ import { useInventoryItems, useCreateItem, useUpdateItem, useDeactivateItem } fr
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { InventoryItem, InventoryItemFormData } from '@/types';
+import { InventoryTransactionDialog } from '@/components/inventory/forms/InventoryTransactionDialog';
+import { createAddItemFormSchema } from '@/components/inventory/forms/schemas/add-item.schema';
+import { createEditItemFormSchema } from '@/components/inventory/forms/schemas/edit-item.schema';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 export default function ItemsPage() {
   const { t } = useLanguage();
+
+  const addItemSchema = useMemo(() => createAddItemFormSchema(t), [t]);
+  const editItemSchema = useMemo(() => createEditItemFormSchema(t), [t]);
 
   const [search, setSearch] = useState('');
   const [groupName] = useState('');
@@ -21,8 +27,8 @@ export default function ItemsPage() {
   const [sortBy, setSortBy] = useState('partNo');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Add modal
-  const [showAddModal, setShowAddModal] = useState(false);
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
 
   const filters = useMemo(() => {
@@ -64,60 +70,69 @@ export default function ItemsPage() {
   const startIdx = pagination.totalItems === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
   const endIdx = Math.min(pagination.page * pagination.pageSize, pagination.totalItems);
 
-  const [form, setForm] = useState<InventoryItemFormData>({
-    partNo: '', partDescription: '', groupName: '', uom: 'pcs', cost: 0, minStock: 0, maxStock: 0, reorderLevel: 0,
-  });
-
-  const resetForm = () => {
-    setForm({ partNo: '', partDescription: '', groupName: '', uom: 'pcs', cost: 0, minStock: 0, maxStock: 0, reorderLevel: 0 });
-    setEditItem(null);
-    setShowAddModal(false);
-  };
-
-  const handleSave = async () => {
-    if (!form.partNo.trim() || !form.partDescription.trim()) {
-      toast.error('Part No and Description are required');
-      return;
-    }
+  const handleSave = useCallback(async (data: Record<string, unknown>) => {
     try {
+      const formData: InventoryItemFormData = {
+        partNo: data.partNo as string,
+        partDescription: data.partDescription as string,
+        partDescriptionAr: (data.partDescriptionAr as string) || undefined,
+        groupName: data.groupName as string,
+        uom: data.uom as string,
+        cost: (data.cost as number) ?? 0,
+        minStock: (data.minStock as number) ?? 0,
+        maxStock: (data.maxStock as number) ?? 0,
+        reorderLevel: (data.reorderLevel as number) ?? 0,
+        image: (data.image as string) || undefined,
+      };
       if (editItem) {
-        await updateMut.mutateAsync({ id: editItem._id || editItem.id, data: form });
-        toast.success('Item updated');
+        await updateMut.mutateAsync({ id: editItem._id || editItem.id, data: formData });
+        toast.success(t('inventory.toast.itemUpdated'));
       } else {
-        await createMut.mutateAsync(form);
-        toast.success('Item created');
+        await createMut.mutateAsync(formData);
+        toast.success(t('inventory.toast.itemCreated'));
       }
-      resetForm();
+      setEditItem(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save item');
+      toast.error(err instanceof Error ? err.message : t('inventory.toast.saveFailed'));
+      throw err; // re-throw so dialog stays open
     }
-  };
+  }, [editItem, createMut, updateMut]);
 
   const openEdit = (item: InventoryItem) => {
     setEditItem(item);
-    setForm({
-      partNo: item.partNo,
-      partDescription: item.partDescription,
-      partDescriptionAr: item.partDescriptionAr,
-      groupName: item.groupName,
-      uom: item.uom,
-      cost: item.cost,
-      minStock: item.minStock,
-      maxStock: item.maxStock,
-      reorderLevel: item.reorderLevel,
-      image: item.image,
-    });
-    setShowAddModal(true);
+    setShowModal(true);
+  };
+
+  const openAdd = () => {
+    setEditItem(null);
+    setShowModal(true);
   };
 
   const handleDeactivate = async (id: string) => {
     try {
       await deactivateMut.mutateAsync(id);
-      toast.success('Item deactivated');
+      toast.success(t('inventory.toast.itemDeactivated'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed');
+      toast.error(err instanceof Error ? err.message : t('inventory.toast.operationFailed'));
     }
   };
+
+  // Build overrides for edit mode (pre-fill form with existing item data)
+  const editOverrides = useMemo(() => {
+    if (!editItem) return undefined;
+    return {
+      partNo: editItem.partNo,
+      partDescription: editItem.partDescription,
+      partDescriptionAr: editItem.partDescriptionAr ?? '',
+      groupName: editItem.groupName,
+      uom: editItem.uom,
+      cost: editItem.cost,
+      minStock: editItem.minStock,
+      maxStock: editItem.maxStock,
+      reorderLevel: editItem.reorderLevel,
+      image: editItem.image ?? '',
+    };
+  }, [editItem]);
 
   return (
     <DashboardLayout>
@@ -129,7 +144,7 @@ export default function ItemsPage() {
             <p className="text-muted-foreground mt-1">{t('inventory.items.subtitle') || 'Manage parts catalog'}</p>
           </div>
           <button
-            onClick={() => { resetForm(); setShowAddModal(true); }}
+            onClick={openAdd}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand text-brand-foreground rounded-lg hover:bg-brand-strong transition-colors font-medium text-sm shadow-sm"
           >
             <Plus className="w-4 h-4" />
@@ -224,55 +239,14 @@ export default function ItemsPage() {
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-card rounded-xl border border-border shadow-xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-foreground">{editItem ? 'Edit Item' : 'Add Item'}</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Part No *</label>
-                <input className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background" value={form.partNo} onChange={e => setForm(p => ({ ...p, partNo: e.target.value }))} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Group</label>
-                <input className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background" value={form.groupName} onChange={e => setForm(p => ({ ...p, groupName: e.target.value }))} />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Description *</label>
-                <input className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background" value={form.partDescription} onChange={e => setForm(p => ({ ...p, partDescription: e.target.value }))} />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Description (Arabic)</label>
-                <input className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background" dir="rtl" value={form.partDescriptionAr ?? ''} onChange={e => setForm(p => ({ ...p, partDescriptionAr: e.target.value }))} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">UoM</label>
-                <input className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background" value={form.uom} onChange={e => setForm(p => ({ ...p, uom: e.target.value }))} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Cost</label>
-                <input type="number" min={0} step="0.01" className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background" value={form.cost} onChange={e => setForm(p => ({ ...p, cost: Number(e.target.value) }))} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Min Stock</label>
-                <input type="number" min={0} className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background" value={form.minStock} onChange={e => setForm(p => ({ ...p, minStock: Number(e.target.value) }))} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Max Stock</label>
-                <input type="number" min={0} className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background" value={form.maxStock} onChange={e => setForm(p => ({ ...p, maxStock: Number(e.target.value) }))} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Reorder Level</label>
-                <input type="number" min={0} className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background" value={form.reorderLevel} onChange={e => setForm(p => ({ ...p, reorderLevel: Number(e.target.value) }))} />
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-              <button onClick={resetForm} className="px-4 py-2 text-sm font-medium text-muted-foreground border border-input rounded-lg hover:bg-muted transition-colors">Cancel</button>
-              <button onClick={handleSave} disabled={createMut.isPending || updateMut.isPending} className="px-4 py-2 text-sm font-medium bg-brand text-brand-foreground rounded-lg hover:bg-brand-strong transition-colors disabled:opacity-50">{editItem ? 'Update' : 'Create'}</button>
-            </div>
-          </div>
-        </div>
+      {showModal && (
+        <InventoryTransactionDialog
+          open={showModal}
+          onOpenChange={(open) => { if (!open) { setShowModal(false); setEditItem(null); } }}
+          schema={editItem ? editItemSchema : addItemSchema}
+          onSubmit={handleSave}
+          overrides={editOverrides}
+        />
       )}
     </DashboardLayout>
   );

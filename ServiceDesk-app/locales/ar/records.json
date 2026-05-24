@@ -1,0 +1,88 @@
+{
+  "records": {
+    "title": "السجلات",
+    "newRequest": "طلب جديد",
+    "myDrafts": "مسوداتي",
+    "allRecords": "جميع السجلات",
+    "createFlow": {
+      "title": "إنشاء طلب",
+      "selectType": "اختر نوع الطلب",
+      "selectTypeDesc": "حدد نوع الطلب الذي تريد إنشاءه",
+      "details": "تفاصيل الطلب",
+      "review": "مراجعة الطلب",
+      "changeType": "تغيير",
+      "titleField": "العنوان",
+      "titlePlaceholder": "أدخل عنوان الطلب",
+      "descriptionField": "الوصف",
+      "descriptionPlaceholder": "وصف تفصيلي للطلب (اختياري)",
+      "priorityField": "الأولوية",
+      "requester": "مقدم الطلب",
+      "requestType": "نوع الطلب",
+      "submitRequest": "إرسال الطلب",
+      "submitting": "جاري الإرسال...",
+      "back": "السابق",
+      "edit": "تعديل",
+      "reviewStep": "مراجعة"
+    },
+    "priority": {
+      "low": "منخفض",
+      "medium": "متوسط",
+      "high": "عالي",
+      "critical": "حرج"
+    },
+    "status": {
+      "draft": "مسودة",
+      "submitted": "مقدم",
+      "under_review": "قيد المراجعة",
+      "in_progress": "قيد التنفيذ",
+      "waiting_client": "بانتظار العميل",
+      "approved": "معتمد",
+      "rejected": "مرفوض",
+      "completed": "مكتمل",
+      "cancelled": "ملغى"
+    },
+    "detail": {
+      "recordNumber": "رقم السجل",
+      "requester": "مقدم الطلب",
+      "assignee": "المسؤول",
+      "unassigned": "غير معين",
+      "createdAt": "تاريخ الإنشاء",
+      "dueDate": "موعد التسليم",
+      "breached": "متجاوز",
+      "timeline": "الجدول الزمني",
+      "comments": "التعليقات",
+      "noComments": "لا توجد تعليقات بعد",
+      "addComment": "أضف تعليقاً...",
+      "fieldData": "بيانات الحقول",
+      "actions": "الإجراءات",
+      "approve": "اعتماد",
+      "reject": "رفض",
+      "cancel": "إلغاء"
+    },
+    "errors": {
+      "notFound": "لم يتم العثور على السجل",
+      "notFoundDesc": "ربما تم حذف هذا السجل أو ليس لديك صلاحية الوصول إليه.",
+      "permissionDenied": "الوصول مرفوض",
+      "permissionDeniedDesc": "ليس لديك صلاحية لعرض هذا السجل.",
+      "networkError": "خطأ في الاتصال",
+      "networkErrorDesc": "يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.",
+      "genericError": "حدث خطأ ما",
+      "genericErrorDesc": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+      "retry": "إعادة المحاولة",
+      "goBack": "رجوع"
+    },
+    "empty": {
+      "noRecords": "لا توجد سجلات بعد",
+      "noRecordsDesc": "أنشئ طلبك الأول للبدء.",
+      "noDrafts": "لا توجد مسودات",
+      "noDraftsDesc": "يتم حفظ المسودات تلقائياً أثناء ملء الطلب.",
+      "createRequest": "إنشاء طلب",
+      "startNew": "بدء طلب جديد"
+    },
+    "autosave": {
+      "saving": "جاري الحفظ...",
+      "saved": "تم حفظ المسودة",
+      "error": "فشل الحفظ"
+    }
+  }
+}

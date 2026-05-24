@@ -4,7 +4,6 @@ import {
   RuleExecutionLog,
   RuleTemplate,
   AutomationRuleStatus,
-  RuleTriggerType,
 } from '../models';
 import logger from '../../../utils/logger';
 import { escapeRegex } from '../../../utils/escapeRegex';
@@ -348,7 +347,7 @@ export const getTemplates = asyncHandler(async (req: Request, res: Response) => 
 
 // POST /api/v2/itsm/automation/rules/from-template/:templateId - Create rule from template
 export const createRuleFromTemplate = asyncHandler(async (req: Request, res: Response) => {
-  const { templateId } = req.params;
+  const { templateId } = req.params as Record<string, string>;
 
   const template = await RuleTemplate.findById(templateId);
   if (!template) return void sendError(req, res, 404, 'Template not found');

@@ -14,7 +14,7 @@ export const createSession = async (req: PMAuthRequest, res: Response): Promise<
   try {
     const userId = req.user?.id;
     
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
     const { estimationType } = req.body;
     
     // Sanitize sprintId - only accept valid MongoDB ObjectIds
@@ -102,7 +102,7 @@ export const createSession = async (req: PMAuthRequest, res: Response): Promise<
 // Get active session for a task
 export const getSession = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { sessionId } = req.params;
+    const { sessionId } = req.params as Record<string, string>;
 
     const session = await PlanningPokerSession.findById(sessionId)
       .populate('taskId', 'key title type priority storyPoints')
@@ -147,7 +147,7 @@ export const getSession = async (req: PMAuthRequest, res: Response): Promise<voi
 // Get active sessions for a sprint
 export const getSprintSessions = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
     const { status } = req.query;
 
     const query: Record<string, unknown> = { sprintId };
@@ -176,7 +176,7 @@ export const submitVote = async (req: PMAuthRequest, res: Response): Promise<voi
   try {
 
     const userId = req.user?.id;
-    const { sessionId } = req.params;
+    const { sessionId } = req.params as Record<string, string>;
     const { value } = req.body;
 
     if (!userId) {
@@ -262,7 +262,7 @@ export const submitVote = async (req: PMAuthRequest, res: Response): Promise<voi
 export const revealVotes = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { sessionId } = req.params;
+    const { sessionId } = req.params as Record<string, string>;
 
     const session = await PlanningPokerSession.findById(sessionId);
     if (!session) {
@@ -355,7 +355,7 @@ export const revealVotes = async (req: PMAuthRequest, res: Response): Promise<vo
 export const startNewRound = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { sessionId } = req.params;
+    const { sessionId } = req.params as Record<string, string>;
 
     const session = await PlanningPokerSession.findById(sessionId);
     if (!session) {
@@ -420,7 +420,7 @@ export const completeSession = async (req: PMAuthRequest, res: Response): Promis
   try {
 
     const userId = req.user?.id;
-    const { sessionId } = req.params;
+    const { sessionId } = req.params as Record<string, string>;
     const { finalEstimate } = req.body;
 
     const session = await PlanningPokerSession.findById(sessionId);
@@ -521,7 +521,7 @@ export const completeSession = async (req: PMAuthRequest, res: Response): Promis
 export const cancelSession = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { sessionId } = req.params;
+    const { sessionId } = req.params as Record<string, string>;
 
     const session = await PlanningPokerSession.findById(sessionId);
     if (!session) {

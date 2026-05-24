@@ -247,7 +247,7 @@ export default function ServiceCatalogPage() {
  <button
  onClick={(e) => {
  e.stopPropagation();
- router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`);
+ router.push(`/self-service/new-request?service_id=${service.serviceId || service._id}&service_name=${encodeURIComponent(service.name)}`);
  }}
  className="flex-1 px-4 py-2 bg-brand text-brand-foreground text-sm font-medium rounded-lg hover:bg-brand-strong transition-colors"
  >
@@ -266,7 +266,7 @@ export default function ServiceCatalogPage() {
  <button
  onClick={(e) => {
  e.stopPropagation();
- setDeleteTarget({ id: service.service_id, name: service.name });
+ setDeleteTarget({ id: service.serviceId || service._id, name: service.name });
  }}
  className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive-soft rounded-lg transition-colors"
  title="Delete service"
@@ -329,7 +329,7 @@ export default function ServiceCatalogPage() {
  </div>
  <div className="col-span-2 flex items-center gap-2">
  <button
- onClick={() => router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`)}
+ onClick={() => router.push(`/self-service/new-request?service_id=${service.serviceId || service._id}&service_name=${encodeURIComponent(service.name)}`)}
  className="px-4 py-1.5 bg-brand text-brand-foreground text-sm font-medium rounded-lg hover:bg-brand-strong transition-colors"
  >
  Request
@@ -342,7 +342,7 @@ export default function ServiceCatalogPage() {
  <Pencil className="h-4 w-4" />
  </button>
  <button
- onClick={() => setDeleteTarget({ id: service.service_id, name: service.name })}
+ onClick={() => setDeleteTarget({ id: service.serviceId || service._id, name: service.name })}
  className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive-soft rounded-lg transition-colors"
  title="Delete service"
  >

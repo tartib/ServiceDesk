@@ -164,7 +164,7 @@ export const getIntakeRequests = async (req: PMAuthRequest, res: Response): Prom
  */
 export const getIntakeRequest = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { intakeId } = req.params;
+    const { intakeId } = req.params as Record<string, string>;
 
     const intake = await ProjectIntake.findById(intakeId)
       .populate('requestedBy', 'name profile.firstName profile.lastName profile.avatar email')
@@ -195,7 +195,7 @@ export const getIntakeRequest = async (req: PMAuthRequest, res: Response): Promi
  */
 export const updateIntakeRequest = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { intakeId } = req.params;
+    const { intakeId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const intake = await ProjectIntake.findById(intakeId);
@@ -252,7 +252,7 @@ export const updateIntakeRequest = async (req: PMAuthRequest, res: Response): Pr
  */
 export const advanceStage = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { intakeId } = req.params;
+    const { intakeId } = req.params as Record<string, string>;
     const { comment } = req.body;
     const userId = req.user?.id;
 
@@ -359,7 +359,7 @@ export const advanceStage = async (req: PMAuthRequest, res: Response): Promise<v
  */
 export const rejectRequest = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { intakeId } = req.params;
+    const { intakeId } = req.params as Record<string, string>;
     const { comment } = req.body;
     const userId = req.user?.id;
 
@@ -419,7 +419,7 @@ export const rejectRequest = async (req: PMAuthRequest, res: Response): Promise<
  */
 export const cancelRequest = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { intakeId } = req.params;
+    const { intakeId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const intake = await ProjectIntake.findById(intakeId);
@@ -474,7 +474,7 @@ export const cancelRequest = async (req: PMAuthRequest, res: Response): Promise<
  */
 export const addComment = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { intakeId } = req.params;
+    const { intakeId } = req.params as Record<string, string>;
     const { content } = req.body;
     const userId = req.user?.id;
 
@@ -516,7 +516,7 @@ export const addComment = async (req: PMAuthRequest, res: Response): Promise<voi
  */
 export const addScore = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { intakeId } = req.params;
+    const { intakeId } = req.params as Record<string, string>;
     const { criterion, score } = req.body;
     const userId = req.user?.id;
 
@@ -580,7 +580,7 @@ export const addScore = async (req: PMAuthRequest, res: Response): Promise<void>
  */
 export const approveRequest = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { intakeId } = req.params;
+    const { intakeId } = req.params as Record<string, string>;
     const { comment, projectKey } = req.body;
     const userId = req.user?.id;
     const organizationId = await resolveOrganizationId(userId, req.user?.organizationId);

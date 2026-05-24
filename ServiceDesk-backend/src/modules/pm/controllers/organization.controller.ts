@@ -100,7 +100,7 @@ export const getOrganizations = async (req: Request, res: Response): Promise<voi
 
 export const getOrganization = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { organizationId } = req.params;
+    const { organizationId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const organization = await Organization.findById(organizationId);
@@ -147,7 +147,7 @@ export const getOrganization = async (req: Request, res: Response): Promise<void
 export const updateOrganization = async (req: Request, res: Response): Promise<void> => {
   try {
 
-    const { organizationId } = req.params;
+    const { organizationId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const user = await User.findById(userId);
@@ -191,7 +191,7 @@ export const updateOrganization = async (req: Request, res: Response): Promise<v
 
 export const getOrganizationMembers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { organizationId } = req.params;
+    const { organizationId } = req.params as Record<string, string>;
 
     const users = await User.find({
       'organizations.organizationId': organizationId,
@@ -225,7 +225,7 @@ export const getOrganizationMembers = async (req: Request, res: Response): Promi
 
 export const inviteMember = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { organizationId } = req.params;
+    const { organizationId } = req.params as Record<string, string>;
     const { email, role } = req.body;
     const userId = req.user?.id;
 
@@ -286,7 +286,7 @@ export const inviteMember = async (req: Request, res: Response): Promise<void> =
 
 export const removeMember = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { organizationId, memberId } = req.params;
+    const { organizationId, memberId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const currentUser = await User.findById(userId);
@@ -352,7 +352,7 @@ export const removeMember = async (req: Request, res: Response): Promise<void> =
 
 export const switchOrganization = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { organizationId } = req.params;
+    const { organizationId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const user = await User.findById(userId);

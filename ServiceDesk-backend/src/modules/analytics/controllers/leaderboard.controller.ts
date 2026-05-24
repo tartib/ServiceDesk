@@ -16,7 +16,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
 
 export const getLeaderboardByMonth = async (req: Request, res: Response) => {
   try {
-    const { month, year } = req.params;
+    const { month, year } = req.params as Record<string, string>;
     const leaderboard = await LeaderboardModel.findOne({ month: parseInt(month), year: parseInt(year) }).populate('rankings.employeeId', 'firstName lastName department');
     if (!leaderboard) return res.status(404).json({ success: false, error: 'Leaderboard not found for specified month' });
     res.status(200).json({ success: true, data: leaderboard });
@@ -27,7 +27,7 @@ export const getLeaderboardByMonth = async (req: Request, res: Response) => {
 
 export const getLeaderboardByDepartment = async (req: Request, res: Response) => {
   try {
-    const { department } = req.params;
+    const { department } = req.params as Record<string, string>;
     const currentDate = new Date();
     const month = currentDate.getMonth() + 1;
     const year = currentDate.getFullYear();

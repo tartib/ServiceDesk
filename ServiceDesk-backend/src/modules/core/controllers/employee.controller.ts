@@ -52,7 +52,7 @@ export const getAllEmployees = async (req: Request, res: Response) => {
 
 export const getEmployeeById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
 
     const employee = await EmployeeModel.findById(id)
       .populate('userId', 'email')
@@ -114,7 +114,7 @@ export const createEmployee = async (req: Request, res: Response) => {
 
 export const updateEmployee = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { firstName, lastName, department, position, manager, status } = req.body;
 
     const employee = await EmployeeModel.findByIdAndUpdate(
@@ -144,7 +144,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
 
 export const deleteEmployee = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
 
     const employee = await EmployeeModel.findByIdAndDelete(id);
 

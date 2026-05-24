@@ -215,7 +215,7 @@ app.use('/api/v2/portal', portalRoutes);
 app.get('/api/v2/public/forms/:formId', async (req, res) => {
   try {
     const container = (await import('./infrastructure/di/container')).default;
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const template = await formTemplateService.getTemplateById(req.params.formId);
     if (!template || !template.is_published) {
       return res.status(404).json({ success: false, error: 'Form not found or not published' });
@@ -231,7 +231,7 @@ app.post('/api/v2/public/forms/:formId/submissions', async (req, res) => {
   try {
     const formSubmissionService = (await import('./modules/forms/services/formSubmissionService')).default;
     const container = (await import('./infrastructure/di/container')).default;
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const template = await formTemplateService.getTemplateById(req.params.formId);
     if (!template || !template.is_published) {
       return res.status(404).json({ success: false, error: 'Form not found or not published' });

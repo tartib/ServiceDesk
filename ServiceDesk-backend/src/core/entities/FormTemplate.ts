@@ -516,6 +516,18 @@ const FormTemplateSchema = new Schema<IFormTemplateDocument>(
       enum: ['simple', 'advanced', 'none'],
       default: 'simple',
     },
+    // ── Record view configuration (Phase 5) ──────────────────────────────
+    view_config: {
+      type: new Schema({
+        default_view: { type: String, enum: ['table', 'kanban', 'inbox'] },
+        table_columns: [String],
+        kanban_group_field: String,
+        sort_field: String,
+        sort_order: { type: String, enum: ['asc', 'desc'] },
+        visible_fields: [String],
+        filters_preset: Schema.Types.Mixed,
+      }, { _id: false }),
+    },
   },
   {
     timestamps: {
@@ -600,9 +612,10 @@ FormTemplateSchema.virtual('has_approval').get(function() {
 // EXPORT - التصدير
 // ============================================
 
-export const FormTemplate = mongoose.model<IFormTemplateDocument, IFormTemplateModel>(
-  'FormTemplate',
-  FormTemplateSchema
-);
+export const FormTemplate = (mongoose.models.FormTemplate as IFormTemplateModel) ||
+  mongoose.model<IFormTemplateDocument, IFormTemplateModel>(
+    'FormTemplate',
+    FormTemplateSchema
+  );
 
 export default FormTemplate;

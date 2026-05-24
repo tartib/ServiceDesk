@@ -8,7 +8,7 @@ export const generateRoadmap = async (req: PMAuthRequest, res: Response): Promis
   try {
     const userId = req.user?.id;
     const organizationId = req.user?.organizationId;
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { type } = req.body;
 
     if (!organizationId) {
@@ -64,7 +64,7 @@ export const generateRoadmap = async (req: PMAuthRequest, res: Response): Promis
 
 export const getRoadmaps = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     const roadmaps = await roadmapService.getProjectRoadmaps(projectId);
 
@@ -83,7 +83,7 @@ export const getRoadmaps = async (req: Request, res: Response): Promise<void> =>
 
 export const getRoadmap = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { roadmapId } = req.params;
+    const { roadmapId } = req.params as Record<string, string>;
 
     const roadmap = await roadmapService.getRoadmap(roadmapId);
     if (!roadmap) {
@@ -109,7 +109,7 @@ export const getRoadmap = async (req: Request, res: Response): Promise<void> => 
 
 export const deleteRoadmap = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { roadmapId } = req.params;
+    const { roadmapId } = req.params as Record<string, string>;
 
     await roadmapService.deleteRoadmap(roadmapId);
 

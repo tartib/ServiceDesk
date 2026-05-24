@@ -19,7 +19,7 @@ export const createTask = async (req: PMAuthRequest, res: Response): Promise<voi
   try {
 
     const userId = req.user?.id;
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     const project = await Project.findById(projectId);
     if (!project) {
@@ -177,7 +177,7 @@ export const createTask = async (req: PMAuthRequest, res: Response): Promise<voi
 
 export const getTasks = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const {
       status,
       type,
@@ -266,7 +266,7 @@ export const getTasks = async (req: PMAuthRequest, res: Response): Promise<void>
 
 export const getTask = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
     const userId = req.user?.id;
     const usePg = isPmPostgres();
 
@@ -351,7 +351,7 @@ export const getTask = async (req: PMAuthRequest, res: Response): Promise<void> 
 export const updateTask = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
 
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const task = await Task.findById(taskId);
@@ -619,7 +619,7 @@ export const updateTask = async (req: PMAuthRequest, res: Response): Promise<voi
 
 export const transitionTask = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
     const { statusId, comment } = req.body;
     const userId = req.user?.id;
 
@@ -677,7 +677,7 @@ export const transitionTask = async (req: PMAuthRequest, res: Response): Promise
 
 export const deleteTask = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const task = await Task.findById(taskId);
@@ -743,7 +743,7 @@ export const deleteTask = async (req: PMAuthRequest, res: Response): Promise<voi
 
 export const getBoardTasks = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { sprintId } = req.query;
 
     const query: Record<string, unknown> = { projectId };
@@ -782,7 +782,7 @@ export const getBoardTasks = async (req: PMAuthRequest, res: Response): Promise<
 export const moveTask = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
 
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
     const { statusId, columnOrder, sprintId } = req.body;
     const userId = req.user?.id;
 
@@ -885,7 +885,7 @@ export const moveTask = async (req: PMAuthRequest, res: Response): Promise<void>
 
 export const reorderTasks = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { tasks: taskOrders } = req.body;
     const userId = req.user?.id;
 
@@ -948,7 +948,7 @@ export const reorderTasks = async (req: PMAuthRequest, res: Response): Promise<v
 
 export const getWatchers = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
 
     const task = await Task.findById(taskId)
       .populate('watchers', 'profile.firstName profile.lastName profile.avatar email');
@@ -976,7 +976,7 @@ export const getWatchers = async (req: PMAuthRequest, res: Response): Promise<vo
 
 export const addWatcher = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
     const { userId: watcherUserId } = req.body;
     const currentUserId = req.user?.id;
 
@@ -1029,7 +1029,7 @@ export const addWatcher = async (req: PMAuthRequest, res: Response): Promise<voi
 
 export const removeWatcher = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId, userId: watcherUserId } = req.params;
+    const { taskId, userId: watcherUserId } = req.params as Record<string, string>;
     const currentUserId = req.user?.id;
 
     // Use current user if no userId in params (self-unwatch)
@@ -1085,7 +1085,7 @@ export const removeWatcher = async (req: PMAuthRequest, res: Response): Promise<
 
 export const getTaskLinks = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
 
     const task = await Task.findById(taskId)
       .populate({
@@ -1128,7 +1128,7 @@ export const getTaskLinks = async (req: PMAuthRequest, res: Response): Promise<v
 export const addTaskLink = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
     const { type, targetIssueKey } = req.body;
 
     if (!type || !targetIssueKey) {
@@ -1212,7 +1212,7 @@ export const addTaskLink = async (req: PMAuthRequest, res: Response): Promise<vo
 
 export const removeTaskLink = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId, linkId } = req.params;
+    const { taskId, linkId } = req.params as Record<string, string>;
 
     const task = await Task.findById(taskId);
     if (!task) {
@@ -1241,7 +1241,7 @@ export const removeTaskLink = async (req: PMAuthRequest, res: Response): Promise
 export const addWebLink = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
     const { url, title, description } = req.body;
 
     if (!url || !title) {
@@ -1281,7 +1281,7 @@ export const addWebLink = async (req: PMAuthRequest, res: Response): Promise<voi
 
 export const removeWebLink = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId, linkId } = req.params;
+    const { taskId, linkId } = req.params as Record<string, string>;
 
     const task = await Task.findById(taskId);
     if (!task) {
@@ -1309,7 +1309,7 @@ export const removeWebLink = async (req: PMAuthRequest, res: Response): Promise<
 
 export const getSubtaskProgress = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
 
     const subtasks = await Task.find({ parentId: taskId }).select('status').lean();
 
@@ -1345,7 +1345,7 @@ export const getSubtaskProgress = async (req: PMAuthRequest, res: Response): Pro
 
 export const cloneTask = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const originalTask = await Task.findById(taskId).lean();
@@ -1455,7 +1455,7 @@ export const cloneTask = async (req: PMAuthRequest, res: Response): Promise<void
 
 export const getIssueTypes = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     const project = await Project.findById(projectId).select('issueTypes').lean();
     if (!project) {
@@ -1475,7 +1475,7 @@ export const getIssueTypes = async (req: PMAuthRequest, res: Response): Promise<
 
 export const addIssueType = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { id, name, icon, color, description } = req.body;
     const userId = req.user?.id;
 
@@ -1513,7 +1513,7 @@ export const addIssueType = async (req: PMAuthRequest, res: Response): Promise<v
 
 export const updateIssueType = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId, typeId } = req.params;
+    const { projectId, typeId } = req.params as Record<string, string>;
     const { name, icon, color, description } = req.body;
     const userId = req.user?.id;
 
@@ -1561,7 +1561,7 @@ export const updateIssueType = async (req: PMAuthRequest, res: Response): Promis
 
 export const deleteIssueType = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId, typeId } = req.params;
+    const { projectId, typeId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId);

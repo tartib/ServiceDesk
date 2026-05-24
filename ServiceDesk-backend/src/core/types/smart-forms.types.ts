@@ -884,6 +884,19 @@ export interface IFormTemplate {
   // Platform workflow binding (Phase 3)
   workflow_definition_id?: string;
   workflow_mode?: 'simple' | 'advanced' | 'none';
+
+  // Record view configuration (Phase 5)
+  view_config?: IFormViewConfig;
+}
+
+export interface IFormViewConfig {
+  default_view?: 'table' | 'kanban' | 'inbox';
+  table_columns?: string[];
+  kanban_group_field?: string;
+  sort_field?: string;
+  sort_order?: 'asc' | 'desc';
+  visible_fields?: string[];
+  filters_preset?: Record<string, unknown>;
 }
 
 /**

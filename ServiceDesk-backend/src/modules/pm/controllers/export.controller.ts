@@ -7,7 +7,7 @@ import { PMAuthRequest, ApiResponse, StatusCategory } from '../../../types/pm';
 
 export const exportProjectTasks = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { format = 'json' } = req.query;
 
     const project = await Project.findById(projectId);
@@ -51,7 +51,7 @@ export const exportProjectTasks = async (req: PMAuthRequest, res: Response): Pro
 
 export const exportSprintReport = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
 
     const sprint = await Sprint.findById(sprintId);
     if (!sprint) {
@@ -121,7 +121,7 @@ export const exportSprintReport = async (req: PMAuthRequest, res: Response): Pro
 
 export const exportProjectSummary = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     const project = await Project.findById(projectId)
       .populate('members.userId', 'profile.firstName profile.lastName email')

@@ -36,7 +36,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 };
 
 export const canViewEmployee = (req: Request, res: Response, next: NextFunction) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const userId = req.user?.id;
   const userRole = req.user?.role as SystemRole | undefined;
 

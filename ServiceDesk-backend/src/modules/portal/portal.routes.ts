@@ -4,6 +4,7 @@
 
 import { Router } from 'express';
 import { portalController } from './portal.controller';
+import portalRecordRoutes from '../forms/routes/portal-record.routes';
 
 const router = Router();
 
@@ -14,5 +15,8 @@ router.get('/tokens', portalController.listTokens);
 
 router.get('/sessions/:sessionId', portalController.getSession);
 router.post('/sessions/:sessionId/extend', portalController.extendSession);
+
+// Client-facing record routes (portal token auth)
+router.use('/records', portalRecordRoutes);
 
 export default router;

@@ -14,7 +14,7 @@ export const createStandup = async (req: PMAuthRequest, res: Response): Promise<
   try {
 
     const currentUserId = req.user?.id;
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { userId, yesterday, today, blockers, status, isTeamStandup } = req.body;
 
     if (!currentUserId) {
@@ -108,7 +108,7 @@ export const createStandup = async (req: PMAuthRequest, res: Response): Promise<
 
 export const getStandups = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { date, userId, status } = req.query;
 
     const query: Record<string, unknown> = { projectId };
@@ -149,7 +149,7 @@ export const getStandups = async (req: PMAuthRequest, res: Response): Promise<vo
 
 export const getStandup = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { standupId } = req.params;
+    const { standupId } = req.params as Record<string, string>;
 
     const standup = await Standup.findById(standupId)
       .populate([
@@ -182,7 +182,7 @@ export const updateStandup = async (req: PMAuthRequest, res: Response): Promise<
   try {
 
     const currentUserId = req.user?.id;
-    const { standupId } = req.params;
+    const { standupId } = req.params as Record<string, string>;
 
     if (!currentUserId) {
       res.status(401).json({
@@ -268,7 +268,7 @@ export const updateStandup = async (req: PMAuthRequest, res: Response): Promise<
 
 export const deleteStandup = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { standupId } = req.params;
+    const { standupId } = req.params as Record<string, string>;
 
     const standup = await Standup.findById(standupId);
     if (!standup) {
@@ -296,7 +296,7 @@ export const deleteStandup = async (req: PMAuthRequest, res: Response): Promise<
 
 export const getTodayStandups = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -328,7 +328,7 @@ export const getTodayStandups = async (req: PMAuthRequest, res: Response): Promi
 export const getMyStandup = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { date } = req.query;
 
     let queryDate: Date;
@@ -364,7 +364,7 @@ export const getMyStandup = async (req: PMAuthRequest, res: Response): Promise<v
 // Get standup summary for leaders (User Story 5)
 export const getStandupSummary = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { date } = req.query;
 
     // Get project with members

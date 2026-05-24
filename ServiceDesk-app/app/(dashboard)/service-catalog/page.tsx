@@ -195,7 +195,9 @@ export default function ServiceCatalogStandalonePage() {
  className="flex-1"
  onClick={(e) => {
  e.stopPropagation();
- router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`);
+ if (service.serviceId) {
+ router.push(`/self-service/new-request?service_id=${service.serviceId}&service_name=${encodeURIComponent(service.name)}`);
+ }
  }}
  >
  {isAr ? 'طلب الخدمة' : 'Request Service'}
@@ -213,7 +215,9 @@ export default function ServiceCatalogStandalonePage() {
  <button
  onClick={(e) => {
  e.stopPropagation();
- setDeleteTarget({ id: service.service_id, name: service.name });
+ if (service.serviceId) {
+ setDeleteTarget({ id: service.serviceId, name: service.name });
+ }
  }}
  className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive-soft rounded-lg transition-colors"
  title="Delete service"
@@ -261,7 +265,7 @@ export default function ServiceCatalogStandalonePage() {
  <div className="col-span-2 flex items-center gap-2">
  <Button
  size="sm"
- onClick={() => router.push(`/self-service/new-request?service_id=${service.service_id}&service_name=${encodeURIComponent(service.name)}`)}
+ onClick={() => service.serviceId && router.push(`/self-service/new-request?service_id=${service.serviceId}&service_name=${encodeURIComponent(service.name)}`)}
  >
  {isAr ? 'طلب' : 'Request'}
  </Button>
@@ -273,7 +277,7 @@ export default function ServiceCatalogStandalonePage() {
  <Pencil className="h-4 w-4" />
  </button>
  <button
- onClick={() => setDeleteTarget({ id: service.service_id, name: service.name })}
+ onClick={() => service.serviceId && setDeleteTarget({ id: service.serviceId, name: service.name })}
  className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive-soft rounded-lg transition-colors"
  title="Delete service"
  >

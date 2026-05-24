@@ -21,7 +21,7 @@ const getOrgIdFromProject = async (projectId: string): Promise<string | null> =>
 
 export const getPhases = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const phases = await PMPhase.find({ projectId }).sort({ order: 1 });
     res.json({ success: true, data: { phases } } as ApiResponse);
   } catch (error) {
@@ -32,7 +32,7 @@ export const getPhases = async (req: PMAuthRequest, res: Response): Promise<void
 
 export const createPhase = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const organizationId = await getOrgIdFromProject(projectId);
     if (!organizationId) { res.status(404).json({ success: false, message: 'Project not found' } as ApiResponse); return; }
     const count = await PMPhase.countDocuments({ projectId });
@@ -46,7 +46,7 @@ export const createPhase = async (req: PMAuthRequest, res: Response): Promise<vo
 
 export const updatePhase = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { phaseId } = req.params;
+    const { phaseId } = req.params as Record<string, string>;
     const phase = await PMPhase.findByIdAndUpdate(phaseId, req.body, { new: true });
     if (!phase) { res.status(404).json({ success: false, message: 'Phase not found' } as ApiResponse); return; }
     res.json({ success: true, data: { phase } } as ApiResponse);
@@ -58,7 +58,7 @@ export const updatePhase = async (req: PMAuthRequest, res: Response): Promise<vo
 
 export const deletePhase = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { phaseId } = req.params;
+    const { phaseId } = req.params as Record<string, string>;
     await PMPhase.findByIdAndDelete(phaseId);
     res.json({ success: true, message: 'Phase deleted' } as ApiResponse);
   } catch (error) {
@@ -71,7 +71,7 @@ export const deletePhase = async (req: PMAuthRequest, res: Response): Promise<vo
 
 export const getGates = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const gates = await PMGate.find({ projectId })
       .populate('approvers.userId', 'profile.firstName profile.lastName email')
       .populate('comments.author', 'profile.firstName profile.lastName email')
@@ -85,7 +85,7 @@ export const getGates = async (req: PMAuthRequest, res: Response): Promise<void>
 
 export const createGate = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const organizationId = await getOrgIdFromProject(projectId);
     if (!organizationId) { res.status(404).json({ success: false, message: 'Project not found' } as ApiResponse); return; }
     const gate = await PMGate.create({ ...req.body, projectId, organizationId });
@@ -98,7 +98,7 @@ export const createGate = async (req: PMAuthRequest, res: Response): Promise<voi
 
 export const updateGate = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { gateId } = req.params;
+    const { gateId } = req.params as Record<string, string>;
     const gate = await PMGate.findByIdAndUpdate(gateId, req.body, { new: true });
     if (!gate) { res.status(404).json({ success: false, message: 'Gate not found' } as ApiResponse); return; }
     res.json({ success: true, data: { gate } } as ApiResponse);
@@ -112,7 +112,7 @@ export const updateGate = async (req: PMAuthRequest, res: Response): Promise<voi
 
 export const getMilestones = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const milestones = await PMMilestone.find({ projectId })
       .populate('owner', 'profile.firstName profile.lastName email')
       .sort({ dueDate: 1 });
@@ -125,7 +125,7 @@ export const getMilestones = async (req: PMAuthRequest, res: Response): Promise<
 
 export const createMilestone = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const organizationId = await getOrgIdFromProject(projectId);
     if (!organizationId) { res.status(404).json({ success: false, message: 'Project not found' } as ApiResponse); return; }
     const milestone = await PMMilestone.create({ ...req.body, projectId, organizationId });
@@ -138,7 +138,7 @@ export const createMilestone = async (req: PMAuthRequest, res: Response): Promis
 
 export const updateMilestone = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { milestoneId } = req.params;
+    const { milestoneId } = req.params as Record<string, string>;
     const milestone = await PMMilestone.findByIdAndUpdate(milestoneId, req.body, { new: true });
     if (!milestone) { res.status(404).json({ success: false, message: 'Milestone not found' } as ApiResponse); return; }
     res.json({ success: true, data: { milestone } } as ApiResponse);
@@ -150,7 +150,7 @@ export const updateMilestone = async (req: PMAuthRequest, res: Response): Promis
 
 export const deleteMilestone = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { milestoneId } = req.params;
+    const { milestoneId } = req.params as Record<string, string>;
     await PMMilestone.findByIdAndDelete(milestoneId);
     res.json({ success: true, message: 'Milestone deleted' } as ApiResponse);
   } catch (error) {
@@ -163,7 +163,7 @@ export const deleteMilestone = async (req: PMAuthRequest, res: Response): Promis
 
 export const getImprovements = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const improvements = await PMImprovement.find({ projectId })
       .populate('submittedBy', 'profile.firstName profile.lastName email')
       .populate('assignee', 'profile.firstName profile.lastName email')
@@ -177,7 +177,7 @@ export const getImprovements = async (req: PMAuthRequest, res: Response): Promis
 
 export const createImprovement = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const organizationId = await getOrgIdFromProject(projectId);
     if (!organizationId) { res.status(404).json({ success: false, message: 'Project not found' } as ApiResponse); return; }
     const userId = req.user?.id;
@@ -191,7 +191,7 @@ export const createImprovement = async (req: PMAuthRequest, res: Response): Prom
 
 export const updateImprovement = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { improvementId } = req.params;
+    const { improvementId } = req.params as Record<string, string>;
     const improvement = await PMImprovement.findByIdAndUpdate(improvementId, req.body, { new: true });
     if (!improvement) { res.status(404).json({ success: false, message: 'Improvement not found' } as ApiResponse); return; }
     res.json({ success: true, data: { improvement } } as ApiResponse);
@@ -203,7 +203,7 @@ export const updateImprovement = async (req: PMAuthRequest, res: Response): Prom
 
 export const voteImprovement = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { improvementId } = req.params;
+    const { improvementId } = req.params as Record<string, string>;
     const userId = req.user?.id;
     const improvement = await PMImprovement.findById(improvementId);
     if (!improvement) { res.status(404).json({ success: false, message: 'Improvement not found' } as ApiResponse); return; }
@@ -227,7 +227,7 @@ export const voteImprovement = async (req: PMAuthRequest, res: Response): Promis
 
 export const getValueStreamSteps = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const steps = await PMValueStreamStep.find({ projectId }).sort({ order: 1 });
     res.json({ success: true, data: { steps } } as ApiResponse);
   } catch (error) {
@@ -238,7 +238,7 @@ export const getValueStreamSteps = async (req: PMAuthRequest, res: Response): Pr
 
 export const createValueStreamStep = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const organizationId = await getOrgIdFromProject(projectId);
     if (!organizationId) { res.status(404).json({ success: false, message: 'Project not found' } as ApiResponse); return; }
     const count = await PMValueStreamStep.countDocuments({ projectId });
@@ -252,7 +252,7 @@ export const createValueStreamStep = async (req: PMAuthRequest, res: Response): 
 
 export const updateValueStreamStep = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { stepId } = req.params;
+    const { stepId } = req.params as Record<string, string>;
     const step = await PMValueStreamStep.findByIdAndUpdate(stepId, req.body, { new: true });
     if (!step) { res.status(404).json({ success: false, message: 'Step not found' } as ApiResponse); return; }
     res.json({ success: true, data: { step } } as ApiResponse);
@@ -264,7 +264,7 @@ export const updateValueStreamStep = async (req: PMAuthRequest, res: Response): 
 
 export const deleteValueStreamStep = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { stepId } = req.params;
+    const { stepId } = req.params as Record<string, string>;
     await PMValueStreamStep.findByIdAndDelete(stepId);
     res.json({ success: true, message: 'Step deleted' } as ApiResponse);
   } catch (error) {
@@ -277,7 +277,7 @@ export const deleteValueStreamStep = async (req: PMAuthRequest, res: Response): 
 
 export const getProjectFiles = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const files = await PMProjectFile.find({ projectId })
       .populate('uploadedBy', 'profile.firstName profile.lastName email')
       .sort({ createdAt: -1 });
@@ -290,7 +290,7 @@ export const getProjectFiles = async (req: PMAuthRequest, res: Response): Promis
 
 export const createProjectFile = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const organizationId = await getOrgIdFromProject(projectId);
     if (!organizationId) { res.status(404).json({ success: false, message: 'Project not found' } as ApiResponse); return; }
     const userId = req.user?.id;
@@ -304,7 +304,7 @@ export const createProjectFile = async (req: PMAuthRequest, res: Response): Prom
 
 export const deleteProjectFile = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { fileId } = req.params;
+    const { fileId } = req.params as Record<string, string>;
     await PMProjectFile.findByIdAndDelete(fileId);
     res.json({ success: true, message: 'File deleted' } as ApiResponse);
   } catch (error) {
@@ -317,7 +317,7 @@ export const deleteProjectFile = async (req: PMAuthRequest, res: Response): Prom
 
 export const getNotifications = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
     const notifications = await notificationService.getByUser({ userId: userId!, projectId }, 50);
     res.json({ success: true, data: { notifications } } as ApiResponse);
@@ -329,7 +329,7 @@ export const getNotifications = async (req: PMAuthRequest, res: Response): Promi
 
 export const markNotificationRead = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { notificationId } = req.params;
+    const { notificationId } = req.params as Record<string, string>;
     const notification = await notificationService.markAsRead(notificationId);
     if (!notification) { res.status(404).json({ success: false, message: 'Notification not found' } as ApiResponse); return; }
     res.json({ success: true, data: { notification } } as ApiResponse);
@@ -352,7 +352,7 @@ export const markAllNotificationsRead = async (req: PMAuthRequest, res: Response
 
 export const deleteNotification = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { notificationId } = req.params;
+    const { notificationId } = req.params as Record<string, string>;
     await notificationService.deleteNotification(notificationId);
     res.json({ success: true, message: 'Notification deleted' } as ApiResponse);
   } catch (error) {
@@ -365,7 +365,7 @@ export const deleteNotification = async (req: PMAuthRequest, res: Response): Pro
 
 export const getReports = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const reports = await PMReport.find({ projectId })
       .populate('createdBy', 'profile.firstName profile.lastName email')
       .sort({ createdAt: -1 });
@@ -378,7 +378,7 @@ export const getReports = async (req: PMAuthRequest, res: Response): Promise<voi
 
 export const createReport = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const organizationId = await getOrgIdFromProject(projectId);
     if (!organizationId) { res.status(404).json({ success: false, message: 'Project not found' } as ApiResponse); return; }
     const userId = req.user?.id;
@@ -392,7 +392,7 @@ export const createReport = async (req: PMAuthRequest, res: Response): Promise<v
 
 export const updateReport = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { reportId } = req.params;
+    const { reportId } = req.params as Record<string, string>;
     const report = await PMReport.findByIdAndUpdate(reportId, req.body, { new: true });
     if (!report) { res.status(404).json({ success: false, message: 'Report not found' } as ApiResponse); return; }
     res.json({ success: true, data: { report } } as ApiResponse);
@@ -404,7 +404,7 @@ export const updateReport = async (req: PMAuthRequest, res: Response): Promise<v
 
 export const deleteReport = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { reportId } = req.params;
+    const { reportId } = req.params as Record<string, string>;
     await PMReport.findByIdAndDelete(reportId);
     res.json({ success: true, message: 'Report deleted' } as ApiResponse);
   } catch (error) {

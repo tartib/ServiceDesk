@@ -1,0 +1,71 @@
+{
+  "onboarding": {
+    "title": "Configurer votre espace de travail",
+    "subtitle": "Choisissez un modèle qui correspond au flux de travail de votre équipe. Vous pouvez tout personnaliser plus tard.",
+    "step1": "Choisir le modèle",
+    "step2": "Détails de l'organisation",
+    "step3": "Confirmer et lancer",
+    "orgName": "Nom de l'organisation",
+    "orgNamePlaceholder": "Entrez le nom de votre organisation",
+    "orgDescription": "Description",
+    "orgDescriptionPlaceholder": "Brève description de votre organisation",
+    "confirmTitle": "Prêt à lancer",
+    "confirmDescription": "Nous allons configurer votre espace de travail avec les éléments suivants :",
+    "requestTypesLabel": "Types de demandes",
+    "workspaceTypeLabel": "Type d'espace de travail",
+    "launching": "Configuration de l'espace de travail...",
+    "launch": "Lancer l'espace de travail",
+    "back": "Retour",
+    "next": "Suivant",
+    "comingSoon": "Bientôt disponible"
+  },
+  "quickCreate": {
+    "title": "Créer une nouvelle demande",
+    "searchPlaceholder": "Rechercher les types de demandes...",
+    "noResults": "Aucun type de demande trouvé",
+    "recentLabel": "Récents",
+    "allTypesLabel": "Tous les types de demandes",
+    "shortcut": "Création rapide"
+  },
+  "nav": {
+    "formsPlatform": "Plateforme de formulaires",
+    "workflowsSection": "Flux de travail",
+    "solutions": "Solutions",
+    "records": "Enregistrements",
+    "documents": "Documents"
+  },
+  "portal": {
+    "title": "Portail client",
+    "submitRequest": "Soumettre une demande",
+    "trackRequests": "Suivre les demandes",
+    "myRequests": "Mes demandes",
+    "noRequests": "Vous n'avez pas encore de demandes.",
+    "submitNew": "Soumettre une nouvelle demande",
+    "status": "Statut",
+    "created": "Créé le",
+    "updated": "Dernière mise à jour",
+    "priority": "Priorité",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "requestChanges": "Demander des modifications",
+    "approvalTitle": "Examiner la demande",
+    "approvalDescription": "Examinez les détails ci-dessous et prenez une décision.",
+    "changesPlaceholder": "Décrivez les modifications souhaitées...",
+    "submittedSuccessfully": "Demande soumise avec succès",
+    "poweredBy": "Propulsé par ServiceDesk"
+  },
+  "executive": {
+    "title": "Tableau de bord exécutif",
+    "openRecords": "Enregistrements ouverts",
+    "slaCompliance": "Conformité SLA",
+    "avgResolution": "Temps de résolution moyen",
+    "byStatus": "Enregistrements par statut",
+    "byType": "Enregistrements par type",
+    "byWorkspace": "Enregistrements par espace de travail",
+    "hours": "heures",
+    "noData": "Aucune donnée disponible",
+    "generateReport": "Générer un rapport client",
+    "generate": "Générer",
+    "download": "Télécharger"
+  }
+}

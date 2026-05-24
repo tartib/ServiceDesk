@@ -415,9 +415,10 @@ FormSubmissionSchema.virtual('completed_approvals').get(function() {
 // EXPORT - التصدير
 // ============================================
 
-export const FormSubmission = mongoose.model<IFormSubmissionDocument, IFormSubmissionModel>(
-  'FormSubmission',
-  FormSubmissionSchema
-);
+export const FormSubmission = (mongoose.models.FormSubmission as IFormSubmissionModel) ||
+  mongoose.model<IFormSubmissionDocument, IFormSubmissionModel>(
+    'FormSubmission',
+    FormSubmissionSchema
+  );
 
 export default FormSubmission;

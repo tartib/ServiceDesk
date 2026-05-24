@@ -15,7 +15,7 @@ import logger from '../../../utils/logger';
  */
 export async function handleProviderWebhook(req: Request, res: Response): Promise<void> {
   try {
-    const { provider } = req.params;
+    const { provider } = req.params as Record<string, string>;
     const payload = req.body;
 
     logger.debug('Webhook received', { provider, payload: JSON.stringify(payload).slice(0, 500) });

@@ -4,7 +4,7 @@ import logger from '../../../utils/logger';
 
 export const getAllKPIs = async (req: Request, res: Response) => {
   try {
-    const dashboardKPIService = container.resolve('dashboardKPIService');
+    const dashboardKPIService = container.resolve<any>('dashboardKPIService');
     const dateFrom = req.query.dateFrom ? new Date(String(req.query.dateFrom)) : undefined;
     const dateTo = req.query.dateTo ? new Date(String(req.query.dateTo)) : undefined;
     const kpis = await dashboardKPIService.calculateKPIs(dateFrom, dateTo);
@@ -17,7 +17,7 @@ export const getAllKPIs = async (req: Request, res: Response) => {
 
 export const getCompletionRate = async (req: Request, res: Response) => {
   try {
-    const dashboardKPIService = container.resolve('dashboardKPIService');
+    const dashboardKPIService = container.resolve<any>('dashboardKPIService');
     const dateFrom = req.query.dateFrom ? new Date(String(req.query.dateFrom)) : undefined;
     const dateTo = req.query.dateTo ? new Date(String(req.query.dateTo)) : undefined;
     const completionRate = await dashboardKPIService.calculateCompletionRate(dateFrom, dateTo);
@@ -30,7 +30,7 @@ export const getCompletionRate = async (req: Request, res: Response) => {
 
 export const getOverdueTasks = async (req: Request, res: Response) => {
   try {
-    const dashboardKPIService = container.resolve('dashboardKPIService');
+    const dashboardKPIService = container.resolve<any>('dashboardKPIService');
     const dateFrom = req.query.dateFrom ? new Date(String(req.query.dateFrom)) : undefined;
     const dateTo = req.query.dateTo ? new Date(String(req.query.dateTo)) : undefined;
     const overdueTasks = await dashboardKPIService.getOverdueTasks(dateFrom, dateTo);
@@ -43,7 +43,7 @@ export const getOverdueTasks = async (req: Request, res: Response) => {
 
 export const getAverageCompletionTime = async (req: Request, res: Response) => {
   try {
-    const dashboardKPIService = container.resolve('dashboardKPIService');
+    const dashboardKPIService = container.resolve<any>('dashboardKPIService');
     const dateFrom = req.query.dateFrom ? new Date(String(req.query.dateFrom)) : undefined;
     const dateTo = req.query.dateTo ? new Date(String(req.query.dateTo)) : undefined;
     const averageTime = await dashboardKPIService.getAverageCompletionTime(dateFrom, dateTo);
@@ -72,7 +72,7 @@ export const deleteKPI = async (req: Request, res: Response) => {
 
 export const getOnTimeCompletionRate = async (req: Request, res: Response) => {
   try {
-    const dashboardKPIService = container.resolve('dashboardKPIService');
+    const dashboardKPIService = container.resolve<any>('dashboardKPIService');
     const dateFrom = req.query.dateFrom ? new Date(String(req.query.dateFrom)) : undefined;
     const dateTo = req.query.dateTo ? new Date(String(req.query.dateTo)) : undefined;
     const onTimeRate = await dashboardKPIService.getOnTimeCompletionRate(dateFrom, dateTo);

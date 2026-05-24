@@ -104,14 +104,15 @@ const FIELDS: SmartField[] = [
  field('description', SmartFieldType.TEXTAREA, 'Description', 'الوصف', { required: true, placeholder: 'Describe what this service provides...', placeholderAr: 'وصف الخدمة...', sectionId: 'basic', order: 2 }),
  field('description_ar', SmartFieldType.TEXTAREA, 'Description (Arabic)', 'الوصف (عربي)', { placeholder: 'وصف الخدمة...', sectionId: 'basic', order: 3 }),
  field('category', SmartFieldType.SELECT, 'Category', 'الفئة', {
- required: true, sectionId: 'basic', order: 4, width: 'third', defaultValue: 'general_request',
+ required: true, sectionId: 'basic', order: 4, width: 'third', defaultValue: 'IT',
  options: [
- { value: 'access_management', label: 'Access Management' },
- { value: 'hardware', label: 'Hardware' },
- { value: 'software', label: 'Software' },
- { value: 'network', label: 'Network' },
- { value: 'accounts', label: 'Accounts' },
- { value: 'general_request', label: 'General Request' },
+ { value: 'IT', label: 'IT' },
+ { value: 'HR', label: 'HR' },
+ { value: 'facilities', label: 'Facilities' },
+ { value: 'procurement', label: 'Procurement' },
+ { value: 'finance', label: 'Finance' },
+ { value: 'security', label: 'Security' },
+ { value: 'other', label: 'Other' },
  ],
  }),
  field('icon', SmartFieldType.TEXT, 'Icon', 'الأيقونة', { placeholder: 'e.g. Shield, Wifi, Monitor', sectionId: 'basic', order: 5, width: 'third' }),
@@ -209,7 +210,7 @@ function serviceToFormData(service: IServiceCatalogItem): Record<string, unknown
  name_ar: service.name_ar || '',
  description: service.description || '',
  description_ar: service.description_ar || '',
- category: service.category || 'general_request',
+ category: service.category || 'IT',
  icon: service.icon || '',
  image: service.image || '',
  is_active: service.availability?.is_active ?? true,
@@ -246,7 +247,7 @@ function formDataToPayload(
  name_ar: String(data.name_ar || '').trim() || undefined,
  description: String(data.description || '').trim(),
  description_ar: String(data.description_ar || '').trim() || undefined,
- category: String(data.category || 'general_request') as IServiceCatalogItem['category'],
+ category: String(data.category || 'IT') as IServiceCatalogItem['category'],
  icon: String(data.icon || '').trim() || undefined,
  image: String(data.image || '').trim() || undefined,
  availability: {
@@ -276,24 +277,34 @@ function formDataToPayload(
  } as IServiceCatalogItem['workflow'],
  tags: tagsStr.trim() ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [],
  order: Number(data.order) || 0,
- };
+ status: data.is_active ? 'active' : 'draft',
+ } as Partial<IServiceCatalogItem> & { status: string };
 }
 
 // ─── Convert backend IDynamicFormField[] → SmartField[] for the builder ───
 type DynamicFormField = IServiceCatalogItem['form'][number];
 
 function dynamicFieldsToSmartFields(fields: DynamicFormField[]): SmartField[] {
- return fields.map((f) => ({
- field_id: f.field_id,
+ return fields.map((f) => {
+ // Handle both camelCase (backend IFormField) and snake_case (frontend) field names
+ const raw = f as unknown as Record<string, unknown>;
+ const fieldId = (raw.field_id || raw.id || '') as string;
+ const labelAr = (raw.label_ar || raw.labelAr || f.label) as string;
+ const defaultVal = raw.default_value ?? raw.defaultValue ?? null;
+ return {
+ field_id: fieldId,
  type: f.type as unknown as SmartFieldType,
  label: f.label,
- label_ar: f.label_ar || f.label,
+ label_ar: labelAr,
  placeholder: f.placeholder,
  placeholder_ar: '',
  help_text: '',
  help_text_ar: '',
- default_value: f.default_value ?? null,
- options: f.options?.map(o => ({ value: o.value, label: o.label, label_ar: o.label_ar })),
+ default_value: defaultVal,
+ options: f.options?.map(o => {
+   const oRaw = o as unknown as Record<string, unknown>;
+   return { value: o.value, label: o.label, label_ar: (oRaw.label_ar || oRaw.labelAr || '') as string };
+ }),
  validation: {
  required: f.required ?? false,
  ...(f.validation?.min !== undefined ? { min: f.validation.min } : {}),
@@ -307,7 +318,8 @@ function dynamicFieldsToSmartFields(fields: DynamicFormField[]): SmartField[] {
  readonly: false,
  },
  settings: {},
- }));
+ };
+ });
 }
 
 // ─── Map SmartFieldType → backend FormFieldType ───
@@ -360,6 +372,28 @@ function smartFieldsToDynamicFields(fields: SmartField[]): DynamicFormField[] {
  placeholder: f.placeholder || undefined,
  default_value: f.default_value ?? undefined,
  options: f.options?.map(o => ({ value: o.value, label: o.label, label_ar: o.label_ar })),
+ validation: f.validation?.pattern || f.validation?.min !== undefined || f.validation?.max !== undefined
+ ? {
+ ...(f.validation?.min !== undefined ? { min: f.validation.min } : {}),
+ ...(f.validation?.max !== undefined ? { max: f.validation.max } : {}),
+ ...(f.validation?.pattern ? { pattern: f.validation.pattern, message: f.validation?.pattern_message } : {}),
+ }
+ : undefined,
+ order: f.display?.order ?? idx,
+ }));
+}
+
+// ─── Convert SmartField[] → backend IFormField[] (camelCase for requestForm.fields) ───
+function smartFieldsToRequestFormFields(fields: SmartField[]): Record<string, unknown>[] {
+ return fields.map((f, idx) => ({
+ id: f.field_id,
+ label: f.label,
+ labelAr: f.label_ar || undefined,
+ type: SMART_TO_BACKEND_TYPE[f.type] || 'text',
+ required: f.validation?.required ?? false,
+ placeholder: f.placeholder || undefined,
+ defaultValue: f.default_value ?? undefined,
+ options: f.options?.map(o => ({ value: o.value, label: o.label, labelAr: o.label_ar })),
  validation: f.validation?.pattern || f.validation?.min !== undefined || f.validation?.max !== undefined
  ? {
  ...(f.validation?.min !== undefined ? { min: f.validation.min } : {}),
@@ -425,8 +459,11 @@ export default function ServiceFormModal({ open, onOpenChange, service, onSucces
 
  // Pre-fill form builder fields when editing
  const initFormFields = useCallback(() => {
- if (service?.form && service.form.length > 0) {
- setFormFields(dynamicFieldsToSmartFields(service.form));
+ // Backend returns requestForm.fields (camelCase); frontend interface has form (snake_case)
+ const backendFields = (service as unknown as Record<string, unknown>)?.requestForm as { fields?: unknown[] } | undefined;
+ const fields = backendFields?.fields ?? service?.form;
+ if (fields && Array.isArray(fields) && fields.length > 0) {
+ setFormFields(dynamicFieldsToSmartFields(fields as DynamicFormField[]));
  } else {
  setFormFields([]);
  }
@@ -449,12 +486,14 @@ export default function ServiceFormModal({ open, onOpenChange, service, onSucces
  setDetailsData(data);
  const payload = formDataToPayload(data, service);
 
- // Include the form fields from the builder
- payload.form = smartFieldsToDynamicFields(formFields);
+ // Include the form fields from the builder (backend expects requestForm.fields with camelCase)
+ (payload as Record<string, unknown>).requestForm = {
+   fields: smartFieldsToRequestFormFields(formFields),
+ };
 
  try {
  if (isEdit) {
- await updateMutation.mutateAsync({ id: service!.service_id, data: payload });
+ await updateMutation.mutateAsync({ id: service!.serviceId || service!.service_id || service!._id, data: payload });
  } else {
  const name = String(data.name || '').trim();
  const serviceId = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString(36);

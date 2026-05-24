@@ -3,6 +3,7 @@ import { body, param } from 'express-validator';
 import * as itsmController from '../controllers';
 import { itsmAuthorize, requireItsmRole } from '../../../middleware/itsmAuthorize';
 import { RESOURCES } from '../../../shared/auth/permission.types';
+import { handleValidation } from '../../../shared/middleware/validate';
 
 // Sub-routers for ITSM v2 domains (migrated from presentation/)
 import incidentRoutes from './incident.routes';
@@ -152,6 +153,7 @@ router.post(
     body('description').notEmpty().withMessage('Description is required'),
     body('category').notEmpty().withMessage('Category is required'),
   ],
+  handleValidation,
   itsmController.createService
 );
 

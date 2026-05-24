@@ -1,0 +1,88 @@
+{
+  "records": {
+    "title": "Records",
+    "newRequest": "New Request",
+    "myDrafts": "My Drafts",
+    "allRecords": "All Records",
+    "createFlow": {
+      "title": "Create Request",
+      "selectType": "Choose a Request Type",
+      "selectTypeDesc": "Select the type of request you want to create",
+      "details": "Request Details",
+      "review": "Review Your Request",
+      "changeType": "Change",
+      "titleField": "Title",
+      "titlePlaceholder": "Enter request title",
+      "descriptionField": "Description",
+      "descriptionPlaceholder": "Detailed description (optional)",
+      "priorityField": "Priority",
+      "requester": "Requester",
+      "requestType": "Request Type",
+      "submitRequest": "Submit Request",
+      "submitting": "Submitting...",
+      "back": "Back",
+      "edit": "Edit",
+      "reviewStep": "Review"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "status": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "under_review": "Under Review",
+      "in_progress": "In Progress",
+      "waiting_client": "Waiting Client",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "detail": {
+      "recordNumber": "Record Number",
+      "requester": "Requester",
+      "assignee": "Assignee",
+      "unassigned": "Unassigned",
+      "createdAt": "Created",
+      "dueDate": "Due Date",
+      "breached": "Breached",
+      "timeline": "Timeline",
+      "comments": "Comments",
+      "noComments": "No comments yet",
+      "addComment": "Add a comment...",
+      "fieldData": "Field Data",
+      "actions": "Actions",
+      "approve": "Approve",
+      "reject": "Reject",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "notFound": "Record Not Found",
+      "notFoundDesc": "This record may have been deleted or you may not have access to it.",
+      "permissionDenied": "Access Denied",
+      "permissionDeniedDesc": "You do not have permission to view this record.",
+      "networkError": "Connection Error",
+      "networkErrorDesc": "Please check your internet connection and try again.",
+      "genericError": "Something Went Wrong",
+      "genericErrorDesc": "An unexpected error occurred. Please try again.",
+      "retry": "Retry",
+      "goBack": "Go Back"
+    },
+    "empty": {
+      "noRecords": "No Records Yet",
+      "noRecordsDesc": "Create your first request to get started.",
+      "noDrafts": "No Drafts",
+      "noDraftsDesc": "Drafts are saved automatically while you fill out a request.",
+      "createRequest": "Create Request",
+      "startNew": "Start New Request"
+    },
+    "autosave": {
+      "saving": "Saving...",
+      "saved": "Draft saved",
+      "error": "Save failed"
+    }
+  }
+}

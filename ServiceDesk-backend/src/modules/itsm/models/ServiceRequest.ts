@@ -216,6 +216,7 @@ const ServiceRequestSchema = new Schema<IServiceRequest>(
     requestId: {
       type: String,
       unique: true,
+      sparse: true,
       index: true,
     },
     

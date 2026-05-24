@@ -72,6 +72,6 @@ CounterSchema.statics.generateId = async function (
   return `${prefix}-${year}-${String(sequence).padStart(5, '0')}`;
 };
 
-const Counter = mongoose.model<ICounter, CounterModel>('Counter', CounterSchema);
+const Counter = (mongoose.models.Counter as unknown as CounterModel) || mongoose.model<ICounter, CounterModel>('Counter', CounterSchema);
 
 export default Counter;

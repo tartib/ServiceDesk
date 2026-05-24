@@ -46,7 +46,7 @@ export const assetController = {
 
   async getById(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const asset = await Asset.findOne({ $or: [{ _id: id }, { asset_id: id }] });
       if (!asset) { return res.status(404).json({ success: false, message: 'Asset not found' }); }
       res.json({ success: true, data: asset });
@@ -58,7 +58,7 @@ export const assetController = {
 
   async update(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const asset = await Asset.findOneAndUpdate(
         { $or: [{ _id: id }, { asset_id: id }] },
         { ...req.body, updated_by: req.body.updated_by || 'system' },
@@ -74,7 +74,7 @@ export const assetController = {
 
   async delete(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const asset = await Asset.findOneAndDelete({ $or: [{ _id: id }, { asset_id: id }] });
       if (!asset) { return res.status(404).json({ success: false, message: 'Asset not found' }); }
       res.json({ success: true, message: 'Asset deleted successfully' });
@@ -86,7 +86,7 @@ export const assetController = {
 
   async assign(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const { user_id, user_name, department } = req.body;
       const asset = await Asset.findOneAndUpdate(
         { $or: [{ _id: id }, { asset_id: id }] },
@@ -103,7 +103,7 @@ export const assetController = {
 
   async unassign(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const asset = await Asset.findOneAndUpdate(
         { $or: [{ _id: id }, { asset_id: id }] },
         { $unset: { assigned_to: 1 }, status: AssetStatus.IN_STOCK },
@@ -119,7 +119,7 @@ export const assetController = {
 
   async changeStatus(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const { status } = req.body;
       if (!Object.values(AssetStatus).includes(status)) {
         return res.status(400).json({ success: false, message: 'Invalid status' });
@@ -162,7 +162,7 @@ export const assetController = {
 
   async getByUser(req: Request, res: Response) {
     try {
-      const { userId } = req.params;
+      const { userId } = req.params as Record<string, string>;
       const assets = await Asset.find({ 'assigned_to.user_id': userId }).sort({ 'assigned_to.assigned_date': -1 });
       res.json({ success: true, data: assets });
     } catch (error) {
@@ -173,7 +173,7 @@ export const assetController = {
 
   async linkIncident(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const { incident_id } = req.body;
       const asset = await Asset.findOneAndUpdate(
         { $or: [{ _id: id }, { asset_id: id }] },

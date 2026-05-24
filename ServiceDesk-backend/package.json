@@ -17,7 +17,8 @@
     "seed:itsm": "ts-node src/scripts/seedITSMData.ts",
     "seed:users": "ts-node src/scripts/seedTestUsers.ts",
     "module:health": "node scripts/moduleHealth.js",
-    "boundary:check": "ts-node scripts/check-boundaries.ts"
+    "boundary:check": "ts-node scripts/check-boundaries.ts",
+    "postinstall": "node scripts/patch-express-types.js"
   },
   "keywords": [
     "servicedesk",
@@ -60,6 +61,7 @@
     "xss": "^1.0.15"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.29.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.10",

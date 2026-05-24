@@ -9,7 +9,7 @@ export class MethodologyController {
    */
   async getMethodologyConfig(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
 
       if (!projectId || projectId === 'undefined' || projectId === 'null') {
         res.status(400).json({
@@ -50,7 +50,7 @@ export class MethodologyController {
    */
   async initializeMethodology(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
 
       if (!projectId || projectId === 'undefined' || projectId === 'null') {
         res.status(400).json({
@@ -105,7 +105,7 @@ export class MethodologyController {
    */
   async updateMethodologyConfig(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
 
       if (!projectId || projectId === 'undefined' || projectId === 'null') {
         res.status(400).json({
@@ -141,7 +141,7 @@ export class MethodologyController {
    */
   async changeMethodology(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
 
       if (!projectId || projectId === 'undefined' || projectId === 'null') {
         res.status(400).json({
@@ -194,7 +194,7 @@ export class MethodologyController {
    */
   async getNavigationTabs(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
 
       if (!projectId || projectId === 'undefined' || projectId === 'null') {
         res.status(400).json({
@@ -239,7 +239,7 @@ export class MethodologyController {
 
   async updateScrumConfig(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
 
       if (!projectId || projectId === 'undefined' || projectId === 'null') {
         res.status(400).json({
@@ -276,7 +276,7 @@ export class MethodologyController {
 
   async updateKanbanColumns(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
       const { columns } = req.body;
 
       if (!columns || !Array.isArray(columns)) {
@@ -308,7 +308,7 @@ export class MethodologyController {
 
   async updateWipLimits(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
       const { wipLimits } = req.body;
 
       const config = await methodologyService.updateWipLimits(projectId, wipLimits);
@@ -336,7 +336,7 @@ export class MethodologyController {
 
   async updatePhases(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
       const { phases } = req.body;
 
       if (!phases || !Array.isArray(phases)) {
@@ -368,7 +368,7 @@ export class MethodologyController {
 
   async addMilestone(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
       const milestone = req.body;
 
       if (!milestone.name || !milestone.dueDate) {
@@ -409,7 +409,7 @@ export class MethodologyController {
 
   async updateServiceCatalog(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
       const { services } = req.body;
 
       const config = await methodologyService.updateServiceCatalog(projectId, services);
@@ -433,7 +433,7 @@ export class MethodologyController {
 
   async updateSlaDefinitions(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
       const { slas } = req.body;
 
       const config = await methodologyService.updateSlaDefinitions(projectId, slas);
@@ -461,7 +461,7 @@ export class MethodologyController {
 
   async addObjective(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
       const objective = req.body;
 
       if (!objective.title || !objective.owner) {
@@ -500,7 +500,7 @@ export class MethodologyController {
 
   async updateObjective(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId, objectiveId } = req.params;
+      const { projectId, objectiveId } = req.params as Record<string, string>;
       const updates = req.body;
 
       const config = await methodologyService.updateObjective(projectId, objectiveId, updates);
@@ -528,7 +528,7 @@ export class MethodologyController {
 
   async addKeyResult(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId, objectiveId } = req.params;
+      const { projectId, objectiveId } = req.params as Record<string, string>;
       const keyResult = req.body;
 
       if (!keyResult.title || keyResult.targetValue === undefined) {
@@ -567,7 +567,7 @@ export class MethodologyController {
 
   async updateKeyResult(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId, objectiveId, krId } = req.params;
+      const { projectId, objectiveId, krId } = req.params as Record<string, string>;
       const updates = req.body;
 
       const config = await methodologyService.updateKeyResult(projectId, objectiveId, krId, updates);
@@ -591,7 +591,7 @@ export class MethodologyController {
 
   async deleteKeyResult(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId, objectiveId, krId } = req.params;
+      const { projectId, objectiveId, krId } = req.params as Record<string, string>;
 
       const config = await methodologyService.deleteKeyResult(projectId, objectiveId, krId);
       if (!config) {
@@ -618,7 +618,7 @@ export class MethodologyController {
 
   async addCheckIn(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
       const checkIn = req.body;
 
       if (!checkIn.keyResultId || !checkIn.objectiveId || checkIn.currentValue === undefined) {
@@ -662,7 +662,7 @@ export class MethodologyController {
 
   async getCheckIns(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as Record<string, string>;
 
       const checkIns = await methodologyService.getCheckIns(projectId);
 

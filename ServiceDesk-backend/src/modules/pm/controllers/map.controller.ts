@@ -41,7 +41,7 @@ interface MapEdge {
  */
 export const getMapView = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { status, priority, type, assignee, labels, sprintId } = req.query;
 
     // Build filter

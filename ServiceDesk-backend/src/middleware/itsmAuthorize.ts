@@ -66,7 +66,7 @@ export function itsmAuthorize(
       let resourceCtx: ResourceContext = {
         resourceType: resource,
         action,
-        resourceId: req.params.id,
+        resourceId: req.params.id as string | undefined,
         organizationId: req.user.organizationId,
       };
 

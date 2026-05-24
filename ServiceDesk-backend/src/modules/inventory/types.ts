@@ -63,3 +63,36 @@ export enum StockAlertStatus {
   LOW_STOCK = 'low_stock',
   OUT_OF_STOCK = 'out_of_stock',
 }
+
+// ── Inventory Count ──────────────────────────────────────────────
+
+export enum CountFrequency {
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+}
+
+export enum WeeklyDay {
+  SUN = 'sun',
+  MON = 'mon',
+  TUE = 'tue',
+  WED = 'wed',
+  THU = 'thu',
+  FRI = 'fri',
+  SAT = 'sat',
+}
+
+export enum ScheduleStatus {
+  ACTIVE = 'active',
+  PAUSED = 'paused',
+  ARCHIVED = 'archived',
+}
+
+export enum CountTaskStatus {
+  PENDING = 'pending',
+  IN_PROGRESS = 'in_progress',
+  SUBMITTED = 'submitted',
+  UNDER_REVIEW = 'under_review',
+  APPROVED = 'approved',
+  COMPLETED = 'completed',
+  REJECTED = 'rejected',
+}

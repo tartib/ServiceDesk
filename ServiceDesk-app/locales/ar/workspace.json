@@ -1,0 +1,71 @@
+{
+  "onboarding": {
+    "title": "إعداد مساحة العمل",
+    "subtitle": "اختر قالبًا يتناسب مع سير عمل فريقك. يمكنك تخصيص كل شيء لاحقًا.",
+    "step1": "اختيار القالب",
+    "step2": "تفاصيل المؤسسة",
+    "step3": "تأكيد وانطلاق",
+    "orgName": "اسم المؤسسة",
+    "orgNamePlaceholder": "أدخل اسم مؤسستك",
+    "orgDescription": "الوصف",
+    "orgDescriptionPlaceholder": "وصف موجز لمؤسستك",
+    "confirmTitle": "جاهز للانطلاق",
+    "confirmDescription": "سنقوم بإعداد مساحة العمل بالتالي:",
+    "requestTypesLabel": "أنواع الطلبات",
+    "workspaceTypeLabel": "نوع مساحة العمل",
+    "launching": "جارٍ إعداد مساحة العمل...",
+    "launch": "إطلاق مساحة العمل",
+    "back": "رجوع",
+    "next": "التالي",
+    "comingSoon": "قريباً"
+  },
+  "quickCreate": {
+    "title": "إنشاء طلب جديد",
+    "searchPlaceholder": "ابحث في أنواع الطلبات...",
+    "noResults": "لم يتم العثور على أنواع طلبات",
+    "recentLabel": "الأخيرة",
+    "allTypesLabel": "جميع أنواع الطلبات",
+    "shortcut": "إنشاء سريع"
+  },
+  "nav": {
+    "formsPlatform": "منصة النماذج",
+    "workflowsSection": "سير العمل",
+    "solutions": "الحلول",
+    "records": "السجلات",
+    "documents": "المستندات"
+  },
+  "portal": {
+    "title": "بوابة العملاء",
+    "submitRequest": "إرسال طلب",
+    "trackRequests": "تتبع الطلبات",
+    "myRequests": "طلباتي",
+    "noRequests": "ليس لديك أي طلبات بعد.",
+    "submitNew": "إرسال طلب جديد",
+    "status": "الحالة",
+    "created": "تاريخ الإنشاء",
+    "updated": "آخر تحديث",
+    "priority": "الأولوية",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "requestChanges": "طلب تعديلات",
+    "approvalTitle": "مراجعة الطلب",
+    "approvalDescription": "راجع التفاصيل أدناه واتخذ إجراءً.",
+    "changesPlaceholder": "صف التعديلات المطلوبة...",
+    "submittedSuccessfully": "تم إرسال الطلب بنجاح",
+    "poweredBy": "مدعوم بـ ServiceDesk"
+  },
+  "executive": {
+    "title": "لوحة المعلومات التنفيذية",
+    "openRecords": "السجلات المفتوحة",
+    "slaCompliance": "الامتثال لاتفاقية مستوى الخدمة",
+    "avgResolution": "متوسط وقت الحل",
+    "byStatus": "السجلات حسب الحالة",
+    "byType": "السجلات حسب النوع",
+    "byWorkspace": "السجلات حسب مساحة العمل",
+    "hours": "ساعات",
+    "noData": "لا توجد بيانات",
+    "generateReport": "إنشاء تقرير العميل",
+    "generate": "إنشاء",
+    "download": "تحميل"
+  }
+}

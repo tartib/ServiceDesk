@@ -23,7 +23,7 @@ interface PopulatedMember {
 
 export const getBoardByProject = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const organizationId = req.user?.organizationId;
 
     if (!organizationId) {
@@ -82,7 +82,7 @@ export const getBoardByProject = async (req: Request, res: Response): Promise<vo
 export const createColumn = async (req: Request, res: Response): Promise<void> => {
   try {
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { name, statusId, wipLimit } = req.body;
     const organizationId = req.user?.organizationId;
 
@@ -133,7 +133,7 @@ export const createColumn = async (req: Request, res: Response): Promise<void> =
 export const updateColumn = async (req: Request, res: Response): Promise<void> => {
   try {
 
-    const { projectId, columnId } = req.params;
+    const { projectId, columnId } = req.params as Record<string, string>;
     const { name, wipLimit } = req.body;
 
     const board = await PMBoard.findOne({ projectId, isDefault: true });
@@ -176,7 +176,7 @@ export const updateColumn = async (req: Request, res: Response): Promise<void> =
 
 export const deleteColumn = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId, columnId } = req.params;
+    const { projectId, columnId } = req.params as Record<string, string>;
 
     const board = await PMBoard.findOne({ projectId, isDefault: true });
 
@@ -221,7 +221,7 @@ export const deleteColumn = async (req: Request, res: Response): Promise<void> =
 
 export const getProjectMembers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     const project = await Project.findById(projectId)
       .populate('members.userId', 'profile.firstName profile.lastName profile.avatar email name');
@@ -257,7 +257,7 @@ export const getProjectMembers = async (req: Request, res: Response): Promise<vo
 
 export const getFullBoard = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     // Get project to find organizationId
@@ -454,7 +454,7 @@ export const getFullBoard = async (req: Request, res: Response): Promise<void> =
 export const reorderColumns = async (req: Request, res: Response): Promise<void> => {
   try {
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { columnOrder } = req.body;
 
     if (!Array.isArray(columnOrder)) {

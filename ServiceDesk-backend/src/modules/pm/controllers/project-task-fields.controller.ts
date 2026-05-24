@@ -9,7 +9,7 @@ import { ALLOWED_FIELD_TYPES, TaskCustomFieldType } from '../domain/task-field-d
 
 export const listTaskFields = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const project = await Project.findById(projectId).select('taskFieldDefinitions');
     if (!project) {
       res.status(404).json({ success: false, error: 'Project not found' } as ApiResponse);
@@ -29,7 +29,7 @@ export const listTaskFields = async (req: PMAuthRequest, res: Response): Promise
 
 export const createTaskField = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId);
@@ -99,7 +99,7 @@ export const createTaskField = async (req: PMAuthRequest, res: Response): Promis
 
 export const updateTaskField = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId, fieldId } = req.params;
+    const { projectId, fieldId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId);
@@ -159,7 +159,7 @@ export const updateTaskField = async (req: PMAuthRequest, res: Response): Promis
 
 export const archiveTaskField = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId, fieldId } = req.params;
+    const { projectId, fieldId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId);
@@ -197,7 +197,7 @@ export const archiveTaskField = async (req: PMAuthRequest, res: Response): Promi
 
 export const reorderTaskFields = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
     const { fieldIds } = req.body; // ordered array of field IDs
 

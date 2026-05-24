@@ -10,7 +10,7 @@ import logger from '../../../utils/logger';
 
 export const getWorkflowByProject = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     const project = await Project.findById(projectId);
     if (!project) {
@@ -68,7 +68,7 @@ export const getWorkflowByProject = async (req: PMAuthRequest, res: Response): P
 export const addStatus = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { id, name, color, isInitial, isFinal } = req.body;
     const userId = req.user?.id;
     
@@ -188,7 +188,7 @@ export const addStatus = async (req: PMAuthRequest, res: Response): Promise<void
 export const updateStatus = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
 
-    const { projectId, statusId } = req.params;
+    const { projectId, statusId } = req.params as Record<string, string>;
     const { name, category, color, isInitial, isFinal } = req.body;
     const userId = req.user?.id;
 
@@ -284,7 +284,7 @@ export const updateStatus = async (req: PMAuthRequest, res: Response): Promise<v
 
 export const deleteStatus = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId, statusId } = req.params;
+    const { projectId, statusId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId);
@@ -375,7 +375,7 @@ export const deleteStatus = async (req: PMAuthRequest, res: Response): Promise<v
 export const addTransition = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { id, name, fromStatus, toStatus } = req.body;
     const userId = req.user?.id;
 
@@ -445,7 +445,7 @@ export const addTransition = async (req: PMAuthRequest, res: Response): Promise<
 
 export const deleteTransition = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId, transitionId } = req.params;
+    const { projectId, transitionId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId);
@@ -488,7 +488,7 @@ export const deleteTransition = async (req: PMAuthRequest, res: Response): Promi
 export const reorderStatuses = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { statusOrder } = req.body;
     const userId = req.user?.id;
 

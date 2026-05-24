@@ -67,7 +67,7 @@ export const globalSearch = async (req: PMAuthRequest, res: Response): Promise<v
 export const searchTasks = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const organizationId = req.user?.organizationId;
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const {
       q,
       status,

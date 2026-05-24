@@ -38,7 +38,16 @@ export interface FormDefinitionBuilderProps {
   formId?: string;
 }
 
-type BuilderTab = 'fields' | 'workflow';
+type BuilderTab = 'design' | 'access' | 'workflow' | 'views' | 'automation' | 'publishing';
+
+const BUILDER_TABS: { key: BuilderTab; label: string; labelAr: string }[] = [
+  { key: 'design', label: 'Design', labelAr: 'التصميم' },
+  { key: 'access', label: 'Access', labelAr: 'الوصول' },
+  { key: 'workflow', label: 'Workflow', labelAr: 'سير العمل' },
+  { key: 'views', label: 'Views', labelAr: 'العروض' },
+  { key: 'automation', label: 'Automation', labelAr: 'الأتمتة' },
+  { key: 'publishing', label: 'Publishing', labelAr: 'النشر' },
+];
 
 /**
  * Canonical form definition builder shell.
@@ -54,7 +63,7 @@ export default function FormDefinitionBuilder({
   formId,
 }: FormDefinitionBuilderProps) {
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<BuilderTab>('fields');
+  const [activeTab, setActiveTab] = useState<BuilderTab>('design');
 
   const selectedField = fields.find((f) => f.field_id === selectedFieldId) ?? null;
 
@@ -102,34 +111,27 @@ export default function FormDefinitionBuilder({
       className={`flex flex-col border rounded-lg overflow-hidden bg-background ${className ?? ''}`}
       style={containerStyle}
     >
-      {/* Tab bar — only shown when formId is provided */}
+      {/* Tab bar — unified tab model (Phase 8); shown when formId is provided */}
       {formId && (
-        <div className="flex items-center gap-1 border-b px-3 pt-2 shrink-0">
-          <button
-            onClick={() => setActiveTab('fields')}
-            className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors ${
-              activeTab === 'fields'
-                ? 'text-brand border-b-2 border-brand'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Fields
-          </button>
-          <button
-            onClick={() => setActiveTab('workflow')}
-            className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors ${
-              activeTab === 'workflow'
-                ? 'text-brand border-b-2 border-brand'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Workflow
-          </button>
+        <div className="flex items-center gap-1 border-b px-3 pt-2 shrink-0 overflow-x-auto">
+          {BUILDER_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors whitespace-nowrap ${
+                activeTab === tab.key
+                  ? 'text-brand border-b-2 border-brand'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {locale === 'ar' ? tab.labelAr : tab.label}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Fields tab (always rendered when no formId, or when activeTab === 'fields') */}
-      {(!formId || activeTab === 'fields') && (
+      {/* Design tab (field builder — always rendered when no formId, or when design tab active) */}
+      {(!formId || activeTab === 'design') && (
         <div className="flex flex-1 overflow-hidden">
           <div className="w-56 border-r overflow-hidden shrink-0">
             <FieldPalette onFieldSelect={handleFieldAdd} locale={locale} />
@@ -157,10 +159,78 @@ export default function FormDefinitionBuilder({
         </div>
       )}
 
-      {/* Workflow tab — only when formId is provided and tab is active */}
+      {/* Workflow tab */}
       {formId && activeTab === 'workflow' && (
         <div className="flex-1 overflow-auto">
           <WorkflowBindingPanel formId={formId} />
+        </div>
+      )}
+
+      {/* Access tab — stub */}
+      {formId && activeTab === 'access' && (
+        <div className="flex-1 overflow-auto p-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">{locale === 'ar' ? 'التحكم في الوصول' : 'Access Control'}</h3>
+            <p className="text-sm text-muted-foreground">
+              {locale === 'ar'
+                ? 'إدارة من يمكنه عرض وإرسال هذا النموذج.'
+                : 'Manage who can view and submit this form.'}
+            </p>
+            <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8 text-center text-sm text-muted-foreground">
+              {locale === 'ar' ? 'سيتم إضافة إعدادات الوصول هنا' : 'Access settings will appear here'}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Views tab — stub */}
+      {formId && activeTab === 'views' && (
+        <div className="flex-1 overflow-auto p-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">{locale === 'ar' ? 'إعدادات العرض' : 'View Configuration'}</h3>
+            <p className="text-sm text-muted-foreground">
+              {locale === 'ar'
+                ? 'تخصيص كيفية عرض السجلات المرسلة (جدول، كانبان، صندوق وارد).'
+                : 'Customize how submitted records are displayed (table, kanban, inbox).'}
+            </p>
+            <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8 text-center text-sm text-muted-foreground">
+              {locale === 'ar' ? 'سيتم إضافة إعدادات العرض هنا' : 'View settings will appear here'}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Automation tab — stub */}
+      {formId && activeTab === 'automation' && (
+        <div className="flex-1 overflow-auto p-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">{locale === 'ar' ? 'الأتمتة' : 'Automation'}</h3>
+            <p className="text-sm text-muted-foreground">
+              {locale === 'ar'
+                ? 'أضف إجراءات تلقائية عند إرسال النموذج أو تغيير حالة السجل.'
+                : 'Add automated actions on form submission or record status changes.'}
+            </p>
+            <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8 text-center text-sm text-muted-foreground">
+              {locale === 'ar' ? 'سيتم إضافة إعدادات الأتمتة هنا' : 'Automation settings will appear here'}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Publishing tab — stub */}
+      {formId && activeTab === 'publishing' && (
+        <div className="flex-1 overflow-auto p-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">{locale === 'ar' ? 'النشر' : 'Publishing'}</h3>
+            <p className="text-sm text-muted-foreground">
+              {locale === 'ar'
+                ? 'نشر النموذج وإدارة الإصدارات وروابط البوابة الخارجية.'
+                : 'Publish the form, manage versions, and generate portal links.'}
+            </p>
+            <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8 text-center text-sm text-muted-foreground">
+              {locale === 'ar' ? 'سيتم إضافة إعدادات النشر هنا' : 'Publishing settings will appear here'}
+            </div>
+          </div>
         </div>
       )}
     </div>

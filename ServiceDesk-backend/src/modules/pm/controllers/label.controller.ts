@@ -6,7 +6,7 @@ import { PMAuthRequest as Request, ApiResponse } from '../../../types/pm';
 
 export const getLabels = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId);
@@ -32,7 +32,7 @@ export const getLabels = async (req: Request, res: Response): Promise<void> => {
 
 export const createLabel = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { name, color } = req.body;
     const userId = req.user?.id;
 
@@ -76,7 +76,7 @@ export const createLabel = async (req: Request, res: Response): Promise<void> =>
 
 export const updateLabel = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { labelId } = req.params;
+    const { labelId } = req.params as Record<string, string>;
     const { name, color } = req.body;
     const userId = req.user?.id;
 
@@ -111,7 +111,7 @@ export const updateLabel = async (req: Request, res: Response): Promise<void> =>
 
 export const deleteLabel = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { labelId } = req.params;
+    const { labelId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const label = await PMLabel.findById(labelId);

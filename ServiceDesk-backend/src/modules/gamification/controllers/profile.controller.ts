@@ -64,7 +64,7 @@ export async function getMyProfile(req: Request, res: Response): Promise<void> {
  */
 export async function getUserProfile(req: Request, res: Response): Promise<void> {
   try {
-    const { userId } = req.params;
+    const { userId } = req.params as Record<string, string>;
     const organizationId = (req as any).user?.organizationId;
 
     if (!organizationId) {

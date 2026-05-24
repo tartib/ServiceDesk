@@ -3,7 +3,7 @@ import container from '../../../infrastructure/di/container';
 
 export const createTemplate = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const template = await formTemplateService.createTemplate({ ...req.body, created_by: req.user?.id, site_id: req.user?.site_id });
     res.status(201).json({ success: true, data: template, message: 'Form template created successfully' });
   } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
@@ -11,7 +11,7 @@ export const createTemplate = async (req: Request, res: Response) => {
 
 export const listTemplates = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const { page, limit, category, is_published, search, sort_by, sort_order } = req.query;
     const result = await formTemplateService.listTemplates({
       page: page ? parseInt(page as string) : undefined, limit: limit ? parseInt(limit as string) : undefined,
@@ -24,7 +24,7 @@ export const listTemplates = async (req: Request, res: Response) => {
 
 export const getTemplate = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const template = await formTemplateService.getTemplateById(req.params.id);
     if (!template) return res.status(404).json({ success: false, error: 'Form template not found' });
     res.json({ success: true, data: template });
@@ -33,7 +33,7 @@ export const getTemplate = async (req: Request, res: Response) => {
 
 export const updateTemplate = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const template = await formTemplateService.updateTemplate(req.params.id, { ...req.body, updated_by: req.user?.id });
     if (!template) return res.status(404).json({ success: false, error: 'Form template not found' });
     res.json({ success: true, data: template, message: 'Form template updated successfully' });
@@ -42,7 +42,7 @@ export const updateTemplate = async (req: Request, res: Response) => {
 
 export const deleteTemplate = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     await formTemplateService.deleteTemplate(req.params.id);
     res.json({ success: true, message: 'Form template deleted successfully' });
   } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
@@ -50,7 +50,7 @@ export const deleteTemplate = async (req: Request, res: Response) => {
 
 export const publishTemplate = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ success: false, error: 'User ID is required' });
     const template = await formTemplateService.publishTemplate(req.params.id, userId);
@@ -61,7 +61,7 @@ export const publishTemplate = async (req: Request, res: Response) => {
 
 export const unpublishTemplate = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ success: false, error: 'User not authenticated' });
     const template = await formTemplateService.unpublishTemplate(req.params.id, userId);
@@ -72,7 +72,7 @@ export const unpublishTemplate = async (req: Request, res: Response) => {
 
 export const cloneTemplate = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const { name, name_ar } = req.body;
     const userId = req.user?.id;
     if (!name || !name_ar || !userId) return res.status(400).json({ success: false, error: 'Name and Arabic name are required' });
@@ -83,7 +83,7 @@ export const cloneTemplate = async (req: Request, res: Response) => {
 
 export const createNewVersion = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const userId = req.user?.id;
     if (!userId) { res.status(401).json({ success: false, error: 'User ID is required' }); return; }
     const template = await formTemplateService.createNewVersion(req.params.id, userId);
@@ -93,7 +93,7 @@ export const createNewVersion = async (req: Request, res: Response) => {
 
 export const validateTemplate = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const template = await formTemplateService.getTemplateById(req.params.id);
     if (!template) return res.status(404).json({ success: false, error: 'Form template not found' });
     const validation = formTemplateService.validateTemplate(template);
@@ -103,7 +103,7 @@ export const validateTemplate = async (req: Request, res: Response) => {
 
 export const getPublishedTemplates = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const templates = await formTemplateService.getPublishedTemplates(req.user?.site_id);
     res.json({ success: true, data: templates });
   } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
@@ -111,7 +111,7 @@ export const getPublishedTemplates = async (req: Request, res: Response) => {
 
 export const getCategories = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const categories = await formTemplateService.getCategories(req.user?.site_id);
     res.json({ success: true, data: categories });
   } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
@@ -119,7 +119,7 @@ export const getCategories = async (req: Request, res: Response) => {
 
 export const addField = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ success: false, error: 'User ID is required' });
     const template = await formTemplateService.addField(req.params.id, req.body, userId);
@@ -130,7 +130,7 @@ export const addField = async (req: Request, res: Response) => {
 
 export const updateField = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ success: false, error: 'User not authenticated' });
     const template = await formTemplateService.updateField(req.params.id, req.params.fieldId, req.body, userId);
@@ -141,7 +141,7 @@ export const updateField = async (req: Request, res: Response) => {
 
 export const removeField = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ success: false, error: 'User ID is required' });
     const template = await formTemplateService.removeField(req.params.id, req.params.fieldId, userId);
@@ -152,7 +152,7 @@ export const removeField = async (req: Request, res: Response) => {
 
 export const reorderFields = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const { field_orders } = req.body;
     const userId = req.user?.id;
     if (!field_orders || !Array.isArray(field_orders)) return res.status(400).json({ success: false, error: 'field_orders array is required' });
@@ -165,7 +165,7 @@ export const reorderFields = async (req: Request, res: Response) => {
 
 export const updateWorkflow = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ success: false, error: 'User not authenticated' });
     const template = await formTemplateService.updateWorkflow(req.params.id, req.body, userId);
@@ -176,7 +176,7 @@ export const updateWorkflow = async (req: Request, res: Response) => {
 
 export const updateApproval = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ success: false, error: 'User not authenticated' });
     const template = await formTemplateService.updateApproval(req.params.id, req.body, userId);
@@ -187,7 +187,7 @@ export const updateApproval = async (req: Request, res: Response) => {
 
 export const addConditionalRule = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
     const template = await formTemplateService.addConditionalRule(req.params.id, req.body, userId);
@@ -198,7 +198,7 @@ export const addConditionalRule = async (req: Request, res: Response) => {
 
 export const addBusinessRule = async (req: Request, res: Response) => {
   try {
-    const formTemplateService = container.resolve('formTemplateService');
+    const formTemplateService = container.resolve<any>('formTemplateService');
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized: User ID not found' });
     const template = await formTemplateService.addBusinessRule(req.params.id, { ...req.body, created_by: userId, created_at: new Date(), updated_at: new Date() }, userId);

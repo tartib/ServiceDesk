@@ -6,7 +6,11 @@ module.exports = {
   testPathIgnorePatterns: ['/node_modules/', '/src/__tests__/setup.ts', '/src/__tests__/helpers/', '/src/__tests__/fixtures/'],
   transform: {
     '^.+\\.ts$': 'ts-jest',
+    '^.+\\.js$': 'babel-jest',
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(uuid|nanoid)/)',
+  ],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',

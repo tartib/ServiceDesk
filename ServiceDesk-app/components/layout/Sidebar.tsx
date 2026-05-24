@@ -54,6 +54,7 @@ import {
  ClipboardCheck,
  ArrowLeftRight,
  History,
+ CalendarClock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -130,7 +131,8 @@ const menuItems = [
    { icon: Warehouse, labelKey: 'nav.inventoryWarehouses', href: '/inventory/warehouses', fallback: 'Warehouses' },
    { icon: ClipboardList, labelKey: 'nav.inventoryTransactions', href: '/inventory/transactions', fallback: 'Transactions' },
    { icon: ArrowLeftRight, labelKey: 'nav.inventoryTransfers', href: '/inventory/transfers', fallback: 'Transfers' },
-   { icon: History, labelKey: 'nav.inventoryMovements', href: '/inventory/movements', fallback: 'Movements' },
+   { icon: CalendarClock, labelKey: 'nav.inventoryCounts', href: '/inventory/counts', fallback: 'Counts' },
+  { icon: History, labelKey: 'nav.inventoryMovements', href: '/inventory/movements', fallback: 'Movements' },
  ]},
  { icon: BarChart3, labelKey: 'nav.reports', href: '/reports', roles: LEAD_ROLES },
  { icon: Users, labelKey: 'nav.users', href: '/users', roles: ADMIN_ROLES },

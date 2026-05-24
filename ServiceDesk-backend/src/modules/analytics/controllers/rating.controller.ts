@@ -3,7 +3,7 @@ import * as ratingService from '../services/ratingService';
 
 export const getEmployeeRatingHistory = async (req: Request, res: Response) => {
   try {
-    const { employeeId } = req.params;
+    const { employeeId } = req.params as Record<string, string>;
     const ratings = await ratingService.getEmployeeRatingHistory(employeeId);
     res.status(200).json({ success: true, data: ratings });
   } catch (error) {
@@ -13,7 +13,7 @@ export const getEmployeeRatingHistory = async (req: Request, res: Response) => {
 
 export const getCurrentMonthRating = async (req: Request, res: Response) => {
   try {
-    const { employeeId } = req.params;
+    const { employeeId } = req.params as Record<string, string>;
     const rating = await ratingService.getCurrentMonthRating(employeeId);
     if (!rating) return res.status(404).json({ success: false, error: 'Rating not found for current month' });
     res.status(200).json({ success: true, data: rating });

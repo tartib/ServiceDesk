@@ -14,6 +14,8 @@ import adjustmentRoutes from './adjustment.routes';
 import returnRoutes from './return.routes';
 import balanceRoutes from './balance.routes';
 import movementRoutes from './movement.routes';
+import countScheduleRoutes from './countSchedule.routes';
+import countTaskRoutes from './countTask.routes';
 import * as movementCtrl from '../controllers/movement.controller';
 
 const router = Router();
@@ -28,6 +30,8 @@ router.use('/adjustments', adjustmentRoutes);
 router.use('/returns', returnRoutes);
 router.use('/balances', balanceRoutes);
 router.use('/movements', movementRoutes);
+router.use('/count-schedules', countScheduleRoutes);
+router.use('/count-tasks', countTaskRoutes);
 
 // GET /api/v2/inventory/items/:id/movements
 router.get('/items/:id/movements', movementCtrl.getItemMovements);

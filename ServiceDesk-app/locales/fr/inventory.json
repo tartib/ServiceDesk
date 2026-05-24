@@ -6,7 +6,8 @@
     "search": "Rechercher par n° de pièce, description, groupe...",
     "items": {
       "title": "Articles d'inventaire",
-      "subtitle": "Gérer le catalogue de pièces"
+      "subtitle": "Gérer le catalogue de pièces",
+      "noItems": "Aucun article trouvé"
     },
     "table": {
       "partNo": "N° de pièce",
@@ -18,7 +19,9 @@
       "uom": "UdM",
       "cost": "Coût",
       "warehouse": "Entrepôt",
-      "status": "Statut"
+      "status": "Statut",
+      "reorder": "Réappro.",
+      "actions": "Actions"
     },
     "filter": {
       "search": "Rechercher",
@@ -34,11 +37,38 @@
     "status": {
       "inStock": "Normal",
       "lowStock": "Stock faible",
-      "outOfStock": "Rupture de stock"
+      "outOfStock": "Rupture de stock",
+      "active": "Actif",
+      "inactive": "Inactif"
     },
     "messages": {
       "loading": "Chargement...",
       "noItems": "Aucun solde de stock trouvé"
+    },
+    "actions": {
+      "edit": "Modifier",
+      "deactivate": "Désactiver",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "back": "Retour",
+      "next": "Suivant",
+      "submit": "Envoyer",
+      "search": "Rechercher..."
+    },
+    "toast": {
+      "itemCreated": "Article créé",
+      "itemUpdated": "Article mis à jour",
+      "itemDeactivated": "Article désactivé",
+      "warehouseCreated": "Entrepôt créé",
+      "warehouseUpdated": "Entrepôt mis à jour",
+      "warehouseDeactivated": "Entrepôt désactivé",
+      "stockReceived": "Stock réceptionné et confirmé",
+      "stockIssued": "Stock sorti",
+      "stockTransferred": "Stock transféré",
+      "stockAdjusted": "Stock ajusté",
+      "stockReturned": "Stock retourné",
+      "operationFailed": "L'opération a échoué",
+      "saveFailed": "Échec de l'enregistrement"
     },
     "warehouse": {
       "title": "Entrepôts",
@@ -60,10 +90,231 @@
       "issue": "Sortie de stock",
       "transfer": "Transfert de stock",
       "adjust": "Ajustement de stock",
-      "return": "Retour de stock"
+      "return": "Retour de stock",
+      "receiveDesc": "Ajouter du stock entrant à l'entrepôt",
+      "issueDesc": "Sortir du stock de l'entrepôt",
+      "transferDesc": "Déplacer du stock entre entrepôts",
+      "adjustDesc": "Augmenter, diminuer ou définir le solde",
+      "returnDesc": "Retourner du stock sorti"
     },
     "movements": {
       "title": "Historique des mouvements"
+    },
+    "autosave": {
+      "saving": "Enregistrement...",
+      "saved": "Enregistré",
+      "error": "Échec de l'enregistrement"
+    },
+    "forms": {
+      "addItem": {
+        "title": "Ajouter un article",
+        "description": "Ajouter un nouvel article au catalogue.",
+        "submit": "Créer l'article"
+      },
+      "editItem": {
+        "title": "Modifier l'article",
+        "description": "Mettre à jour un article existant.",
+        "submit": "Enregistrer"
+      },
+      "warehouse": {
+        "title": "Entrepôt",
+        "description": "Créer ou modifier un entrepôt.",
+        "submit": "Enregistrer"
+      },
+      "receive": {
+        "title": "Réception de stock",
+        "description": "Ajouter du stock entrant à un entrepôt.",
+        "submit": "Confirmer la réception"
+      },
+      "issue": {
+        "title": "Sortie de stock",
+        "description": "Sortir du stock d'un entrepôt.",
+        "submit": "Confirmer la sortie"
+      },
+      "transfer": {
+        "title": "Transfert d'article",
+        "description": "Déplacer un article d'un entrepôt à un autre.",
+        "submit": "Confirmer le transfert"
+      },
+      "adjust": {
+        "title": "Ajustement de stock",
+        "description": "Ajuster les niveaux de stock avec piste d'audit.",
+        "submit": "Confirmer l'ajustement"
+      },
+      "return": {
+        "title": "Retour d'article",
+        "description": "Retourner un article assigné à l'inventaire.",
+        "submit": "Confirmer le retour"
+      },
+      "steps": {
+        "basicInfo": "Informations de base",
+        "basicInfoDesc": "Nom, catégorie et type de l'article.",
+        "stockLocation": "Stock et emplacement",
+        "stockLocationDesc": "Entrepôt, quantité et coût.",
+        "assetDetails": "Détails de l'actif",
+        "assetDetailsDesc": "Détails de suivi pour les actifs.",
+        "review": "Vérification",
+        "selectItem": "Sélectionner l'article",
+        "selectItemDesc": "Choisir l'article à transférer.",
+        "selectItemSearchDesc": "Choisir l'article et l'entrepôt.",
+        "receiptDetails": "Détails de réception",
+        "receiptDetailsDesc": "Sélectionner l'article et saisir la quantité.",
+        "issueDetails": "Détails de sortie",
+        "issueDetailsDesc": "Sélectionner l'article et saisir la quantité.",
+        "transferDetails": "Détails du transfert",
+        "transferDetailsDesc": "Source, destination et quantité.",
+        "returnDetails": "Détails du retour",
+        "returnDetailsDesc": "État et lieu de retour.",
+        "adjustment": "Ajustement",
+        "adjustmentDesc": "Saisir la nouvelle quantité et le motif."
+      },
+      "fields": {
+        "partNo": "Numéro de pièce",
+        "partNoPlaceholder": "ex. ITM-001",
+        "groupName": "Catégorie / Groupe",
+        "description": "Description",
+        "descriptionPlaceholder": "Décrire l'article...",
+        "descriptionAr": "Description (arabe)",
+        "descriptionArPlaceholder": "الوصف...",
+        "inventoryType": "Type d'inventaire",
+        "inventoryTypeAsset": "Actif",
+        "inventoryTypeAssetDesc": "Suivi individuel (numéro de série, étiquette)",
+        "inventoryTypeConsumable": "Consommable",
+        "inventoryTypeConsumableDesc": "Suivi par quantité (stylos, papier, etc.)",
+        "warehouse": "Entrepôt",
+        "uom": "Unité de mesure",
+        "uomPlaceholder": "pcs, kg, m...",
+        "initialQuantity": "Quantité initiale",
+        "unitCost": "Coût unitaire",
+        "minStock": "Stock min.",
+        "maxStock": "Stock max.",
+        "reorderLevel": "Seuil de réappro.",
+        "assetTag": "Étiquette d'actif",
+        "assetTagPlaceholder": "ex. ASSET-001",
+        "serialNumber": "Numéro de série",
+        "owner": "Propriétaire",
+        "ownerHelper": "Assigner à une personne (optionnel).",
+        "warrantyExpiry": "Expiration de garantie",
+        "supplier": "Fournisseur",
+        "purchaseDate": "Date d'achat",
+        "purchasePrice": "Prix d'achat",
+        "notes": "Notes",
+        "item": "Article",
+        "quantity": "Quantité",
+        "referenceNo": "N° de référence",
+        "referenceNoPlaceholder": "N° de commande, bon de livraison, etc.",
+        "issuedTo": "Remis à",
+        "issuedToPlaceholder": "Qui reçoit ce stock ?",
+        "fromWarehouse": "Depuis l'entrepôt",
+        "fromWarehouseHelper": "Emplacement actuel (auto-rempli).",
+        "toWarehouse": "Vers l'entrepôt",
+        "toWarehouseHelper": "Choisir la destination.",
+        "transferDate": "Date de transfert",
+        "reason": "Motif",
+        "adjustmentType": "Type d'ajustement",
+        "adjustmentIncrease": "Augmentation",
+        "adjustmentIncreaseDesc": "Ajouter du stock (reçu, trouvé, correction)",
+        "adjustmentDecrease": "Diminution",
+        "adjustmentDecreaseDesc": "Retirer du stock (perdu, expiré, correction)",
+        "adjustmentSetBalance": "Définir le solde",
+        "adjustmentSetBalanceDesc": "Définir la quantité exacte après inventaire",
+        "currentQuantity": "Quantité actuelle",
+        "currentQuantityHelper": "Auto-rempli depuis le stock actuel.",
+        "newQuantity": "Nouvelle quantité",
+        "newQuantityHelper": "Saisir la quantité ajustée.",
+        "reasonPlaceholder": "Pourquoi cet ajustement est-il nécessaire ?",
+        "supportingDoc": "Document justificatif",
+        "supportingDocHelper": "Requis pour les ajustements importants.",
+        "returnLocation": "Lieu de retour",
+        "returnLocationHelper": "Où retournez-vous l'article ?",
+        "condition": "État",
+        "conditionGood": "Bon",
+        "conditionDamaged": "Endommagé",
+        "damageDescription": "Description des dommages",
+        "damageDescriptionPlaceholder": "Décrire les dommages...",
+        "photo": "Photo",
+        "photoHelper": "Télécharger une photo de l'article endommagé.",
+        "warehouseName": "Nom",
+        "warehouseNamePlaceholder": "Entrepôt principal",
+        "warehouseNameAr": "Nom (arabe)",
+        "warehouseNameArPlaceholder": "المستودع الرئيسي",
+        "code": "Code",
+        "codePlaceholder": "WH-01",
+        "address": "Adresse",
+        "addressPlaceholder": "Adresse complète...",
+        "selectCategory": "Sélectionner une catégorie...",
+        "selectWarehouse": "Sélectionner un entrepôt...",
+        "selectUser": "Sélectionner un utilisateur...",
+        "searchItem": "Rechercher par nom, n° de pièce ou description.",
+        "itemHelper": "Rechercher par nom, n° de pièce ou description."
+      }
+    },
+    "counts": {
+      "title": "Inventaire physique",
+      "schedules": "Plannings de comptage",
+      "tasks": "Tâches de comptage",
+      "createSchedule": "Créer un planning",
+      "editSchedule": "Modifier le planning",
+      "generateTasks": "Générer les tâches du jour",
+      "scheduleName": "Nom du planning",
+      "scheduleNamePlaceholder": "ex. Comptage quotidien de l'entrepôt",
+      "frequency": "Fréquence",
+      "daily": "Quotidien",
+      "weekly": "Hebdomadaire",
+      "weeklyDay": "Jour de la semaine",
+      "dueTime": "Heure limite",
+      "startDate": "Date de début",
+      "varianceThreshold": "Seuil d'écart (%)",
+      "varianceThresholdHelper": "Justification requise si l'écart dépasse ce pourcentage",
+      "assignedTo": "Assigné à",
+      "selectItems": "Sélectionner les articles à compter",
+      "noSchedules": "Aucun planning de comptage",
+      "noTasks": "Aucune tâche de comptage",
+      "countDate": "Date de comptage",
+      "systemQty": "Qté système",
+      "actualQty": "Qté réelle",
+      "variance": "Écart",
+      "varianceReason": "Raison de l'écart",
+      "varianceReasonPlaceholder": "Expliquer l'écart...",
+      "itemNotes": "Notes article",
+      "status": {
+        "pending": "En attente",
+        "in_progress": "En cours",
+        "submitted": "Soumis",
+        "under_review": "En revue",
+        "approved": "Approuvé",
+        "completed": "Terminé",
+        "rejected": "Rejeté"
+      },
+      "scheduleStatus": {
+        "active": "Actif",
+        "paused": "En pause",
+        "archived": "Archivé"
+      },
+      "actions": {
+        "start": "Démarrer le comptage",
+        "submit": "Soumettre pour revue",
+        "approve": "Approuver",
+        "reject": "Rejeter",
+        "pause": "Mettre en pause",
+        "resume": "Reprendre",
+        "archive": "Archiver"
+      },
+      "rejectionReason": "Raison du rejet",
+      "rejectionReasonPlaceholder": "Pourquoi ce comptage est-il rejeté ?",
+      "toast": {
+        "scheduleCreated": "Planning de comptage créé",
+        "scheduleUpdated": "Planning de comptage mis à jour",
+        "schedulePaused": "Planning mis en pause",
+        "scheduleResumed": "Planning repris",
+        "scheduleArchived": "Planning archivé",
+        "tasksGenerated": "Tâches de comptage générées",
+        "taskStarted": "Tâche de comptage démarrée",
+        "itemUpdated": "Comptage d'article mis à jour",
+        "taskSubmitted": "Comptage soumis pour revue",
+        "taskApproved": "Comptage approuvé et stock ajusté",
+        "taskRejected": "Comptage rejeté"
+      }
     }
   }
 }

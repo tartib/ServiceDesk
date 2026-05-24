@@ -15,7 +15,7 @@ export const createSprint = async (req: PMAuthRequest, res: Response): Promise<v
   try {
 
     const userId = req.user?.id;
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const usePg = isPmPostgres();
 
     // Get organizationId from project
@@ -95,7 +95,7 @@ export const createSprint = async (req: PMAuthRequest, res: Response): Promise<v
 
 export const getSprints = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { status } = req.query;
 
     // ── PostgreSQL path ──
@@ -179,7 +179,7 @@ export const getSprints = async (req: PMAuthRequest, res: Response): Promise<voi
 
 export const getSprint = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
 
     // ── PostgreSQL path ──
     if (isPmPostgres()) {
@@ -252,7 +252,7 @@ export const getSprint = async (req: PMAuthRequest, res: Response): Promise<void
 export const updateSprint = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
 
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
 
     // ── PostgreSQL path ──
     if (isPmPostgres()) {
@@ -321,7 +321,7 @@ export const startSprint = async (req: PMAuthRequest, res: Response): Promise<vo
       return;
     }
 
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
     const { skipValidation, participants } = req.body;
 
     const sprint = await Sprint.findById(sprintId);
@@ -468,7 +468,7 @@ export const startSprint = async (req: PMAuthRequest, res: Response): Promise<vo
 
 export const completeSprint = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
     const { moveIncompleteToBacklog, moveToSprintId } = req.body;
 
     const sprint = await Sprint.findById(sprintId);
@@ -553,7 +553,7 @@ export const completeSprint = async (req: PMAuthRequest, res: Response): Promise
 
 export const deleteSprint = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
 
     // ── PostgreSQL path ──
     if (isPmPostgres()) {
@@ -616,7 +616,7 @@ export const deleteSprint = async (req: PMAuthRequest, res: Response): Promise<v
 
 export const getBacklog = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     // ── PostgreSQL path ──
     if (isPmPostgres()) {
@@ -655,7 +655,7 @@ export const getBacklog = async (req: PMAuthRequest, res: Response): Promise<voi
 
 export const getSprintInsights = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
 
     const sprint = await Sprint.findById(sprintId);
     if (!sprint) {
@@ -741,7 +741,7 @@ export const getSprintInsights = async (req: PMAuthRequest, res: Response): Prom
 export const updateTeamCapacity = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
 
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
     const { teamCapacity } = req.body;
 
     const sprint = await Sprint.findById(sprintId);
@@ -797,7 +797,7 @@ export const updateTeamCapacity = async (req: PMAuthRequest, res: Response): Pro
 // Get sprint planning summary
 export const getSprintPlanningSummary = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
 
     const sprint = await Sprint.findById(sprintId)
       .populate('teamCapacity.userId', 'name profile.firstName profile.lastName profile.avatar email')
@@ -906,7 +906,7 @@ export const getSprintPlanningSummary = async (req: PMAuthRequest, res: Response
 // Update sprint settings
 export const updateSprintSettings = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
     const { settings } = req.body;
 
     const sprint = await Sprint.findById(sprintId);

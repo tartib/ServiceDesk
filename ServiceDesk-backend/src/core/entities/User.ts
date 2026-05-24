@@ -212,6 +212,6 @@ ITSMUserSchema.virtual('display_name').get(function () {
 ITSMUserSchema.set('toJSON', { virtuals: true });
 ITSMUserSchema.set('toObject', { virtuals: true });
 
-const ITSMUser = mongoose.model<IITSMUser>('ITSMUser', ITSMUserSchema);
+const ITSMUser = mongoose.models.ITSMUser || mongoose.model<IITSMUser>('ITSMUser', ITSMUserSchema);
 
 export default ITSMUser;

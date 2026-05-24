@@ -67,7 +67,7 @@ export const fetchAndLock = asyncHandler(async (req: Request, res: Response) => 
  * Worker completes a locked task, optionally passing result variables
  */
 export const complete = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const { workerId, variables } = req.body;
 
   if (!workerId) {
@@ -89,7 +89,7 @@ export const complete = asyncHandler(async (req: Request, res: Response) => {
  * Worker reports a failure for a locked task
  */
 export const handleFailure = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const { workerId, errorMessage, errorDetails, retries } = req.body;
 
   if (!workerId || !errorMessage) {
@@ -113,7 +113,7 @@ export const handleFailure = asyncHandler(async (req: Request, res: Response) =>
  * Worker extends the lock on a task
  */
 export const extendLock = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const { workerId, lockDuration } = req.body;
 
   if (!workerId || !lockDuration) {
@@ -184,7 +184,7 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
  * Get a single external task by ID
  */
 export const getById = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
 
   // ── PostgreSQL path ──
   if (isWfPostgres()) {

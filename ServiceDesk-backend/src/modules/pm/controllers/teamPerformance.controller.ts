@@ -290,7 +290,7 @@ export const getTeamPerformance = async (req: Request, res: Response): Promise<v
 
 export const getUserPerformanceDetail = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.params as Record<string, string>;
     const organizationId = resolveOrganizationId(req.user);
 
     const { from, to } = req.query;
@@ -576,7 +576,7 @@ export const getGoals = async (req: Request, res: Response): Promise<void> => {
 
 export const updateGoal = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { goalId } = req.params;
+    const { goalId } = req.params as Record<string, string>;
     const updates = req.body as Record<string, unknown>;
 
     const goal = await PMGoal.findByIdAndUpdate(goalId, { $set: updates }, { new: true });

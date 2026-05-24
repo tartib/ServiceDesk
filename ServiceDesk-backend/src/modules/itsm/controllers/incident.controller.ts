@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import asyncHandler from '../../../utils/asyncHandler';
-import incidentService from '../../../core/services/IncidentService';
-import { IncidentStatus, Priority, Channel } from '../../../core/types/itsm.types';
+import { incidentService, IncidentStatus, Priority, Channel } from '../core-re-exports';
 
 export class IncidentController {
   createIncident = asyncHandler(async (req: Request, res: Response) => {
@@ -11,9 +10,9 @@ export class IncidentController {
     } = req.body;
 
     const requester = {
-      id: (req as any).user!.id,
-      name: (req as any).user!.name,
-      email: (req as any).user!.email,
+      id: req.user!.id,
+      name: req.user!.name,
+      email: req.user!.email,
       department: req.body.department || 'General',
       phone: req.body.phone,
     };
@@ -34,13 +33,13 @@ export class IncidentController {
   });
 
   getIncident = asyncHandler(async (req: Request, res: Response) => {
-    const incident = await incidentService.getIncident(req.params.id);
+    const incident = await incidentService.getIncident(req.params.id as string);
     res.json({ success: true, data: { incident } });
   });
 
   updateIncident = asyncHandler(async (req: Request, res: Response) => {
     const incident = await incidentService.updateIncident(
-      req.params.id, req.body, (req as any).user!.id, (req as any).user!.name
+      req.params.id as string, req.body, req.user!.id, req.user!.name
     );
     res.json({ success: true, data: { incident }, message: 'Incident updated successfully' });
   });
@@ -48,8 +47,8 @@ export class IncidentController {
   updateStatus = asyncHandler(async (req: Request, res: Response) => {
     const { status, resolution } = req.body;
     const incident = await incidentService.updateStatus(
-      req.params.id, status as IncidentStatus,
-      (req as any).user!.id, (req as any).user!.name, resolution
+      req.params.id as string, status as IncidentStatus,
+      req.user!.id, req.user!.name, resolution
     );
     res.json({ success: true, data: { incident }, message: `Incident status updated to ${status}` });
   });
@@ -57,16 +56,16 @@ export class IncidentController {
   assignIncident = asyncHandler(async (req: Request, res: Response) => {
     const { technician_id, name, email, group_id, group_name } = req.body;
     const incident = await incidentService.assignIncident(
-      req.params.id, { technician_id, name, email, group_id, group_name },
-      (req as any).user!.id, (req as any).user!.name
+      req.params.id as string, { technician_id, name, email, group_id, group_name },
+      req.user!.id, req.user!.name
     );
     res.json({ success: true, data: { incident }, message: `Incident assigned to ${name}` });
   });
 
   addWorklog = asyncHandler(async (req: Request, res: Response) => {
     const { minutes_spent, note, is_internal } = req.body;
-    const incident = await incidentService.addWorklog(req.params.id, {
-      by: (req as any).user!.id, by_name: (req as any).user!.name,
+    const incident = await incidentService.addWorklog(req.params.id as string, {
+      by: req.user!.id, by_name: req.user!.name,
       minutes_spent, note, is_internal: is_internal || false,
     });
     res.status(201).json({ success: true, data: { incident }, message: 'Worklog added successfully' });
@@ -75,7 +74,7 @@ export class IncidentController {
   escalateIncident = asyncHandler(async (req: Request, res: Response) => {
     const { reason } = req.body;
     const incident = await incidentService.escalateIncident(
-      req.params.id, reason, (req as any).user!.id, (req as any).user!.name
+      req.params.id as string, reason, req.user!.id, req.user!.name
     );
     res.json({ success: true, data: { incident }, message: 'Incident escalated successfully' });
   });
@@ -83,7 +82,7 @@ export class IncidentController {
   linkToProblem = asyncHandler(async (req: Request, res: Response) => {
     const { problem_id } = req.body;
     const incident = await incidentService.linkToProblem(
-      req.params.id, problem_id, (req as any).user!.id, (req as any).user!.name
+      req.params.id as string, problem_id, req.user!.id, req.user!.name
     );
     res.json({ success: true, data: { incident }, message: `Incident linked to problem ${problem_id}` });
   });
@@ -138,7 +137,7 @@ export class IncidentController {
 
   getMyRequests = asyncHandler(async (req: Request, res: Response) => {
     const result = await incidentService.getIncidents({
-      requester: (req as any).user!.id,
+      requester: req.user!.id,
       page: req.query.page ? parseInt(req.query.page as string) : 1,
       limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
     });
@@ -147,7 +146,7 @@ export class IncidentController {
 
   getMyAssignments = asyncHandler(async (req: Request, res: Response) => {
     const result = await incidentService.getIncidents({
-      assignee: (req as any).user!.id,
+      assignee: req.user!.id,
       status: [IncidentStatus.OPEN, IncidentStatus.IN_PROGRESS, IncidentStatus.PENDING],
       page: req.query.page ? parseInt(req.query.page as string) : 1,
       limit: req.query.limit ? parseInt(req.query.limit as string) : 20,

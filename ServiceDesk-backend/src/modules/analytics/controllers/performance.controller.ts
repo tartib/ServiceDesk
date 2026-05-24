@@ -7,7 +7,7 @@ const generateErrorId = () => `ERR_${Date.now()}_${Math.random().toString(36).su
 export const getTeamPerformance = async (req: Request, res: Response) => {
   const errorId = generateErrorId();
   try {
-    const dashboardPerformanceService = container.resolve('dashboardPerformanceService');
+    const dashboardPerformanceService = container.resolve<any>('dashboardPerformanceService');
     const dateFrom = req.query.dateFrom ? new Date(String(req.query.dateFrom)) : undefined;
     const dateTo = req.query.dateTo ? new Date(String(req.query.dateTo)) : undefined;
     const teamPerformance = await dashboardPerformanceService.getTeamPerformance(dateFrom, dateTo);
@@ -21,7 +21,7 @@ export const getTeamPerformance = async (req: Request, res: Response) => {
 export const getTopPerformers = async (req: Request, res: Response) => {
   const errorId = generateErrorId();
   try {
-    const dashboardPerformanceService = container.resolve('dashboardPerformanceService');
+    const dashboardPerformanceService = container.resolve<any>('dashboardPerformanceService');
     const limit = req.query.limit ? parseInt(String(req.query.limit)) : 5;
     const dateFrom = req.query.dateFrom ? new Date(String(req.query.dateFrom)) : undefined;
     const dateTo = req.query.dateTo ? new Date(String(req.query.dateTo)) : undefined;
@@ -36,8 +36,8 @@ export const getTopPerformers = async (req: Request, res: Response) => {
 export const getMemberPerformance = async (req: Request, res: Response) => {
   const errorId = generateErrorId();
   try {
-    const dashboardPerformanceService = container.resolve('dashboardPerformanceService');
-    const { memberId } = req.params;
+    const dashboardPerformanceService = container.resolve<any>('dashboardPerformanceService');
+    const { memberId } = req.params as Record<string, string>;
     const dateFrom = req.query.dateFrom ? new Date(String(req.query.dateFrom)) : undefined;
     const dateTo = req.query.dateTo ? new Date(String(req.query.dateTo)) : undefined;
     const memberPerformance = await dashboardPerformanceService.getMemberPerformance(memberId, dateFrom, dateTo);
@@ -51,7 +51,7 @@ export const getMemberPerformance = async (req: Request, res: Response) => {
 export const getActiveMembers = async (req: Request, res: Response) => {
   const errorId = generateErrorId();
   try {
-    const dashboardPerformanceService = container.resolve('dashboardPerformanceService');
+    const dashboardPerformanceService = container.resolve<any>('dashboardPerformanceService');
     const dateFrom = req.query.dateFrom ? new Date(String(req.query.dateFrom)) : undefined;
     const dateTo = req.query.dateTo ? new Date(String(req.query.dateTo)) : undefined;
     const activeMembers = await dashboardPerformanceService.getActiveMembers(dateFrom, dateTo);
@@ -65,7 +65,7 @@ export const getActiveMembers = async (req: Request, res: Response) => {
 export const recordPerformance = async (req: Request, res: Response) => {
   const errorId = generateErrorId();
   try {
-    const dashboardPerformanceService = container.resolve('dashboardPerformanceService');
+    const dashboardPerformanceService = container.resolve<any>('dashboardPerformanceService');
     const { employeeId, rating, comments } = req.body;
     const performance = await dashboardPerformanceService.recordPerformance({ employeeId, rating, comments });
     res.status(201).json({ success: true, statusCode: 201, message: 'تم تسجيل الأداء بنجاح', data: performance });
@@ -78,8 +78,8 @@ export const recordPerformance = async (req: Request, res: Response) => {
 export const getPerformanceHistory = async (req: Request, res: Response) => {
   const errorId = generateErrorId();
   try {
-    const dashboardPerformanceService = container.resolve('dashboardPerformanceService');
-    const { employeeId } = req.params;
+    const dashboardPerformanceService = container.resolve<any>('dashboardPerformanceService');
+    const { employeeId } = req.params as Record<string, string>;
     const history = await dashboardPerformanceService.getPerformanceHistory(employeeId);
     res.status(200).json({ success: true, statusCode: 200, message: 'تم جلب سجل الأداء بنجاح', data: history });
   } catch (error) {
@@ -91,8 +91,8 @@ export const getPerformanceHistory = async (req: Request, res: Response) => {
 export const getMonthlyPerformance = async (req: Request, res: Response) => {
   const errorId = generateErrorId();
   try {
-    const dashboardPerformanceService = container.resolve('dashboardPerformanceService');
-    const { employeeId, month, year } = req.params;
+    const dashboardPerformanceService = container.resolve<any>('dashboardPerformanceService');
+    const { employeeId, month, year } = req.params as Record<string, string>;
     const performance = await dashboardPerformanceService.getMonthlyPerformance(employeeId, parseInt(month), parseInt(year));
     res.status(200).json({ success: true, statusCode: 200, message: 'تم جلب بيانات الأداء بنجاح', data: performance });
   } catch (error) {
@@ -104,8 +104,8 @@ export const getMonthlyPerformance = async (req: Request, res: Response) => {
 export const updatePerformance = async (req: Request, res: Response) => {
   const errorId = generateErrorId();
   try {
-    const dashboardPerformanceService = container.resolve('dashboardPerformanceService');
-    const { id } = req.params;
+    const dashboardPerformanceService = container.resolve<any>('dashboardPerformanceService');
+    const { id } = req.params as Record<string, string>;
     const { rating, comments } = req.body;
     const performance = await dashboardPerformanceService.updatePerformance(id, { rating, comments });
     res.status(200).json({ success: true, statusCode: 200, message: 'تم تحديث الأداء بنجاح', data: performance });
@@ -118,8 +118,8 @@ export const updatePerformance = async (req: Request, res: Response) => {
 export const deletePerformance = async (req: Request, res: Response) => {
   const errorId = generateErrorId();
   try {
-    const dashboardPerformanceService = container.resolve('dashboardPerformanceService');
-    const { id } = req.params;
+    const dashboardPerformanceService = container.resolve<any>('dashboardPerformanceService');
+    const { id } = req.params as Record<string, string>;
     await dashboardPerformanceService.deletePerformance(id);
     res.status(200).json({ success: true, statusCode: 200, message: 'تم حذف الأداء بنجاح' });
   } catch (error) {

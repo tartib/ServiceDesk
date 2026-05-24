@@ -53,6 +53,7 @@
     "inventoryWarehouses": "Warehouses",
     "inventoryTransactions": "Transactions",
     "inventoryTransfers": "Transfers",
+    "inventoryCounts": "Counts",
     "inventoryMovements": "Movements"
   },
   "common": {

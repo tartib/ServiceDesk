@@ -56,7 +56,7 @@ export default function ServiceRequestDetailPage() {
  const id = params.id as string;
 
  const { data: request, isLoading, error, refetch } = useServiceRequest(id);
- const { data: catalogService } = useServiceCatalogItem(request?.service_id || '');
+ const { data: catalogService } = useServiceCatalogItem(request?.serviceId || request?.service_id);
 
  // Build lookup map: field_id → { label, label_ar, type }
  const fieldDefs = useMemo(() => {

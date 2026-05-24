@@ -1,22 +1,23 @@
 /**
- * RecordService — Platform Facade for Form Submissions
+ * RecordService — Platform Facade for Form Submissions + RecordItem
  *
  * Wraps formSubmissionService with the platform's record vocabulary.
  * All new code (solution modules, platform controllers) should use this
  * service instead of calling formSubmissionService directly.
  *
- * Architecture (ADR 001, Phase 2):
- *   formSubmissionService (implementation, unchanged)
+ * Architecture (ADR 001, Phase 2 + Section 1 Core):
+ *   formSubmissionService (form data, unchanged)
  *   └── RecordService (platform facade — this file)
+ *       ├── RecordItem (metadata model)
  *       └── solution modules / platform controllers
  *
  * The underlying storage model (FormSubmission) is not changed.
+ * RecordItem provides the metadata layer (status, assignee, SLA, workflow ref).
  */
 
 import { formSubmissionService } from './formSubmissionService';
-import type { IFormSubmissionDocument } from '../../../core/entities/FormSubmission';
-import type { ITimelineEvent, IComment, IAttachment, ISignatureData } from '../../../core/types/smart-forms.types';
-import { SubmissionStatus } from '../../../core/types/smart-forms.types';
+import type { IFormSubmissionDocument, ITimelineEvent, IComment, IAttachment, ISignatureData } from '../core-re-exports';
+import { SubmissionStatus } from '../core-re-exports';
 import type {
   IRecordService,
   RecordDetail,
@@ -26,6 +27,66 @@ import type {
   RecordListResult,
   RecordStatus,
 } from '../domain/record-interfaces';
+import RecordItem, {
+  type IRecordItemDocument,
+  RecordItemStatus,
+  RecordSourceType,
+  RecordPriority,
+} from '../models/RecordItem';
+import type { WorkspaceType } from '../../../shared/types/workspace.types';
+import { autoAssignRecord } from './RecordAutoAssignService';
+import { bindSLAToRecord } from './RecordSLAService';
+import logger from '../../../utils/logger';
+
+// ── DTOs for the full record flow ─────────────────────────────────────────
+
+export interface CreateFullRecordDTO {
+  title: string;
+  description?: string;
+  requestTypeId?: string;
+  workspaceType?: WorkspaceType;
+  priority?: RecordPriority;
+  formTemplateId: string;
+  formData: Record<string, unknown>;
+  attachments?: IAttachment[];
+  submittedBy: {
+    userId: string;
+    name: string;
+    email: string;
+    department?: string;
+    siteId?: string;
+  };
+  organizationId: string;
+  siteId?: string;
+  isDraft?: boolean;
+}
+
+export interface FullRecordDetail extends RecordDetail {
+  recordItem: IRecordItemDocument;
+}
+
+export interface RecordItemListOptions {
+  organizationId: string;
+  status?: RecordItemStatus;
+  assigneeId?: string;
+  requesterId?: string;
+  requestTypeId?: string;
+  workspaceType?: WorkspaceType;
+  sourceType?: RecordSourceType;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface RecordItemListResult {
+  items: IRecordItemDocument[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
 
 class RecordService implements IRecordService {
   /** Create a new record (delegates to createSubmission) */
@@ -93,6 +154,226 @@ class RecordService implements IRecordService {
   /** Delete a record */
   async deleteRecord(recordId: string): Promise<boolean> {
     return formSubmissionService.deleteSubmission(recordId);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // FULL RECORD FLOW (Section 1 Core — RecordItem + FormSubmission)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Create a full record: FormSubmission (form data) + RecordItem (metadata).
+   * This is the primary creation method for the new request flow.
+   */
+  async createFullRecord(dto: CreateFullRecordDTO): Promise<{
+    recordItem: IRecordItemDocument;
+    submission: IFormSubmissionDocument;
+  }> {
+    // 1. Create FormSubmission (form data)
+    const submission = await formSubmissionService.createSubmission({
+      form_template_id: dto.formTemplateId,
+      data: dto.formData as Record<string, any>,
+      attachments: dto.attachments,
+      is_draft: dto.isDraft,
+      submitted_by: {
+        user_id: dto.submittedBy.userId,
+        name: dto.submittedBy.name,
+        email: dto.submittedBy.email,
+        department: dto.submittedBy.department,
+        site_id: dto.submittedBy.siteId,
+      },
+      site_id: dto.siteId,
+    });
+
+    // 2. Create RecordItem (metadata)
+    const recordItem = new RecordItem({
+      title: dto.title,
+      description: dto.description,
+      requestTypeId: dto.requestTypeId,
+      workspaceType: dto.workspaceType,
+      status: dto.isDraft ? RecordItemStatus.DRAFT : RecordItemStatus.SUBMITTED,
+      priority: dto.priority ?? RecordPriority.MEDIUM,
+      requesterId: dto.submittedBy.userId,
+      requesterName: dto.submittedBy.name,
+      requesterEmail: dto.submittedBy.email,
+      formSubmissionId: (submission._id as unknown as { toString(): string }).toString(),
+      sourceType: RecordSourceType.RECORD,
+      organizationId: dto.organizationId,
+      siteId: dto.siteId,
+    });
+
+    await recordItem.save();
+
+    // 3. Auto-assign (non-blocking — best effort)
+    if (!dto.isDraft) {
+      autoAssignRecord(recordItem, {
+        requestTypeId: dto.requestTypeId,
+        organizationId: dto.organizationId,
+        siteId: dto.siteId,
+      }).catch((err) => logger.warn('[RecordService] Auto-assign failed', { error: err }));
+    }
+
+    // 4. Bind SLA (non-blocking — best effort)
+    if (!dto.isDraft) {
+      bindSLAToRecord(recordItem, {
+        requestTypeId: dto.requestTypeId,
+        organizationId: dto.organizationId,
+        priority: dto.priority ?? RecordPriority.MEDIUM,
+      }).catch((err) => logger.warn('[RecordService] SLA bind failed', { error: err }));
+    }
+
+    logger.info('[RecordService] Full record created', {
+      recordId: recordItem._id,
+      recordNumber: recordItem.recordNumber,
+      submissionId: submission.submission_id,
+    });
+
+    return { recordItem, submission };
+  }
+
+  /**
+   * Get a full record: RecordItem + joined FormSubmission.
+   */
+  async getFullRecord(recordItemId: string): Promise<{
+    recordItem: IRecordItemDocument;
+    submission: IFormSubmissionDocument | null;
+  } | null> {
+    const recordItem = await RecordItem.findById(recordItemId);
+    if (!recordItem) return null;
+
+    let submission: IFormSubmissionDocument | null = null;
+    if (recordItem.formSubmissionId) {
+      submission = await formSubmissionService.getSubmissionById(recordItem.formSubmissionId);
+    }
+
+    return { recordItem, submission };
+  }
+
+  /**
+   * Get a full record by record number (e.g. REC-000001).
+   */
+  async getFullRecordByNumber(recordNumber: string): Promise<{
+    recordItem: IRecordItemDocument;
+    submission: IFormSubmissionDocument | null;
+  } | null> {
+    const recordItem = await RecordItem.findOne({ recordNumber });
+    if (!recordItem) return null;
+
+    let submission: IFormSubmissionDocument | null = null;
+    if (recordItem.formSubmissionId) {
+      submission = await formSubmissionService.getSubmissionById(recordItem.formSubmissionId);
+    }
+
+    return { recordItem, submission };
+  }
+
+  /**
+   * Update RecordItem status.
+   */
+  async updateRecordItemStatus(
+    recordItemId: string,
+    status: RecordItemStatus,
+    _actorId: string,
+  ): Promise<IRecordItemDocument | null> {
+    return RecordItem.findByIdAndUpdate(
+      recordItemId,
+      { $set: { status } },
+      { new: true },
+    );
+  }
+
+  /**
+   * Assign a record to a user.
+   */
+  async assignRecordItem(
+    recordItemId: string,
+    assigneeId: string,
+    assigneeName: string,
+  ): Promise<IRecordItemDocument | null> {
+    return RecordItem.findByIdAndUpdate(
+      recordItemId,
+      { $set: { assigneeId, assigneeName } },
+      { new: true },
+    );
+  }
+
+  /**
+   * List RecordItems with filtering and pagination.
+   */
+  async listRecordItems(options: RecordItemListOptions): Promise<RecordItemListResult> {
+    const page = Math.max(options.page ?? 1, 1);
+    const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, unknown> = {
+      organizationId: options.organizationId,
+    };
+
+    if (options.status) filter.status = options.status;
+    if (options.assigneeId) filter.assigneeId = options.assigneeId;
+    if (options.requesterId) filter.requesterId = options.requesterId;
+    if (options.requestTypeId) filter.requestTypeId = options.requestTypeId;
+    if (options.workspaceType) filter.workspaceType = options.workspaceType;
+    if (options.sourceType) filter.sourceType = options.sourceType;
+    if (options.search) {
+      filter.$or = [
+        { title: { $regex: options.search, $options: 'i' } },
+        { recordNumber: { $regex: options.search, $options: 'i' } },
+        { requesterName: { $regex: options.search, $options: 'i' } },
+      ];
+    }
+
+    const sortField = options.sortBy ?? 'createdAt';
+    const sortDir = options.sortOrder === 'asc' ? 1 : -1;
+
+    const [items, total] = await Promise.all([
+      RecordItem.find(filter)
+        .sort({ [sortField]: sortDir })
+        .skip(skip)
+        .limit(limit),
+      RecordItem.countDocuments(filter),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * List drafts for a specific user.
+   */
+  async listDrafts(
+    organizationId: string,
+    requesterId: string,
+  ): Promise<IRecordItemDocument[]> {
+    return RecordItem.find({
+      organizationId,
+      requesterId,
+      status: RecordItemStatus.DRAFT,
+    }).sort({ updatedAt: -1 });
+  }
+
+  /**
+   * Delete a draft record (RecordItem + FormSubmission).
+   */
+  async deleteDraft(recordItemId: string, requesterId: string): Promise<boolean> {
+    const recordItem = await RecordItem.findOne({
+      _id: recordItemId,
+      requesterId,
+      status: RecordItemStatus.DRAFT,
+    });
+
+    if (!recordItem) return false;
+
+    if (recordItem.formSubmissionId) {
+      await formSubmissionService.deleteSubmission(recordItem.formSubmissionId);
+    }
+
+    await RecordItem.findByIdAndDelete(recordItemId);
+    return true;
   }
 
   /**

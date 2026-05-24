@@ -5,7 +5,7 @@ import ApiError from '../../../utils/ApiError';
 import asyncHandler from '../../../utils/asyncHandler';
 
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
   const { productId, scheduledAt, taskType, priority, assignedTo, assignedToName, assignmentType, notes, tags } = req.body;
   if (!productId || !scheduledAt || !taskType) {
     throw new ApiError(400, 'Product ID, scheduled time, and task type are required');
@@ -15,38 +15,38 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getAllTasks = asyncHandler(async (_req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
   const tasks = await prepTaskService.getAllTasks();
   res.status(200).json(new ApiResponse(200, 'All tasks retrieved successfully', { count: tasks.length, tasks }));
 });
 
 export const getTodayTasks = asyncHandler(async (_req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
   const tasks = await prepTaskService.getTodayTasks();
   res.status(200).json(new ApiResponse(200, "Today's tasks retrieved successfully", { count: tasks.length, tasks }));
 });
 
 export const getTasksByStatus = asyncHandler(async (req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
-  const { status } = req.params;
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
+  const { status } = req.params as Record<string, string>;
   const tasks = await prepTaskService.getTasksByStatus(status);
   res.status(200).json(new ApiResponse(200, 'Tasks retrieved successfully', { count: tasks.length, tasks }));
 });
 
 export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
   const task = await prepTaskService.getTaskById(req.params.id);
   res.status(200).json(new ApiResponse(200, 'Task retrieved successfully', { task }));
 });
 
 export const getTasksByProductId = asyncHandler(async (req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
   const tasks = await prepTaskService.getTasksByProductId(req.params.productId);
   res.status(200).json(new ApiResponse(200, 'Product tasks retrieved successfully', { count: tasks.length, tasks }));
 });
 
 export const assignTask = asyncHandler(async (req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
   const { userId, userName } = req.body;
   if (!userId || !userName) {
     throw new ApiError(400, 'User ID and name are required');
@@ -56,7 +56,7 @@ export const assignTask = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const startTask = asyncHandler(async (req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
   const userId = req.user?.id;
   if (!userId) { throw new ApiError(401, 'User not authenticated'); }
   const task = await prepTaskService.startTask(req.params.id, userId);
@@ -64,7 +64,7 @@ export const startTask = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const completeTask = asyncHandler(async (req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
   const { preparedQuantity, unit, notes } = req.body;
   if (!preparedQuantity || !unit) {
     throw new ApiError(400, 'Prepared quantity and unit are required');
@@ -74,13 +74,13 @@ export const completeTask = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const markTaskAsLate = asyncHandler(async (req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
   const task = await prepTaskService.markTaskAsLate(req.params.id);
   res.status(200).json(new ApiResponse(200, 'Task marked as late successfully', { task }));
 });
 
 export const updateTaskUsage = asyncHandler(async (req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
   const { usedQuantity } = req.body;
   if (!usedQuantity) { throw new ApiError(400, 'Used quantity is required'); }
   const task = await prepTaskService.updateTaskUsage(req.params.id, usedQuantity);
@@ -88,7 +88,7 @@ export const updateTaskUsage = asyncHandler(async (req: Request, res: Response) 
 });
 
 export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
-  const prepTaskService = container.resolve('prepTaskRefactoredService');
+  const prepTaskService = container.resolve<any>('prepTaskRefactoredService');
   const userId = req.user?.id;
   const { status } = req.query;
   if (!userId) { throw new ApiError(401, 'User not authenticated'); }

@@ -29,6 +29,28 @@ import {
 import { ArrowLeft, Send, HelpCircle, ChevronRight, Package, Clock, Zap, Search, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
+// Normalize backend response: map requestForm.fields (camelCase) → form (snake_case)
+function normalizeServiceForm(svc: Record<string, unknown>): IServiceCatalogItem {
+ const s = svc as unknown as IServiceCatalogItem & { requestForm?: { fields?: Array<Record<string, unknown>> } };
+ if ((!s.form || s.form.length === 0) && s.requestForm?.fields?.length) {
+  s.form = s.requestForm.fields.map((f) => ({
+   field_id: (f.id || f.field_id || '') as string,
+   label: (f.label || '') as string,
+   label_ar: (f.labelAr || f.label_ar) as string | undefined,
+   type: (f.type || 'text') as string,
+   required: (f.required ?? false) as boolean,
+   placeholder: (f.placeholder || '') as string | undefined,
+   default_value: f.defaultValue ?? f.default_value,
+   options: (f.options as Array<{ value: string; label: string; labelAr?: string; label_ar?: string }> | undefined)?.map(o => ({
+    value: o.value, label: o.label, label_ar: o.labelAr || o.label_ar,
+   })),
+   validation: f.validation as IServiceCatalogItem['form'][0]['validation'],
+   order: (f.order ?? 0) as number,
+  }));
+ }
+ return s;
+}
+
 export default function NewServiceRequestPage() {
  const { t, locale } = useLanguage();
  const router = useRouter();
@@ -44,7 +66,7 @@ export default function NewServiceRequestPage() {
  const services: IServiceCatalogItem[] = useMemo(() => catalogData?.data || [], [catalogData]);
 
  // Fetch individual service for fresh data (includes form fields)
- const { data: singleService, isLoading: singleLoading } = useServiceCatalogItem(preServiceId || '');
+ const { data: singleService, isLoading: singleLoading } = useServiceCatalogItem(preServiceId);
 
  const [step, setStep] = useState<'select' | 'form'>(preServiceId ? 'form' : 'select');
  const [selectedService, setSelectedService] = useState<IServiceCatalogItem | null>(null);
@@ -54,7 +76,7 @@ export default function NewServiceRequestPage() {
  // Prefer fresh single-service data (has form fields) over list data
  useEffect(() => {
  if (preServiceId && singleService && !selectedService) {
- setSelectedService(singleService as IServiceCatalogItem);
+ setSelectedService(normalizeServiceForm(singleService as unknown as Record<string, unknown>));
  setStep('form');
  }
  }, [preServiceId, singleService, selectedService]);
@@ -62,9 +84,9 @@ export default function NewServiceRequestPage() {
  // Fallback: use list data if single fetch didn't return
  useEffect(() => {
  if (preServiceId && services.length > 0 && !selectedService && !singleService && !singleLoading) {
- const match = services.find(s => s.service_id === preServiceId);
+ const match = services.find(s => (s.serviceId || s.service_id) === preServiceId);
  if (match) {
- setSelectedService(match);
+ setSelectedService(normalizeServiceForm(match as unknown as Record<string, unknown>));
  setStep('form');
  }
  }
@@ -147,8 +169,8 @@ export default function NewServiceRequestPage() {
  : selectedService.name;
 
  await createRequest.mutateAsync({
- service_id: selectedService.service_id,
- service_name: serviceName,
+ serviceId: selectedService.serviceId || selectedService.service_id || selectedService._id,
+ serviceName,
  priority,
  requester: {
  id: user.id || 'unknown',
@@ -156,8 +178,8 @@ export default function NewServiceRequestPage() {
  email: user.email || 'unknown@example.com',
  department: (user as { department?: string }).department || 'IT',
  },
- form_data: { ...formData, justification },
- site_id: selectedService.site_id || 'SITE-001',
+ formData: { ...formData, justification },
+ siteId: selectedService.site_id || 'SITE-001',
  });
 
  toast.success(

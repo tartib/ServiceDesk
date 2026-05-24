@@ -81,7 +81,7 @@ export const searchArticles = async (req: Request, res: Response) => {
 
 export const getArticleById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { increment_views } = req.query;
 
     let article = await KnowledgeArticle.findOne({ article_id: id });
@@ -102,7 +102,7 @@ export const getArticleById = async (req: Request, res: Response) => {
 
 export const updateArticle = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const updates = req.body;
 
     let article = await KnowledgeArticle.findOne({ article_id: id });
@@ -122,7 +122,7 @@ export const updateArticle = async (req: Request, res: Response) => {
 
 export const publishArticle = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     let article = await KnowledgeArticle.findOne({ article_id: id });
     if (!article) article = await KnowledgeArticle.findById(id);
     if (!article) return res.status(404).json({ success: false, error: 'Article not found' });
@@ -138,7 +138,7 @@ export const publishArticle = async (req: Request, res: Response) => {
 
 export const archiveArticle = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     let article = await KnowledgeArticle.findOne({ article_id: id });
     if (!article) article = await KnowledgeArticle.findById(id);
     if (!article) return res.status(404).json({ success: false, error: 'Article not found' });
@@ -153,7 +153,7 @@ export const archiveArticle = async (req: Request, res: Response) => {
 
 export const deleteArticle = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     let article = await KnowledgeArticle.findOneAndDelete({ article_id: id });
     if (!article) article = await KnowledgeArticle.findByIdAndDelete(id);
     if (!article) return res.status(404).json({ success: false, error: 'Article not found' });
@@ -165,7 +165,7 @@ export const deleteArticle = async (req: Request, res: Response) => {
 
 export const submitFeedback = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { helpful, rating } = req.body;
 
     let article = await KnowledgeArticle.findOne({ article_id: id });
@@ -190,7 +190,7 @@ export const submitFeedback = async (req: Request, res: Response) => {
 
 export const linkIncident = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { incident_id } = req.body;
     if (!incident_id) return res.status(400).json({ success: false, error: 'Incident ID is required' });
 

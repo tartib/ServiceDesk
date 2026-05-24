@@ -91,7 +91,7 @@ export const getTeams = async (req: Request, res: Response): Promise<void> => {
 
 export const getTeam = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { teamId } = req.params;
+    const { teamId } = req.params as Record<string, string>;
 
     const team = await Team.findById(teamId)
       .populate('lead', 'profile.firstName profile.lastName profile.avatar email')
@@ -121,7 +121,7 @@ export const getTeam = async (req: Request, res: Response): Promise<void> => {
 export const updateTeam = async (req: Request, res: Response): Promise<void> => {
   try {
 
-    const { teamId } = req.params;
+    const { teamId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const team = await Team.findById(teamId);
@@ -171,7 +171,7 @@ export const updateTeam = async (req: Request, res: Response): Promise<void> => 
 
 export const deleteTeam = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { teamId } = req.params;
+    const { teamId } = req.params as Record<string, string>;
     const userId = req.user?.id;
     const organizationId = req.user?.organizationId;
 
@@ -218,7 +218,7 @@ export const deleteTeam = async (req: Request, res: Response): Promise<void> => 
 
 export const addTeamMember = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { teamId } = req.params;
+    const { teamId } = req.params as Record<string, string>;
     const { userId: newUserId, role } = req.body;
     const currentUserId = req.user?.id;
 
@@ -278,7 +278,7 @@ export const addTeamMember = async (req: Request, res: Response): Promise<void> 
 
 export const removeTeamMember = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { teamId, memberId } = req.params;
+    const { teamId, memberId } = req.params as Record<string, string>;
     const currentUserId = req.user?.id;
 
     const team = await Team.findById(teamId);

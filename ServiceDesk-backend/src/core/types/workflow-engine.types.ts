@@ -16,6 +16,7 @@ export enum WFEntityType {
   CHANGE_REQUEST = 'change_request',
   FORM_SUBMISSION = 'form_submission',
   TASK = 'task',
+  RECORD = 'record',
   CUSTOM = 'custom',
 }
 

@@ -3,13 +3,17 @@ import api from '@/lib/axios';
 
 export interface IServiceCatalogItem {
   _id: string;
-  service_id: string;
+  serviceId: string;
+  service_id?: string; // Legacy field
   category: string;
   name: string;
+  nameAr?: string;
   name_ar?: string;
   description: string;
+  descriptionAr?: string;
   description_ar?: string;
   icon?: string;
+  imageUrl?: string;
   image?: string;
   form: Array<{
     field_id: string;
@@ -109,12 +113,13 @@ export const useServiceCatalog = (filters?: {
   });
 };
 
-export const useServiceCatalogItem = (serviceId: string) => {
+export const useServiceCatalogItem = (serviceId?: string | null) => {
   return useQuery({
     queryKey: [SERVICE_CATALOG_KEY, serviceId],
     queryFn: async () => {
-      const response = await api.get<{ success: boolean; data: { service: IServiceCatalogItem } }>(`/itsm/services/${serviceId}`);
-      return response.data.service;
+      const response = await api.get<{ success: boolean; data: IServiceCatalogItem | { service: IServiceCatalogItem } }>(`/itsm/services/${serviceId}`);
+      const d = response.data;
+      return (d as { service: IServiceCatalogItem }).service || (d as IServiceCatalogItem);
     },
     enabled: !!serviceId,
   });
@@ -146,7 +151,7 @@ export const useUpdateServiceCatalogItem = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<IServiceCatalogItem> }) => {
-      return api.patch<{ success: boolean; data: { service: IServiceCatalogItem } }>(`/itsm/services/${id}`, data);
+      return api.put<{ success: boolean; data: { service: IServiceCatalogItem } }>(`/itsm/services/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [SERVICE_CATALOG_KEY] });

@@ -59,7 +59,7 @@ export async function getAchievementDefinitions(req: Request, res: Response): Pr
  */
 export async function getUserAchievements(req: Request, res: Response): Promise<void> {
   try {
-    const { userId } = req.params;
+    const { userId } = req.params as Record<string, string>;
     const organizationId = (req as any).user?.organizationId;
 
     if (!organizationId) {

@@ -263,6 +263,6 @@ ServiceRequestSchema.pre('save', function (next) {
 ServiceRequestSchema.set('toJSON', { virtuals: true });
 ServiceRequestSchema.set('toObject', { virtuals: true });
 
-const ServiceRequest = mongoose.model<IServiceRequest>('ServiceRequest', ServiceRequestSchema);
+const ServiceRequest = mongoose.models.ServiceRequest || mongoose.model<IServiceRequest>('ServiceRequest', ServiceRequestSchema);
 
 export default ServiceRequest;

@@ -1,0 +1,88 @@
+{
+  "records": {
+    "title": "Enregistrements",
+    "newRequest": "Nouvelle demande",
+    "myDrafts": "Mes brouillons",
+    "allRecords": "Tous les enregistrements",
+    "createFlow": {
+      "title": "Créer une demande",
+      "selectType": "Choisir un type de demande",
+      "selectTypeDesc": "Sélectionnez le type de demande que vous souhaitez créer",
+      "details": "Détails de la demande",
+      "review": "Vérifier votre demande",
+      "changeType": "Modifier",
+      "titleField": "Titre",
+      "titlePlaceholder": "Entrez le titre de la demande",
+      "descriptionField": "Description",
+      "descriptionPlaceholder": "Description détaillée (optionnel)",
+      "priorityField": "Priorité",
+      "requester": "Demandeur",
+      "requestType": "Type de demande",
+      "submitRequest": "Soumettre la demande",
+      "submitting": "Envoi en cours...",
+      "back": "Retour",
+      "edit": "Modifier",
+      "reviewStep": "Vérification"
+    },
+    "priority": {
+      "low": "Basse",
+      "medium": "Moyenne",
+      "high": "Haute",
+      "critical": "Critique"
+    },
+    "status": {
+      "draft": "Brouillon",
+      "submitted": "Soumis",
+      "under_review": "En révision",
+      "in_progress": "En cours",
+      "waiting_client": "En attente du client",
+      "approved": "Approuvé",
+      "rejected": "Rejeté",
+      "completed": "Terminé",
+      "cancelled": "Annulé"
+    },
+    "detail": {
+      "recordNumber": "Numéro d'enregistrement",
+      "requester": "Demandeur",
+      "assignee": "Assigné",
+      "unassigned": "Non assigné",
+      "createdAt": "Créé le",
+      "dueDate": "Date d'échéance",
+      "breached": "Dépassé",
+      "timeline": "Chronologie",
+      "comments": "Commentaires",
+      "noComments": "Aucun commentaire",
+      "addComment": "Ajouter un commentaire...",
+      "fieldData": "Données des champs",
+      "actions": "Actions",
+      "approve": "Approuver",
+      "reject": "Rejeter",
+      "cancel": "Annuler"
+    },
+    "errors": {
+      "notFound": "Enregistrement introuvable",
+      "notFoundDesc": "Cet enregistrement a peut-être été supprimé ou vous n'y avez pas accès.",
+      "permissionDenied": "Accès refusé",
+      "permissionDeniedDesc": "Vous n'avez pas la permission de voir cet enregistrement.",
+      "networkError": "Erreur de connexion",
+      "networkErrorDesc": "Veuillez vérifier votre connexion internet et réessayer.",
+      "genericError": "Une erreur est survenue",
+      "genericErrorDesc": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+      "retry": "Réessayer",
+      "goBack": "Retour"
+    },
+    "empty": {
+      "noRecords": "Aucun enregistrement",
+      "noRecordsDesc": "Créez votre première demande pour commencer.",
+      "noDrafts": "Aucun brouillon",
+      "noDraftsDesc": "Les brouillons sont enregistrés automatiquement pendant que vous remplissez une demande.",
+      "createRequest": "Créer une demande",
+      "startNew": "Commencer une nouvelle demande"
+    },
+    "autosave": {
+      "saving": "Enregistrement...",
+      "saved": "Brouillon enregistré",
+      "error": "Échec de l'enregistrement"
+    }
+  }
+}

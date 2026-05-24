@@ -14,6 +14,7 @@ export {
 
 export {
   default as FormSubmission,
+  type IFormSubmissionDocument,
 } from '../../core/entities/FormSubmission';
 
 // ── Types ────────────────────────────────────────────────────

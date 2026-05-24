@@ -38,7 +38,7 @@ export class ChangeCalendarController {
   });
 
   validateSchedule = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { planned_start, planned_end, site_id } = req.body;
     if (!planned_start || !planned_end) {
       res.status(400).json({ success: false, error: 'planned_start and planned_end are required' }); return;

@@ -60,9 +60,9 @@ Legend: ✅ Done | 🔄 In Progress | ⬜ Pending | ⚠️ Exists but not fully 
 - ✅ `FormWorkflowService` is unchanged (handles simple mode only, frozen)
 
 **Adoption gaps:**
-- ⚠️ `WorkflowBindingPanel` exists standalone but not wired as tab inside `FormDefinitionBuilder` (D2)
-- ⚠️ `FormWorkflowService` has no `@deprecated` freeze marker in code (C2)
-- ⬜ `lib/domains/forms/workflow-binding.ts` — frontend API wrappers (not yet created)
+- ✅ `WorkflowBindingPanel` wired as tab inside `FormDefinitionBuilder` (D2 closed)
+- ✅ `FormWorkflowService` has `@deprecated FROZEN` marker in code (C2 closed)
+- ✅ `lib/domains/forms/workflow-binding.ts` — frontend API wrappers created
 
 ---
 
@@ -84,14 +84,39 @@ Legend: ✅ Done | 🔄 In Progress | ⬜ Pending | ⚠️ Exists but not fully 
 
 - ✅ `app/(dashboard)/records/page.tsx` — record list (all/mine/pending-approvals tabs)
 - ✅ `app/(dashboard)/records/[id]/page.tsx` — record detail with actions + timeline + comments
-- ⬜ `components/records/RecordTableView.tsx` — reusable shared component
-- ⬜ `components/records/RecordKanbanView.tsx`
-- ⬜ `components/records/RecordDetailDrawer.tsx`
-- ⬜ `components/records/RecordInboxView.tsx`
-- ⬜ `hooks/useRecordViews.ts`
-- ⬜ `app/(dashboard)/records/[definitionId]/page.tsx` (per-form record list)
-- ⬜ `FormTemplate` has `view_config` optional field
+- ✅ `app/(dashboard)/records/new/page.tsx` — unified create request flow
+- ✅ `components/records/RecordTableView.tsx` — reusable shared component
+- ✅ `components/records/RecordKanbanView.tsx`
+- ✅ `components/records/RecordDetailDrawer.tsx`
+- ✅ `components/records/RecordInboxView.tsx`
+- ✅ `components/records/CreateRequestFlow.tsx` — 3-step request creation wizard with autosave
+- ✅ `components/records/RecordDetailView.tsx` — unified record detail (RecordItem + FormSubmission)
+- ✅ `components/records/RecordErrorState.tsx` + `RecordEmptyState.tsx` — error/empty state variants
+- ✅ `hooks/useRecordItems.ts` — React Query hooks for new RecordItem model
+- ✅ `hooks/useRequestTypes.ts` — React Query hooks for RequestType CRUD
+- ✅ `lib/domains/forms/record-items.ts` — API wrappers for /records endpoints
+- ✅ `lib/domains/forms/request-types.ts` — API wrappers for /request-types endpoints
+- ✅ `locales/en|ar|fr/records.json` — i18n for records flow
+- ✅ `hooks/useRecordViews.ts` — view mode state + per-definition record query
+- ✅ `app/(dashboard)/records/definitions/[definitionId]/page.tsx` — per-form record list with view switcher
+- ✅ `FormTemplate` has `view_config` optional field (`IFormViewConfig` + schema)
 - ✅ Old `/smart-forms` page still works (not removed)
+
+### Section 1 Backend (Platform Core):
+- ✅ `modules/forms/models/RequestType.ts` — request type model
+- ✅ `modules/forms/models/RecordItem.ts` — metadata layer with auto-generated recordNumber
+- ✅ `modules/forms/services/RecordService.ts` — extended with full-record methods
+- ✅ `modules/forms/services/requestTypeService.ts` — CRUD + filtering
+- ✅ `modules/forms/services/RecordAdapter.ts` — backward compat adapters
+- ✅ `modules/forms/services/RecordActivityService.ts` — timeline events
+- ✅ `modules/forms/services/RecordWorkflowService.ts` — auto-workflow attachment
+- ✅ `modules/forms/controllers/record.controller.ts` + `record.routes.ts`
+- ✅ `modules/forms/controllers/requestType.controller.ts` + `request-type.routes.ts`
+- ✅ `modules/forms/errors/RecordErrors.ts` — 6 custom error classes
+- ✅ `shared/feature-flags/seeds/record-flow-flags.ts`
+- ✅ `shared/types/workspace.types.ts` — WorkspaceType enum
+- ✅ `core/types/workflow-engine.types.ts` — RECORD entity type added
+- ✅ Frontend `types/index.ts` — WorkspaceType, RecordItemStatus, RecordPriority, RequestType, RecordItem + DTOs
 
 ---
 
@@ -99,28 +124,31 @@ Legend: ✅ Done | 🔄 In Progress | ⬜ Pending | ⚠️ Exists but not fully 
 
 - ✅ `solutions/service-catalog/types.ts` + `index.ts` — imports `IFormDefinition` from platform-interfaces (correct boundary)
 - ✅ `solutions/itsm/types.ts` + `index.ts` — imports `IFormDefinition` + `IRecordService` (correct boundary)
-- ⚠️ Stubs are type-only; no factory/DI seam yet (G2)
-- ⬜ `solutions/service-catalog/ServiceCatalogSolution.ts` full facade
-- ⬜ Service catalog operational handling uses `RecordDetail` model
-- ⬜ `ServiceFormModal` migrated to use `RecordDetailDrawer`
+- ✅ `solutions/service-catalog/ServiceCatalogService.ts` — full facade: addCatalogItem, listCatalogItems, requestService
+- ✅ `solutions/service-catalog/SelfServiceFacade.ts` — customer-facing record policy (ownership + visibility filter)
+- ✅ `solutions/itsm/ITSMRecordFacade.ts` — full ITSM facade: create, list, escalate with priority/SLA metadata
+- ✅ `solutions/itsm/IncidentFormBinding.ts` — entity-type → FormDefinition resolver
+- ⬜ `ServiceFormModal` migrated to use `RecordDetailDrawer` (large UI refactor — deferred)
 
 ---
 
 ## Phase 7 — Platform Pillars
 
-- ⬜ `modules/documents/` module exists (DocumentTemplate model, DocumentRenderService)
-- ⬜ Record detail page shows generated documents
-- ⬜ `modules/portal/` module exists (row-level access, status tracking)
-- ⬜ Automation action catalog in workflow builder (assign, notify, update record, create task, call webhook, generate document)
+- ✅ `modules/documents/` — types, DocumentService (template CRUD + rendering), controller, routes
+- ✅ `modules/portal/` — types (PortalToken, PortalSession), PortalService, controller, routes
+- ✅ `modules/workflow-engine/types/automation-actions.ts` — 15-action catalog (record, task, notify, document, webhook, system)
+- ⬜ Record detail page shows generated documents (frontend integration)
+- ⬜ Portal frontend pages (external-user form submission + status tracking)
 
 ---
 
 ## Phase 8 — UX Simplification
 
-- ⬜ New top-level nav: Forms / Records / Workflows / Solutions
-- ⬜ Old routes still work as redirects or wrappers
-- ⬜ Form settings use unified tab model (Design / Access / Workflow / Views / Automation / Publishing)
-- ⬜ Duplicate nav entries demoted
+- ✅ New top-level nav: Forms Platform / Workflows / Solutions sections in Sidebar
+- ✅ Old routes still work — `/forms` redirects to `/smart-forms`
+- ✅ Form settings use unified tab model (Design / Access / Workflow / Views / Automation / Publishing)
+- ✅ Sidebar sections: Projects, Gamification, Forms Platform, Workflows, Solutions
+- ⬜ Stub tab panels (Access, Views, Automation, Publishing) need full implementation
 
 ---
 

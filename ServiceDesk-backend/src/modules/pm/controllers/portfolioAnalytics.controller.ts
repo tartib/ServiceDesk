@@ -459,7 +459,7 @@ export const getPortfolioTeamWorkload = async (req: PMAuthRequest, res: Response
  */
 export const getProjectPerformance = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     const [project, tasks, sprints, activities] = await Promise.all([
       PMProject.findById(projectId).lean(),
@@ -580,7 +580,7 @@ export const getProjectPerformance = async (req: PMAuthRequest, res: Response): 
  */
 export const generateProjectReport = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     const [project, tasks, sprints, activities] = await Promise.all([
       PMProject.findById(projectId).lean(),

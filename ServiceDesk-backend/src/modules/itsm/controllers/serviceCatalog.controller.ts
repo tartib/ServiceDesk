@@ -54,51 +54,64 @@ export const getServices = asyncHandler(async (req: Request, res: Response) => {
     // ── MongoDB path (unchanged) ──
     const skip = (pageNum - 1) * limitNum;
 
-    // Build query
-    const query: Record<string, unknown> = {};
+    // Build query with proper $and/$or handling
+    const andConditions: Record<string, unknown>[] = [];
+    
+    // Filter by organization (optional - only if field exists in documents)
+    if (req.user?.organizationId) {
+      andConditions.push({
+        $or: [
+          { organizationId: req.user.organizationId },
+          { organizationId: { $exists: false } }, // Include services without organizationId
+        ],
+      });
+    }
     
     if (status) {
-      query.status = status;
+      andConditions.push({ status });
     }
     
     if (category && Object.values(ServiceCategory).includes(category as ServiceCategory)) {
-      query.category = category;
+      andConditions.push({ category });
     }
     
     if (featured !== undefined) {
-      query.featured = featured === 'true';
+      andConditions.push({ featured: featured === 'true' });
     }
     
     if (visibility) {
-      query.visibility = visibility;
+      andConditions.push({ visibility });
     }
     
     // Text search
     if (q) {
       const escaped = escapeRegex(q as string);
-      query.$or = [
-        { name: { $regex: escaped, $options: 'i' } },
-        { nameAr: { $regex: escaped, $options: 'i' } },
-        { description: { $regex: escaped, $options: 'i' } },
-        { tags: { $in: [new RegExp(escaped, 'i')] } },
-      ];
+      andConditions.push({
+        $or: [
+          { name: { $regex: escaped, $options: 'i' } },
+          { nameAr: { $regex: escaped, $options: 'i' } },
+          { description: { $regex: escaped, $options: 'i' } },
+          { tags: { $in: [new RegExp(escaped, 'i')] } },
+        ],
+      });
     }
 
     // Check user role for visibility filtering
     if (itsmRole !== 'manager' && itsmRole !== 'admin') {
-      query.$and = [
-        {
-          $or: [
-            { visibility: ServiceVisibility.PUBLIC },
-            { visibility: ServiceVisibility.INTERNAL },
-            {
-              visibility: ServiceVisibility.RESTRICTED,
-              allowedRoles: { $in: [itsmRole] },
-            },
-          ],
-        },
-      ];
+      andConditions.push({
+        $or: [
+          { visibility: ServiceVisibility.PUBLIC },
+          { visibility: ServiceVisibility.INTERNAL },
+          {
+            visibility: ServiceVisibility.RESTRICTED,
+            allowedRoles: { $in: [itsmRole] },
+          },
+        ],
+      });
     }
+    
+    // Combine all conditions with $and
+    const query: Record<string, unknown> = andConditions.length > 0 ? { $and: andConditions } : {};
 
     // Build sort
     const sortOption: Record<string, 1 | -1> = {};
@@ -126,9 +139,10 @@ export const getService = asyncHandler(async (req: Request, res: Response) => {
     const repo = getItsmRepos().serviceCatalog as PgServiceCatalogRepository;
     service = await repo.findByServiceId(id) || await repo.findById(id);
   } else {
-    service = await ServiceCatalog.findOne({
-      $or: [{ _id: id }, { serviceId: id }],
-    }).lean();
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const orConditions: Record<string, unknown>[] = [{ serviceId: id }];
+    if (isObjectId) orConditions.unshift({ _id: id });
+    service = await ServiceCatalog.findOne({ $or: orConditions }).lean();
   }
 
   if (!service) return void sendError(req, res, 404, 'Service not found');
@@ -232,9 +246,10 @@ export const updateService = asyncHandler(async (req: Request, res: Response) =>
       return void sendSuccess(req, res, service, 'Service updated successfully');
     }
 
-    const service = await ServiceCatalog.findOne({
-      $or: [{ _id: id }, { serviceId: id }],
-    });
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const orConditions: Record<string, unknown>[] = [{ serviceId: id }];
+    if (isObjectId) orConditions.unshift({ _id: id });
+    const service = await ServiceCatalog.findOne({ $or: orConditions });
 
     if (!service) return void sendError(req, res, 404, 'Service not found');
 
@@ -262,9 +277,10 @@ export const deleteService = asyncHandler(async (req: Request, res: Response) =>
     return void sendSuccess(req, res, null, 'Service retired successfully');
   }
 
-  const service = await ServiceCatalog.findOne({
-    $or: [{ _id: id }, { serviceId: id }],
-  });
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+  const orConditions: Record<string, unknown>[] = [{ serviceId: id }];
+  if (isObjectId) orConditions.unshift({ _id: id });
+  const service = await ServiceCatalog.findOne({ $or: orConditions });
 
   if (!service) return void sendError(req, res, 404, 'Service not found');
 

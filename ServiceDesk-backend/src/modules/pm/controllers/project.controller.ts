@@ -197,7 +197,7 @@ export const getProjects = async (req: Request, res: Response): Promise<void> =>
 
 export const getProject = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     let project: any;
@@ -252,7 +252,7 @@ export const getProject = async (req: Request, res: Response): Promise<void> => 
 export const updateProject = async (req: Request, res: Response): Promise<void> => {
   try {
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
     const usePg = isPmPostgres();
 
@@ -340,7 +340,7 @@ export const updateProject = async (req: Request, res: Response): Promise<void> 
 
 export const deleteProject = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     // ── PostgreSQL path ──
@@ -400,7 +400,7 @@ export const deleteProject = async (req: Request, res: Response): Promise<void> 
 
 export const addProjectMember = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { userId: newUserId, role } = req.body;
     const currentUserId = req.user?.id;
 
@@ -457,7 +457,7 @@ export const addProjectMember = async (req: Request, res: Response): Promise<voi
 
 export const removeProjectMember = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId, memberId } = req.params;
+    const { projectId, memberId } = req.params as Record<string, string>;
     const currentUserId = req.user?.id;
 
     const project = await Project.findById(projectId);
@@ -516,7 +516,7 @@ export const removeProjectMember = async (req: Request, res: Response): Promise<
 export const addMemberByEmail = async (req: Request, res: Response): Promise<void> => {
   try {
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { email, userId, role } = req.body;
     const currentUserId = req.user?.id;
 
@@ -622,7 +622,7 @@ export const addMemberByEmail = async (req: Request, res: Response): Promise<voi
 export const updateMemberRole = async (req: Request, res: Response): Promise<void> => {
   try {
 
-    const { projectId, memberId } = req.params;
+    const { projectId, memberId } = req.params as Record<string, string>;
     const { role } = req.body;
     const currentUserId = req.user?.id;
 
@@ -707,7 +707,7 @@ export const updateMemberRole = async (req: Request, res: Response): Promise<voi
 // Get project members with their roles
 export const getProjectMembers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId)
@@ -765,7 +765,7 @@ export const getProjectMembers = async (req: Request, res: Response): Promise<vo
 // Get project labels (distinct labels from all tasks in the project)
 export const getProjectLabels = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId);
@@ -814,7 +814,7 @@ export const getProjectLabels = async (req: Request, res: Response): Promise<voi
 // Archive project
 export const archiveProject = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     // ── PostgreSQL path ──
@@ -876,7 +876,7 @@ export const archiveProject = async (req: Request, res: Response): Promise<void>
 // Get teams associated with a project
 export const getProjectTeams = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId)
@@ -931,7 +931,7 @@ export const getProjectTeams = async (req: Request, res: Response): Promise<void
 // Get all available teams in the organization (for adding to project)
 export const getAvailableTeams = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId);
@@ -989,7 +989,7 @@ export const getAvailableTeams = async (req: Request, res: Response): Promise<vo
 // Add a team to a project (either existing teamId or create new with name/description)
 export const addProjectTeam = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { teamId, name, description, role } = req.body;
     const userId = req.user?.id;
 
@@ -1088,7 +1088,7 @@ export const addProjectTeam = async (req: Request, res: Response): Promise<void>
 // Remove a team from a project
 export const removeProjectTeam = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId, teamId } = req.params;
+    const { projectId, teamId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findById(projectId);
@@ -1170,7 +1170,7 @@ const verifyTeamInProject = async (projectId: string, teamId: string, userId: st
 // Get members of a team within a project context
 export const getProjectTeamMembers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId, teamId } = req.params;
+    const { projectId, teamId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -1200,7 +1200,7 @@ export const getProjectTeamMembers = async (req: Request, res: Response): Promis
 // Add member to a team within a project context
 export const addProjectTeamMember = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId, teamId } = req.params;
+    const { projectId, teamId } = req.params as Record<string, string>;
     const { userId: newUserId, email, role } = req.body;
     const currentUserId = req.user?.id as string | undefined;
 
@@ -1281,7 +1281,7 @@ export const addProjectTeamMember = async (req: Request, res: Response): Promise
 // Remove member from a team within a project context
 export const removeProjectTeamMember = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId, teamId, memberId } = req.params;
+    const { projectId, teamId, memberId } = req.params as Record<string, string>;
     const currentUserId = req.user?.id as string | undefined;
 
     if (!currentUserId) {
@@ -1337,7 +1337,7 @@ export const removeProjectTeamMember = async (req: Request, res: Response): Prom
 // Star a project
 export const starProject = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findByIdAndUpdate(
@@ -1361,7 +1361,7 @@ export const starProject = async (req: Request, res: Response): Promise<void> =>
 // Unstar a project
 export const unstarProject = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const project = await Project.findByIdAndUpdate(

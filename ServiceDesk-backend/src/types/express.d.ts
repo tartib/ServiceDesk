@@ -9,6 +9,9 @@ declare module 'qs' {
   }
 }
 
+// Express 5 widens req.params to `string | string[]`.
+// Narrowed globally via scripts/patch-express-types.js (postinstall).
+
 declare module 'express' {
   interface Request {
     user?: {

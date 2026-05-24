@@ -5,7 +5,7 @@ import { PMAuthRequest, ApiResponse } from '../../../types/pm';
 
 export const getDashboardData = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const dashboardService = container.resolve('dashboardService');
+    const dashboardService = container.resolve<any>('dashboardService');
     const dateFrom = req.query.dateFrom ? new Date(String(req.query.dateFrom)) : undefined;
     const dateTo = req.query.dateTo ? new Date(String(req.query.dateTo)) : undefined;
 
@@ -23,8 +23,8 @@ export const getDashboardData = async (req: PMAuthRequest, res: Response): Promi
 
 export const getSprintBurndown = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const dashboardService = container.resolve('dashboardService');
-    const { sprintId } = req.params;
+    const dashboardService = container.resolve<any>('dashboardService');
+    const { sprintId } = req.params as Record<string, string>;
 
     const burndownData = await dashboardService.getSprintBurndown(sprintId);
 
@@ -40,8 +40,8 @@ export const getSprintBurndown = async (req: PMAuthRequest, res: Response): Prom
 
 export const getVelocityChart = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const dashboardService = container.resolve('dashboardService');
-    const { projectId } = req.params;
+    const dashboardService = container.resolve<any>('dashboardService');
+    const { projectId } = req.params as Record<string, string>;
     const limit = parseInt(req.query.limit as string) || 10;
 
     const velocityData = await dashboardService.getVelocityChart(projectId, limit);
@@ -58,8 +58,8 @@ export const getVelocityChart = async (req: PMAuthRequest, res: Response): Promi
 
 export const getProjectStats = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const dashboardService = container.resolve('dashboardService');
-    const { projectId } = req.params;
+    const dashboardService = container.resolve<any>('dashboardService');
+    const { projectId } = req.params as Record<string, string>;
 
     const projectStats = await dashboardService.getProjectStats(projectId);
 
@@ -75,8 +75,8 @@ export const getProjectStats = async (req: PMAuthRequest, res: Response): Promis
 
 export const getCumulativeFlow = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const dashboardService = container.resolve('dashboardService');
-    const { projectId } = req.params;
+    const dashboardService = container.resolve<any>('dashboardService');
+    const { projectId } = req.params as Record<string, string>;
     const days = parseInt(req.query.days as string) || 30;
 
     const cumulativeFlow = await dashboardService.getCumulativeFlow(projectId, days);

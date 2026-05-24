@@ -18,7 +18,7 @@ export const getAllUsers = asyncHandler(async (_req: Request, res: Response) => 
 });
 
 export const getUsersByRole = asyncHandler(async (req: Request, res: Response) => {
-  const { role } = req.params;
+  const { role } = req.params as Record<string, string>;
 
   const users = await User.find({ role, isActive: true })
     .select('name email role')

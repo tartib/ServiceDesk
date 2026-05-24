@@ -5,7 +5,7 @@ import { PMAuthRequest, ApiResponse } from '../../../types/pm';
 
 export const getProjectActivity = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { page = '1', limit = '50' } = req.query;
 
     const pageNum = parseInt(page as string, 10);
@@ -36,7 +36,7 @@ export const getProjectActivity = async (req: PMAuthRequest, res: Response): Pro
 
 export const getTaskActivity = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
 
     const activities = await Activity.find({ taskId })
       .populate('actor', 'name profile.firstName profile.lastName profile.avatar email')

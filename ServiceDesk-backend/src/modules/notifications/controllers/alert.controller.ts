@@ -32,7 +32,7 @@ export const getAllAlerts = async (req: Request, res: Response) => {
 
 export const acknowledgeAlert = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const alert = await AlertModel.findByIdAndUpdate(id, { acknowledged: true, acknowledgedAt: new Date() }, { new: true });
     if (!alert) return res.status(404).json({ success: false, error: 'Alert not found' });
     res.status(200).json({ success: true, data: alert });
@@ -43,7 +43,7 @@ export const acknowledgeAlert = async (req: Request, res: Response) => {
 
 export const getAlertsByEmployee = async (req: Request, res: Response) => {
   try {
-    const { employeeId } = req.params;
+    const { employeeId } = req.params as Record<string, string>;
     const alerts = await AlertModel.find({ employeeId })
       .populate('employeeId', 'firstName lastName')
       .sort({ createdAt: -1 });

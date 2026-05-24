@@ -27,15 +27,25 @@ const sanitizeObject = (obj: Record<string, unknown>): Record<string, unknown> =
   return sanitized;
 };
 
+/**
+ * Mutate an object's values in-place (Express 5 makes req.query / req.params
+ * read-only getters, so we can't reassign the whole property).
+ */
+const sanitizeInPlace = (obj: Record<string, unknown>): void => {
+  for (const key of Object.keys(obj)) {
+    obj[key] = sanitizeValue(obj[key]);
+  }
+};
+
 export const xssSanitizer = (req: Request, _res: Response, next: NextFunction): void => {
   if (req.body && typeof req.body === 'object') {
     req.body = sanitizeObject(req.body);
   }
   if (req.query && typeof req.query === 'object') {
-    req.query = sanitizeObject(req.query as Record<string, unknown>) as typeof req.query;
+    sanitizeInPlace(req.query as Record<string, unknown>);
   }
   if (req.params && typeof req.params === 'object') {
-    req.params = sanitizeObject(req.params) as typeof req.params;
+    sanitizeInPlace(req.params as Record<string, unknown>);
   }
   next();
 };

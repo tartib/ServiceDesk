@@ -49,6 +49,7 @@
     "inventoryWarehouses": "Entrepôts",
     "inventoryTransactions": "Opérations",
     "inventoryTransfers": "Transferts",
+    "inventoryCounts": "Comptages",
     "inventoryMovements": "Mouvements"
   },
   "common": {

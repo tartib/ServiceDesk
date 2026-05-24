@@ -30,7 +30,7 @@ export const listBalances = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const getPartBalance = asyncHandler(async (req: Request, res: Response) => {
-  const { partId } = req.params;
+  const { partId } = req.params as Record<string, string>;
   const warehouseId = req.query.warehouseId as string | undefined;
 
   if (warehouseId) {

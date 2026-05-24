@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Package, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search, ArrowUpDown, Warehouse, ClipboardList } from 'lucide-react';
+import { Package, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search, ArrowUpDown, Warehouse, ClipboardList, CalendarClock } from 'lucide-react';
 import { useStockBalances } from '@/hooks/useStockBalances';
 import { useWarehouses } from '@/hooks/useWarehouses';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -85,6 +85,10 @@ export default function InventoryPage() {
             <Link href="/inventory/warehouses" className="inline-flex items-center gap-2 px-4 py-2.5 border border-input text-foreground rounded-lg hover:bg-muted transition-colors font-medium text-sm">
               <Warehouse className="w-4 h-4" />
               {t('inventory.warehouse.title') || 'Warehouses'}
+            </Link>
+            <Link href="/inventory/counts" className="inline-flex items-center gap-2 px-4 py-2.5 border border-input text-foreground rounded-lg hover:bg-muted transition-colors font-medium text-sm">
+              <CalendarClock className="w-4 h-4" />
+              {t('inventory.counts.title') || 'Counts'}
             </Link>
             <Link href="/inventory/transactions" className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand text-brand-foreground rounded-lg hover:bg-brand-strong transition-colors font-medium text-sm shadow-sm">
               <ClipboardList className="w-4 h-4" />

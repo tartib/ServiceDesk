@@ -170,6 +170,6 @@ SiteSchema.index({ is_active: 1 });
 SiteSchema.set('toJSON', { virtuals: true });
 SiteSchema.set('toObject', { virtuals: true });
 
-const Site = mongoose.model<ISite>('Site', SiteSchema);
+const Site = mongoose.models.Site || mongoose.model<ISite>('Site', SiteSchema);
 
 export default Site;

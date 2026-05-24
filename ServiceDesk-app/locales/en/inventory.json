@@ -6,7 +6,8 @@
     "search": "Search part no, description, group...",
     "items": {
       "title": "Inventory Items",
-      "subtitle": "Manage parts catalog"
+      "subtitle": "Manage parts catalog",
+      "noItems": "No items found"
     },
     "table": {
       "partNo": "Part No",
@@ -18,7 +19,9 @@
       "uom": "UoM",
       "cost": "Cost",
       "warehouse": "Warehouse",
-      "status": "Status"
+      "status": "Status",
+      "reorder": "Reorder",
+      "actions": "Actions"
     },
     "filter": {
       "search": "Search",
@@ -34,11 +37,38 @@
     "status": {
       "inStock": "Normal",
       "lowStock": "Low Stock",
-      "outOfStock": "Out of Stock"
+      "outOfStock": "Out of Stock",
+      "active": "Active",
+      "inactive": "Inactive"
     },
     "messages": {
       "loading": "Loading...",
       "noItems": "No stock balances found"
+    },
+    "actions": {
+      "edit": "Edit",
+      "deactivate": "Deactivate",
+      "save": "Save",
+      "cancel": "Cancel",
+      "back": "Back",
+      "next": "Next",
+      "submit": "Submit",
+      "search": "Search..."
+    },
+    "toast": {
+      "itemCreated": "Item created",
+      "itemUpdated": "Item updated",
+      "itemDeactivated": "Item deactivated",
+      "warehouseCreated": "Warehouse created",
+      "warehouseUpdated": "Warehouse updated",
+      "warehouseDeactivated": "Warehouse deactivated",
+      "stockReceived": "Stock received & confirmed",
+      "stockIssued": "Stock issued",
+      "stockTransferred": "Stock transferred",
+      "stockAdjusted": "Stock adjusted",
+      "stockReturned": "Stock returned",
+      "operationFailed": "Operation failed",
+      "saveFailed": "Failed to save item"
     },
     "warehouse": {
       "title": "Warehouses",
@@ -60,10 +90,231 @@
       "issue": "Issue Stock",
       "transfer": "Transfer Stock",
       "adjust": "Adjust Stock",
-      "return": "Return Stock"
+      "return": "Return Stock",
+      "receiveDesc": "Add incoming stock to warehouse",
+      "issueDesc": "Issue stock out of warehouse",
+      "transferDesc": "Move stock between warehouses",
+      "adjustDesc": "Increase, decrease or set balance",
+      "returnDesc": "Return issued stock"
     },
     "movements": {
       "title": "Movement History"
+    },
+    "autosave": {
+      "saving": "Saving...",
+      "saved": "Saved",
+      "error": "Save failed"
+    },
+    "forms": {
+      "addItem": {
+        "title": "Add New Item",
+        "description": "Add a new inventory item to the catalog.",
+        "submit": "Create Item"
+      },
+      "editItem": {
+        "title": "Edit Item",
+        "description": "Update an existing inventory item.",
+        "submit": "Save Changes"
+      },
+      "warehouse": {
+        "title": "Warehouse",
+        "description": "Create or edit a warehouse.",
+        "submit": "Save"
+      },
+      "receive": {
+        "title": "Receive Stock",
+        "description": "Add incoming stock to a warehouse.",
+        "submit": "Confirm Receipt"
+      },
+      "issue": {
+        "title": "Issue Stock",
+        "description": "Issue stock out of a warehouse.",
+        "submit": "Confirm Issue"
+      },
+      "transfer": {
+        "title": "Transfer Item",
+        "description": "Move an item from one warehouse to another.",
+        "submit": "Confirm Transfer"
+      },
+      "adjust": {
+        "title": "Stock Adjustment",
+        "description": "Adjust stock levels with audit trail.",
+        "submit": "Confirm Adjustment"
+      },
+      "return": {
+        "title": "Return Item",
+        "description": "Return an assigned item to inventory.",
+        "submit": "Confirm Return"
+      },
+      "steps": {
+        "basicInfo": "Basic Information",
+        "basicInfoDesc": "Item name, category, and type.",
+        "stockLocation": "Stock & Location",
+        "stockLocationDesc": "Warehouse, quantity, and cost.",
+        "assetDetails": "Asset Details",
+        "assetDetailsDesc": "Tracking details for assets.",
+        "review": "Review",
+        "selectItem": "Select Item",
+        "selectItemDesc": "Choose the item to transfer.",
+        "selectItemSearchDesc": "Choose the item and warehouse.",
+        "receiptDetails": "Receipt Details",
+        "receiptDetailsDesc": "Select item and enter quantity.",
+        "issueDetails": "Issue Details",
+        "issueDetailsDesc": "Select item and enter quantity.",
+        "transferDetails": "Transfer Details",
+        "transferDetailsDesc": "Source, destination, and quantity.",
+        "returnDetails": "Return Details",
+        "returnDetailsDesc": "Condition and return location.",
+        "adjustment": "Adjustment",
+        "adjustmentDesc": "Enter the new quantity and reason."
+      },
+      "fields": {
+        "partNo": "Part Number",
+        "partNoPlaceholder": "e.g. ITM-001",
+        "groupName": "Category / Group",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe the item...",
+        "descriptionAr": "Description (Arabic)",
+        "descriptionArPlaceholder": "الوصف...",
+        "inventoryType": "Inventory Type",
+        "inventoryTypeAsset": "Asset",
+        "inventoryTypeAssetDesc": "Tracked individually (serial number, asset tag)",
+        "inventoryTypeConsumable": "Consumable",
+        "inventoryTypeConsumableDesc": "Tracked by quantity (pens, paper, etc.)",
+        "warehouse": "Warehouse",
+        "uom": "Unit of Measure",
+        "uomPlaceholder": "pcs, kg, m...",
+        "initialQuantity": "Initial Quantity",
+        "unitCost": "Unit Cost",
+        "minStock": "Min Stock",
+        "maxStock": "Max Stock",
+        "reorderLevel": "Reorder Level",
+        "assetTag": "Asset Tag",
+        "assetTagPlaceholder": "e.g. ASSET-001",
+        "serialNumber": "Serial Number",
+        "owner": "Owner",
+        "ownerHelper": "Assign to a specific person (optional).",
+        "warrantyExpiry": "Warranty Expiry",
+        "supplier": "Supplier",
+        "purchaseDate": "Purchase Date",
+        "purchasePrice": "Purchase Price",
+        "notes": "Notes",
+        "item": "Item",
+        "quantity": "Quantity",
+        "referenceNo": "Reference No",
+        "referenceNoPlaceholder": "PO number, delivery note, etc.",
+        "issuedTo": "Issued To",
+        "issuedToPlaceholder": "Who is receiving this stock?",
+        "fromWarehouse": "From Warehouse",
+        "fromWarehouseHelper": "Current location (auto-filled).",
+        "toWarehouse": "To Warehouse",
+        "toWarehouseHelper": "Choose where this item should be moved.",
+        "transferDate": "Transfer Date",
+        "reason": "Reason",
+        "adjustmentType": "Adjustment Type",
+        "adjustmentIncrease": "Increase",
+        "adjustmentIncreaseDesc": "Add stock (received, found, correction)",
+        "adjustmentDecrease": "Decrease",
+        "adjustmentDecreaseDesc": "Remove stock (lost, expired, correction)",
+        "adjustmentSetBalance": "Set Balance",
+        "adjustmentSetBalanceDesc": "Set exact quantity after count",
+        "currentQuantity": "Current Quantity",
+        "currentQuantityHelper": "Auto-filled from current stock.",
+        "newQuantity": "New Quantity",
+        "newQuantityHelper": "Enter the adjusted quantity.",
+        "reasonPlaceholder": "Why is this adjustment needed?",
+        "supportingDoc": "Supporting Document",
+        "supportingDocHelper": "Required for large adjustments.",
+        "returnLocation": "Return Location",
+        "returnLocationHelper": "Where are you returning the item?",
+        "condition": "Condition",
+        "conditionGood": "Good",
+        "conditionDamaged": "Damaged",
+        "damageDescription": "Damage Description",
+        "damageDescriptionPlaceholder": "Describe the damage...",
+        "photo": "Photo",
+        "photoHelper": "Upload a photo of the damaged item.",
+        "warehouseName": "Name",
+        "warehouseNamePlaceholder": "Main Warehouse",
+        "warehouseNameAr": "Name (Arabic)",
+        "warehouseNameArPlaceholder": "المستودع الرئيسي",
+        "code": "Code",
+        "codePlaceholder": "WH-01",
+        "address": "Address",
+        "addressPlaceholder": "Full address...",
+        "selectCategory": "Select category...",
+        "selectWarehouse": "Select warehouse...",
+        "selectUser": "Select user...",
+        "searchItem": "Search by item name, part number, or description.",
+        "itemHelper": "Search by item name, part number, or description."
+      }
+    },
+    "counts": {
+      "title": "Inventory Counts",
+      "schedules": "Count Schedules",
+      "tasks": "Count Tasks",
+      "createSchedule": "Create Schedule",
+      "editSchedule": "Edit Schedule",
+      "generateTasks": "Generate Today's Tasks",
+      "scheduleName": "Schedule Name",
+      "scheduleNamePlaceholder": "e.g. Daily warehouse count",
+      "frequency": "Frequency",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "weeklyDay": "Day of Week",
+      "dueTime": "Due Time",
+      "startDate": "Start Date",
+      "varianceThreshold": "Variance Threshold (%)",
+      "varianceThresholdHelper": "Require variance reason when exceeding this percentage",
+      "assignedTo": "Assigned To",
+      "selectItems": "Select Items to Count",
+      "noSchedules": "No count schedules yet",
+      "noTasks": "No count tasks found",
+      "countDate": "Count Date",
+      "systemQty": "System Qty",
+      "actualQty": "Actual Qty",
+      "variance": "Variance",
+      "varianceReason": "Variance Reason",
+      "varianceReasonPlaceholder": "Explain the variance...",
+      "itemNotes": "Item Notes",
+      "status": {
+        "pending": "Pending",
+        "in_progress": "In Progress",
+        "submitted": "Submitted",
+        "under_review": "Under Review",
+        "approved": "Approved",
+        "completed": "Completed",
+        "rejected": "Rejected"
+      },
+      "scheduleStatus": {
+        "active": "Active",
+        "paused": "Paused",
+        "archived": "Archived"
+      },
+      "actions": {
+        "start": "Start Counting",
+        "submit": "Submit for Review",
+        "approve": "Approve",
+        "reject": "Reject",
+        "pause": "Pause Schedule",
+        "resume": "Resume Schedule",
+        "archive": "Archive Schedule"
+      },
+      "rejectionReason": "Rejection Reason",
+      "rejectionReasonPlaceholder": "Why is this count being rejected?",
+      "toast": {
+        "scheduleCreated": "Count schedule created",
+        "scheduleUpdated": "Count schedule updated",
+        "schedulePaused": "Schedule paused",
+        "scheduleResumed": "Schedule resumed",
+        "scheduleArchived": "Schedule archived",
+        "tasksGenerated": "Count tasks generated",
+        "taskStarted": "Count task started",
+        "itemUpdated": "Item count updated",
+        "taskSubmitted": "Count submitted for review",
+        "taskApproved": "Count approved and stock adjusted",
+        "taskRejected": "Count rejected"
+      }
     }
   }
 }

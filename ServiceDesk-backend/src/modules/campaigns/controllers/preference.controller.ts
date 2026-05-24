@@ -78,7 +78,7 @@ export async function getUserPreferences(req: Request, res: Response): Promise<v
 
 export async function unsubscribe(req: Request, res: Response): Promise<void> {
   try {
-    const { token } = req.params;
+    const { token } = req.params as Record<string, string>;
     // Token would be a JWT or signed token containing userId + orgId
     // For now, accept userId + organizationId in body
     const { userId, organizationId, channel } = req.body;

@@ -94,6 +94,7 @@ export default function ProjectNavTabs({ projectId, methodology = 'scrum', showE
  return [
  summaryTab,
  { id: 'service-catalog', label: t('projects.serviceCatalog.title') || 'Services', href: `/projects/${projectId}/service-catalog`, icon: <Package className="h-4 w-4" /> },
+ { id: 'service-requests', label: t('projects.serviceRequests.title') || 'Requests', href: `/projects/${projectId}/service-requests`, icon: <FileText className="h-4 w-4" /> },
  { id: 'incidents', label: t('projects.incidents.title') || 'Incidents', href: `/projects/${projectId}/incidents`, icon: <AlertCircle className="h-4 w-4" /> },
  { id: 'problems', label: t('projects.problems.title') || 'Problems', href: `/projects/${projectId}/problems`, icon: <Headphones className="h-4 w-4" /> },
  { id: 'changes', label: t('projects.changes.title') || 'Changes', href: `/projects/${projectId}/changes`, icon: <RefreshCw className="h-4 w-4" /> },

@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { MethodologyCode } from './Project';
+import { WorkspaceType } from '../../../shared/types/workspace.types';
 
 export interface IPMOrganization {
   _id: mongoose.Types.ObjectId;
@@ -7,6 +8,7 @@ export interface IPMOrganization {
   slug: string;
   description?: string;
   logo?: string;
+  workspaceType?: WorkspaceType;
   settings: {
     defaultMethodology: MethodologyCode;
     timezone: string;
@@ -52,6 +54,10 @@ const OrganizationSchema = new Schema<IPMOrganization>(
     },
     logo: {
       type: String,
+    },
+    workspaceType: {
+      type: String,
+      enum: Object.values(WorkspaceType),
     },
     settings: {
       defaultMethodology: {

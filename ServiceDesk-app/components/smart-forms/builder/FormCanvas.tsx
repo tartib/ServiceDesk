@@ -187,7 +187,7 @@ export default function FormCanvas({
  ) : (
  <div className="space-y-2">
  {fields.map((field, index) => (
- <React.Fragment key={field.field_id}>
+<React.Fragment key={`${field.field_id}-${index}`}>
  {/* Drop zone before field */}
  <div
  className={cn(

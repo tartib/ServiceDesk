@@ -2,6 +2,9 @@
 
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Sidebar from '@/components/layout/Sidebar';
+import QuickCreateDialog from '@/components/workspace/QuickCreateDialog';
+import { useQuickCreate } from '@/hooks/useQuickCreate';
+import { Plus } from 'lucide-react';
 import { UserRole } from '@/types';
 
 interface DashboardLayoutProps {
@@ -12,6 +15,7 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, allowedRoles, fullWidth }: DashboardLayoutProps) {
+ const quickCreate = useQuickCreate();
  return (
  <ProtectedRoute allowedRoles={allowedRoles}>
  <div className="flex h-screen bg-muted/50 overflow-hidden">
@@ -29,6 +33,16 @@ export default function DashboardLayout({ children, allowedRoles, fullWidth }: D
    </div>
  )}
  </main>
+ {/* Quick Create: floating button + ⌘K dialog */}
+ <button
+  type="button"
+  onClick={quickCreate.open}
+  className="fixed bottom-6 ltr:right-6 rtl:left-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-lg hover:bg-brand-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-border focus-visible:ring-offset-2"
+  aria-label="Quick Create"
+ >
+  <Plus className="h-5 w-5" />
+ </button>
+ <QuickCreateDialog isOpen={quickCreate.isOpen} onClose={quickCreate.close} />
  </div>
  </ProtectedRoute>
  );

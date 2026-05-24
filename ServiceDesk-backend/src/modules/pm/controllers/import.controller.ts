@@ -134,7 +134,7 @@ function normalizeHeader(header: string): string {
 export const importTasksFromCSV = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     if (!req.file) {
       res.status(400).json({ success: false, error: 'No CSV file uploaded' } as ApiResponse);

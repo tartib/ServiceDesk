@@ -128,7 +128,7 @@ export const createLeaveRequest = async (req: Request, res: Response) => {
 export const updateLeaveRequest = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { type, startDate, endDate, reason } = req.body;
 
     const existing = await LeaveRequest.findById(id);
@@ -161,7 +161,7 @@ export const updateLeaveRequest = async (req: Request, res: Response) => {
 export const deleteLeaveRequest = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
 
     const existing = await LeaveRequest.findById(id);
     if (!existing) {
@@ -184,7 +184,7 @@ export const deleteLeaveRequest = async (req: Request, res: Response) => {
 export const approveLeaveRequest = async (req: Request, res: Response) => {
   try {
     const reviewerId = (req as any).user?.id;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
 
     const request = await LeaveRequest.findByIdAndUpdate(
       id,
@@ -208,7 +208,7 @@ export const approveLeaveRequest = async (req: Request, res: Response) => {
 export const rejectLeaveRequest = async (req: Request, res: Response) => {
   try {
     const reviewerId = (req as any).user?.id;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { reviewNote } = req.body;
 
     const request = await LeaveRequest.findByIdAndUpdate(

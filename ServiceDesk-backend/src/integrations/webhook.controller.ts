@@ -17,7 +17,7 @@ import logger from '../utils/logger';
  * Prometheus, etc.) and dispatches to the matching adapter.
  */
 export async function handleInboundWebhook(req: Request, res: Response): Promise<void> {
-  const { provider } = req.params;
+  const { provider } = req.params as Record<string, string>;
 
   const adapter = adapterRegistry.get(provider);
 
@@ -82,7 +82,7 @@ export async function listIntegrations(_req: Request, res: Response): Promise<vo
  * Health check for a specific adapter.
  */
 export async function getAdapterHealth(req: Request, res: Response): Promise<void> {
-  const { provider } = req.params;
+  const { provider } = req.params as Record<string, string>;
   const adapter = adapterRegistry.get(provider);
 
   if (!adapter) {

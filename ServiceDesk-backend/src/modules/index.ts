@@ -105,6 +105,22 @@ const modules: ModuleDescriptor[] = [
     featureFlag: 'campaigns_module_enabled',
     router: () => require('./campaigns/routes').default,
   },
+  {
+    name: 'workspace',
+    prefix: '/api/v2/workspace',
+    router: () => require('./forms/routes/workspace.routes').default,
+  },
+  {
+    name: 'documents',
+    prefix: '/api/v2/documents',
+    router: () => require('./documents/document.routes').default,
+  },
+  {
+    name: 'portal',
+    prefix: '/api/v2/portal',
+    requiresAuth: false, // portal uses token-based auth
+    router: () => require('./portal/portal.routes').default,
+  },
 ];
 
 /**

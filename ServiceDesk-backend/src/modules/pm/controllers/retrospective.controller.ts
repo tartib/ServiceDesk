@@ -19,7 +19,7 @@ export const createRetrospective = async (req: PMAuthRequest, res: Response): Pr
   try {
 
     const userId = req.user?.id;
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
     const { maxVotesPerUser } = req.body;
 
     if (!userId) {
@@ -99,7 +99,7 @@ export const createRetrospective = async (req: PMAuthRequest, res: Response): Pr
 // Get retrospective by ID
 export const getRetrospective = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { retrospectiveId } = req.params;
+    const { retrospectiveId } = req.params as Record<string, string>;
 
     const retrospective = await PMRetrospective.findById(retrospectiveId)
       .populate('createdBy', 'profile.firstName profile.lastName profile.avatar email')
@@ -131,7 +131,7 @@ export const getRetrospective = async (req: PMAuthRequest, res: Response): Promi
 // Get retrospective by sprint ID
 export const getRetrospectiveBySprintId = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { sprintId } = req.params;
+    const { sprintId } = req.params as Record<string, string>;
 
     const retrospective = await PMRetrospective.findOne({ sprintId })
       .populate('createdBy', 'profile.firstName profile.lastName profile.avatar email')
@@ -163,7 +163,7 @@ export const getRetrospectiveBySprintId = async (req: PMAuthRequest, res: Respon
 // Get all retrospectives for a project
 export const getProjectRetrospectives = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { status } = req.query;
 
     const query: Record<string, unknown> = { projectId };
@@ -191,7 +191,7 @@ export const getProjectRetrospectives = async (req: PMAuthRequest, res: Response
 export const updateRetrospective = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
 
-    const { retrospectiveId } = req.params;
+    const { retrospectiveId } = req.params as Record<string, string>;
     const { maxVotesPerUser, status } = req.body;
 
     const retrospective = await PMRetrospective.findById(retrospectiveId);
@@ -226,7 +226,7 @@ export const updateRetrospective = async (req: PMAuthRequest, res: Response): Pr
 export const deleteRetrospective = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { retrospectiveId } = req.params;
+    const { retrospectiveId } = req.params as Record<string, string>;
 
     if (!userId) {
       res.status(401).json({
@@ -283,7 +283,7 @@ export const deleteRetrospective = async (req: PMAuthRequest, res: Response): Pr
 // Start voting phase
 export const startVoting = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { retrospectiveId } = req.params;
+    const { retrospectiveId } = req.params as Record<string, string>;
 
     const retrospective = await PMRetrospective.findById(retrospectiveId);
     if (!retrospective) {
@@ -325,7 +325,7 @@ export const startVoting = async (req: PMAuthRequest, res: Response): Promise<vo
 export const publishRetrospective = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { retrospectiveId } = req.params;
+    const { retrospectiveId } = req.params as Record<string, string>;
 
     const retrospective = await PMRetrospective.findById(retrospectiveId);
     if (!retrospective) {
@@ -385,7 +385,7 @@ export const publishRetrospective = async (req: PMAuthRequest, res: Response): P
 export const archiveRetrospective = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { retrospectiveId } = req.params;
+    const { retrospectiveId } = req.params as Record<string, string>;
 
     const retrospective = await PMRetrospective.findById(retrospectiveId);
     if (!retrospective) {
@@ -438,7 +438,7 @@ export const addNote = async (req: PMAuthRequest, res: Response): Promise<void> 
   try {
 
     const userId = req.user?.id;
-    const { retrospectiveId } = req.params;
+    const { retrospectiveId } = req.params as Record<string, string>;
     const { category, content } = req.body;
 
     if (!userId) {
@@ -520,7 +520,7 @@ export const updateNote = async (req: PMAuthRequest, res: Response): Promise<voi
   try {
 
     const userId = req.user?.id;
-    const { retrospectiveId, noteId } = req.params;
+    const { retrospectiveId, noteId } = req.params as Record<string, string>;
     const { content, category } = req.body;
 
     if (!userId) {
@@ -592,7 +592,7 @@ export const updateNote = async (req: PMAuthRequest, res: Response): Promise<voi
 export const deleteNote = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { retrospectiveId, noteId } = req.params;
+    const { retrospectiveId, noteId } = req.params as Record<string, string>;
 
     if (!userId) {
       res.status(401).json({
@@ -662,7 +662,7 @@ export const deleteNote = async (req: PMAuthRequest, res: Response): Promise<voi
 export const voteOnNote = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { retrospectiveId, noteId } = req.params;
+    const { retrospectiveId, noteId } = req.params as Record<string, string>;
 
     if (!userId) {
       res.status(401).json({
@@ -773,7 +773,7 @@ export const voteOnNote = async (req: PMAuthRequest, res: Response): Promise<voi
 export const removeVote = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { retrospectiveId, noteId } = req.params;
+    const { retrospectiveId, noteId } = req.params as Record<string, string>;
 
     if (!userId) {
       res.status(401).json({
@@ -857,7 +857,7 @@ export const removeVote = async (req: PMAuthRequest, res: Response): Promise<voi
 export const getVotingStatus = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { retrospectiveId } = req.params;
+    const { retrospectiveId } = req.params as Record<string, string>;
 
     if (!userId) {
       res.status(401).json({
@@ -908,7 +908,7 @@ export const addActionItem = async (req: PMAuthRequest, res: Response): Promise<
   try {
 
     const userId = req.user?.id;
-    const { retrospectiveId } = req.params;
+    const { retrospectiveId } = req.params as Record<string, string>;
     const { title, description, owner, dueDate, linkedNoteId, linkedToNextSprint } = req.body;
 
     if (!userId) {
@@ -985,7 +985,7 @@ export const updateActionItem = async (req: PMAuthRequest, res: Response): Promi
   try {
 
     const userId = req.user?.id;
-    const { retrospectiveId, actionItemId } = req.params;
+    const { retrospectiveId, actionItemId } = req.params as Record<string, string>;
     const { title, description, owner, dueDate, status, linkedToNextSprint } = req.body;
 
     if (!userId) {
@@ -1075,7 +1075,7 @@ export const updateActionItem = async (req: PMAuthRequest, res: Response): Promi
 export const deleteActionItem = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { retrospectiveId, actionItemId } = req.params;
+    const { retrospectiveId, actionItemId } = req.params as Record<string, string>;
 
     if (!userId) {
       res.status(401).json({
@@ -1143,7 +1143,7 @@ export const deleteActionItem = async (req: PMAuthRequest, res: Response): Promi
 // Get action items (optionally filter by status)
 export const getActionItems = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { retrospectiveId } = req.params;
+    const { retrospectiveId } = req.params as Record<string, string>;
     const { status } = req.query;
 
     const retrospective = await PMRetrospective.findById(retrospectiveId)

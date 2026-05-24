@@ -22,7 +22,7 @@ export const getTicketSla = asyncHandler(async (req: Request, res: Response) => 
   const tenantId = getTenant(req);
   if (!tenantId) return void sendError(req, res, 400, 'Missing organization context');
 
-  const { ticketId } = req.params;
+  const { ticketId } = req.params as Record<string, string>;
   const instance = await SlaInstance.findOne({ tenantId, ticketId });
   if (!instance) {
     return void sendError(req, res, 404, 'No SLA instance found for this ticket');
@@ -65,7 +65,7 @@ export const getTicketSla = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const getTicketSlaEvents = asyncHandler(async (req: Request, res: Response) => {
-  const { ticketId } = req.params;
+  const { ticketId } = req.params as Record<string, string>;
   const events = await SlaEvent.find({ ticketId }).sort({ createdAt: -1 }).limit(200);
   sendSuccess(req, res, events);
 });

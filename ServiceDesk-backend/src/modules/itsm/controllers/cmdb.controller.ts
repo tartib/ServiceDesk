@@ -96,7 +96,7 @@ export const getConfigItems = asyncHandler(async (req: Request, res: Response) =
 
 // GET /api/v2/itsm/cmdb/items/:id - Get single configuration item
 export const getConfigItem = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
 
   let item: any;
   if (isItsmPostgres()) {
@@ -153,7 +153,7 @@ export const createConfigItem = asyncHandler(async (req: Request, res: Response)
 
 // PUT /api/v2/itsm/cmdb/items/:id - Update configuration item
 export const updateConfigItem = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const trackFields = ['name', 'status', 'criticality', 'ciType', 'category', 'ownerId', 'department', 'location'];
 
   // ── PostgreSQL path ──
@@ -257,7 +257,7 @@ export const updateConfigItem = asyncHandler(async (req: Request, res: Response)
 
 // DELETE /api/v2/itsm/cmdb/items/:id - Delete (retire) configuration item
 export const deleteConfigItem = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
 
   // ── PostgreSQL path ──
   if (isItsmPostgres()) {
@@ -316,7 +316,7 @@ export const deleteConfigItem = asyncHandler(async (req: Request, res: Response)
 
 // GET /api/v2/itsm/cmdb/items/:id/relationships - Get CI relationships
 export const getRelationships = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
 
   let relationships: any[];
   if (isItsmPostgres()) {
@@ -424,7 +424,7 @@ export const createRelationship = asyncHandler(async (req: Request, res: Respons
 
 // DELETE /api/v2/itsm/cmdb/relationships/:id - Delete relationship
 export const deleteRelationship = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
 
   // ── PostgreSQL path ──
   if (isItsmPostgres()) {
@@ -455,7 +455,7 @@ export const deleteRelationship = asyncHandler(async (req: Request, res: Respons
 
 // GET /api/v2/itsm/cmdb/items/:id/impact - Impact analysis for a CI
 export const getImpactAnalysis = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as Record<string, string>;
   const { depth = '2' } = req.query;
   const maxDepth = Math.min(5, Math.max(1, parseInt(depth as string) || 2));
 

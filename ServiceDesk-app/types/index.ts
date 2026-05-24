@@ -357,6 +357,61 @@ export interface InventoryMovement {
   createdByDoc?: UserRef;
 }
 
+// ── Inventory Count Types ────────────────────────────────────────
+export type CountFrequency = 'daily' | 'weekly';
+export type WeeklyDay = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
+export type ScheduleStatus = 'active' | 'paused' | 'archived';
+export type CountTaskStatus = 'pending' | 'in_progress' | 'submitted' | 'under_review' | 'approved' | 'completed' | 'rejected';
+
+export interface CountTaskItem {
+  item: string;
+  itemName: string;
+  sku: string;
+  systemQuantity: number;
+  actualQuantity?: number;
+  variance?: number;
+  varianceReason?: string;
+  notes?: string;
+}
+
+export interface InventoryCountSchedule {
+  id: string;
+  _id?: string;
+  name: string;
+  frequency: CountFrequency;
+  warehouse: InvWarehouse | string;
+  items: (InventoryItem | string)[];
+  assignedTo: UserRef | string;
+  startDate: string;
+  dueTime: string;
+  weeklyDay?: WeeklyDay;
+  varianceThreshold: number;
+  notes?: string;
+  status: ScheduleStatus;
+  createdBy: UserRef | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InventoryCountTask {
+  id: string;
+  _id?: string;
+  schedule: InventoryCountSchedule | string;
+  warehouse: InvWarehouse | string;
+  countDate: string;
+  assignedTo: UserRef | string;
+  status: CountTaskStatus;
+  items: CountTaskItem[];
+  submittedBy?: UserRef | string;
+  submittedAt?: string;
+  reviewedBy?: UserRef | string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+  createdBy: UserRef | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Notification Types
 export type NotificationType =
   | 'reminder' | 'system'
@@ -732,4 +787,130 @@ export interface AuditLog {
   ipAddress?: string;
   userAgent?: string;
   createdAt: string;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Platform Core — Workspace, RequestType, RecordItem (Section 1)
+// ══════════════════════════════════════════════════════════════════════════════
+
+export enum WorkspaceType {
+  PRODUCT_STUDIO = 'product_studio',
+  MARKETING_AGENCY = 'marketing_agency',
+  PROFESSIONAL_SERVICE_OFFICE = 'professional_service_office',
+  ACCOUNTING_OFFICE = 'accounting_office',
+  LEGAL_OFFICE = 'legal_office',
+}
+
+export enum RecordItemStatus {
+  DRAFT = 'draft',
+  SUBMITTED = 'submitted',
+  UNDER_REVIEW = 'under_review',
+  IN_PROGRESS = 'in_progress',
+  WAITING_CLIENT = 'waiting_client',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
+}
+
+export enum RecordPriority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  CRITICAL = 'critical',
+}
+
+export enum RecordSourceType {
+  RECORD = 'record',
+  TICKET = 'ticket',
+  TASK = 'task',
+  FORM_SUBMISSION = 'form_submission',
+  SERVICE_CATALOG = 'service_catalog',
+}
+
+export interface RequestType {
+  _id: string;
+  id?: string;
+  name: string;
+  nameAr?: string;
+  description?: string;
+  descriptionAr?: string;
+  icon?: string;
+  workspaceType?: WorkspaceType;
+  formSchemaId?: string;
+  workflowTemplateId?: string;
+  defaultPriority: RecordPriority;
+  isClientVisible: boolean;
+  isActive: boolean;
+  category?: string;
+  categoryAr?: string;
+  sortOrder: number;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecordItem {
+  _id: string;
+  id?: string;
+  recordNumber: string;
+  title: string;
+  description?: string;
+  requestTypeId?: string;
+  workspaceType?: WorkspaceType;
+  status: RecordItemStatus;
+  priority: RecordPriority;
+  requesterId: string;
+  requesterName?: string;
+  requesterEmail?: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  formSubmissionId?: string;
+  workflowInstanceId?: string;
+  sla?: {
+    dueAt?: string;
+    status?: 'on_track' | 'at_risk' | 'breached';
+  };
+  sourceType: RecordSourceType;
+  sourceId?: string;
+  tags?: string[];
+  organizationId: string;
+  siteId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RequestTypeListResult {
+  items: RequestType[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface RecordItemListResult {
+  items: RecordItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface CreateRecordPayload {
+  title: string;
+  description?: string;
+  requestTypeId?: string;
+  workspaceType?: WorkspaceType;
+  priority?: RecordPriority;
+  formTemplateId: string;
+  formData: Record<string, unknown>;
+  isDraft?: boolean;
+  siteId?: string;
+}
+
+export interface UpdateDraftPayload {
+  title?: string;
+  description?: string;
+  formData?: Record<string, unknown>;
+  priority?: RecordPriority;
 }

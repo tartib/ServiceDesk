@@ -11,7 +11,7 @@ export const createComment = async (req: PMAuthRequest, res: Response): Promise<
   try {
 
     const userId = req.user?.id;
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
     const { content, parentId } = req.body;
 
     const task = await Task.findById(taskId);
@@ -82,7 +82,7 @@ export const createComment = async (req: PMAuthRequest, res: Response): Promise<
 
 export const getComments = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { taskId } = req.params;
+    const { taskId } = req.params as Record<string, string>;
 
     const comments = await Comment.find({ taskId, parentId: { $exists: false } })
       .populate('author', 'profile.firstName profile.lastName profile.avatar email')
@@ -110,7 +110,7 @@ export const getComments = async (req: PMAuthRequest, res: Response): Promise<vo
 
 export const updateComment = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { commentId } = req.params;
+    const { commentId } = req.params as Record<string, string>;
     const { content } = req.body;
     const userId = req.user?.id;
 
@@ -146,7 +146,7 @@ export const updateComment = async (req: PMAuthRequest, res: Response): Promise<
 
 export const deleteComment = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { commentId } = req.params;
+    const { commentId } = req.params as Record<string, string>;
     const userId = req.user?.id;
 
     const comment = await Comment.findById(commentId);
@@ -176,7 +176,7 @@ export const deleteComment = async (req: PMAuthRequest, res: Response): Promise<
 
 export const addReaction = async (req: PMAuthRequest, res: Response): Promise<void> => {
   try {
-    const { commentId } = req.params;
+    const { commentId } = req.params as Record<string, string>;
     const { emoji } = req.body;
     const userId = req.user?.id;
 
